@@ -1,0 +1,29 @@
+[package]
+name = "axiom"
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/axiomchurch/axiom"
+
+[dependencies]
+serde_json = "1.0.82"
+serde = { version = "1.0.137", features = ["derive"] }
+tokio = { version = "1.19.2", features = ["full"] }
+clap = { version = "3.2.6", features = ["derive"] }
+libp2p = { version = "0.45.1", features = ["tcp-tokio"] }
+async-std = { version = "1.12.0", features = ["attributes"] }
+blake3 = "1.3.1"
+rocksdb = "0.18.0"
+bincode = "1.3.3"
+hex = "0.4.3"
+ed25519 = "1.5.2"
+ed25519-dalek = "1.0.1"
+rand = "0.7.3"
+serde-big-array = "0.4.1"
+colored = "2.0.0"
+merkle-cbt = "0.3.2"
+tempdir = "0.3.7"
+inquire = "0.2.1"
+termion = "1.5.6"
+reqwest = { version = "0.11.11", features = ["json"] }
+regex = "1.6.0"
+lazy_static = "1.4.0"

@@ -68,7 +68,7 @@ pub mod command {
         process,
     };
     use termion::{input::TermRead, raw::IntoRawMode};
-    pub async fn main(wallet: &Wallet) -> Result<(), Box<dyn Error>> {
+    pub async fn main(wallet: &Wallet, api: &str) -> Result<(), Box<dyn Error>> {
         match Select::new(
             ">>",
             vec![
@@ -91,12 +91,12 @@ pub mod command {
         }) {
             "address" => address(&wallet),
             "key" => key(&wallet),
-            "balance" => balance(&wallet.address()).await?,
-            "height" => height().await?,
-            "transaction" => transaction(&wallet).await?,
-            "stake" => stake(&wallet).await?,
+            "balance" => balance(api, &wallet.address()).await?,
+            "height" => height(api).await?,
+            "transaction" => transaction(api, &wallet).await?,
+            "stake" => stake(api, &wallet).await?,
             "ip" => ip().await?,
-            "validator" => validator().await?,
+            "validator" => validator(api).await?,
             "exit" => exit(),
             _ => {}
         }
@@ -109,21 +109,20 @@ pub mod command {
         stdin().events().next();
         print!("\x1B[2J\x1B[1;1H");
     }
-    pub async fn validator() -> Result<(), Box<dyn Error>> {
-        let info = reqwest::get("http://localhost:8080").await?.text().await?;
+    pub async fn validator(api: &str) -> Result<(), Box<dyn Error>> {
+        let info = reqwest::get(api).await?.text().await?;
         println!("\n{}\n", info.green());
         Ok(())
     }
-    pub async fn balance(address: &str) -> Result<(), Box<dyn Error>> {
-        let balance = reqwest::get(format!("http://localhost:8080/balance/{}", address))
+    pub async fn balance(api: &str, address: &str) -> Result<(), Box<dyn Error>> {
+        let balance = reqwest::get(format!("{}/balance/{}", api, address))
             .await?
             .json::<u64>()
             .await?;
-        let balance_staked =
-            reqwest::get(format!("http://localhost:8080/balance_staked/{}", address))
-                .await?
-                .json::<u64>()
-                .await?;
+        let balance_staked = reqwest::get(format!("{}/balance_staked/{}", api, address))
+            .await?
+            .json::<u64>()
+            .await?;
         println!(
             "Account balance: {}, locked: {}.",
             balance.to_string().yellow(),
@@ -131,15 +130,15 @@ pub mod command {
         );
         Ok(())
     }
-    pub async fn height() -> Result<(), Box<dyn Error>> {
-        let balance = reqwest::get(format!("http://localhost:8080/height"))
+    pub async fn height(api: &str) -> Result<(), Box<dyn Error>> {
+        let balance = reqwest::get(format!("{}/height", api))
             .await?
             .json::<u64>()
             .await?;
         println!("Latest block height is {}.", balance.to_string().yellow());
         Ok(())
     }
-    pub async fn transaction(wallet: &Wallet) -> Result<(), Box<dyn Error>> {
+    pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
         let address = CustomType::<String>::new("address >>")
             .with_error_message("Please enter a valid address")
             .with_help_message("Type the hex encoded address with 0x as prefix")
@@ -166,7 +165,7 @@ pub mod command {
         transaction.sign(&wallet.keypair);
         let client = reqwest::Client::new();
         let res: usize = client
-            .post("http://localhost:8080/transaction")
+            .post(format!("{}/transaction", api))
             .body(hex::encode(bincode::serialize(&transaction)?))
             .send()
             .await?
@@ -185,7 +184,7 @@ pub mod command {
         );
         Ok(())
     }
-    pub async fn stake(wallet: &Wallet) -> Result<(), Box<dyn Error>> {
+    pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
         let deposit = match Select::new(">>", vec!["deposit", "withdraw"])
             .prompt()
             .unwrap_or_else(|err| {
@@ -215,7 +214,7 @@ pub mod command {
         stake.sign(&wallet.keypair);
         let client = reqwest::Client::new();
         let res: usize = client
-            .post("http://localhost:8080/stake")
+            .post(format!("{}/stake", api))
             .body(hex::encode(bincode::serialize(&stake)?))
             .send()
             .await?

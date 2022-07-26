@@ -69,11 +69,15 @@ pub mod print {
             blockchain.stakers.queue.len()
         );
     }
-    pub fn args(args: &ValidatorArgs) {
+    pub fn validator_args(args: &ValidatorArgs) {
         println!("{}", "=== Args ===".magenta());
         println!("{}: {}", "--log-level".cyan(), args.log_level);
         println!("{}: {}", "--multiaddr".cyan(), args.multiaddr);
         println!("{}: {}", "--tempdb".cyan(), args.tempdb);
+    }
+    pub fn wallet_args(args: &WalletArgs) {
+        println!("{}", "=== Args ===".magenta());
+        println!("{}: {}", "--api".cyan(), args.api);
     }
     pub fn http(listener: &TcpListener) -> Result<(), Box<dyn Error>> {
         println!("{}", "=== Interface ===".magenta());
@@ -133,6 +137,13 @@ pub struct ValidatorArgs {
     /// Use temporary random keypair
     #[clap(long, value_parser, default_value_t = false)]
     pub tempkey: bool,
+}
+#[derive(Parser, Debug)]
+#[clap(version, about, long_about = None)]
+pub struct WalletArgs {
+    /// Multiaddr to a validator in the network
+    #[clap(long, value_parser, default_value = "http://localhost:8080")]
+    pub api: String,
 }
 #[cfg(test)]
 mod tests {

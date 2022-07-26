@@ -1,11 +1,11 @@
-use clap::Parser;
-use colored::*;
 use axiom::{
     db, p2p,
     util::{print, ValidatorArgs},
     validator::Validator,
     wallet::Wallet,
 };
+use clap::Parser;
+use colored::*;
 use std::error::Error;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("{}", "Validator starting...".yellow());
     print::build();
     let args = ValidatorArgs::parse();
-    print::args(&args);
+    print::validator_args(&args);
     let tempdir = TempDir::new("rocksdb")?;
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),

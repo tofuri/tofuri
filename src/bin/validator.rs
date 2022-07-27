@@ -25,7 +25,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         false => Wallet::import()?,
     };
     let db = db::open(path);
-    let validator = Validator::new(wallet, db)?;
+    let known = Validator::get_known(&args)?;
+    print::known_peers(&known);
+    let validator = Validator::new(wallet, db, known)?;
     print::validator(&validator);
     print::blockchain(&validator.blockchain);
     let mut swarm = p2p::swarm(validator).await?;

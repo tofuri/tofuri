@@ -35,7 +35,7 @@ impl Wallet {
         Wallet::write(Wallet::default_path(), self.keypair.secret.as_bytes())?;
         Ok(())
     }
-    fn read(path: &Path) -> Result<[u8; 32], Box<dyn Error>> {
+    fn read(path: impl AsRef<Path>) -> Result<[u8; 32], Box<dyn Error>> {
         let mut file = File::open(path)?;
         let mut buf = [0; 32];
         file.read(&mut buf)?;

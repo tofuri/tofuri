@@ -2,7 +2,13 @@ use clap::Parser;
 use ed25519_dalek::Keypair;
 use merkle_cbt::{merkle_tree::Merge, CBMT as ExCBMT};
 use rand::rngs::OsRng;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    error::Error,
+    fs::File,
+    io::{BufRead, BufReader},
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
+};
 pub fn keygen() -> Keypair {
     let mut csprng = OsRng {};
     Keypair::generate(&mut csprng)
@@ -27,12 +33,21 @@ pub fn timestamp() -> u64 {
 pub fn hash(input: &[u8]) -> [u8; 32] {
     blake3::hash(input).into()
 }
+pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>> {
+    let file = File::open(path)?;
+    let buf = BufReader::new(file);
+    Ok(buf
+        .lines()
+        .map(|l| l.expect("Could not parse line"))
+        .collect())
+}
 pub mod print {
     use super::*;
     use crate::{
         blockchain::Blockchain, transaction::Transaction, validator::Validator, wallet::address,
     };
     use colored::*;
+    use libp2p::Multiaddr;
     use std::error::Error;
     use tokio::net::TcpListener;
     pub fn build() {
@@ -118,6 +133,12 @@ pub mod print {
             millis.to_string().yellow(),
         );
     }
+    pub fn known_peers(known: &Vec<Multiaddr>) {
+        println!("{}", "=== Known peers ===".magenta());
+        for multiaddr in known.iter() {
+            println!("{}", multiaddr);
+        }
+    }
 }
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
@@ -137,6 +158,9 @@ pub struct ValidatorArgs {
     /// Use temporary random keypair
     #[clap(long, value_parser, default_value_t = false)]
     pub tempkey: bool,
+    /// Path to list of known peers
+    #[clap(long, value_parser, default_value = "./known.txt")]
+    pub known: String,
 }
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]

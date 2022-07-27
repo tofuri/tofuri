@@ -7,10 +7,11 @@ use super::{
     stake::Stake,
     sync::Sync,
     transaction::Transaction,
+    util,
     util::print,
     wallet::{address, Wallet},
 };
-use crate::constants::BLOCK_TIME_MIN;
+use crate::{constants::BLOCK_TIME_MIN, util::ValidatorArgs};
 use colored::*;
 use ed25519_dalek::Keypair;
 use libp2p::{
@@ -66,15 +67,17 @@ impl Validator {
     pub fn new(
         wallet: Wallet,
         db: DBWithThreadMode<SingleThreaded>,
+        known: Vec<Multiaddr>,
     ) -> Result<Validator, Box<dyn Error>> {
         let keypair = wallet.keypair;
-        let urls = Validator::get_multiaddrs(&db)?;
+        let mut multiaddrs = known;
+        multiaddrs.append(&mut Validator::get_multiaddrs(&db)?);
         let blockchain = Blockchain::new(&db)?;
         Ok(Validator {
             db,
             blockchain,
             keypair,
-            multiaddrs: urls,
+            multiaddrs,
             synchronizer: Synchronizer::new(),
             heartbeats: 0,
         })
@@ -99,6 +102,19 @@ impl Validator {
             multiaddrs.push(String::from_utf8(i.to_vec())?.parse()?);
         }
         Ok(multiaddrs)
+    }
+    pub fn get_known(args: &ValidatorArgs) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
+        let lines = util::read_lines(&args.known)?;
+        let mut known = vec![];
+        for line in lines {
+            match line.parse() {
+                Ok(multiaddr) => {
+                    known.push(multiaddr);
+                }
+                Err(err) => println!("{}", err),
+            }
+        }
+        Ok(known)
     }
     async fn heartbeat() {
         let mut nanos = SystemTime::now()

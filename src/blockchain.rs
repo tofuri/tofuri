@@ -109,10 +109,10 @@ impl Blockchain {
             return Err("block is not valid".into());
         }
         // check if previous block exists
-        Block::get(db, &block.previous_hash)?;
-        // check if previous block hash is part of active chain
-        if !self.hashes.contains(&block.previous_hash) {
-            return Err("block is not part of active chain".into());
+        let previous_block = Block::get(db, &block.previous_hash)?;
+        // check if block extends active chain
+        if self.latest_block.previous_hash != previous_block.previous_hash {
+            return Err("block does not extend active chain".into());
         }
         self.pending_blocks.push(block);
         // check validator
@@ -496,33 +496,27 @@ impl Blockchain {
         }
         // save block
         block.put(db)?;
-        // check if block extends active chain
-        if self.latest_block.previous_hash == previous_block.previous_hash {
-            // block extends active chain
-            let block_metadata = BlockMetadata::from(&block);
-            let hash = block_metadata.hash();
-            self.hashes.push(hash);
-            self.cache_balances(db, &block.transactions, &block.stakes)?;
-            let fees = Blockchain::get_fees(&block.transactions, &block.stakes);
-            // reward validator
-            self.add_reward(db, &block.public_key, fees)?;
-            if self.stakers.queue.len() > 0 {
-                self.stakers.queue.rotate_left(1);
-            }
-            // set latest block
-            Blockchain::put_latest_block_hash(db, hash)?;
-            self.latest_block = block;
-            // append new validators to queue
-            for stake in self.latest_block.stakes.iter() {
-                self.stakers.queue.push_back((
-                    stake.public_key,
-                    stake.amount,
-                    self.latest_height(),
-                ));
-            }
-            // clear pending_blocks
-            self.pending_blocks.clear();
+        let block_metadata = BlockMetadata::from(&block);
+        let hash = block_metadata.hash();
+        self.hashes.push(hash);
+        self.cache_balances(db, &block.transactions, &block.stakes)?;
+        let fees = Blockchain::get_fees(&block.transactions, &block.stakes);
+        // reward validator
+        self.add_reward(db, &block.public_key, fees)?;
+        if self.stakers.queue.len() > 0 {
+            self.stakers.queue.rotate_left(1);
         }
+        // set latest block
+        Blockchain::put_latest_block_hash(db, hash)?;
+        self.latest_block = block;
+        // append new validators to queue
+        for stake in self.latest_block.stakes.iter() {
+            self.stakers
+                .queue
+                .push_back((stake.public_key, stake.amount, self.latest_height()));
+        }
+        // clear pending_blocks
+        self.pending_blocks.clear();
         Ok(())
     }
     fn punish_staker(

@@ -135,6 +135,10 @@ pub mod print {
     }
     pub fn known_peers(known: &Vec<Multiaddr>) {
         println!("{}", "=== Known peers ===".magenta());
+        if known.len() == 0 {
+            println!("{}", "empty list".red());
+            return;
+        }
         for multiaddr in known.iter() {
             println!("{}", multiaddr);
         }

@@ -1,7 +1,7 @@
 use super::{
-    block::{Block, BlockMetadata},
+    block::Block,
     blockchain::Blockchain,
-    constants::{BLOCKS_PER_SECOND_THRESHOLD, MIN_STAKE, SYNC_HISTORY_LENGTH},
+    constants::{BLOCKS_PER_SECOND_THRESHOLD, MIN_STAKE, SYNC_BLOCKS, SYNC_HISTORY_LENGTH},
     db, http,
     p2p::MyBehaviour,
     stake::Stake,
@@ -41,7 +41,7 @@ impl Synchronizer {
         Synchronizer {
             new: 0,
             bps: 9,
-            history: [9; 10],
+            history: [9; SYNC_HISTORY_LENGTH],
         }
     }
     pub fn heartbeat_handle(&mut self) {
@@ -130,9 +130,7 @@ impl Validator {
         let behaviour = swarm.behaviour_mut();
         behaviour.validator.heartbeats += 1;
         behaviour.validator.synchronizer.heartbeat_handle();
-        if behaviour.validator.heartbeats % BLOCK_TIME_MIN == 0 {
-            Validator::heartbeat_handle_block(behaviour)?;
-        }
+        Validator::heartbeat_handle_block(behaviour)?;
         Validator::heartbeat_handle_sync(behaviour)?;
         print::heartbeat_lag(behaviour.validator.heartbeats);
         Ok(())
@@ -314,6 +312,8 @@ impl Validator {
         if behaviour.validator.blockchain.stakers.queue.len() > 0 {
             if &behaviour.validator.blockchain.stakers.queue[0].0
                 != behaviour.validator.keypair.public.as_bytes()
+                || util::timestamp()
+                    < behaviour.validator.blockchain.latest_block.timestamp + BLOCK_TIME_MIN as u64
             {
                 forge = false;
             }
@@ -344,7 +344,7 @@ impl Validator {
         match behaviour
             .validator
             .blockchain
-            .accept_block(&behaviour.validator.db)
+            .accept_block(&behaviour.validator.db, forge)
         {
             Err(err) => println!("{}", err),
             _ => {}
@@ -378,7 +378,7 @@ impl Validator {
         match message.topic.as_str() {
             "block" => {
                 let block: Block = bincode::deserialize(&message.data)?;
-                let hash = BlockMetadata::from(&block).hash();
+                let previous_hash = block.previous_hash;
                 behaviour
                     .validator
                     .blockchain
@@ -388,22 +388,10 @@ impl Validator {
                     behaviour
                         .validator
                         .blockchain
-                        .accept_block(&behaviour.validator.db)?
+                        .accept_block(&behaviour.validator.db, false)?
                 }
-                if BlockMetadata::from(&behaviour.validator.blockchain.latest_block).hash() == hash
-                {
+                if behaviour.validator.blockchain.latest_block.previous_hash == previous_hash {
                     behaviour.validator.synchronizer.new += 1;
-                    println!(
-                        "{}: {} {}",
-                        "Accepted".green(),
-                        behaviour
-                            .validator
-                            .blockchain
-                            .latest_height()
-                            .to_string()
-                            .yellow(),
-                        hex::encode(hash)
-                    );
                 }
             }
             "stake" => {
@@ -423,7 +411,7 @@ impl Validator {
             "ip" => {}
             "sync" => {
                 let sync: Sync = bincode::deserialize(&message.data)?;
-                for i in sync.height..sync.height + 16 {
+                for i in sync.height..=sync.height + SYNC_BLOCKS {
                     if i > behaviour.validator.blockchain.latest_height() {
                         return Ok(());
                     }

@@ -2,14 +2,14 @@ use super::{
     block::{Block, BlockMetadata},
     constants::{
         BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, GENESIS_TIMESTAMP,
-        PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
+        PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     db,
     stake::Stake,
     transaction::Transaction,
     wallet,
 };
-use crate::constants::BLOCK_TIME_MAX;
+use crate::{constants::BLOCK_TIME_MAX, util};
 use colored::*;
 use ed25519_dalek::Keypair;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -117,8 +117,6 @@ impl Blockchain {
         self.pending_blocks.push(block);
         // check validator
         // self.validate_block(db, block);
-        self.sort_pending_blocks();
-        self.limit_pending_blocks();
         Ok(())
     }
     pub fn try_add_transaction(
@@ -443,15 +441,6 @@ impl Blockchain {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
     }
-    fn sort_pending_blocks(&mut self) {
-        self.pending_blocks
-            .sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-    }
-    fn limit_pending_blocks(&mut self) {
-        while self.pending_blocks.len() > PENDING_BLOCKS_LIMIT {
-            self.pending_blocks.remove(self.pending_blocks.len() - 1);
-        }
-    }
     pub fn weight(stake: f64) -> f64 {
         stake * stake.ln()
     }
@@ -461,9 +450,12 @@ impl Blockchain {
     pub fn accept_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
+        forger: bool,
     ) -> Result<(), Box<dyn Error>> {
         if self.pending_blocks.len() == 0 {
-            if self.stakers.queue.len() > 0 {
+            if self.stakers.queue.len() > 0
+                && util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as u64
+            {
                 self.punish_staker(db, self.stakers.queue[0])?;
             }
             return Err("no pending blocks".into());
@@ -485,10 +477,9 @@ impl Blockchain {
                 }
             }
         }
-        let previous_block = Block::get(db, &block.previous_hash)?;
         if self.stakers.queue.len() > 0 {
-            if block.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as u64
-                || block.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as u64
+            if block.timestamp < self.latest_block.timestamp + BLOCK_TIME_MIN as u64
+                || block.timestamp > self.latest_block.timestamp + BLOCK_TIME_MAX as u64
             {
                 self.punish_staker(db, self.stakers.queue[0])?;
                 return Err("validator did not show up in time".into());
@@ -515,8 +506,15 @@ impl Blockchain {
                 .queue
                 .push_back((stake.public_key, stake.amount, self.latest_height()));
         }
-        // clear pending_blocks
         self.pending_blocks.clear();
+        if !forger {
+            println!(
+                "{}: {} {}",
+                "Accepted".green(),
+                self.latest_height().to_string().yellow(),
+                hex::encode(hash)
+            );
+        }
         Ok(())
     }
     fn punish_staker(

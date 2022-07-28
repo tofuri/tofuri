@@ -12,6 +12,7 @@ use super::{
 use crate::{constants::BLOCK_TIME_MAX, util};
 use colored::*;
 use ed25519_dalek::Keypair;
+use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use std::{collections::VecDeque, error::Error};
@@ -91,7 +92,7 @@ impl Blockchain {
         block.public_key = block_metadata.public_key;
         block.signature = block_metadata.signature;
         self.try_add_block(db, block.clone())?;
-        println!(
+        info!(
             "{}: {} {}",
             "Forged".green(),
             (self.latest_height() + 1).to_string().yellow(),
@@ -235,13 +236,13 @@ impl Blockchain {
                     let block_metadata = BlockMetadata::from(&block);
                     let hash = block_metadata.hash();
                     if hash != previous_hash {
-                        println!(
+                        log::error!(
                             "{}: {} != {}",
                             "Detected broken chain!".red(),
                             hex::encode(hash),
                             hex::encode(previous_hash)
                         );
-                        println!("{}", "Pruning broken chain".yellow());
+                        log::warn!("{}", "Pruning broken chain".yellow());
                         hashes.clear();
                         Blockchain::put_latest_block_hash(db, previous_hash)?;
                     }
@@ -508,7 +509,7 @@ impl Blockchain {
         }
         self.pending_blocks.clear();
         if !forger {
-            println!(
+            info!(
                 "{}: {} {}",
                 "Accepted".green(),
                 self.latest_height().to_string().yellow(),
@@ -528,7 +529,7 @@ impl Blockchain {
         staked_balance -= amount;
         self.put_staked_balance(db, &public_key, staked_balance)?;
         self.stakers.queue.remove(0).unwrap();
-        println!(
+        log::warn!(
             "{}: {} {}",
             "Burned".red(),
             amount.to_string().yellow(),
@@ -541,16 +542,16 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         block: &Block,
     ) -> Result<(), Box<dyn Error>> {
-        println!(
-            "{}\n{}",
-            "Staker queue is empty!".red(),
+        log::error!("{}", "Staker queue is empty!".red());
+        log::warn!(
+            "{}",
             "Staker queue should not be empty unless the network just started up.".yellow()
         );
         for stake in block.stakes.iter() {
             let mut balance = self.get_balance(db, &stake.public_key)?;
             balance += stake.amount + stake.fee;
             self.put_balance(db, &stake.public_key, balance)?;
-            println!(
+            log::warn!(
                 "{}: {} {}",
                 "Minted".magenta(),
                 balance.to_string().yellow(),

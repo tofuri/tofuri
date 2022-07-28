@@ -19,6 +19,7 @@ use libp2p::{
     gossipsub::{GossipsubMessage, IdentTopic},
     Multiaddr, Swarm,
 };
+use log::{debug, error, info};
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -111,7 +112,7 @@ impl Validator {
                 Ok(multiaddr) => {
                     known.push(multiaddr);
                 }
-                Err(err) => println!("{}", err),
+                Err(err) => error!("{}", err),
             }
         }
         Ok(known)
@@ -178,7 +179,7 @@ impl Validator {
                         .blockchain
                         .get_balance(&swarm.behaviour().validator.db, &public_key)?,
                     Err(err) => {
-                        println!("{}", err);
+                        error!("{}", err);
                         0
                     }
                 };
@@ -200,7 +201,7 @@ impl Validator {
                         .blockchain
                         .get_staked_balance(&swarm.behaviour().validator.db, &public_key)?,
                     Err(err) => {
-                        println!("{}", err);
+                        error!("{}", err);
                         0
                     }
                 };
@@ -251,7 +252,7 @@ impl Validator {
                         .get(0..304)
                         .ok_or("invalid post transaction 2")?,
                 )?)?;
-                println!("{:?}", transaction);
+                info!("{:?}", transaction);
                 let behaviour = swarm.behaviour_mut();
                 let status = match behaviour
                     .validator
@@ -271,7 +272,7 @@ impl Validator {
                         .get(0..242)
                         .ok_or("invalid post stake 2")?,
                 )?)?;
-                println!("{:?}", stake);
+                info!("{:?}", stake);
                 let behaviour = swarm.behaviour_mut();
                 let status = match behaviour
                     .validator
@@ -287,7 +288,6 @@ impl Validator {
             };
         } else {
             stream.write(http::format_400().as_bytes()).await?;
-            return Ok(());
         };
         stream.flush().await?;
         Ok(())
@@ -337,7 +337,7 @@ impl Validator {
                             .publish(IdentTopic::new("block"), bincode::serialize(&block)?)?;
                     }
                 }
-                Err(err) => println!("{}", err),
+                Err(err) => error!("{}", err),
             };
         }
         // accept forged blocks
@@ -346,7 +346,7 @@ impl Validator {
             .blockchain
             .accept_block(&behaviour.validator.db, forge)
         {
-            Err(err) => println!("{}", err),
+            Err(err) => debug!("{}", err),
             _ => {}
         }
         Ok(())
@@ -355,7 +355,7 @@ impl Validator {
         if behaviour.validator.synchronizer.bps < BLOCKS_PER_SECOND_THRESHOLD {
             return Ok(());
         }
-        println!(
+        info!(
             "{}: {} {}bps",
             "Sync".cyan(),
             behaviour.validator.blockchain.latest_height(),

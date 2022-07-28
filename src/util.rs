@@ -46,77 +46,103 @@ pub mod print {
     use crate::{
         blockchain::Blockchain, transaction::Transaction, validator::Validator, wallet::address,
     };
+    use chrono::Local;
     use colored::*;
+    use env_logger::Builder;
     use libp2p::Multiaddr;
-    use std::error::Error;
+    use log::{debug, error, info, warn, Level, LevelFilter};
+    use std::{error::Error, io::Write};
     use tokio::net::TcpListener;
+    pub fn colored_level(level: Level) -> ColoredString {
+        match level {
+            Level::Error => level.to_string().red(),
+            Level::Warn => level.to_string().yellow(),
+            Level::Info => level.to_string().green(),
+            Level::Debug => level.to_string().blue(),
+            Level::Trace => level.to_string().magenta(),
+        }
+    }
+    pub fn env_logger_init() {
+        Builder::new()
+            .format(|buf, record| {
+                writeln!(
+                    buf,
+                    "[{} {}]: {}",
+                    Local::now().format("%H:%M:%S"),
+                    colored_level(record.level()),
+                    record.args()
+                )
+            })
+            .filter(None, LevelFilter::Info)
+            .init();
+    }
     pub fn build() {
-        println!("{}", "=== Build ===".magenta());
-        println!("{}: {}", "Version".cyan(), env!("CARGO_PKG_VERSION"));
-        println!("{}: {}", "Commit".cyan(), env!("GIT_HASH"));
-        println!("{}: {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY"));
+        info!("{}", "=== Build ===".magenta());
+        info!("{}: {}", "Version".cyan(), env!("CARGO_PKG_VERSION"));
+        info!("{}: {}", "Commit".cyan(), env!("GIT_HASH"));
+        info!("{}: {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY"));
     }
     pub fn validator(validator: &Validator) {
-        println!("{}", "=== Validator ===".magenta());
-        println!(
+        info!("{}", "=== Validator ===".magenta());
+        info!(
             "{}: {}",
             "PubKey".cyan(),
             address::encode(&validator.keypair.public.as_bytes())
         );
-        println!("{}: {}", "Peers".cyan(), validator.multiaddrs.len());
+        info!("{}: {}", "Peers".cyan(), validator.multiaddrs.len());
     }
     pub fn blockchain(blockchain: &Blockchain) {
-        println!("{}", "=== Blockchain ===".magenta());
-        println!("{}: {}", "Height".cyan(), blockchain.latest_height());
-        println!(
+        info!("{}", "=== Blockchain ===".magenta());
+        info!("{}: {}", "Height".cyan(), blockchain.latest_height());
+        info!(
             "{}: {}",
             "Pending txns".cyan(),
             blockchain.pending_transactions.len()
         );
-        println!(
+        info!(
             "{}: {}",
             "Pending stakes".cyan(),
             blockchain.pending_stakes.len()
         );
-        println!(
+        info!(
             "{}: {}",
             "Validators".cyan(),
             blockchain.stakers.queue.len()
         );
     }
     pub fn validator_args(args: &ValidatorArgs) {
-        println!("{}", "=== Args ===".magenta());
-        println!("{}: {}", "--log-level".cyan(), args.log_level);
-        println!("{}: {}", "--multiaddr".cyan(), args.multiaddr);
-        println!("{}: {}", "--tempdb".cyan(), args.tempdb);
+        info!("{}", "=== Args ===".magenta());
+        info!("{}: {}", "--log-level".cyan(), args.log_level);
+        info!("{}: {}", "--multiaddr".cyan(), args.multiaddr);
+        info!("{}: {}", "--tempdb".cyan(), args.tempdb);
     }
     pub fn wallet_args(args: &WalletArgs) {
-        println!("{}", "=== Args ===".magenta());
-        println!("{}: {}", "--api".cyan(), args.api);
+        info!("{}", "=== Args ===".magenta());
+        info!("{}: {}", "--api".cyan(), args.api);
     }
     pub fn http(listener: &TcpListener) -> Result<(), Box<dyn Error>> {
-        println!("{}", "=== Interface ===".magenta());
-        println!("http://{}", listener.local_addr()?.to_string().green());
+        info!("{}", "=== Interface ===".magenta());
+        info!("http://{}", listener.local_addr()?.to_string().green());
         Ok(())
     }
     pub fn listen() {
-        println!("{}", "=== Listening ===".magenta());
+        info!("{}", "=== Listening ===".magenta());
     }
     pub fn pending_transactions(pending_transactions: &Vec<Transaction>) {
-        println!(
+        info!(
             "{}: {}",
             "Pending txns".magenta(),
             pending_transactions.len().to_string().yellow()
         );
     }
     pub fn err(err: Box<dyn Error>) {
-        println!("{}", err.to_string().red());
+        error!("{}", err.to_string().red());
     }
     pub fn http_api_request_handler(first: &str) {
-        println!("{}: {}", "Interface".cyan(), first.green());
+        info!("{}: {}", "Interface".cyan(), first.green());
     }
     pub fn p2p_event(event_type: &str, event: String) {
-        println!("{} {} {}", event_type.cyan(), "->".magenta(), event)
+        info!("{} {} {}", event_type.cyan(), "->".magenta(), event)
     }
     pub fn heartbeat_lag(heartbeats: usize) {
         let mut micros = SystemTime::now()
@@ -126,7 +152,7 @@ pub mod print {
         let secs = micros / 1_000_000;
         micros -= secs * 1_000_000;
         let millis = micros as f64 / 1_000 as f64;
-        println!(
+        debug!(
             "{}: {} {}ms",
             "Heartbeat".cyan(),
             heartbeats,
@@ -134,13 +160,13 @@ pub mod print {
         );
     }
     pub fn known_peers(known: &Vec<Multiaddr>) {
-        println!("{}", "=== Known peers ===".magenta());
+        info!("{}", "=== Known peers ===".magenta());
         if known.len() == 0 {
-            println!("{}", "empty list".red());
+            warn!("{}", "empty list".red());
             return;
         }
         for multiaddr in known.iter() {
-            println!("{}", multiaddr);
+            info!("{}", multiaddr);
         }
     }
 }

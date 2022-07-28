@@ -3,11 +3,9 @@ use axiom::{
     wallet::{command, Wallet},
 };
 use clap::Parser;
-use colored::*;
 use std::error::Error;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    println!("{}", "Wallet starting...".yellow());
     util::print::build();
     let args = WalletArgs::parse();
     print::wallet_args(&args);

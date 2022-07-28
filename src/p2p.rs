@@ -14,6 +14,7 @@ use libp2p::{
     swarm::{NetworkBehaviourEventProcess, Swarm},
     NetworkBehaviour, PeerId,
 };
+use log::error;
 use std::{error::Error, time::Duration};
 #[derive(NetworkBehaviour)]
 #[behaviour(event_process = true)]
@@ -107,7 +108,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
         match event {
             GossipsubEvent::Message { message, .. } => {
                 match Validator::gossipsub_message_handler(self, message) {
-                    Err(err) => println!("{}", err),
+                    Err(err) => error!("{}", err),
                     _ => {}
                 }
             }

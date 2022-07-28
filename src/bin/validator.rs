@@ -5,13 +5,12 @@ use axiom::{
     wallet::Wallet,
 };
 use clap::Parser;
-use colored::*;
 use std::error::Error;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    println!("{}", "Validator starting...".yellow());
+    print::env_logger_init();
     print::build();
     let args = ValidatorArgs::parse();
     print::validator_args(&args);

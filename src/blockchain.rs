@@ -93,10 +93,10 @@ impl Blockchain {
         block.signature = block_metadata.signature;
         self.try_add_block(db, block.clone())?;
         info!(
-            "{}: {} {}",
-            "Forged".green(),
+            "{}: {} @ {}",
+            "Forged".cyan(),
             (self.latest_height() + 1).to_string().yellow(),
-            hex::encode(block_metadata.hash())
+            hex::encode(block_metadata.hash()).green()
         );
         Ok(block)
     }
@@ -542,7 +542,6 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         block: &Block,
     ) -> Result<(), Box<dyn Error>> {
-        log::error!("{}", "Staker queue is empty!".red());
         log::warn!(
             "{}",
             "Staker queue should not be empty unless the network just started up.".yellow()
@@ -552,10 +551,10 @@ impl Blockchain {
             balance += stake.amount + stake.fee;
             self.put_balance(db, &stake.public_key, balance)?;
             log::warn!(
-                "{}: {} {}",
-                "Minted".magenta(),
+                "{}: {} @ {}",
+                "Minted".cyan(),
                 balance.to_string().yellow(),
-                wallet::address::encode(&stake.public_key)
+                wallet::address::encode(&stake.public_key).green()
             );
         }
         Ok(())

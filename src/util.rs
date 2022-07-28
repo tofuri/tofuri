@@ -62,9 +62,23 @@ pub mod print {
             Level::Trace => level.to_string().magenta(),
         }
     }
-    pub fn env_logger_init() {
-        Builder::new()
-            .format(|buf, record| {
+    pub fn env_logger_init(log_path: bool) {
+        let mut builder = Builder::new();
+        if log_path {
+            builder.format(|buf, record| {
+                writeln!(
+                    buf,
+                    "[{} {} {}{}{}]: {}",
+                    Local::now().format("%H:%M:%S"),
+                    colored_level(record.level()),
+                    record.file_static().unwrap().black(),
+                    ":".black(),
+                    record.line().unwrap().to_string().black(),
+                    record.args()
+                )
+            });
+        } else {
+            builder.format(|buf, record| {
                 writeln!(
                     buf,
                     "[{} {}]: {}",
@@ -72,18 +86,16 @@ pub mod print {
                     colored_level(record.level()),
                     record.args()
                 )
-            })
-            .filter(None, LevelFilter::Info)
-            .init();
+            });
+        }
+        builder.filter(None, LevelFilter::Info).init();
     }
     pub fn build() {
-        info!("{}", "=== Build ===".magenta());
         info!("{}: {}", "Version".cyan(), env!("CARGO_PKG_VERSION"));
         info!("{}: {}", "Commit".cyan(), env!("GIT_HASH"));
         info!("{}: {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY"));
     }
     pub fn validator(validator: &Validator) {
-        info!("{}", "=== Validator ===".magenta());
         info!(
             "{}: {}",
             "PubKey".cyan(),
@@ -92,7 +104,6 @@ pub mod print {
         info!("{}: {}", "Peers".cyan(), validator.multiaddrs.len());
     }
     pub fn blockchain(blockchain: &Blockchain) {
-        info!("{}", "=== Blockchain ===".magenta());
         info!("{}: {}", "Height".cyan(), blockchain.latest_height());
         info!(
             "{}: {}",
@@ -111,22 +122,20 @@ pub mod print {
         );
     }
     pub fn validator_args(args: &ValidatorArgs) {
-        info!("{}", "=== Args ===".magenta());
-        info!("{}: {}", "--log-level".cyan(), args.log_level);
+        info!("{}: {}", "--debug".cyan(), args.debug);
         info!("{}: {}", "--multiaddr".cyan(), args.multiaddr);
         info!("{}: {}", "--tempdb".cyan(), args.tempdb);
     }
     pub fn wallet_args(args: &WalletArgs) {
-        info!("{}", "=== Args ===".magenta());
         info!("{}: {}", "--api".cyan(), args.api);
     }
     pub fn http(listener: &TcpListener) -> Result<(), Box<dyn Error>> {
-        info!("{}", "=== Interface ===".magenta());
-        info!("http://{}", listener.local_addr()?.to_string().green());
+        info!(
+            "{}: http://{}",
+            "Interface".cyan(),
+            listener.local_addr()?.to_string().green()
+        );
         Ok(())
-    }
-    pub fn listen() {
-        info!("{}", "=== Listening ===".magenta());
     }
     pub fn pending_transactions(pending_transactions: &Vec<Transaction>) {
         info!(
@@ -142,7 +151,7 @@ pub mod print {
         info!("{}: {}", "Interface".cyan(), first.green());
     }
     pub fn p2p_event(event_type: &str, event: String) {
-        info!("{} {} {}", event_type.cyan(), "->".magenta(), event)
+        info!("{}: {}", event_type.cyan(), event)
     }
     pub fn heartbeat_lag(heartbeats: usize) {
         let mut micros = SystemTime::now()
@@ -160,22 +169,21 @@ pub mod print {
         );
     }
     pub fn known_peers(known: &Vec<Multiaddr>) {
-        info!("{}", "=== Known peers ===".magenta());
         if known.len() == 0 {
-            warn!("{}", "empty list".red());
+            warn!("{}", "Known peers list is empty!".yellow());
             return;
         }
         for multiaddr in known.iter() {
-            info!("{}", multiaddr);
+            info!("{}: {}", "Known peer".cyan(), multiaddr);
         }
     }
 }
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 pub struct ValidatorArgs {
-    /// Filter amount of logs
-    #[clap(short, long, value_parser, default_value_t = 1)]
-    pub log_level: u8,
+    /// Log path to source file
+    #[clap(short, long, value_parser, default_value_t = false)]
+    pub debug: bool,
     /// Multiaddr to a validator in the network
     #[clap(short, long, value_parser, default_value = "/ip4/0.0.0.0/tcp/0")]
     pub multiaddr: String,

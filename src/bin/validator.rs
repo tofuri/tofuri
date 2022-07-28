@@ -10,9 +10,9 @@ use tempdir::TempDir;
 use tokio::net::TcpListener;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    print::env_logger_init();
-    print::build();
     let args = ValidatorArgs::parse();
+    print::env_logger_init(args.debug);
+    print::build();
     print::validator_args(&args);
     let tempdir = TempDir::new("rocksdb")?;
     let path: &str = match args.tempdb {
@@ -33,7 +33,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     swarm.listen_on(args.multiaddr.parse()?)?;
     let listener = TcpListener::bind(args.http).await?;
     print::http(&listener)?;
-    print::listen();
     Validator::listen(&mut swarm, listener).await?;
     Ok(())
 }

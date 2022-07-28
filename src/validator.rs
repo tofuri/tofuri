@@ -300,7 +300,7 @@ impl Validator {
             tokio::select! {
                 _ = Validator::heartbeat().fuse() => Validator::heartbeat_handle(swarm)?,
                 Ok(stream) = Validator::http_api_listener_accept(&listener).fuse() => Validator::http_api_request_handler(stream, swarm).await?,
-                event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event).yellow().to_string()),
+                event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
             }
         }
     }
@@ -356,9 +356,14 @@ impl Validator {
             return Ok(());
         }
         info!(
-            "{}: {} {}bps",
-            "Sync".cyan(),
-            behaviour.validator.blockchain.latest_height(),
+            "{}: {} @ {}bps",
+            "Synchronize".cyan(),
+            behaviour
+                .validator
+                .blockchain
+                .latest_height()
+                .to_string()
+                .yellow(),
             behaviour.validator.synchronizer.bps.to_string().yellow()
         );
         if behaviour.gossipsub.all_peers().count() > 0 {

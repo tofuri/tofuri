@@ -153,14 +153,7 @@ pub mod print {
     pub fn p2p_event(event_type: &str, event: String) {
         info!("{}: {}", event_type.cyan(), event)
     }
-    pub fn heartbeat_lag(heartbeats: usize) {
-        let mut micros = SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_micros();
-        let secs = micros / 1_000_000;
-        micros -= secs * 1_000_000;
-        let millis = micros as f64 / 1_000 as f64;
+    pub fn heartbeat_lag(heartbeats: usize, millis: f64) {
         debug!(
             "{}: {} {}ms",
             "Heartbeat".cyan(),

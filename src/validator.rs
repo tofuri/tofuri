@@ -63,6 +63,7 @@ pub struct Validator {
     pub multiaddrs: Vec<Multiaddr>,
     pub synchronizer: Synchronizer,
     pub heartbeats: usize,
+    pub lag: [f64; 3],
 }
 impl Validator {
     pub fn new(
@@ -81,6 +82,7 @@ impl Validator {
             multiaddrs,
             synchronizer: Synchronizer::new(),
             heartbeats: 0,
+            lag: [0.0; 3],
         })
     }
     pub fn put_multiaddr(
@@ -133,8 +135,20 @@ impl Validator {
         behaviour.validator.synchronizer.heartbeat_handle();
         Validator::heartbeat_handle_block(behaviour)?;
         Validator::heartbeat_handle_sync(behaviour)?;
-        print::heartbeat_lag(behaviour.validator.heartbeats);
+        let millis = Validator::heartbeat_lag();
+        print::heartbeat_lag(behaviour.validator.heartbeats, millis);
+        behaviour.validator.lag.rotate_right(1);
+        behaviour.validator.lag[0] = millis;
         Ok(())
+    }
+    fn heartbeat_lag() -> f64 {
+        let mut micros = SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros();
+        let secs = micros / 1_000_000;
+        micros -= secs * 1_000_000;
+        micros as f64 / 1_000 as f64
     }
     async fn http_api_listener_accept(
         listener: &tokio::net::TcpListener,

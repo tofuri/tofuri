@@ -90,6 +90,8 @@ Validator {} {}/tree/{}
 
  heartbeats: {}
 
+ lag: {:?}
+
  {:?}
 
  queue: {:?}
@@ -121,6 +123,7 @@ Validator {} {}/tree/{}
         },
         behaviour.validator.blockchain.latest_height(),
         behaviour.validator.heartbeats,
+        behaviour.validator.lag,
         behaviour.validator.synchronizer,
         behaviour
             .validator
@@ -169,6 +172,7 @@ struct Data {
     staked_balance: u64,
     height: usize,
     heartbeats: usize,
+    lag: [f64; 3],
     synchronizer: Synchronizer,
     stakers: Stakers,
     latest_hashes: Vec<[u8; 32]>,
@@ -204,6 +208,7 @@ Content-Type: application/json
                 .unwrap(),
             height: behaviour.validator.blockchain.latest_height(),
             heartbeats: behaviour.validator.heartbeats,
+            lag: behaviour.validator.lag,
             synchronizer: behaviour.validator.synchronizer,
             stakers: behaviour.validator.blockchain.stakers.clone(),
             latest_hashes: behaviour

@@ -1,5 +1,19 @@
 # Axiom
 
+## Specifications
+
+| Name | Value |
+| :- | :-: |
+| Forge reward | `100_000_000` |
+| Decimal precision | `1e-8` |
+| Network stack | `libp2p` |
+| Toolchain | `Nightly Rust` |
+
+| Name | Min value | Max value |
+| :- | :-: | :-: |
+| Block time | `10s` | `20s` |
+| Stake amount | `100_000_000` | `3_200_000_000` |
+
 ## Validator
 
 ### Running a validator

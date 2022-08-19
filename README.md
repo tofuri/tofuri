@@ -4,13 +4,13 @@
 
 ### Running a validator
 
-```powershell
+```bash
 cargo run --bin validator
 ```
 
 #### Validator options
 
-```powershell
+```bash
 cargo run --bin validator -- --help
 ```
 
@@ -18,12 +18,12 @@ cargo run --bin validator -- --help
 
 ### Running the wallet
 
-```powershell
+```bash
 cargo run --bin wallet
 ```
 
 #### Wallet options
 
-```powershell
+```bash
 cargo run --bin wallet -- --help
 ```

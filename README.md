@@ -4,13 +4,13 @@
 
 ### Running a validator
 
-```bash
+```shell
 cargo run --bin validator
 ```
 
 #### Validator options
 
-```bash
+```Shell
 cargo run --bin validator -- --help
 ```
 
@@ -18,12 +18,12 @@ cargo run --bin validator -- --help
 
 ### Running the wallet
 
-```bash
+```Shell
 cargo run --bin wallet
 ```
 
 #### Wallet options
 
-```bash
+```Shell
 cargo run --bin wallet -- --help
 ```

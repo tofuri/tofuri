@@ -28,7 +28,7 @@ impl Wallet {
             Err(err) => {
                 util::print::err(err);
                 println!("{}", "Generating new wallet...".yellow());
-                let wallet = Wallet::new();
+                let mut wallet = Wallet::new();
                 wallet.export()?;
                 return Ok(wallet);
             }
@@ -49,8 +49,11 @@ impl Wallet {
             ciphertext: ciphertext.to_vec(),
         })
     }
-    pub fn export(&self) -> Result<(), Box<dyn Error>> {
+    pub fn export(&mut self) -> Result<(), Box<dyn Error>> {
         let (salt, nonce, ciphertext) = Wallet::encrypt(self.keypair.secret.as_bytes())?;
+        self.salt = salt.to_vec();
+        self.nonce = nonce.to_vec();
+        self.ciphertext = ciphertext.to_vec();
         print::encrypted_secret_key_bytes(&salt, &nonce, &ciphertext);
         Wallet::write(
             Wallet::default_path(),
@@ -79,7 +82,7 @@ impl Wallet {
         key::encode(&self.keypair.secret)
     }
     pub fn encrypt(plaintext: &[u8]) -> Result<([u8; 32], [u8; 12], Vec<u8>), Box<dyn Error>> {
-        let passphrase = command::passphrase()?;
+        let passphrase = command::new_passphrase()?;
         let rng = &mut OsRng;
         let mut salt = [0; 32];
         rng.fill_bytes(&mut salt);
@@ -105,7 +108,9 @@ pub mod command {
     use super::{address, util::print, Wallet};
     use crate::{stake::Stake, transaction::Transaction};
     use colored::*;
-    use inquire::{Confirm, CustomType, Password, PasswordDisplayMode, Select};
+    use inquire::{
+        validator::Validation, Confirm, CustomType, Password, PasswordDisplayMode, Select,
+    };
     use std::{
         collections::HashMap,
         error::Error,
@@ -308,6 +313,42 @@ pub mod command {
             .with_display_mode(PasswordDisplayMode::Masked)
             .with_formatter(&|_| String::from("Decrypting..."))
             .prompt()?)
+    }
+    pub fn new_passphrase() -> Result<String, Box<dyn Error>> {
+        let passphrase = Password::new("New passphrase:")
+            .with_display_toggle_enabled()
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .with_formatter(&|input| {
+                let entropy = zxcvbn::zxcvbn(input, &[]).unwrap();
+                format!(
+                    "{}. Cracked after {} at 10 guesses per second.",
+                    match entropy.score() {
+                        0 => "Extremely weak",
+                        1 => "Very weak",
+                        2 => "Weak",
+                        3 => "Strong",
+                        4 => "Very strong",
+                        _ => "",
+                    },
+                    entropy.crack_times().online_no_throttling_10_per_second(),
+                )
+            })
+            .with_help_message("It is recommended to generate a new one only for this purpose")
+            .prompt()?;
+        let validator = move |input: &str| {
+            if passphrase != input {
+                Ok(Validation::Invalid("Passphrase does not match.".into()))
+            } else {
+                Ok(Validation::Valid)
+            }
+        };
+        let passphrase = Password::new("Confirm new passphrase:")
+            .with_display_toggle_enabled()
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .with_validator(validator)
+            .with_formatter(&|_| String::from("Encrypting..."))
+            .prompt()?;
+        Ok(passphrase)
     }
 }
 pub mod address {

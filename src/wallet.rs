@@ -1,18 +1,29 @@
-use super::util;
+use super::util::{self, print};
+use argon2::password_hash::rand_core::RngCore;
+use chacha20poly1305::{
+    aead::{Aead, AeadCore, KeyInit, OsRng},
+    ChaCha20Poly1305,
+};
 use colored::*;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use std::{error::Error, fs::File, io::prelude::*, path::Path};
 pub struct Wallet {
     pub keypair: Keypair,
+    pub salt: Vec<u8>,
+    pub nonce: Vec<u8>,
+    pub ciphertext: Vec<u8>,
 }
 impl Wallet {
     pub fn new() -> Wallet {
         Wallet {
             keypair: util::keygen(),
+            salt: vec![],
+            nonce: vec![],
+            ciphertext: vec![],
         }
     }
     pub fn import() -> Result<Wallet, Box<dyn Error>> {
-        let secret_key_bytes = match Wallet::read(Wallet::default_path()) {
+        let encrypted_secret_key_bytes = match Wallet::read(Wallet::default_path()) {
             Ok(secret_key_bytes) => secret_key_bytes,
             Err(err) => {
                 util::print::err(err);
@@ -22,22 +33,34 @@ impl Wallet {
                 return Ok(wallet);
             }
         };
-        let secret_key = SecretKey::from_bytes(&secret_key_bytes)?;
+        let salt = &encrypted_secret_key_bytes[..32];
+        let nonce = &encrypted_secret_key_bytes[32..44];
+        let ciphertext = &encrypted_secret_key_bytes[44..];
+        print::encrypted_secret_key_bytes(salt, nonce, ciphertext);
+        let secret_key = SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext)?)?;
         let public_key: PublicKey = (&secret_key).into();
         Ok(Wallet {
             keypair: Keypair {
                 secret: secret_key,
                 public: public_key,
             },
+            salt: salt.to_vec(),
+            nonce: nonce.to_vec(),
+            ciphertext: ciphertext.to_vec(),
         })
     }
     pub fn export(&self) -> Result<(), Box<dyn Error>> {
-        Wallet::write(Wallet::default_path(), self.keypair.secret.as_bytes())?;
+        let (salt, nonce, ciphertext) = Wallet::encrypt(self.keypair.secret.as_bytes())?;
+        print::encrypted_secret_key_bytes(&salt, &nonce, &ciphertext);
+        Wallet::write(
+            Wallet::default_path(),
+            &[salt.to_vec(), nonce.to_vec(), ciphertext].concat(),
+        )?;
         Ok(())
     }
-    fn read(path: impl AsRef<Path>) -> Result<[u8; 32], Box<dyn Error>> {
+    fn read(path: impl AsRef<Path>) -> Result<[u8; 92], Box<dyn Error>> {
         let mut file = File::open(path)?;
-        let mut buf = [0; 32];
+        let mut buf = [0; 92];
         file.read(&mut buf)?;
         Ok(buf)
     }
@@ -47,7 +70,7 @@ impl Wallet {
         Ok(())
     }
     fn default_path() -> &'static Path {
-        Path::new("./secret_key_bytes")
+        Path::new("./encrypted_secret_key_bytes")
     }
     pub fn address(&self) -> String {
         address::encode(&self.keypair.public.as_bytes())
@@ -55,12 +78,34 @@ impl Wallet {
     pub fn key(&self) -> String {
         key::encode(&self.keypair.secret)
     }
+    pub fn encrypt(plaintext: &[u8]) -> Result<([u8; 32], [u8; 12], Vec<u8>), Box<dyn Error>> {
+        let passphrase = command::passphrase()?;
+        let rng = &mut OsRng;
+        let mut salt = [0; 32];
+        rng.fill_bytes(&mut salt);
+        let key = kdf::derive(passphrase.as_bytes(), &salt);
+        let cipher = ChaCha20Poly1305::new_from_slice(&key)?;
+        let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+        let ciphertext = cipher.encrypt(&nonce, plaintext).unwrap();
+        Ok((salt, nonce.into(), ciphertext))
+    }
+    pub fn decrypt(
+        salt: &[u8],
+        nonce: &[u8],
+        ciphertext: &[u8],
+    ) -> Result<Vec<u8>, Box<dyn Error>> {
+        let passphrase = command::passphrase()?;
+        let key = kdf::derive(passphrase.as_bytes(), salt);
+        let cipher = ChaCha20Poly1305::new_from_slice(&key)?;
+        let plaintext = cipher.decrypt(nonce.into(), ciphertext).unwrap();
+        Ok(plaintext)
+    }
 }
 pub mod command {
-    use super::{address, Wallet};
+    use super::{address, util::print, Wallet};
     use crate::{stake::Stake, transaction::Transaction};
     use colored::*;
-    use inquire::{Confirm, CustomType, Select};
+    use inquire::{Confirm, CustomType, Password, PasswordDisplayMode, Select};
     use std::{
         collections::HashMap,
         error::Error,
@@ -74,6 +119,7 @@ pub mod command {
             vec![
                 "address",
                 "key",
+                "data",
                 "balance",
                 "height",
                 "transaction",
@@ -91,6 +137,7 @@ pub mod command {
         }) {
             "address" => address(&wallet),
             "key" => key(&wallet),
+            "data" => data(&wallet),
             "balance" => balance(api, &wallet.address()).await?,
             "height" => height(api).await?,
             "transaction" => transaction(api, &wallet).await?,
@@ -107,7 +154,7 @@ pub mod command {
         let mut stdout = stdout().into_raw_mode().unwrap();
         stdout.flush().unwrap();
         stdin().events().next();
-        print!("\x1B[2J\x1B[1;1H");
+        print::clear();
     }
     pub async fn validator(api: &str) -> Result<(), Box<dyn Error>> {
         let info = reqwest::get(api).await?.text().await?;
@@ -249,8 +296,18 @@ pub mod command {
     pub fn key(wallet: &Wallet) {
         println!("{}", wallet.key().red());
     }
+    pub fn data(wallet: &Wallet) {
+        print::encrypted_secret_key_bytes(&wallet.salt, &wallet.nonce, &wallet.ciphertext);
+    }
     pub fn exit() {
         process::exit(0);
+    }
+    pub fn passphrase() -> Result<String, Box<dyn Error>> {
+        Ok(Password::new("Enter passphrase:")
+            .with_display_toggle_enabled()
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .with_formatter(&|_| String::from("Decrypting..."))
+            .prompt()?)
     }
 }
 pub mod address {
@@ -321,5 +378,30 @@ pub mod key {
         } else {
             Err("checksum mismatch".into())
         }
+    }
+}
+pub mod kdf {
+    use argon2::{Algorithm, Argon2, Params, ParamsBuilder, Version};
+    fn params() -> Params {
+        let mut builder = ParamsBuilder::new();
+        builder.m_cost(65536).unwrap();
+        builder.t_cost(1).unwrap();
+        builder.p_cost(1).unwrap();
+        builder.params().unwrap()
+    }
+    pub fn derive(password: &[u8], salt: &[u8]) -> [u8; 32] {
+        let ctx = Argon2::new(Algorithm::Argon2id, Version::V0x13, params());
+        let mut out = [0u8; 32];
+        ctx.hash_password_into(password, salt, &mut out).unwrap();
+        out
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test::Bencher;
+    #[bench]
+    fn bench_kdf_derive(b: &mut Bencher) {
+        b.iter(|| kdf::derive("test".as_bytes(), &[0; 32]));
     }
 }

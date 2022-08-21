@@ -19,13 +19,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         true => tempdir.path().to_str().unwrap(),
         false => "./db",
     };
+    let db = db::open(path);
+    let known = Validator::get_known(&args)?;
+    print::known_peers(&known);
     let wallet = match args.tempkey {
         true => Wallet::new(),
         false => Wallet::import()?,
     };
-    let db = db::open(path);
-    let known = Validator::get_known(&args)?;
-    print::known_peers(&known);
     let validator = Validator::new(wallet, db, known)?;
     print::validator(&validator);
     print::blockchain(&validator.blockchain);

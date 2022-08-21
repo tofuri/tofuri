@@ -22,7 +22,20 @@ impl Wallet {
             ciphertext: vec![],
         }
     }
-    pub fn import() -> Result<Wallet, Box<dyn Error>> {
+    pub fn import() -> Wallet {
+        let wallet;
+        loop {
+            if let Ok(w) = Wallet::import_attempt() {
+                wallet = w;
+                break;
+            } else {
+                println!("{}", "No key available with this passphrase.".red());
+                command::press_any_key_to_continue();
+            }
+        }
+        wallet
+    }
+    pub fn import_attempt() -> Result<Wallet, Box<dyn Error>> {
         let encrypted_secret_key_bytes = match Wallet::read(Wallet::default_path()) {
             Ok(secret_key_bytes) => secret_key_bytes,
             Err(err) => {
@@ -82,7 +95,7 @@ impl Wallet {
         key::encode(&self.keypair.secret)
     }
     pub fn encrypt(plaintext: &[u8]) -> Result<([u8; 32], [u8; 12], Vec<u8>), Box<dyn Error>> {
-        let passphrase = command::new_passphrase()?;
+        let passphrase = command::new_passphrase();
         let rng = &mut OsRng;
         let mut salt = [0; 32];
         rng.fill_bytes(&mut salt);
@@ -97,11 +110,13 @@ impl Wallet {
         nonce: &[u8],
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, Box<dyn Error>> {
-        let passphrase = command::passphrase()?;
+        let passphrase = command::passphrase();
         let key = kdf::derive(passphrase.as_bytes(), salt);
         let cipher = ChaCha20Poly1305::new_from_slice(&key)?;
-        let plaintext = cipher.decrypt(nonce.into(), ciphertext).unwrap();
-        Ok(plaintext)
+        match cipher.decrypt(nonce.into(), ciphertext) {
+            Ok(plaintext) => Ok(plaintext),
+            Err(_) => Err("Wrong passphrase".into()),
+        }
     }
 }
 pub mod command {
@@ -137,7 +152,6 @@ pub mod command {
         .prompt()
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
-            println!("{}", "Exit...".green());
             process::exit(0)
         }) {
             "address" => address(&wallet),
@@ -241,7 +255,6 @@ pub mod command {
             .prompt()
             .unwrap_or_else(|err| {
                 println!("{}", err.to_string().red());
-                println!("{}", "Exit...".green());
                 process::exit(0)
             }) {
             "deposit" => true,
@@ -307,14 +320,18 @@ pub mod command {
     pub fn exit() {
         process::exit(0);
     }
-    pub fn passphrase() -> Result<String, Box<dyn Error>> {
-        Ok(Password::new("Enter passphrase:")
+    pub fn passphrase() -> String {
+        Password::new("Enter passphrase:")
             .with_display_toggle_enabled()
             .with_display_mode(PasswordDisplayMode::Masked)
             .with_formatter(&|_| String::from("Decrypting..."))
-            .prompt()?)
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            })
     }
-    pub fn new_passphrase() -> Result<String, Box<dyn Error>> {
+    pub fn new_passphrase() -> String {
         let passphrase = Password::new("New passphrase:")
             .with_display_toggle_enabled()
             .with_display_mode(PasswordDisplayMode::Masked)
@@ -334,7 +351,11 @@ pub mod command {
                 )
             })
             .with_help_message("It is recommended to generate a new one only for this purpose")
-            .prompt()?;
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
         let validator = move |input: &str| {
             if passphrase != input {
                 Ok(Validation::Invalid("Passphrase does not match.".into()))
@@ -342,13 +363,16 @@ pub mod command {
                 Ok(Validation::Valid)
             }
         };
-        let passphrase = Password::new("Confirm new passphrase:")
+        Password::new("Confirm new passphrase:")
             .with_display_toggle_enabled()
             .with_display_mode(PasswordDisplayMode::Masked)
             .with_validator(validator)
             .with_formatter(&|_| String::from("Encrypting..."))
-            .prompt()?;
-        Ok(passphrase)
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            })
     }
 }
 pub mod address {

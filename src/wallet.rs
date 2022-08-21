@@ -212,18 +212,30 @@ pub mod command {
                 Ok(y) => Ok(address::encode(&y)),
                 Err(_) => Err(()),
             })
-            .prompt()?;
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
         let amount = (CustomType::<f64>::new("amount >>")
             .with_formatter(&|i| format!("{:.8} C", i))
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount in C using a decimal point as a separator")
-            .prompt()?
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            })
             * 10f64.powi(8)) as u64;
         let fee = CustomType::<u64>::new("fee >>")
             .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount in satoshis using a decimal point as a separator")
-            .prompt()?;
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
         if !Confirm::new("send >>").prompt()? {
             return Ok(());
         }
@@ -265,13 +277,21 @@ pub mod command {
             .with_formatter(&|i| format!("{:.8} C", i))
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount in C using a decimal point as a separator")
-            .prompt()?
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            })
             * 10f64.powi(8)) as u64;
         let fee = CustomType::<u64>::new("fee >>")
             .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount in satoshis using a decimal point as a separator")
-            .prompt()?;
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
         if !Confirm::new("send >>").prompt()? {
             return Ok(());
         }

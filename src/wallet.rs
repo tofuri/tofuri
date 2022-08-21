@@ -30,7 +30,6 @@ impl Wallet {
                 break;
             } else {
                 println!("{}", "No key available with this passphrase.".red());
-                command::press_any_key_to_continue();
             }
         }
         wallet

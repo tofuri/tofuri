@@ -114,7 +114,7 @@ impl Wallet {
         let cipher = ChaCha20Poly1305::new_from_slice(&key)?;
         match cipher.decrypt(nonce.into(), ciphertext) {
             Ok(plaintext) => Ok(plaintext),
-            Err(_) => Err("Wrong passphrase".into()),
+            Err(_) => Err("invalid passphrase".into()),
         }
     }
 }

@@ -136,6 +136,7 @@ pub mod print {
         info!("{}: {}", "--debug".cyan(), args.debug);
         info!("{}: {}", "--multiaddr".cyan(), args.multiaddr);
         info!("{}: {}", "--tempdb".cyan(), args.tempdb);
+        info!("{}: {}", "--tempkey".cyan(), args.tempkey);
     }
     pub fn wallet_args(args: &WalletArgs) {
         info!("{}: {}", "--api".cyan(), args.api);

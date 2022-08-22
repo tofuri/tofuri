@@ -233,7 +233,10 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        if !Confirm::new("send >>").prompt()? {
+        if !Confirm::new("send >>").prompt().unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        }) {
             return Ok(());
         }
         let mut transaction = Transaction::new(address::decode(&address)?, amount, fee);
@@ -289,7 +292,10 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        if !Confirm::new("send >>").prompt()? {
+        if !Confirm::new("send >>").prompt().unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        }) {
             return Ok(());
         }
         let mut stake = Stake::new(deposit, amount as u64, fee);

@@ -6,7 +6,8 @@ use chacha20poly1305::{
 };
 use colored::*;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
-use std::{error::Error, fs::File, io::prelude::*, path::Path};
+use std::{error::Error, fs::File, io::prelude::*, path::Path, process};
+pub const EXTENSION: &str = "axiom";
 pub struct Wallet {
     pub keypair: Keypair,
     pub salt: Vec<u8>,
@@ -22,32 +23,35 @@ impl Wallet {
             ciphertext: vec![],
         }
     }
-    pub fn import() -> Wallet {
+    pub fn import() -> Result<Wallet, Box<dyn Error>> {
+        let (filename, wallet) = command::select_wallet()?;
+        if let Some(wallet) = wallet {
+            return Ok(wallet);
+        }
         let wallet;
         loop {
-            if let Ok(w) = Wallet::import_attempt() {
+            if let Ok(w) = Wallet::import_attempt(&filename) {
                 wallet = w;
                 break;
             } else {
                 println!("{}", "No key available with this passphrase.".red());
             }
         }
-        wallet
+        Ok(wallet)
     }
-    pub fn import_attempt() -> Result<Wallet, Box<dyn Error>> {
-        let encrypted_secret_key_bytes = match Wallet::read(Wallet::default_path()) {
-            Ok(secret_key_bytes) => secret_key_bytes,
+    pub fn import_attempt(filename: &str) -> Result<Wallet, Box<dyn Error>> {
+        let mut path = Wallet::default_path().join(filename);
+        path.set_extension(EXTENSION);
+        let data = match Wallet::read(path) {
+            Ok(data) => data,
             Err(err) => {
-                util::print::err(err);
-                println!("{}", "Generating new wallet...".yellow());
-                let mut wallet = Wallet::new();
-                wallet.export()?;
-                return Ok(wallet);
+                println!("{}", err.to_string().red());
+                process::exit(0);
             }
         };
-        let salt = &encrypted_secret_key_bytes[..32];
-        let nonce = &encrypted_secret_key_bytes[32..44];
-        let ciphertext = &encrypted_secret_key_bytes[44..];
+        let salt = &data[..32];
+        let nonce = &data[32..44];
+        let ciphertext = &data[44..];
         let secret_key = SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext)?)?;
         let public_key: PublicKey = (&secret_key).into();
         Ok(Wallet {
@@ -60,15 +64,14 @@ impl Wallet {
             ciphertext: ciphertext.to_vec(),
         })
     }
-    pub fn export(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn export(&mut self, filename: String) -> Result<(), Box<dyn Error>> {
         let (salt, nonce, ciphertext) = Wallet::encrypt(self.keypair.secret.as_bytes())?;
         self.salt = salt.to_vec();
         self.nonce = nonce.to_vec();
         self.ciphertext = ciphertext.to_vec();
-        Wallet::write(
-            Wallet::default_path(),
-            &[salt.to_vec(), nonce.to_vec(), ciphertext].concat(),
-        )?;
+        let mut path = Wallet::default_path().join(filename);
+        path.set_extension(EXTENSION);
+        Wallet::write(path, &[salt.to_vec(), nonce.to_vec(), ciphertext].concat())?;
         Ok(())
     }
     fn read(path: impl AsRef<Path>) -> Result<[u8; 92], Box<dyn Error>> {
@@ -77,13 +80,13 @@ impl Wallet {
         file.read(&mut buf)?;
         Ok(buf)
     }
-    fn write(path: &Path, buf: &[u8]) -> Result<(), Box<dyn Error>> {
+    fn write(path: impl AsRef<Path>, buf: &[u8]) -> Result<(), Box<dyn Error>> {
         let mut file = File::create(path)?;
         file.write_all(buf)?;
         Ok(())
     }
     fn default_path() -> &'static Path {
-        Path::new("./encrypted_secret_key_bytes")
+        Path::new("./wallets")
     }
     pub fn address(&self) -> String {
         address::encode(&self.keypair.public.as_bytes())
@@ -115,9 +118,27 @@ impl Wallet {
             Err(_) => Err("invalid passphrase".into()),
         }
     }
+    pub fn dir() -> Result<Vec<String>, Box<dyn Error>> {
+        if !Wallet::default_path().exists() {
+            std::fs::create_dir(Wallet::default_path())?;
+        }
+        let dir = std::fs::read_dir(Wallet::default_path())?;
+        let mut filenames: Vec<String> = vec![];
+        for entry in dir {
+            filenames.push(
+                entry?
+                    .path()
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+        }
+        Ok(filenames)
+    }
 }
 pub mod command {
-    use super::{address, util::print, Wallet};
+    use super::{address, util::print, Wallet, EXTENSION};
     use crate::{stake::Stake, transaction::Transaction};
     use colored::*;
     use inquire::{
@@ -127,6 +148,7 @@ pub mod command {
         collections::HashMap,
         error::Error,
         io::{stdin, stdout, Write},
+        path::PathBuf,
         process,
     };
     use termion::{input::TermRead, raw::IntoRawMode};
@@ -164,6 +186,50 @@ pub mod command {
             _ => {}
         }
         Ok(())
+    }
+    pub fn select_wallet() -> Result<(String, Option<Wallet>), Box<dyn Error>> {
+        let mut filenames = Wallet::dir()?;
+        filenames.push("Generate new wallet".to_string());
+        let mut filename = Select::new(">>", filenames.to_vec())
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
+        match filename.as_str() {
+            "Generate new wallet" => {
+                filename = name_wallet()?;
+                let mut wallet = Wallet::new();
+                wallet.export(filename.clone()).unwrap();
+                return Ok((filename, Some(wallet)));
+            }
+            _ => {}
+        };
+        Ok((filename, None))
+    }
+    pub fn name_wallet() -> Result<String, Box<dyn Error>> {
+        let filenames = Wallet::dir()?;
+        let validator = move |input: &str| {
+            let mut path = PathBuf::new().join(input);
+            path.set_extension(EXTENSION);
+            if filenames.contains(&path.file_name().unwrap().to_string_lossy().into_owned()) {
+                Ok(Validation::Invalid(
+                    "A wallet with that name already exists.".into(),
+                ))
+            } else {
+                Ok(Validation::Valid)
+            }
+        };
+        Ok(Password::new("Name:")
+            .with_display_toggle_enabled()
+            .with_display_mode(PasswordDisplayMode::Full)
+            .with_validator(validator)
+            .with_formatter(&|name| name.to_string())
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            }))
     }
     pub fn press_any_key_to_continue() {
         println!("Press any key to continue...");

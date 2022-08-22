@@ -209,21 +209,23 @@ pub mod command {
     }
     pub fn name_wallet() -> Result<String, Box<dyn Error>> {
         let filenames = Wallet::dir()?;
-        let validator = move |input: &str| {
-            let mut path = PathBuf::new().join(input);
-            path.set_extension(EXTENSION);
-            if filenames.contains(&path.file_name().unwrap().to_string_lossy().into_owned()) {
-                Ok(Validation::Invalid(
-                    "A wallet with that name already exists.".into(),
-                ))
-            } else {
-                Ok(Validation::Valid)
-            }
-        };
         Ok(Password::new("Name:")
             .with_display_toggle_enabled()
             .with_display_mode(PasswordDisplayMode::Full)
-            .with_validator(validator)
+            .with_validator(move |input: &str| {
+                if input.len() == 0 {
+                    return Ok(Validation::Invalid("A wallet name can't be empty.".into()));
+                }
+                let mut path = PathBuf::new().join(input);
+                path.set_extension(EXTENSION);
+                if filenames.contains(&path.file_name().unwrap().to_string_lossy().into_owned()) {
+                    Ok(Validation::Invalid(
+                        "A wallet with that name already exists.".into(),
+                    ))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            })
             .with_formatter(&|name| name.to_string())
             .prompt()
             .unwrap_or_else(|err| {
@@ -429,6 +431,13 @@ pub mod command {
         let passphrase = Password::new("New passphrase:")
             .with_display_toggle_enabled()
             .with_display_mode(PasswordDisplayMode::Masked)
+            .with_validator(move |input: &str| {
+                if input.len() == 0 {
+                    Ok(Validation::Invalid("No passphrase isn't allowed.".into()))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            })
             .with_formatter(&|input| {
                 let entropy = zxcvbn::zxcvbn(input, &[]).unwrap();
                 format!(
@@ -450,17 +459,16 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        let validator = move |input: &str| {
-            if passphrase != input {
-                Ok(Validation::Invalid("Passphrase does not match.".into()))
-            } else {
-                Ok(Validation::Valid)
-            }
-        };
         Password::new("Confirm new passphrase:")
             .with_display_toggle_enabled()
             .with_display_mode(PasswordDisplayMode::Masked)
-            .with_validator(validator)
+            .with_validator(move |input: &str| {
+                if passphrase != input {
+                    Ok(Validation::Invalid("Passphrase does not match.".into()))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            })
             .with_formatter(&|_| String::from("Encrypting..."))
             .prompt()
             .unwrap_or_else(|err| {

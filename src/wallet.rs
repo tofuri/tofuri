@@ -241,7 +241,12 @@ pub mod command {
         print::clear();
     }
     pub async fn validator(api: &str) -> Result<(), Box<dyn Error>> {
-        let info = reqwest::get(api).await?.text().await?;
+        let info = match reqwest::get(api).await {
+            Ok(r) => r,
+            Err(err) => return reqwest_err(err),
+        }
+        .text()
+        .await?;
         println!("\n{}\n", info.green());
         Ok(())
     }
@@ -325,13 +330,17 @@ pub mod command {
         let mut transaction = Transaction::new(address::decode(&address)?, amount, fee);
         transaction.sign(&wallet.keypair);
         let client = reqwest::Client::new();
-        let res: usize = client
+        let res: usize = match client
             .post(format!("{}/transaction", api))
             .body(hex::encode(bincode::serialize(&transaction)?))
             .send()
-            .await?
-            .json()
-            .await?;
+            .await
+        {
+            Ok(r) => r,
+            Err(err) => return reqwest_err(err),
+        }
+        .json()
+        .await?;
         println!(
             "{} {}",
             if res == 1 {
@@ -384,13 +393,17 @@ pub mod command {
         let mut stake = Stake::new(deposit, amount as u64, fee);
         stake.sign(&wallet.keypair);
         let client = reqwest::Client::new();
-        let res: usize = client
+        let res: usize = match client
             .post(format!("{}/stake", api))
             .body(hex::encode(bincode::serialize(&stake)?))
             .send()
-            .await?
-            .json()
-            .await?;
+            .await
+        {
+            Ok(r) => r,
+            Err(err) => return reqwest_err(err),
+        }
+        .json()
+        .await?;
         println!(
             "{} {}",
             if res == 1 {

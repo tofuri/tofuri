@@ -245,13 +245,26 @@ pub mod command {
         println!("\n{}\n", info.green());
         Ok(())
     }
+    fn reqwest_err(err: reqwest::Error) -> Result<(), Box<dyn Error>> {
+        if err.is_connect() {
+            println!("{}", "Connection refused".red());
+            Ok(())
+        } else {
+            Err(Box::new(err))
+        }
+    }
     pub async fn balance(api: &str, address: &str) -> Result<(), Box<dyn Error>> {
-        let balance = reqwest::get(format!("{}/balance/{}", api, address))
-            .await?
-            .json::<u64>()
-            .await?;
-        let balance_staked = reqwest::get(format!("{}/balance_staked/{}", api, address))
-            .await?
+        let balance = match reqwest::get(format!("{}/balance/{}", api, address)).await {
+            Ok(r) => r,
+            Err(err) => return reqwest_err(err),
+        }
+        .json::<u64>()
+        .await?;
+        let balance_staked =
+            match reqwest::get(format!("{}/balance_staked/{}", api, address)).await {
+                Ok(r) => r,
+                Err(err) => return reqwest_err(err),
+            }
             .json::<u64>()
             .await?;
         println!(
@@ -262,10 +275,12 @@ pub mod command {
         Ok(())
     }
     pub async fn height(api: &str) -> Result<(), Box<dyn Error>> {
-        let balance = reqwest::get(format!("{}/height", api))
-            .await?
-            .json::<u64>()
-            .await?;
+        let balance = match reqwest::get(format!("{}/height", api)).await {
+            Ok(r) => r,
+            Err(err) => return reqwest_err(err),
+        }
+        .json::<u64>()
+        .await?;
         println!("Latest block height is {}.", balance.to_string().yellow());
         Ok(())
     }
@@ -390,10 +405,12 @@ pub mod command {
         Ok(())
     }
     pub async fn ip() -> Result<(), Box<dyn Error>> {
-        let resp = reqwest::get("https://httpbin.org/ip")
-            .await?
-            .json::<HashMap<String, String>>()
-            .await?;
+        let resp = match reqwest::get("https://httpbin.org/ip").await {
+            Ok(r) => r,
+            Err(err) => return reqwest_err(err),
+        }
+        .json::<HashMap<String, String>>()
+        .await?;
         if let Some(origin) = resp.get("origin") {
             println!("{}", origin.yellow());
         }

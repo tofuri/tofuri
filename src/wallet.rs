@@ -1,4 +1,4 @@
-use super::util::{self, print};
+use super::util;
 use argon2::password_hash::rand_core::RngCore;
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
@@ -48,7 +48,6 @@ impl Wallet {
         let salt = &encrypted_secret_key_bytes[..32];
         let nonce = &encrypted_secret_key_bytes[32..44];
         let ciphertext = &encrypted_secret_key_bytes[44..];
-        print::encrypted_secret_key_bytes(salt, nonce, ciphertext);
         let secret_key = SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext)?)?;
         let public_key: PublicKey = (&secret_key).into();
         Ok(Wallet {
@@ -66,7 +65,6 @@ impl Wallet {
         self.salt = salt.to_vec();
         self.nonce = nonce.to_vec();
         self.ciphertext = ciphertext.to_vec();
-        print::encrypted_secret_key_bytes(&salt, &nonce, &ciphertext);
         Wallet::write(
             Wallet::default_path(),
             &[salt.to_vec(), nonce.to_vec(), ciphertext].concat(),
@@ -334,7 +332,12 @@ pub mod command {
         println!("{}", wallet.key().red());
     }
     pub fn data(wallet: &Wallet) {
-        print::encrypted_secret_key_bytes(&wallet.salt, &wallet.nonce, &wallet.ciphertext);
+        println!(
+            "{}{}{}",
+            hex::encode(&wallet.salt).red(),
+            hex::encode(&wallet.nonce).red(),
+            hex::encode(&wallet.ciphertext).red()
+        );
     }
     pub fn exit() {
         process::exit(0);

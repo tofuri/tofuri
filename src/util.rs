@@ -56,14 +56,6 @@ pub mod print {
     pub fn clear() {
         print!("\x1B[2J\x1B[1;1H");
     }
-    pub fn encrypted_secret_key_bytes(salt: &[u8], nonce: &[u8], ciphertext: &[u8]) {
-        println!(
-            "{}{}{}",
-            hex::encode(salt).magenta(),
-            hex::encode(nonce).blue(),
-            hex::encode(ciphertext).cyan()
-        );
-    }
     pub fn colored_level(level: Level) -> ColoredString {
         match level {
             Level::Error => level.to_string().red(),

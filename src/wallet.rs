@@ -156,16 +156,16 @@ pub mod command {
         match Select::new(
             ">>",
             vec![
-                "address",
-                "key",
-                "data",
-                "balance",
-                "height",
-                "transaction",
-                "stake",
-                "ip",
-                "validator",
-                "exit",
+                "Address",
+                "Key",
+                "Data",
+                "Balance",
+                "Height",
+                "Transaction",
+                "Stake",
+                "IP Address",
+                "Validator",
+                "Exit",
             ],
         )
         .prompt()
@@ -173,16 +173,16 @@ pub mod command {
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {
-            "address" => address(&wallet),
-            "key" => key(&wallet),
-            "data" => data(&wallet),
-            "balance" => balance(api, &wallet.address()).await?,
-            "height" => height(api).await?,
-            "transaction" => transaction(api, &wallet).await?,
-            "stake" => stake(api, &wallet).await?,
-            "ip" => ip().await?,
-            "validator" => validator(api).await?,
-            "exit" => exit(),
+            "Address" => address(&wallet),
+            "Key" => key(&wallet),
+            "Data" => data(&wallet),
+            "Balance" => balance(api, &wallet.address()).await?,
+            "Height" => height(api).await?,
+            "Transaction" => transaction(api, &wallet).await?,
+            "Stake" => stake(api, &wallet).await?,
+            "IP Address" => ip().await?,
+            "Validator" => validator(api).await?,
+            "Exit" => exit(),
             _ => {}
         }
         Ok(())
@@ -268,7 +268,7 @@ pub mod command {
         Ok(())
     }
     pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
-        let address = CustomType::<String>::new("address >>")
+        let address = CustomType::<String>::new("Address:")
             .with_error_message("Please enter a valid address")
             .with_help_message("Type the hex encoded address with 0x as prefix")
             .with_parser(&|x| match address::decode(x) {
@@ -280,8 +280,8 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        let amount = (CustomType::<f64>::new("amount >>")
-            .with_formatter(&|i| format!("{:.8} C", i))
+        let amount = (CustomType::<f64>::new("Amount:")
+            .with_formatter(&|i| format!("{:.8} axiom", i))
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount in C using a decimal point as a separator")
             .prompt()
@@ -290,7 +290,7 @@ pub mod command {
                 process::exit(0)
             })
             * 10f64.powi(8)) as u64;
-        let fee = CustomType::<u64>::new("fee >>")
+        let fee = CustomType::<u64>::new("Fee:")
             .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount in satoshis using a decimal point as a separator")
@@ -299,7 +299,7 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        if !Confirm::new("send >>").prompt().unwrap_or_else(|err| {
+        if !Confirm::new("Send:").prompt().unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {
@@ -339,8 +339,8 @@ pub mod command {
             "withdraw" => false,
             _ => false,
         };
-        let amount = (CustomType::<f64>::new("amount >>")
-            .with_formatter(&|i| format!("{:.8} C", i))
+        let amount = (CustomType::<f64>::new("Amount:")
+            .with_formatter(&|i| format!("{:.8} axiom", i))
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount in C using a decimal point as a separator")
             .prompt()
@@ -349,7 +349,7 @@ pub mod command {
                 process::exit(0)
             })
             * 10f64.powi(8)) as u64;
-        let fee = CustomType::<u64>::new("fee >>")
+        let fee = CustomType::<u64>::new("Fee:")
             .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount in satoshis using a decimal point as a separator")
@@ -358,7 +358,7 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        if !Confirm::new("send >>").prompt().unwrap_or_else(|err| {
+        if !Confirm::new("Send:").prompt().unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {

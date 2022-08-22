@@ -301,7 +301,7 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        if !Confirm::new("Send:").prompt().unwrap_or_else(|err| {
+        if !Confirm::new("Send?").prompt().unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {
@@ -360,7 +360,7 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        if !Confirm::new("Send:").prompt().unwrap_or_else(|err| {
+        if !Confirm::new("Send?").prompt().unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {
@@ -403,7 +403,22 @@ pub mod command {
         println!("{}", wallet.address().green());
     }
     pub fn key(wallet: &Wallet) {
-        println!("{}", wallet.key().red());
+        println!("{}", "Are you being watched?".yellow());
+        println!("{}", "Never share your secret key!".yellow());
+        println!(
+            "{}",
+            "Anyone who has it can access your funds from anywhere.".italic()
+        );
+        println!("{}", "View in private with no cameras around.".italic());
+        if Confirm::new("View secret key?")
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            })
+        {
+            println!("{}", wallet.key().red());
+        }
     }
     pub fn data(wallet: &Wallet) {
         println!(

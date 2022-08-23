@@ -1,7 +1,7 @@
 use super::{
     block::Block,
     blockchain::Blockchain,
-    constants::{BLOCKS_PER_SECOND_THRESHOLD, MIN_STAKE, SYNC_BLOCKS, SYNC_HISTORY_LENGTH},
+    constants::{BLOCKS_PER_SECOND_THRESHOLD, MAX_STAKE, SYNC_BLOCKS, SYNC_HISTORY_LENGTH},
     db, http,
     p2p::MyBehaviour,
     stake::Stake,
@@ -333,7 +333,7 @@ impl Validator {
             }
         } else {
             // cold start
-            let mut stake = Stake::new(true, MIN_STAKE, 0);
+            let mut stake = Stake::new(true, MAX_STAKE, 0);
             stake.sign(&behaviour.validator.keypair);
             behaviour.validator.blockchain.pending_stakes.push(stake);
         }

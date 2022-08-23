@@ -1,15 +1,14 @@
 use super::{
     block::{Block, BlockMetadata},
     constants::{
-        BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, GENESIS_TIMESTAMP,
-        PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
+        BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT,
+        DECIMAL_PRECISION, GENESIS_TIMESTAMP, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     db,
     stake::Stake,
     transaction::Transaction,
-    wallet,
+    util, wallet,
 };
-use crate::{constants::BLOCK_TIME_MAX, util};
 use colored::*;
 use ed25519_dalek::Keypair;
 use log::info;
@@ -369,10 +368,11 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &[u8; 32],
+        stake_amount: u64,
         fees: u64,
     ) -> Result<(), Box<dyn Error>> {
         let mut balance = self.get_balance(db, public_key)?;
-        balance += Blockchain::reward();
+        balance += Blockchain::reward(stake_amount);
         balance += fees;
         self.put_balance(db, public_key, balance)?;
         Ok(())
@@ -442,11 +442,9 @@ impl Blockchain {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
     }
-    pub fn weight(stake: f64) -> f64 {
-        stake * stake.ln()
-    }
-    pub fn reward() -> u64 {
-        10u64.pow(8)
+    pub fn reward(stake_amount: u64) -> u64 {
+        ((2f64.powf((stake_amount as f64 / DECIMAL_PRECISION as f64) / 100f64) - 1f64)
+            * DECIMAL_PRECISION as f64) as u64
     }
     pub fn accept_block(
         &mut self,
@@ -492,12 +490,6 @@ impl Blockchain {
         let hash = block_metadata.hash();
         self.hashes.push(hash);
         self.cache_balances(db, &block.transactions, &block.stakes)?;
-        let fees = Blockchain::get_fees(&block.transactions, &block.stakes);
-        // reward validator
-        self.add_reward(db, &block.public_key, fees)?;
-        if self.stakers.queue.len() > 0 {
-            self.stakers.queue.rotate_left(1);
-        }
         // set latest block
         Blockchain::put_latest_block_hash(db, hash)?;
         self.latest_block = block;
@@ -507,7 +499,14 @@ impl Blockchain {
                 .queue
                 .push_back((stake.public_key, stake.amount, self.latest_height()));
         }
-        self.pending_blocks.clear();
+        // reward validator
+        let stake_amount = self.stakers.queue[0].1;
+        let fees = Blockchain::get_fees(&self.latest_block.transactions, &self.latest_block.stakes);
+        self.add_reward(db, &self.latest_block.public_key, stake_amount, fees)?;
+        // rotate validator queue
+        if self.stakers.queue.len() > 0 {
+            self.stakers.queue.rotate_left(1);
+        }
         if !forger {
             info!(
                 "{}: {} {}",
@@ -516,6 +515,7 @@ impl Blockchain {
                 hex::encode(hash)
             );
         }
+        self.pending_blocks.clear();
         Ok(())
     }
     fn punish_staker(

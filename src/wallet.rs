@@ -139,7 +139,7 @@ impl Wallet {
 }
 pub mod command {
     use super::{address, util::print, Wallet, EXTENSION};
-    use crate::{stake::Stake, transaction::Transaction};
+    use crate::{constants::DECIMAL_PRECISION, stake::Stake, transaction::Transaction};
     use colored::*;
     use inquire::{
         validator::Validation, Confirm, CustomType, Password, PasswordDisplayMode, Select,
@@ -274,8 +274,12 @@ pub mod command {
             .await?;
         println!(
             "Account balance: {}, locked: {}.",
-            balance.to_string().yellow(),
-            balance_staked.to_string().yellow()
+            (balance as f64 / DECIMAL_PRECISION as f64)
+                .to_string()
+                .yellow(),
+            (balance_staked as f64 / DECIMAL_PRECISION as f64)
+                .to_string()
+                .yellow()
         );
         Ok(())
     }

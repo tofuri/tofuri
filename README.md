@@ -4,15 +4,16 @@
 
 | Name | Value |
 | :- | :-: |
-| Forge reward | `100_000_000` |
-| Decimal precision | `1e-8` |
 | Network stack | `libp2p` |
 | Toolchain | `Nightly Rust` |
+| Decimal precision | `1e-9` |
+| Forge reward | *2 <sup>x / **Decimal precision** / 100</sup> - 1* |
 
 | Name | Min value | Max value |
 | :- | :-: | :-: |
 | Block time | `10s` | `20s` |
-| Stake amount | `100_000_000` | `3_200_000_000` |
+| Stake amount | `1e9` | `1e12` |
+| Forge reward | `6955550` | `1e9` |
 
 ## Validator
 

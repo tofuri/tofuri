@@ -526,7 +526,10 @@ impl Blockchain {
         let public_key = staker.0;
         let amount = staker.1;
         let mut staked_balance = self.get_staked_balance(db, &public_key)?;
-        staked_balance -= amount;
+        if staked_balance != 0 {
+            // maybe bugfix (thread 'main' panicked at 'attempt to subtract with overflow')
+            staked_balance -= amount;
+        }
         self.put_staked_balance(db, &public_key, staked_balance)?;
         self.stakers.queue.remove(0).unwrap();
         log::warn!(

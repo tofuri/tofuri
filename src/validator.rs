@@ -274,7 +274,10 @@ impl Validator {
                     .try_add_transaction(&behaviour.validator.db, transaction)
                 {
                     Ok(()) => 1,
-                    Err(_) => 0,
+                    Err(err) => {
+                        error!("{}", err);
+                        0
+                    }
                 };
                 stream.write(http::format_status(status).as_bytes()).await?;
             } else if http::regex::STAKE.is_match(&first) {
@@ -294,7 +297,10 @@ impl Validator {
                     .try_add_stake(&behaviour.validator.db, stake)
                 {
                     Ok(()) => 1,
-                    Err(_) => 0,
+                    Err(err) => {
+                        error!("{}", err);
+                        0
+                    }
                 };
                 stream.write(http::format_status(status).as_bytes()).await?;
             } else {

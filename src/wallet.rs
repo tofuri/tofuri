@@ -139,7 +139,11 @@ impl Wallet {
 }
 pub mod command {
     use super::{address, util::print, Wallet, EXTENSION};
-    use crate::{constants::DECIMAL_PRECISION, stake::Stake, transaction::Transaction};
+    use crate::{
+        constants::{DECIMAL_PRECISION, MAX_STAKE, MIN_STAKE},
+        stake::Stake,
+        transaction::Transaction,
+    };
     use colored::*;
     use inquire::{
         validator::Validation, Confirm, CustomType, Password, PasswordDisplayMode, Select,
@@ -307,15 +311,15 @@ pub mod command {
                 process::exit(0)
             });
         let amount = (CustomType::<f64>::new("Amount:")
-            .with_formatter(&|i| format!("{:.8} axiom", i))
+            .with_formatter(&|i| format!("{:.9} axiom", i)) // DECIMAL_PRECISION
             .with_error_message("Please type a valid number")
-            .with_help_message("Type the amount in C using a decimal point as a separator")
+            .with_help_message("Type the amount in axiom using a decimal point as a separator")
             .prompt()
             .unwrap_or_else(|err| {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             })
-            * 10f64.powi(8)) as u64;
+            * DECIMAL_PRECISION as f64) as u64;
         let fee = CustomType::<u64>::new("Fee:")
             .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
             .with_error_message("Please type a valid number")
@@ -370,15 +374,28 @@ pub mod command {
             _ => false,
         };
         let amount = (CustomType::<f64>::new("Amount:")
-            .with_formatter(&|i| format!("{:.8} axiom", i))
-            .with_error_message("Please type a valid number")
-            .with_help_message("Type the amount in C using a decimal point as a separator")
+            .with_formatter(&|i| format!("{:.9} axiom", i)) // DECIMAL_PRECISION
+            .with_parser(&|x| {
+                let amount = match x.parse::<f64>() {
+                    Ok(a) => a,
+                    Err(_) => return Err(()),
+                };
+                if amount * DECIMAL_PRECISION as f64 >= MIN_STAKE as f64
+                    && amount * DECIMAL_PRECISION as f64 <= MAX_STAKE as f64
+                {
+                    Ok(amount)
+                } else {
+                    Err(())
+                }
+            })
+            .with_error_message("Please type a valid number (1 - 100)")
+            .with_help_message("Type the amount in axiom using a decimal point as a separator")
             .prompt()
             .unwrap_or_else(|err| {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             })
-            * 10f64.powi(8)) as u64;
+            * DECIMAL_PRECISION as f64) as u64;
         let fee = CustomType::<u64>::new("Fee:")
             .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
             .with_error_message("Please type a valid number")

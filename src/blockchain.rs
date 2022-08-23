@@ -548,12 +548,13 @@ impl Blockchain {
         );
         for stake in block.stakes.iter() {
             let mut balance = self.get_balance(db, &stake.public_key)?;
-            balance += stake.amount + stake.fee;
+            let minted = stake.amount + stake.fee;
+            balance += minted;
             self.put_balance(db, &stake.public_key, balance)?;
             log::warn!(
                 "{}: {} @ {}",
                 "Minted".cyan(),
-                balance.to_string().yellow(),
+                minted.to_string().yellow(),
                 wallet::address::encode(&stake.public_key).green()
             );
         }

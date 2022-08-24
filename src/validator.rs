@@ -37,6 +37,11 @@ pub struct Synchronizer {
     pub bps: usize, // new blocks per second
     pub history: [usize; SYNC_HISTORY_LENGTH],
 }
+impl Default for Synchronizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl Synchronizer {
     pub fn new() -> Synchronizer {
         Synchronizer {
@@ -160,7 +165,7 @@ impl Validator {
         swarm: &mut Swarm<MyBehaviour>,
     ) -> Result<(), Box<dyn Error>> {
         let mut buffer = [0; 1024];
-        stream.read(&mut buffer).await?;
+        let _ = stream.read(&mut buffer).await?;
         let first = match buffer.lines().next() {
             Some(first) => match first {
                 Ok(first) => first,
@@ -172,11 +177,11 @@ impl Validator {
         if http::regex::GET.is_match(&first) {
             if http::regex::INDEX.is_match(&first) {
                 stream
-                    .write(http::format_index(swarm.behaviour()).as_bytes())
+                    .write_all(http::format_index(swarm.behaviour()).as_bytes())
                     .await?;
             } else if http::regex::JSON.is_match(&first) {
                 stream
-                    .write(http::format_json(swarm.behaviour()).as_bytes())
+                    .write_all(http::format_json(swarm.behaviour()).as_bytes())
                     .await?;
             } else if http::regex::BALANCE.is_match(&first) {
                 let address = match http::regex::BALANCE.find(&first) {
@@ -195,7 +200,7 @@ impl Validator {
                     }
                 };
                 stream
-                    .write(http::format_balance(balance).as_bytes())
+                    .write_all(http::format_balance(balance).as_bytes())
                     .await?;
             } else if http::regex::BALANCE_STAKED.is_match(&first) {
                 let address = match http::regex::BALANCE_STAKED.find(&first) {
@@ -214,11 +219,11 @@ impl Validator {
                     }
                 };
                 stream
-                    .write(http::format_balance(balance).as_bytes())
+                    .write_all(http::format_balance(balance).as_bytes())
                     .await?;
             } else if http::regex::HEIGHT.is_match(&first) {
                 stream
-                    .write(
+                    .write_all(
                         http::format_height(swarm.behaviour().validator.blockchain.latest_height())
                             .as_bytes(),
                     )
@@ -245,10 +250,10 @@ impl Validator {
                     .get(height)
                     .ok_or("height index out of range")?;
                 stream
-                    .write(http::format_hash_by_height(&hex::encode(&hash)).as_bytes())
+                    .write_all(http::format_hash_by_height(&hex::encode(&hash)).as_bytes())
                     .await?;
             } else {
-                stream.write(http::format_404().as_bytes()).await?;
+                stream.write_all(http::format_404().as_bytes()).await?;
             };
         } else if http::regex::POST.is_match(&first) {
             if http::regex::TRANSACTION.is_match(&first) {
@@ -273,7 +278,9 @@ impl Validator {
                         0
                     }
                 };
-                stream.write(http::format_status(status).as_bytes()).await?;
+                stream
+                    .write_all(http::format_status(status).as_bytes())
+                    .await?;
             } else if http::regex::STAKE.is_match(&first) {
                 let stake: Stake = bincode::deserialize(&hex::decode(
                     &buffer
@@ -296,12 +303,14 @@ impl Validator {
                         0
                     }
                 };
-                stream.write(http::format_status(status).as_bytes()).await?;
+                stream
+                    .write_all(http::format_status(status).as_bytes())
+                    .await?;
             } else {
-                stream.write(http::format_404().as_bytes()).await?;
+                stream.write_all(http::format_404().as_bytes()).await?;
             };
         } else {
-            stream.write(http::format_400().as_bytes()).await?;
+            stream.write_all(http::format_400().as_bytes()).await?;
         };
         stream.flush().await?;
         Ok(())
@@ -355,13 +364,12 @@ impl Validator {
             };
         }
         // accept forged blocks
-        match behaviour
+        if let Err(err) = behaviour
             .validator
             .blockchain
             .accept_block(&behaviour.validator.db, forge)
         {
-            Err(err) => debug!("{}", err),
-            _ => {}
+            debug!("{}", err)
         }
         Ok(())
     }

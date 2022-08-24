@@ -22,7 +22,7 @@ pub struct Stakers {
 impl Stakers {
     pub fn new(
         db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &Vec<[u8; 32]>,
+        hashes: &[[u8; 32]],
     ) -> Result<Stakers, Box<dyn Error>> {
         let mut queue = VecDeque::new();
         for (index, hash) in hashes.iter().enumerate() {
@@ -258,7 +258,7 @@ impl Blockchain {
                 }
             }
         };
-        while let Some(_) = closure()? {}
+        while (closure()?).is_some() {}
         Ok(hashes)
     }
     fn genesis_block() -> Block {

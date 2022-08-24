@@ -143,7 +143,7 @@ impl BlockMetadata {
         }
         stake_hashes
     }
-    pub fn merkle_root(transaction_hashes: &Vec<[u8; 32]>) -> [u8; 32] {
+    pub fn merkle_root(transaction_hashes: &[[u8; 32]]) -> [u8; 32] {
         util::CBMT::build_merkle_root(transaction_hashes)
     }
     pub fn sign(&mut self, keypair: &Keypair) {

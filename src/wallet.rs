@@ -14,6 +14,11 @@ pub struct Wallet {
     pub nonce: Vec<u8>,
     pub ciphertext: Vec<u8>,
 }
+impl Default for Wallet {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl Wallet {
     pub fn new() -> Wallet {
         Wallet {
@@ -42,7 +47,7 @@ impl Wallet {
     pub fn import_attempt(filename: &str) -> Result<Wallet, Box<dyn Error>> {
         let mut path = Wallet::default_path().join(filename);
         path.set_extension(EXTENSION);
-        let data = match Wallet::read(path) {
+        let data = match Wallet::read_exact(path) {
             Ok(data) => data,
             Err(err) => {
                 println!("{}", err.to_string().red());
@@ -71,16 +76,16 @@ impl Wallet {
         self.ciphertext = ciphertext.to_vec();
         let mut path = Wallet::default_path().join(filename);
         path.set_extension(EXTENSION);
-        Wallet::write(path, &[salt.to_vec(), nonce.to_vec(), ciphertext].concat())?;
+        Wallet::write_all(path, &[salt.to_vec(), nonce.to_vec(), ciphertext].concat())?;
         Ok(())
     }
-    fn read(path: impl AsRef<Path>) -> Result<[u8; 92], Box<dyn Error>> {
+    fn read_exact(path: impl AsRef<Path>) -> Result<[u8; 92], Box<dyn Error>> {
         let mut file = File::open(path)?;
         let mut buf = [0; 92];
-        file.read(&mut buf)?;
+        file.read_exact(&mut buf)?;
         Ok(buf)
     }
-    fn write(path: impl AsRef<Path>, buf: &[u8]) -> Result<(), Box<dyn Error>> {
+    fn write_all(path: impl AsRef<Path>, buf: &[u8]) -> Result<(), Box<dyn Error>> {
         let mut file = File::create(path)?;
         file.write_all(buf)?;
         Ok(())
@@ -200,14 +205,11 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        match filename.as_str() {
-            "Generate new wallet" => {
-                filename = name_wallet()?;
-                let mut wallet = Wallet::new();
-                wallet.export(filename.clone()).unwrap();
-                return Ok((filename, Some(wallet)));
-            }
-            _ => {}
+        if filename.as_str() == "Generate new wallet" {
+            filename = name_wallet()?;
+            let mut wallet = Wallet::new();
+            wallet.export(filename.clone()).unwrap();
+            return Ok((filename, Some(wallet)));
         };
         Ok((filename, None))
     }

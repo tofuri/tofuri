@@ -62,14 +62,11 @@ impl MyBehaviour {
 impl NetworkBehaviourEventProcess<FloodsubEvent> for MyBehaviour {
     fn inject_event(&mut self, event: FloodsubEvent) {
         // print::p2p_event("FloodsubEvent", format!("{:?}", event));
-        match event {
-            FloodsubEvent::Message(message) => {
-                print::p2p_event(
-                    "FloodsubEvent::Message",
-                    String::from_utf8_lossy(&message.data).green().to_string(),
-                );
-            }
-            _ => {}
+        if let FloodsubEvent::Message(message) = event {
+            print::p2p_event(
+                "FloodsubEvent::Message",
+                String::from_utf8_lossy(&message.data).green().to_string(),
+            );
         }
     }
 }
@@ -105,14 +102,10 @@ impl NetworkBehaviourEventProcess<IdentifyEvent> for MyBehaviour {
 impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
     fn inject_event(&mut self, event: GossipsubEvent) {
         // print::p2p_event("GossipsubEvent", format!("{:?}", event));
-        match event {
-            GossipsubEvent::Message { message, .. } => {
-                match Validator::gossipsub_message_handler(self, message) {
-                    Err(err) => error!("{}", err),
-                    _ => {}
-                }
+        if let GossipsubEvent::Message { message, .. } = event {
+            if let Err(err) = Validator::gossipsub_message_handler(self, message) {
+                error!("{}", err)
             }
-            _ => {}
         }
     }
 }

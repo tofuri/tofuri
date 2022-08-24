@@ -8,6 +8,9 @@ use colored::*;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use std::{error::Error, fs::File, io::prelude::*, path::Path, process};
 pub const EXTENSION: &str = "axiom";
+type Salt = [u8; 32];
+type Nonce = [u8; 12];
+type Ciphertext = Vec<u8>;
 pub struct Wallet {
     pub keypair: Keypair,
     pub salt: Vec<u8>,
@@ -99,7 +102,7 @@ impl Wallet {
     pub fn key(&self) -> String {
         key::encode(&self.keypair.secret)
     }
-    pub fn encrypt(plaintext: &[u8]) -> Result<([u8; 32], [u8; 12], Vec<u8>), Box<dyn Error>> {
+    pub fn encrypt(plaintext: &[u8]) -> Result<(Salt, Nonce, Ciphertext), Box<dyn Error>> {
         let passphrase = command::new_passphrase();
         let rng = &mut OsRng;
         let mut salt = [0; 32];

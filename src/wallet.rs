@@ -1,4 +1,4 @@
-use crate::{address, command, kdf, key, util};
+use crate::{address, command, constants::EXTENSION, kdf, key, util};
 use argon2::password_hash::rand_core::RngCore;
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
@@ -7,7 +7,6 @@ use chacha20poly1305::{
 use colored::*;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use std::{error::Error, fs::File, io::prelude::*, path::Path, process};
-pub const EXTENSION: &str = "axiom";
 type Salt = [u8; 32];
 type Nonce = [u8; 12];
 type Ciphertext = Vec<u8>;

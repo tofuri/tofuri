@@ -1,10 +1,10 @@
 use crate::{
     address,
-    constants::{DECIMAL_PRECISION, MAX_STAKE, MIN_STAKE},
+    constants::{DECIMAL_PRECISION, EXTENSION, MAX_STAKE, MIN_STAKE},
     print,
     stake::Stake,
     transaction::Transaction,
-    wallet::{Wallet, EXTENSION},
+    wallet::Wallet,
 };
 use colored::*;
 use inquire::{validator::Validation, Confirm, CustomType, Password, PasswordDisplayMode, Select};

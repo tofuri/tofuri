@@ -14,3 +14,4 @@ pub const MIN_STAKE: u64 = 10u64.pow(9);
 pub const MAX_STAKE: u64 = 10u64.pow(11);
 pub const BLOCK_TIME_MIN: usize = 10;
 pub const BLOCK_TIME_MAX: usize = 20;
+pub const EXTENSION: &str = "axiom";

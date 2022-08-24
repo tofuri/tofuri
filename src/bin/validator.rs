@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     print::known_peers(&known);
     let wallet = match args.tempkey {
         true => Wallet::new(),
-        false => Wallet::import()?,
+        false => Wallet::import(&args.wallet, &args.passphrase)?,
     };
     let validator = Validator::new(wallet, db, known)?;
     print::validator(&validator);

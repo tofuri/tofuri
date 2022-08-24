@@ -1,7 +1,7 @@
 use argon2::{Algorithm, Argon2, Params, ParamsBuilder, Version};
 fn params() -> Params {
     let mut builder = ParamsBuilder::new();
-    builder.m_cost(65536).unwrap();
+    builder.m_cost(1024).unwrap();
     builder.t_cost(1).unwrap();
     builder.p_cost(1).unwrap();
     builder.params().unwrap()

@@ -30,14 +30,30 @@ impl Wallet {
             ciphertext: vec![],
         }
     }
-    pub fn import() -> Result<Wallet, Box<dyn Error>> {
+    pub fn import(wallet_filename: &str, passphrase: &str) -> Result<Wallet, Box<dyn Error>> {
+        if !wallet_filename.is_empty() || !passphrase.is_empty() {
+            if !(!wallet_filename.is_empty() && !passphrase.is_empty()) {
+                println!(
+                    "{}",
+                    "To use autodecrypt you must specify both --wallet and --passphrase!".red()
+                );
+                process::exit(0);
+            }
+            return match Wallet::import_attempt(wallet_filename, passphrase) {
+                Ok(w) => Ok(w),
+                Err(_) => {
+                    println!("{}", "No key available with this passphrase.".red());
+                    process::exit(0);
+                }
+            };
+        }
         let (filename, wallet) = command::select_wallet()?;
         if let Some(wallet) = wallet {
             return Ok(wallet);
         }
         let wallet;
         loop {
-            if let Ok(w) = Wallet::import_attempt(&filename) {
+            if let Ok(w) = Wallet::import_attempt(&filename, passphrase) {
                 wallet = w;
                 break;
             } else {
@@ -46,7 +62,7 @@ impl Wallet {
         }
         Ok(wallet)
     }
-    pub fn import_attempt(filename: &str) -> Result<Wallet, Box<dyn Error>> {
+    pub fn import_attempt(filename: &str, passphrase: &str) -> Result<Wallet, Box<dyn Error>> {
         let mut path = Wallet::default_path().join(filename);
         path.set_extension(EXTENSION);
         let data = match Wallet::read_exact(path) {
@@ -59,7 +75,8 @@ impl Wallet {
         let salt = &data[..32];
         let nonce = &data[32..44];
         let ciphertext = &data[44..];
-        let secret_key = SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext)?)?;
+        let secret_key =
+            SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
         let public_key: PublicKey = (&secret_key).into();
         Ok(Wallet {
             keypair: Keypair {
@@ -116,8 +133,12 @@ impl Wallet {
         salt: &[u8],
         nonce: &[u8],
         ciphertext: &[u8],
+        passphrase: &str,
     ) -> Result<Vec<u8>, Box<dyn Error>> {
-        let passphrase = command::passphrase();
+        let passphrase = match passphrase {
+            "" => command::passphrase(),
+            _ => passphrase.to_string(),
+        };
         let key = kdf::derive(passphrase.as_bytes(), salt);
         let cipher = ChaCha20Poly1305::new_from_slice(&key)?;
         match cipher.decrypt(nonce.into(), ciphertext) {

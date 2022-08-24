@@ -20,6 +20,12 @@ pub struct ValidatorArgs {
     /// Path to list of known peers
     #[clap(long, value_parser, default_value = "./known.txt")]
     pub known: String,
+    /// Wallet filename
+    #[clap(long, value_parser, default_value = "")]
+    pub wallet: String,
+    /// Passphrase to wallet
+    #[clap(long, value_parser, default_value = "")]
+    pub passphrase: String,
 }
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
@@ -27,4 +33,10 @@ pub struct WalletArgs {
     /// Multiaddr to a validator in the network
     #[clap(long, value_parser, default_value = "http://localhost:8080")]
     pub api: String,
+    /// Wallet filename
+    #[clap(long, value_parser, default_value = "")]
+    pub wallet: String,
+    /// Passphrase to wallet
+    #[clap(long, value_parser, default_value = "")]
+    pub passphrase: String,
 }

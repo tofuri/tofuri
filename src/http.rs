@@ -62,16 +62,14 @@ Content-Type: application/json
     )
 }
 pub fn format_404() -> String {
-    format!(
-        "\
+    "\
 HTTP/1.1 404 NOT FOUND"
-    )
+        .to_string()
 }
 pub fn format_400() -> String {
-    format!(
-        "\
+    "\
 HTTP/1.1 400 BAD REQUEST"
-    )
+        .to_string()
 }
 pub fn format_index(behaviour: &MyBehaviour) -> String {
     format!(
@@ -106,17 +104,17 @@ Validator {} {}/tree/{}
         env!("CARGO_PKG_VERSION"),
         env!("CARGO_PKG_REPOSITORY"),
         env!("GIT_HASH"),
-        address::encode(&behaviour.validator.keypair.public.as_bytes()),
+        address::encode(behaviour.validator.keypair.public.as_bytes()),
         match behaviour.validator.blockchain.get_balance(
             &behaviour.validator.db,
-            &behaviour.validator.keypair.public.as_bytes()
+            behaviour.validator.keypair.public.as_bytes()
         ) {
             Ok(balance) => balance.to_string(),
             Err(_) => "Err".to_string(),
         },
         match behaviour.validator.blockchain.get_staked_balance(
             &behaviour.validator.db,
-            &behaviour.validator.keypair.public.as_bytes()
+            behaviour.validator.keypair.public.as_bytes()
         ) {
             Ok(balance) => balance.to_string(),
             Err(_) => "Err".to_string(),
@@ -195,7 +193,7 @@ Content-Type: application/json
                 .blockchain
                 .get_balance(
                     &behaviour.validator.db,
-                    &behaviour.validator.keypair.public.as_bytes()
+                    behaviour.validator.keypair.public.as_bytes()
                 )
                 .unwrap(),
             staked_balance: behaviour
@@ -203,7 +201,7 @@ Content-Type: application/json
                 .blockchain
                 .get_staked_balance(
                     &behaviour.validator.db,
-                    &behaviour.validator.keypair.public.as_bytes()
+                    behaviour.validator.keypair.public.as_bytes()
                 )
                 .unwrap(),
             height: behaviour.validator.blockchain.latest_height(),

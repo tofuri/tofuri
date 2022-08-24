@@ -89,7 +89,7 @@ impl Wallet {
         Path::new("./wallets")
     }
     pub fn address(&self) -> String {
-        address::encode(&self.keypair.public.as_bytes())
+        address::encode(self.keypair.public.as_bytes())
     }
     pub fn key(&self) -> String {
         key::encode(&self.keypair.secret)
@@ -177,13 +177,13 @@ pub mod command {
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {
-            "Address" => address(&wallet),
-            "Key" => key(&wallet),
-            "Data" => data(&wallet),
+            "Address" => address(wallet),
+            "Key" => key(wallet),
+            "Data" => data(wallet),
             "Balance" => balance(api, &wallet.address()).await?,
             "Height" => height(api).await?,
-            "Transaction" => transaction(api, &wallet).await?,
-            "Stake" => stake(api, &wallet).await?,
+            "Transaction" => transaction(api, wallet).await?,
+            "Stake" => stake(api, wallet).await?,
             "IP Address" => ip().await?,
             "Validator" => validator(api).await?,
             "Exit" => exit(),
@@ -217,7 +217,7 @@ pub mod command {
             .with_display_toggle_enabled()
             .with_display_mode(PasswordDisplayMode::Full)
             .with_validator(move |input: &str| {
-                if input.len() == 0 {
+                if input.is_empty() {
                     return Ok(Validation::Invalid("A wallet name can't be empty.".into()));
                 }
                 let mut path = PathBuf::new().join(input);
@@ -498,7 +498,7 @@ pub mod command {
             .with_display_toggle_enabled()
             .with_display_mode(PasswordDisplayMode::Masked)
             .with_validator(move |input: &str| {
-                if input.len() == 0 {
+                if input.is_empty() {
                     Ok(Validation::Invalid("No passphrase isn't allowed.".into()))
                 } else {
                     Ok(Validation::Valid)
@@ -576,11 +576,11 @@ pub mod address {
         use test::Bencher;
         #[test]
         fn test_cecksum() {
-            assert_eq!(vec![0x60, 0x7b, 0x1a, 0xff], checksum(&vec![0; 20]));
+            assert_eq!(vec![0x60, 0x7b, 0x1a, 0xff], checksum(&[0; 20]));
         }
         #[bench]
         fn bench_cecksum(b: &mut Bencher) {
-            b.iter(|| checksum(&vec![0; 20]));
+            b.iter(|| checksum(&[0; 20]));
         }
     }
 }

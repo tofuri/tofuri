@@ -33,7 +33,7 @@ impl Stake {
         Stake::from(deposit, amount, fee, util::timestamp())
     }
     pub fn hash(&self) -> [u8; 32] {
-        util::hash(&bincode::serialize(&StakeHeader::from(self)).unwrap()).into()
+        util::hash(&bincode::serialize(&StakeHeader::from(self)).unwrap())
     }
     pub fn sign(&mut self, keypair: &Keypair) {
         self.public_key = keypair.public.to_bytes();

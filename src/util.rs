@@ -102,7 +102,7 @@ pub mod print {
         info!(
             "{}: {}",
             "PubKey".cyan(),
-            address::encode(&validator.keypair.public.as_bytes())
+            address::encode(validator.keypair.public.as_bytes())
         );
         info!("{}: {}", "Peers".cyan(), validator.multiaddrs.len());
     }
@@ -166,7 +166,7 @@ pub mod print {
         );
     }
     pub fn known_peers(known: &Vec<Multiaddr>) {
-        if known.len() == 0 {
+        if known.is_empty() {
             warn!("{}", "Known peers list is empty!".yellow());
             return;
         }

@@ -148,7 +148,7 @@ impl Validator {
             .as_micros();
         let secs = micros / 1_000_000;
         micros -= secs * 1_000_000;
-        micros as f64 / 1_000 as f64
+        micros as f64 / 1_000_f64
     }
     async fn http_api_listener_accept(
         listener: &tokio::net::TcpListener,
@@ -180,10 +180,7 @@ impl Validator {
                     .await?;
             } else if http::regex::BALANCE.is_match(&first) {
                 let address = match http::regex::BALANCE.find(&first) {
-                    Some(x) => match x.as_str().trim().get(9..) {
-                        Some(x) => x,
-                        None => "",
-                    },
+                    Some(x) => x.as_str().trim().get(9..).unwrap_or(""),
                     None => "",
                 };
                 let balance = match address::decode(address) {
@@ -202,10 +199,7 @@ impl Validator {
                     .await?;
             } else if http::regex::BALANCE_STAKED.is_match(&first) {
                 let address = match http::regex::BALANCE_STAKED.find(&first) {
-                    Some(x) => match x.as_str().trim().get(16..) {
-                        Some(x) => x,
-                        None => "",
-                    },
+                    Some(x) => x.as_str().trim().get(16..).unwrap_or(""),
                     None => "",
                 };
                 let balance = match address::decode(address) {
@@ -329,7 +323,7 @@ impl Validator {
             return Ok(());
         }
         let mut forge = true;
-        if behaviour.validator.blockchain.stakers.queue.len() > 0 {
+        if !behaviour.validator.blockchain.stakers.queue.is_empty() {
             if &behaviour.validator.blockchain.stakers.queue[0].0
                 != behaviour.validator.keypair.public.as_bytes()
                 || util::timestamp()

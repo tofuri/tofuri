@@ -45,11 +45,11 @@ pub struct Blockchain {
 }
 impl Blockchain {
     pub fn new(db: &DBWithThreadMode<SingleThreaded>) -> Result<Blockchain, Box<dyn Error>> {
-        let latest_block = Blockchain::get_latest_block(&db)?;
-        let hashes = Blockchain::hashes(&db, BlockMetadata::from(&latest_block).hash())?;
+        let latest_block = Blockchain::get_latest_block(db)?;
+        let hashes = Blockchain::hashes(db, BlockMetadata::from(&latest_block).hash())?;
         // reinitialize latest_block in case of a broken chain
-        let latest_block = Blockchain::get_latest_block(&db)?;
-        let validators = Stakers::new(&db, &hashes)?;
+        let latest_block = Blockchain::get_latest_block(db)?;
+        let validators = Stakers::new(db, &hashes)?;
         Ok(Blockchain {
             latest_block,
             hashes,
@@ -251,9 +251,9 @@ impl Blockchain {
                 }
                 Err(err) => {
                     if err.to_string() == "block not found" {
-                        return Ok(None);
+                        Ok(None)
                     } else {
-                        return Err(err);
+                        Err(err)
                     }
                 }
             }
@@ -305,9 +305,9 @@ impl Blockchain {
             Ok(balance) => Ok(balance),
             Err(err) => {
                 if err.to_string() == "balance not found" {
-                    return Ok(0);
+                    Ok(0)
                 } else {
-                    return Err(err);
+                    Err(err)
                 }
             }
         }
@@ -344,9 +344,9 @@ impl Blockchain {
             Ok(balance) => Ok(balance),
             Err(err) => {
                 if err.to_string() == "staked_balance not found" {
-                    return Ok(0);
+                    Ok(0)
                 } else {
-                    return Err(err);
+                    Err(err)
                 }
             }
         }
@@ -451,8 +451,8 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         forger: bool,
     ) -> Result<(), Box<dyn Error>> {
-        if self.pending_blocks.len() == 0 {
-            if self.stakers.queue.len() > 0
+        if self.pending_blocks.is_empty() {
+            if !self.stakers.queue.is_empty()
                 && util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as u64
             {
                 self.punish_staker(db, self.stakers.queue[0])?;
@@ -460,7 +460,7 @@ impl Blockchain {
             return Err("no pending blocks".into());
         }
         let block;
-        if self.stakers.queue.len() == 0 {
+        if self.stakers.queue.is_empty() {
             block = self.pending_blocks.remove(0);
             self.cold_start_mint_stakers_stakes(db, &block)?;
         } else {
@@ -476,13 +476,12 @@ impl Blockchain {
                 }
             }
         }
-        if self.stakers.queue.len() > 0 {
-            if block.timestamp < self.latest_block.timestamp + BLOCK_TIME_MIN as u64
-                || block.timestamp > self.latest_block.timestamp + BLOCK_TIME_MAX as u64
-            {
-                self.punish_staker(db, self.stakers.queue[0])?;
-                return Err("validator did not show up in time".into());
-            }
+        if !self.stakers.queue.is_empty()
+            && (block.timestamp < self.latest_block.timestamp + BLOCK_TIME_MIN as u64
+                || block.timestamp > self.latest_block.timestamp + BLOCK_TIME_MAX as u64)
+        {
+            self.punish_staker(db, self.stakers.queue[0])?;
+            return Err("validator did not show up in time".into());
         }
         // save block
         block.put(db)?;
@@ -504,7 +503,7 @@ impl Blockchain {
         let fees = Blockchain::get_fees(&self.latest_block.transactions, &self.latest_block.stakes);
         self.add_reward(db, &self.latest_block.public_key, stake_amount, fees)?;
         // rotate validator queue
-        if self.stakers.queue.len() > 0 {
+        if !self.stakers.queue.is_empty() {
             self.stakers.queue.rotate_left(1);
         }
         if !forger {

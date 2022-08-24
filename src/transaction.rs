@@ -30,7 +30,7 @@ impl Transaction {
         Transaction::from(output, amount, fee, util::timestamp())
     }
     pub fn hash(&self) -> [u8; 32] {
-        util::hash(&bincode::serialize(&TransactionHeader::from(self)).unwrap()).into()
+        util::hash(&bincode::serialize(&TransactionHeader::from(self)).unwrap())
     }
     pub fn sign(&mut self, keypair: &Keypair) {
         self.input = keypair.public.to_bytes();

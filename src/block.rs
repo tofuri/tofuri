@@ -127,7 +127,7 @@ impl BlockMetadata {
         }
     }
     pub fn hash(&self) -> [u8; 32] {
-        util::hash(&bincode::serialize(&BlockHeader::from(self)).unwrap()).into()
+        util::hash(&bincode::serialize(&BlockHeader::from(self)).unwrap())
     }
     pub fn transaction_hashes(transactions: &Vec<Transaction>) -> Vec<[u8; 32]> {
         let mut transaction_hashes = vec![];

@@ -1,9 +1,9 @@
 use crate::{
+    address,
     blockchain::Blockchain,
     cli::{ValidatorArgs, WalletArgs},
     transaction::Transaction,
     validator::Validator,
-    wallet::address,
 };
 use chrono::Local;
 use colored::*;

@@ -1,8 +1,4 @@
-use axiom::{
-    cli::WalletArgs,
-    print,
-    wallet::{command, Wallet},
-};
+use axiom::{cli::WalletArgs, command, print, wallet::Wallet};
 use clap::Parser;
 use std::error::Error;
 #[tokio::main]

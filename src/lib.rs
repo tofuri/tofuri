@@ -1,11 +1,15 @@
 #![feature(test)]
 extern crate test;
+pub mod address;
 pub mod block;
 pub mod blockchain;
 pub mod cli;
+pub mod command;
 pub mod constants;
 pub mod db;
 pub mod http;
+pub mod kdf;
+pub mod key;
 pub mod p2p;
 pub mod print;
 pub mod stake;

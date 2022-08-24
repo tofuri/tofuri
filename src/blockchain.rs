@@ -1,4 +1,5 @@
 use crate::{
+    address,
     block::{Block, BlockMetadata},
     constants::{
         BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT,
@@ -7,7 +8,7 @@ use crate::{
     db,
     stake::Stake,
     transaction::Transaction,
-    util, wallet,
+    util,
 };
 use colored::*;
 use ed25519_dalek::Keypair;
@@ -535,7 +536,7 @@ impl Blockchain {
             "{}: {} {}",
             "Burned".red(),
             amount.to_string().yellow(),
-            wallet::address::encode(&public_key)
+            address::encode(&public_key)
         );
         Ok(())
     }
@@ -557,7 +558,7 @@ impl Blockchain {
                 "{}: {} @ {}",
                 "Minted".cyan(),
                 minted.to_string().yellow(),
-                wallet::address::encode(&stake.public_key).green()
+                address::encode(&stake.public_key).green()
             );
         }
         Ok(())

@@ -1,7 +1,7 @@
 use crate::block::BlockMetadata;
 use crate::{
-    block::Block, blockchain::Stakers, p2p::MyBehaviour, stake::Stake, transaction::Transaction,
-    validator::Synchronizer, wallet::address,
+    address, block::Block, blockchain::Stakers, p2p::MyBehaviour, stake::Stake,
+    transaction::Transaction, validator::Synchronizer,
 };
 use serde::{Deserialize, Serialize};
 pub mod regex {

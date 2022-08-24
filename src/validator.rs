@@ -1,4 +1,5 @@
 use crate::{
+    address,
     block::Block,
     blockchain::Blockchain,
     constants::{BLOCKS_PER_SECOND_THRESHOLD, MAX_STAKE, SYNC_BLOCKS, SYNC_HISTORY_LENGTH},
@@ -9,7 +10,7 @@ use crate::{
     sync::Sync,
     transaction::Transaction,
     util,
-    wallet::{address, Wallet},
+    wallet::Wallet,
 };
 use crate::{cli::ValidatorArgs, constants::BLOCK_TIME_MIN};
 use colored::*;

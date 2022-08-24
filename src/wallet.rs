@@ -331,10 +331,13 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        if !Confirm::new("Send?").prompt().unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }) {
+        if !match Confirm::new("Send?").prompt() {
+            Ok(b) => b,
+            Err(err) => {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            }
+        } {
             return Ok(());
         }
         let mut transaction = Transaction::new(address::decode(&address)?, amount, fee);
@@ -407,10 +410,13 @@ pub mod command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             });
-        if !Confirm::new("Send?").prompt().unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }) {
+        if !match Confirm::new("Send?").prompt() {
+            Ok(b) => b,
+            Err(err) => {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            }
+        } {
             return Ok(());
         }
         let mut stake = Stake::new(deposit, amount as u64, fee);
@@ -463,13 +469,13 @@ pub mod command {
             "Anyone who has it can access your funds from anywhere.".italic()
         );
         println!("{}", "View in private with no cameras around.".italic());
-        if Confirm::new("View secret key?")
-            .prompt()
-            .unwrap_or_else(|err| {
+        if match Confirm::new("View secret key?").prompt() {
+            Ok(b) => b,
+            Err(err) => {
                 println!("{}", err.to_string().red());
                 process::exit(0)
-            })
-        {
+            }
+        } {
             println!("{}", wallet.key().red());
         }
     }

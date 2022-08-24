@@ -2,8 +2,15 @@ use crate::{
     address,
     block::{Block, BlockMetadata},
     constants::{
-        BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT,
-        DECIMAL_PRECISION, GENESIS_TIMESTAMP, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
+        BLOCK_STAKES_LIMIT,
+        BLOCK_TIME_MAX,
+        BLOCK_TIME_MIN,
+        BLOCK_TRANSACTIONS_LIMIT,
+        DECIMAL_PRECISION,
+        GENESIS_TIMESTAMP,
+        MIN_STAKE,
+        PENDING_STAKES_LIMIT,
+        PENDING_TRANSACTIONS_LIMIT, // BLOCKS_BEFORE_UNSTAKE
     },
     db,
     stake::Stake,
@@ -14,27 +21,11 @@ use colored::*;
 use ed25519_dalek::Keypair;
 use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
-use serde::{Deserialize, Serialize};
 use std::{collections::VecDeque, error::Error};
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Stakers {
-    pub queue: VecDeque<([u8; 32], u64, usize)>,
-}
-impl Stakers {
-    pub fn new(
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &[[u8; 32]],
-    ) -> Result<Stakers, Box<dyn Error>> {
-        let mut queue = VecDeque::new();
-        for (index, hash) in hashes.iter().enumerate() {
-            let block = Block::get(db, hash)?;
-            for stake in block.stakes {
-                queue.push_back((stake.public_key, stake.amount, index));
-            }
-        }
-        Ok(Stakers { queue })
-    }
-}
+pub type PublicKey = [u8; 32];
+pub type Height = usize;
+pub type Staker = (PublicKey, Height);
+pub type Stakers = VecDeque<Staker>;
 #[derive(Debug)]
 pub struct Blockchain {
     pub latest_block: Block,
@@ -50,15 +41,31 @@ impl Blockchain {
         let hashes = Blockchain::hashes(db, BlockMetadata::from(&latest_block).hash())?;
         // reinitialize latest_block in case of a broken chain
         let latest_block = Blockchain::get_latest_block(db)?;
-        let validators = Stakers::new(db, &hashes)?;
+        let stakers = Blockchain::stakers(db, &hashes)?;
         Ok(Blockchain {
             latest_block,
             hashes,
-            stakers: validators,
+            stakers,
             pending_transactions: vec![],
             pending_stakes: vec![],
             pending_blocks: vec![],
         })
+    }
+    pub fn stakers(
+        db: &DBWithThreadMode<SingleThreaded>,
+        hashes: &[[u8; 32]],
+    ) -> Result<Stakers, Box<dyn Error>> {
+        let mut stakers: Stakers = VecDeque::new();
+        for (index, hash) in hashes.iter().enumerate() {
+            let block = Block::get(db, hash)?;
+            for stake in block.stakes {
+                // check if stake index already exists for public_key before pushing
+                if !stakers.iter().any(|&e| e.0 == stake.public_key) {
+                    stakers.push_back((stake.public_key, index));
+                }
+            }
+        }
+        Ok(stakers)
     }
     pub fn forge_block(
         &mut self,
@@ -157,6 +164,7 @@ impl Blockchain {
         for t in transactions {
             if sum + t.amount + t.fee <= balance {
                 sum += t.amount + t.fee;
+                // add a check to see if transaction was actually included or not
                 self.pending_transactions.push(t);
             } else {
                 break;
@@ -169,6 +177,7 @@ impl Blockchain {
         self.limit_pending_transactions();
         Ok(())
     }
+    // now only supports 1 stake per block
     pub fn try_add_stake(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -178,6 +187,15 @@ impl Blockchain {
         if !stake.is_valid() {
             return Err("stake is not valid".into());
         }
+        // if !stake.deposit {
+        //     // is a witchdrawal
+        //     if let Some(staker) = self.stakers.iter().find(|&e| e.0 == stake.public_key) {
+        //         if staker.1 > self.latest_height() - BLOCKS_BEFORE_UNSTAKE {
+        //             // to early to unstake
+        //             return Err("too early to unstake".into());
+        //         }
+        //     }
+        // }
         // check if stake is already pending
         if self
             .pending_stakes
@@ -191,29 +209,34 @@ impl Blockchain {
             return Err("stake is already included in chain".into());
         }
         // check if input affords sum
-        let mut stakes = vec![stake.clone()];
-        for _ in 0..self.pending_stakes.len() {
-            for (index, t) in self.pending_stakes.iter().enumerate() {
-                if t.public_key == stake.public_key {
-                    stakes.push(self.pending_stakes.swap_remove(index));
-                    break;
+        if let Some(index) = self
+            .pending_stakes
+            .iter()
+            .position(|s| s.public_key == stake.public_key)
+        {
+            if stake.fee <= self.pending_stakes[index].fee {
+                return Err("stake fee too low".into());
+            }
+            let balance = self.get_balance(db, &stake.public_key)?;
+            let staked_balance = self.get_staked_balance(db, &stake.public_key)?;
+            if stake.deposit {
+                if stake.amount + stake.fee > balance {
+                    return Err("stake too expensive 1".into());
+                }
+            } else {
+                if stake.fee > balance {
+                    return Err("stake too expensive 2".into());
+                }
+                if stake.amount > staked_balance {
+                    return Err("stake too expensive 3".into());
                 }
             }
-        }
-        stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
-        let balance = self.get_balance(db, &stake.public_key)?;
-        let mut sum = 0;
-        for t in stakes {
-            if sum + t.amount + t.fee <= balance {
-                sum += t.amount + t.fee;
-                self.pending_stakes.push(t);
-            } else {
-                break;
-            }
+            self.pending_stakes.remove(index);
         }
         if stake.timestamp < self.latest_block.timestamp {
-            return Err("stake old".into());
+            return Err("stake too old".into());
         }
+        self.pending_stakes.push(stake);
         self.sort_pending_stakes();
         self.limit_pending_stakes();
         Ok(())
@@ -369,11 +392,11 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &[u8; 32],
-        stake_amount: u64,
         fees: u64,
     ) -> Result<(), Box<dyn Error>> {
+        let staked_balance = self.get_staked_balance(db, public_key)?;
         let mut balance = self.get_balance(db, public_key)?;
-        balance += Blockchain::reward(stake_amount);
+        balance += Blockchain::reward(staked_balance);
         balance += fees;
         self.put_balance(db, public_key, balance)?;
         Ok(())
@@ -453,35 +476,35 @@ impl Blockchain {
         forger: bool,
     ) -> Result<(), Box<dyn Error>> {
         if self.pending_blocks.is_empty() {
-            if !self.stakers.queue.is_empty()
+            if !self.stakers.is_empty()
                 && util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as u64
             {
-                self.punish_staker(db, self.stakers.queue[0])?;
+                self.punish_staker_first_in_queue(db)?;
             }
             return Err("no pending blocks".into());
         }
         let block;
-        if self.stakers.queue.is_empty() {
+        if self.stakers.is_empty() {
             block = self.pending_blocks.remove(0);
             self.cold_start_mint_stakers_stakes(db, &block)?;
         } else {
             match self
                 .pending_blocks
                 .iter()
-                .position(|x| x.public_key == self.stakers.queue[0].0)
+                .position(|x| x.public_key == self.stakers[0].0)
             {
                 Some(index) => block = self.pending_blocks.remove(index),
                 None => {
-                    self.punish_staker(db, self.stakers.queue[0])?;
+                    self.punish_staker_first_in_queue(db)?;
                     return Err("validator did not show up".into());
                 }
             }
         }
-        if !self.stakers.queue.is_empty()
+        if !self.stakers.is_empty()
             && (block.timestamp < self.latest_block.timestamp + BLOCK_TIME_MIN as u64
                 || block.timestamp > self.latest_block.timestamp + BLOCK_TIME_MAX as u64)
         {
-            self.punish_staker(db, self.stakers.queue[0])?;
+            self.punish_staker_first_in_queue(db)?;
             return Err("validator did not show up in time".into());
         }
         // save block
@@ -493,19 +516,31 @@ impl Blockchain {
         // set latest block
         Blockchain::put_latest_block_hash(db, hash)?;
         self.latest_block = block;
-        // append new validators to queue
         for stake in self.latest_block.stakes.iter() {
-            self.stakers
-                .queue
-                .push_back((stake.public_key, stake.amount, self.latest_height()));
+            // check if has already staked
+            let staked_balance = self.get_staked_balance(db, &stake.public_key)?;
+            if stake.deposit {
+                if staked_balance >= MIN_STAKE
+                    && !self.stakers.iter().any(|&e| e.0 == stake.public_key)
+                {
+                    self.stakers
+                        .push_back((stake.public_key, self.latest_height()));
+                }
+            } else if staked_balance < MIN_STAKE {
+                let index = self
+                    .stakers
+                    .iter()
+                    .position(|s| s.0 == stake.public_key)
+                    .unwrap();
+                self.stakers.remove(index).unwrap();
+            }
         }
         // reward validator
-        let stake_amount = self.stakers.queue[0].1;
         let fees = Blockchain::get_fees(&self.latest_block.transactions, &self.latest_block.stakes);
-        self.add_reward(db, &self.latest_block.public_key, stake_amount, fees)?;
+        self.add_reward(db, &self.latest_block.public_key, fees)?;
         // rotate validator queue
-        if !self.stakers.queue.is_empty() {
-            self.stakers.queue.rotate_left(1);
+        if !self.stakers.is_empty() {
+            self.stakers.rotate_left(1);
         }
         if !forger {
             info!(
@@ -518,26 +553,15 @@ impl Blockchain {
         self.pending_blocks.clear();
         Ok(())
     }
-    fn punish_staker(
+    fn punish_staker_first_in_queue(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        staker: ([u8; 32], u64, usize),
     ) -> Result<(), Box<dyn Error>> {
+        let staker = self.stakers[0];
         let public_key = staker.0;
-        let amount = staker.1;
-        let mut staked_balance = self.get_staked_balance(db, &public_key)?;
-        if staked_balance != 0 {
-            // maybe bugfix (thread 'main' panicked at 'attempt to subtract with overflow')
-            staked_balance -= amount;
-        }
-        self.put_staked_balance(db, &public_key, staked_balance)?;
-        self.stakers.queue.remove(0).unwrap();
-        log::warn!(
-            "{}: {} {}",
-            "Burned".red(),
-            amount.to_string().yellow(),
-            address::encode(&public_key)
-        );
+        self.put_staked_balance(db, &public_key, 0)?;
+        self.stakers.remove(0).unwrap();
+        log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));
         Ok(())
     }
     fn cold_start_mint_stakers_stakes(

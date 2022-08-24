@@ -77,11 +77,7 @@ pub fn blockchain(blockchain: &Blockchain) {
         "Pending stakes".cyan(),
         blockchain.pending_stakes.len()
     );
-    info!(
-        "{}: {}",
-        "Validators".cyan(),
-        blockchain.stakers.queue.len()
-    );
+    info!("{}: {}", "Validators".cyan(), blockchain.stakers.len());
 }
 pub fn validator_args(args: &ValidatorArgs) {
     info!("{}: {}", "--debug".cyan(), args.debug);

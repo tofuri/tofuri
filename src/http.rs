@@ -127,10 +127,9 @@ Validator {} {}/tree/{}
             .validator
             .blockchain
             .stakers
-            .queue
             .iter()
-            .map(|&x| (address::encode(&x.0), x.1, x.2))
-            .collect::<Vec<(String, u64, usize)>>(),
+            .map(|&x| (address::encode(&x.0), x.1))
+            .collect::<Vec<(String, usize)>>(),
         behaviour
             .validator
             .blockchain

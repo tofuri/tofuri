@@ -79,8 +79,18 @@ impl Block {
         }
         true
     }
+    pub fn has_valid_stakes(&self) -> bool {
+        for stake in self.stakes.iter() {
+            if !stake.is_valid() {
+                return false;
+            }
+        }
+        true
+    }
     pub fn is_valid(&self) -> bool {
-        self.has_valid_transactions() && self.timestamp <= util::timestamp()
+        self.has_valid_transactions()
+            && self.has_valid_stakes()
+            && self.timestamp <= util::timestamp()
     }
 }
 #[derive(Serialize, Deserialize, Debug)]

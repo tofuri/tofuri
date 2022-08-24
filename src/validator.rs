@@ -333,8 +333,8 @@ impl Validator {
             return Ok(());
         }
         let mut forge = true;
-        if !behaviour.validator.blockchain.stakers.queue.is_empty() {
-            if &behaviour.validator.blockchain.stakers.queue[0].0
+        if !behaviour.validator.blockchain.stakers.is_empty() {
+            if &behaviour.validator.blockchain.stakers[0].0
                 != behaviour.validator.keypair.public.as_bytes()
                 || util::timestamp()
                     < behaviour.validator.blockchain.latest_block.timestamp + BLOCK_TIME_MIN as u64

@@ -1,4 +1,4 @@
-use super::{db, util};
+use crate::{db, util};
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, Signature};
 use rocksdb::{DBWithThreadMode, SingleThreaded};

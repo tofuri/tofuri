@@ -1,8 +1,8 @@
-use super::{
+use crate::block::BlockMetadata;
+use crate::{
     block::Block, blockchain::Stakers, p2p::MyBehaviour, stake::Stake, transaction::Transaction,
     validator::Synchronizer, wallet::address,
 };
-use crate::block::BlockMetadata;
 use serde::{Deserialize, Serialize};
 pub mod regex {
     use lazy_static::lazy_static;

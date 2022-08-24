@@ -1,4 +1,4 @@
-use super::util;
+use crate::util;
 use argon2::password_hash::rand_core::RngCore;
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
@@ -146,11 +146,12 @@ impl Wallet {
     }
 }
 pub mod command {
-    use super::{address, util::print, Wallet, EXTENSION};
     use crate::{
         constants::{DECIMAL_PRECISION, MAX_STAKE, MIN_STAKE},
+        print,
         stake::Stake,
         transaction::Transaction,
+        wallet::{address, Wallet, EXTENSION},
     };
     use colored::*;
     use inquire::{

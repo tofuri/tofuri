@@ -1,9 +1,4 @@
-use axiom::{
-    db, p2p,
-    util::{print, ValidatorArgs},
-    validator::Validator,
-    wallet::Wallet,
-};
+use axiom::{cli::ValidatorArgs, db, p2p, print, validator::Validator, wallet::Wallet};
 use clap::Parser;
 use std::error::Error;
 use tempdir::TempDir;

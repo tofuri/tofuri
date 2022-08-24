@@ -1,4 +1,4 @@
-use super::{constants::PROTOCOL_VERSION, util::print, validator::Validator};
+use crate::{constants::PROTOCOL_VERSION, print, validator::Validator};
 use colored::*;
 use libp2p::{
     autonat,

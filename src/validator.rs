@@ -1,17 +1,17 @@
-use super::{
+use crate::{
     block::Block,
     blockchain::Blockchain,
     constants::{BLOCKS_PER_SECOND_THRESHOLD, MAX_STAKE, SYNC_BLOCKS, SYNC_HISTORY_LENGTH},
     db, http,
     p2p::MyBehaviour,
+    print,
     stake::Stake,
     sync::Sync,
     transaction::Transaction,
     util,
-    util::print,
     wallet::{address, Wallet},
 };
-use crate::{constants::BLOCK_TIME_MIN, util::ValidatorArgs};
+use crate::{cli::ValidatorArgs, constants::BLOCK_TIME_MIN};
 use colored::*;
 use ed25519_dalek::Keypair;
 use libp2p::{

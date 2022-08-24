@@ -1,4 +1,4 @@
-use super::{
+use crate::{
     block::{Block, BlockMetadata},
     constants::{
         BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT,

@@ -1,12 +1,13 @@
 use axiom::{
-    util::{self, print, WalletArgs},
+    cli::WalletArgs,
+    print,
     wallet::{command, Wallet},
 };
 use clap::Parser;
 use std::error::Error;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    util::print::build();
+    print::build();
     let args = WalletArgs::parse();
     print::wallet_args(&args);
     let wallet = Wallet::import()?;

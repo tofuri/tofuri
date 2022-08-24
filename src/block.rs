@@ -1,4 +1,4 @@
-use super::{db, stake::Stake, transaction::Transaction, util};
+use crate::{db, stake::Stake, transaction::Transaction, util};
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, Signature};
 use rocksdb::{DBWithThreadMode, SingleThreaded};

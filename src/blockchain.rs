@@ -585,6 +585,9 @@ impl Blockchain {
         self.cache_balances(db, &block.transactions, &block.stakes)?;
         let fees = Blockchain::get_fees(&block.transactions, &block.stakes);
         self.add_reward(db, &block.public_key, fees)?;
+        if self.stakers.len() > 1 {
+            self.stakers.rotate_left(1);
+        }
         for stake in block.stakes.iter() {
             let staked_balance = self.get_staked_balance(db, &stake.public_key)?;
             if stake.deposit {
@@ -602,9 +605,6 @@ impl Blockchain {
                     .unwrap();
                 self.stakers.remove(index).unwrap();
             }
-        }
-        if !self.stakers.is_empty() {
-            self.stakers.rotate_left(1);
         }
         self.latest_block = block;
         self.pending_blocks.clear();

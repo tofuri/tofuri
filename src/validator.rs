@@ -96,7 +96,7 @@ impl Validator {
     pub fn put_multiaddr(
         db: &DBWithThreadMode<SingleThreaded>,
         multiaddr: &Multiaddr,
-        timestamp: u64,
+        timestamp: types::Timestamp,
     ) {
         db.put_cf(
             &db::cf_handle_multiaddr(db).unwrap(),
@@ -339,7 +339,8 @@ impl Validator {
             if &behaviour.validator.blockchain.stakers[0].0
                 != behaviour.validator.keypair.public.as_bytes()
                 || util::timestamp()
-                    < behaviour.validator.blockchain.latest_block.timestamp + BLOCK_TIME_MIN as u64
+                    < behaviour.validator.blockchain.latest_block.timestamp
+                        + BLOCK_TIME_MIN as types::Timestamp
             {
                 forge = false;
             }

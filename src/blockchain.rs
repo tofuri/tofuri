@@ -310,17 +310,19 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKey,
-    ) -> Result<u64, Box<dyn Error>> {
+    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
         let bytes = db
             .get_cf(db::cf_handle_balances(db)?, public_key)?
             .ok_or("balance not found")?;
-        Ok(u64::from_le_bytes(bytes.as_slice().try_into()?))
+        Ok(types::AxiomAmount::from_le_bytes(
+            bytes.as_slice().try_into()?,
+        ))
     }
     pub fn get_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKey,
-    ) -> Result<u64, Box<dyn Error>> {
+    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
         match self.get_balance_raw(db, public_key) {
             Ok(balance) => Ok(balance),
             Err(err) => {
@@ -336,7 +338,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKey,
-        balance: u64,
+        balance: types::AxiomAmount,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
             db::cf_handle_balances(db)?,
@@ -349,17 +351,19 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKey,
-    ) -> Result<u64, Box<dyn Error>> {
+    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
         let bytes = db
             .get_cf(db::cf_handle_staked_balances(db)?, public_key)?
             .ok_or("staked_balance not found")?;
-        Ok(u64::from_le_bytes(bytes.as_slice().try_into()?))
+        Ok(types::AxiomAmount::from_le_bytes(
+            bytes.as_slice().try_into()?,
+        ))
     }
     pub fn get_staked_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKey,
-    ) -> Result<u64, Box<dyn Error>> {
+    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
         match self.get_staked_balance_raw(db, public_key) {
             Ok(balance) => Ok(balance),
             Err(err) => {
@@ -375,7 +379,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKey,
-        staked_balance: u64,
+        staked_balance: types::AxiomAmount,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
             db::cf_handle_staked_balances(db)?,
@@ -388,7 +392,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKey,
-        fees: u64,
+        fees: types::AxiomAmount,
     ) -> Result<(), Box<dyn Error>> {
         let staked_balance = self.get_staked_balance(db, public_key)?;
         let mut balance = self.get_balance(db, public_key)?;
@@ -435,7 +439,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn get_fees(transactions: &Vec<Transaction>, stakes: &Vec<Stake>) -> u64 {
+    fn get_fees(transactions: &Vec<Transaction>, stakes: &Vec<Stake>) -> types::AxiomAmount {
         let mut fees = 0;
         for t in transactions {
             fees += t.fee;
@@ -462,9 +466,9 @@ impl Blockchain {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
     }
-    pub fn reward(stake_amount: u64) -> u64 {
+    pub fn reward(stake_amount: types::AxiomAmount) -> types::AxiomAmount {
         ((2f64.powf((stake_amount as f64 / DECIMAL_PRECISION as f64) / 100f64) - 1f64)
-            * DECIMAL_PRECISION as f64) as u64
+            * DECIMAL_PRECISION as f64) as types::AxiomAmount
     }
     pub fn accept_block(
         &mut self,
@@ -473,7 +477,8 @@ impl Blockchain {
     ) -> Result<(), Box<dyn Error>> {
         if self.pending_blocks.is_empty() {
             if !self.stakers.is_empty()
-                && util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as u64
+                && util::timestamp()
+                    > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
             {
                 self.punish_staker_first_in_queue(db)?;
             }
@@ -497,8 +502,9 @@ impl Blockchain {
             }
         }
         if !self.stakers.is_empty()
-            && (block.timestamp < self.latest_block.timestamp + BLOCK_TIME_MIN as u64
-                || block.timestamp > self.latest_block.timestamp + BLOCK_TIME_MAX as u64)
+            && (block.timestamp < self.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp
+                || block.timestamp
+                    > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp)
         {
             self.punish_staker_first_in_queue(db)?;
             return Err("validator did not show up in time".into());

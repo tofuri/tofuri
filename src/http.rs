@@ -46,7 +46,7 @@ Content-Type: application/json
         hash
     )
 }
-pub fn format_balance(balance: u64) -> String {
+pub fn format_balance(balance: types::AxiomAmount) -> String {
     format!(
         "\
 HTTP/1.1 200 OK
@@ -170,8 +170,8 @@ Validator {} {}/tree/{}
 #[derive(Serialize, Deserialize)]
 struct Data {
     public_key: types::PublicKey,
-    balance: u64,
-    staked_balance: u64,
+    balance: types::AxiomAmount,
+    staked_balance: types::AxiomAmount,
     height: types::Height,
     heartbeats: types::Heartbeats,
     lag: [f64; 3],

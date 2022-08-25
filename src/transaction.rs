@@ -9,14 +9,19 @@ use std::error::Error;
 pub struct Transaction {
     pub input: types::PublicKey,
     pub output: types::PublicKey,
-    pub amount: u64,
-    pub fee: u64,
-    pub timestamp: u64,
+    pub amount: types::AxiomAmount,
+    pub fee: types::AxiomAmount,
+    pub timestamp: types::Timestamp,
     #[serde(with = "BigArray")]
     pub signature: types::Signature,
 }
 impl Transaction {
-    pub fn from(output: types::PublicKey, amount: u64, fee: u64, timestamp: u64) -> Transaction {
+    pub fn from(
+        output: types::PublicKey,
+        amount: types::AxiomAmount,
+        fee: types::AxiomAmount,
+        timestamp: types::Timestamp,
+    ) -> Transaction {
         Transaction {
             input: [0; 32],
             output,
@@ -26,7 +31,11 @@ impl Transaction {
             signature: [0; 64],
         }
     }
-    pub fn new(output: types::PublicKey, amount: u64, fee: u64) -> Transaction {
+    pub fn new(
+        output: types::PublicKey,
+        amount: types::AxiomAmount,
+        fee: types::AxiomAmount,
+    ) -> Transaction {
         Transaction::from(output, amount, fee, util::timestamp())
     }
     pub fn hash(&self) -> types::Hash {
@@ -71,9 +80,9 @@ impl Transaction {
 pub struct TransactionHeader {
     pub input: types::PublicKey,
     pub output: types::PublicKey,
-    pub amount: u64,
-    pub fee: u64,
-    pub timestamp: u64,
+    pub amount: types::AxiomAmount,
+    pub fee: types::AxiomAmount,
+    pub timestamp: types::Timestamp,
 }
 impl TransactionHeader {
     pub fn from(transaction: &Transaction) -> TransactionHeader {

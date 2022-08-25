@@ -24,7 +24,7 @@ impl Merge for Hasher {
     }
 }
 pub type CBMT = ExCBMT<[u8; 32], Hasher>;
-pub fn timestamp() -> u64 {
+pub fn timestamp() -> types::Timestamp {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")

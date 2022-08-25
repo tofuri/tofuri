@@ -4,6 +4,7 @@ use crate::{
     print,
     stake::Stake,
     transaction::Transaction,
+    types,
     wallet::Wallet,
 };
 use colored::*;
@@ -124,13 +125,13 @@ pub async fn balance(api: &str, address: &str) -> Result<(), Box<dyn Error>> {
         Ok(r) => r,
         Err(err) => return reqwest_err(err),
     }
-    .json::<u64>()
+    .json::<types::AxiomAmount>()
     .await?;
     let balance_staked = match reqwest::get(format!("{}/balance_staked/{}", api, address)).await {
         Ok(r) => r,
         Err(err) => return reqwest_err(err),
     }
-    .json::<u64>()
+    .json::<types::AxiomAmount>()
     .await?;
     println!(
         "Account balance: {}, locked: {}.",
@@ -144,13 +145,13 @@ pub async fn balance(api: &str, address: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 pub async fn height(api: &str) -> Result<(), Box<dyn Error>> {
-    let balance = match reqwest::get(format!("{}/height", api)).await {
+    let height = match reqwest::get(format!("{}/height", api)).await {
         Ok(r) => r,
         Err(err) => return reqwest_err(err),
     }
-    .json::<u64>()
+    .json::<types::Height>()
     .await?;
-    println!("Latest block height is {}.", balance.to_string().yellow());
+    println!("Latest block height is {}.", height.to_string().yellow());
     Ok(())
 }
 pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
@@ -175,8 +176,8 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
             println!("{}", err.to_string().red());
             process::exit(0)
         })
-        * DECIMAL_PRECISION as f64) as u64;
-    let fee = CustomType::<u64>::new("Fee:")
+        * DECIMAL_PRECISION as f64) as types::AxiomAmount;
+    let fee = CustomType::<types::AxiomAmount>::new("Fee:")
         .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in satoshis using a decimal point as a separator")
@@ -254,8 +255,8 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
             println!("{}", err.to_string().red());
             process::exit(0)
         })
-        * DECIMAL_PRECISION as f64) as u64;
-    let fee = CustomType::<u64>::new("Fee:")
+        * DECIMAL_PRECISION as f64) as types::AxiomAmount;
+    let fee = CustomType::<types::AxiomAmount>::new("Fee:")
         .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in satoshis using a decimal point as a separator")
@@ -273,7 +274,7 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
     } {
         return Ok(());
     }
-    let mut stake = Stake::new(deposit, amount as u64, fee);
+    let mut stake = Stake::new(deposit, amount as types::AxiomAmount, fee);
     stake.sign(&wallet.keypair);
     let client = reqwest::Client::new();
     let res: usize = match client

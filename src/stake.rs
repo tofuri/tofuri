@@ -11,15 +11,20 @@ use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Stake {
     pub public_key: types::PublicKey,
-    pub amount: u64,
+    pub amount: types::AxiomAmount,
     pub deposit: bool, // false -> widthdraw
-    pub fee: u64,
-    pub timestamp: u64,
+    pub fee: types::AxiomAmount,
+    pub timestamp: types::Timestamp,
     #[serde(with = "BigArray")]
     pub signature: types::Signature,
 }
 impl Stake {
-    pub fn from(deposit: bool, amount: u64, fee: u64, timestamp: u64) -> Stake {
+    pub fn from(
+        deposit: bool,
+        amount: types::AxiomAmount,
+        fee: types::AxiomAmount,
+        timestamp: types::Timestamp,
+    ) -> Stake {
         Stake {
             public_key: [0; 32],
             amount,
@@ -29,7 +34,7 @@ impl Stake {
             signature: [0; 64],
         }
     }
-    pub fn new(deposit: bool, amount: u64, fee: u64) -> Stake {
+    pub fn new(deposit: bool, amount: types::AxiomAmount, fee: types::AxiomAmount) -> Stake {
         Stake::from(deposit, amount, fee, util::timestamp())
     }
     pub fn hash(&self) -> types::Hash {
@@ -71,9 +76,9 @@ impl Stake {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StakeHeader {
     pub public_key: types::PublicKey,
-    pub amount: u64,
-    pub fee: u64,
-    pub timestamp: u64,
+    pub amount: types::AxiomAmount,
+    pub fee: types::AxiomAmount,
+    pub timestamp: types::Timestamp,
 }
 impl StakeHeader {
     pub fn from(stake: &Stake) -> StakeHeader {

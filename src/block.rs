@@ -8,7 +8,7 @@ use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
     pub previous_hash: types::Hash,
-    pub timestamp: u64,
+    pub timestamp: types::Timestamp,
     pub public_key: types::PublicKey,
     #[serde(with = "BigArray")]
     pub signature: types::Signature,
@@ -18,7 +18,7 @@ pub struct Block {
 impl Block {
     pub fn from(
         previous_hash: types::Hash,
-        timestamp: u64,
+        timestamp: types::Timestamp,
         public_key: types::PublicKey,
         signature: types::Signature,
     ) -> Block {
@@ -98,7 +98,7 @@ pub struct BlockHeader {
     pub previous_hash: types::Hash,
     pub transaction_merkle_root: types::MerkleRoot,
     pub stake_merkle_root: types::MerkleRoot,
-    pub timestamp: u64,
+    pub timestamp: types::Timestamp,
 }
 impl BlockHeader {
     pub fn from(block: &BlockMetadata) -> BlockHeader {
@@ -113,7 +113,7 @@ impl BlockHeader {
 #[derive(Debug)]
 pub struct BlockMetadata {
     pub previous_hash: types::Hash,
-    pub timestamp: u64,
+    pub timestamp: types::Timestamp,
     pub public_key: types::PublicKey,
     pub signature: types::Signature,
     pub transaction_hashes: Vec<types::Hash>,
@@ -169,7 +169,7 @@ impl BlockMetadata {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BlockMetadataLean {
     pub previous_hash: types::Hash,
-    pub timestamp: u64,
+    pub timestamp: types::Timestamp,
     pub public_key: types::PublicKey,
     #[serde(with = "BigArray")]
     pub signature: types::Signature,

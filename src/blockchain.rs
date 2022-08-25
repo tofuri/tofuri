@@ -119,6 +119,14 @@ impl Blockchain {
         if !block.is_valid() {
             return Err("block not valid".into());
         }
+        if !self.stakers.is_empty() {
+            if block.timestamp < self.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
+                return Err("block created too early".into());
+            }
+            if block.timestamp > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
+                return Err("block created too late".into());
+            }
+        }
         let previous_block = Block::get(db, &block.previous_hash)?;
         if self.latest_block.previous_hash != previous_block.previous_hash {
             return Err("block does not extend active chain".into());
@@ -533,56 +541,51 @@ impl Blockchain {
         ((2f64.powf((stake_amount as f64 / DECIMAL_PRECISION as f64) / 100f64) - 1f64)
             * DECIMAL_PRECISION as f64) as types::AxiomAmount
     }
-    pub fn accept_block(
+    fn next_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        forger: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<Block, Box<dyn Error>> {
+        if self.pending_blocks.is_empty()
+            && !self.stakers.is_empty()
+            && util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
+        {
+            self.punish_staker_first_in_queue(db)?;
+            return Err("validator did not show up 1".into());
+        }
         if self.pending_blocks.is_empty() {
-            if !self.stakers.is_empty()
-                && util::timestamp()
-                    > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
-            {
-                self.punish_staker_first_in_queue(db)?;
-            }
             return Err("no pending blocks".into());
         }
         let block;
         if self.stakers.is_empty() {
             block = self.pending_blocks.remove(0);
             self.cold_start_mint_stakers_stakes(db, &block)?;
-        } else {
-            match self
-                .pending_blocks
-                .iter()
-                .position(|x| x.public_key == self.stakers[0].0)
-            {
-                Some(index) => block = self.pending_blocks.remove(index),
-                None => {
-                    self.punish_staker_first_in_queue(db)?;
-                    return Err("validator did not show up".into());
-                }
-            }
-        }
-        if !self.stakers.is_empty()
-            && (block.timestamp < self.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp
-                || block.timestamp
-                    > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp)
+        } else if let Some(index) = self
+            .pending_blocks
+            .iter()
+            .position(|x| x.public_key == self.stakers[0].0)
         {
+            block = self.pending_blocks.remove(index)
+        } else {
             self.punish_staker_first_in_queue(db)?;
-            return Err("validator did not show up in time".into());
+            return Err("validator did not show up 2".into());
         }
-        // save block
+        Ok(block)
+    }
+    pub fn accept_block(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        forger: bool,
+    ) -> Result<(), Box<dyn Error>> {
+        let block = self.next_block(db)?;
         block.put(db)?;
         let block_metadata = BlockMetadata::from(&block);
         let hash = block_metadata.hash();
         self.hashes.push(hash);
-        self.cache_balances(db, &block.transactions, &block.stakes)?;
-        // set latest block
         Blockchain::put_latest_block_hash(db, hash)?;
-        self.latest_block = block;
-        for stake in self.latest_block.stakes.iter() {
-            // check if has already staked
+        self.cache_balances(db, &block.transactions, &block.stakes)?;
+        let fees = Blockchain::get_fees(&block.transactions, &block.stakes);
+        self.add_reward(db, &block.public_key, fees)?;
+        for stake in block.stakes.iter() {
             let staked_balance = self.get_staked_balance(db, &stake.public_key)?;
             if stake.deposit {
                 if staked_balance >= MIN_STAKE
@@ -600,13 +603,11 @@ impl Blockchain {
                 self.stakers.remove(index).unwrap();
             }
         }
-        // reward validator
-        let fees = Blockchain::get_fees(&self.latest_block.transactions, &self.latest_block.stakes);
-        self.add_reward(db, &self.latest_block.public_key, fees)?;
-        // rotate validator queue
         if !self.stakers.is_empty() {
             self.stakers.rotate_left(1);
         }
+        self.latest_block = block;
+        self.pending_blocks.clear();
         if !forger {
             info!(
                 "{}: {} {}",
@@ -615,7 +616,6 @@ impl Blockchain {
                 hex::encode(hash)
             );
         }
-        self.pending_blocks.clear();
         Ok(())
     }
     fn punish_staker_first_in_queue(

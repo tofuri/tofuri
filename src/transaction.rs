@@ -1,4 +1,4 @@
-use crate::{db, util};
+use crate::{db, types, util};
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, Signature};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -7,16 +7,16 @@ use serde_big_array::BigArray;
 use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
-    pub input: [u8; 32],
-    pub output: [u8; 32],
+    pub input: types::PublicKey,
+    pub output: types::PublicKey,
     pub amount: u64,
     pub fee: u64,
     pub timestamp: u64,
     #[serde(with = "BigArray")]
-    pub signature: [u8; 64],
+    pub signature: types::Signature,
 }
 impl Transaction {
-    pub fn from(output: [u8; 32], amount: u64, fee: u64, timestamp: u64) -> Transaction {
+    pub fn from(output: types::PublicKey, amount: u64, fee: u64, timestamp: u64) -> Transaction {
         Transaction {
             input: [0; 32],
             output,
@@ -26,10 +26,10 @@ impl Transaction {
             signature: [0; 64],
         }
     }
-    pub fn new(output: [u8; 32], amount: u64, fee: u64) -> Transaction {
+    pub fn new(output: types::PublicKey, amount: u64, fee: u64) -> Transaction {
         Transaction::from(output, amount, fee, util::timestamp())
     }
-    pub fn hash(&self) -> [u8; 32] {
+    pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&TransactionHeader::from(self)).unwrap())
     }
     pub fn sign(&mut self, keypair: &Keypair) {
@@ -69,8 +69,8 @@ impl Transaction {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TransactionHeader {
-    pub input: [u8; 32],
-    pub output: [u8; 32],
+    pub input: types::PublicKey,
+    pub output: types::PublicKey,
     pub amount: u64,
     pub fee: u64,
     pub timestamp: u64,

@@ -1,6 +1,6 @@
 use crate::{
     constants::{MAX_STAKE, MIN_STAKE},
-    db, util,
+    db, types, util,
 };
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, Signature};
@@ -10,13 +10,13 @@ use serde_big_array::BigArray;
 use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Stake {
-    pub public_key: [u8; 32],
+    pub public_key: types::PublicKey,
     pub amount: u64,
     pub deposit: bool, // false -> widthdraw
     pub fee: u64,
     pub timestamp: u64,
     #[serde(with = "BigArray")]
-    pub signature: [u8; 64],
+    pub signature: types::Signature,
 }
 impl Stake {
     pub fn from(deposit: bool, amount: u64, fee: u64, timestamp: u64) -> Stake {
@@ -32,7 +32,7 @@ impl Stake {
     pub fn new(deposit: bool, amount: u64, fee: u64) -> Stake {
         Stake::from(deposit, amount, fee, util::timestamp())
     }
-    pub fn hash(&self) -> [u8; 32] {
+    pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&StakeHeader::from(self)).unwrap())
     }
     pub fn sign(&mut self, keypair: &Keypair) {
@@ -70,7 +70,7 @@ impl Stake {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StakeHeader {
-    pub public_key: [u8; 32],
+    pub public_key: types::PublicKey,
     pub amount: u64,
     pub fee: u64,
     pub timestamp: u64,

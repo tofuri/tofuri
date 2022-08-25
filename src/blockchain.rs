@@ -15,22 +15,18 @@ use crate::{
     db,
     stake::Stake,
     transaction::Transaction,
-    util,
+    types, util,
 };
 use colored::*;
 use ed25519_dalek::Keypair;
 use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
-use std::{collections::VecDeque, error::Error};
-pub type PublicKey = [u8; 32];
-pub type Height = usize;
-pub type Staker = (PublicKey, Height);
-pub type Stakers = VecDeque<Staker>;
+use std::error::Error;
 #[derive(Debug)]
 pub struct Blockchain {
     pub latest_block: Block,
-    pub hashes: Vec<[u8; 32]>,
-    pub stakers: Stakers,
+    pub hashes: types::Hashes,
+    pub stakers: types::Stakers,
     pub pending_transactions: Vec<Transaction>,
     pub pending_stakes: Vec<Stake>,
     pub pending_blocks: Vec<Block>,
@@ -53,9 +49,9 @@ impl Blockchain {
     }
     pub fn stakers(
         db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &[[u8; 32]],
-    ) -> Result<Stakers, Box<dyn Error>> {
-        let mut stakers: Stakers = VecDeque::new();
+        hashes: &[types::Hash],
+    ) -> Result<types::Stakers, Box<dyn Error>> {
+        let mut stakers = types::Stakers::new();
         for (index, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash)?;
             for stake in block.stakes {
@@ -241,16 +237,16 @@ impl Blockchain {
         self.limit_pending_stakes();
         Ok(())
     }
-    pub fn height(&self, hash: [u8; 32]) -> Option<usize> {
+    pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
-    pub fn latest_height(&self) -> usize {
+    pub fn latest_height(&self) -> types::Height {
         self.hashes.len() - 1
     }
     fn hashes(
         db: &DBWithThreadMode<SingleThreaded>,
-        previous_hash: [u8; 32],
-    ) -> Result<Vec<[u8; 32]>, Box<dyn Error>> {
+        previous_hash: types::Hash,
+    ) -> Result<Vec<types::Hash>, Box<dyn Error>> {
         let mut hashes = vec![];
         let mut previous_hash = previous_hash;
         let mut closure = || -> Result<Option<()>, Box<dyn Error>> {
@@ -305,7 +301,7 @@ impl Blockchain {
     }
     fn put_latest_block_hash(
         db: &DBWithThreadMode<SingleThreaded>,
-        hash: [u8; 32],
+        hash: types::Hash,
     ) -> Result<(), Box<dyn Error>> {
         db.put(db::key(&db::Key::LatestBlockHash), hash)?;
         Ok(())
@@ -313,7 +309,7 @@ impl Blockchain {
     fn get_balance_raw(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &[u8; 32],
+        public_key: &types::PublicKey,
     ) -> Result<u64, Box<dyn Error>> {
         let bytes = db
             .get_cf(db::cf_handle_balances(db)?, public_key)?
@@ -323,7 +319,7 @@ impl Blockchain {
     pub fn get_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &[u8; 32],
+        public_key: &types::PublicKey,
     ) -> Result<u64, Box<dyn Error>> {
         match self.get_balance_raw(db, public_key) {
             Ok(balance) => Ok(balance),
@@ -339,7 +335,7 @@ impl Blockchain {
     fn put_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &[u8; 32],
+        public_key: &types::PublicKey,
         balance: u64,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
@@ -352,7 +348,7 @@ impl Blockchain {
     fn get_staked_balance_raw(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &[u8; 32],
+        public_key: &types::PublicKey,
     ) -> Result<u64, Box<dyn Error>> {
         let bytes = db
             .get_cf(db::cf_handle_staked_balances(db)?, public_key)?
@@ -362,7 +358,7 @@ impl Blockchain {
     pub fn get_staked_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &[u8; 32],
+        public_key: &types::PublicKey,
     ) -> Result<u64, Box<dyn Error>> {
         match self.get_staked_balance_raw(db, public_key) {
             Ok(balance) => Ok(balance),
@@ -378,7 +374,7 @@ impl Blockchain {
     fn put_staked_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &[u8; 32],
+        public_key: &types::PublicKey,
         staked_balance: u64,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
@@ -391,7 +387,7 @@ impl Blockchain {
     fn add_reward(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &[u8; 32],
+        public_key: &types::PublicKey,
         fees: u64,
     ) -> Result<(), Box<dyn Error>> {
         let staked_balance = self.get_staked_balance(db, public_key)?;

@@ -15,6 +15,7 @@ pub mod print;
 pub mod stake;
 pub mod sync;
 pub mod transaction;
+pub mod types;
 pub mod util;
 pub mod validator;
 pub mod wallet;

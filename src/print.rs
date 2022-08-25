@@ -3,6 +3,7 @@ use crate::{
     blockchain::Blockchain,
     cli::{ValidatorArgs, WalletArgs},
     transaction::Transaction,
+    types,
     validator::Validator,
 };
 use chrono::Local;
@@ -112,7 +113,7 @@ pub fn http_api_request_handler(first: &str) {
 pub fn p2p_event(event_type: &str, event: String) {
     info!("{}: {}", event_type.cyan(), event)
 }
-pub fn heartbeat_lag(heartbeats: usize, millis: f64) {
+pub fn heartbeat_lag(heartbeats: types::Heartbeats, millis: f64) {
     debug!(
         "{}: {} {}ms",
         "Heartbeat".cyan(),

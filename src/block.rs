@@ -1,4 +1,4 @@
-use crate::{db, stake::Stake, transaction::Transaction, util};
+use crate::{db, stake::Stake, transaction::Transaction, types, util};
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, Signature};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -7,20 +7,20 @@ use serde_big_array::BigArray;
 use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
-    pub previous_hash: [u8; 32],
+    pub previous_hash: types::Hash,
     pub timestamp: u64,
-    pub public_key: [u8; 32],
+    pub public_key: types::PublicKey,
     #[serde(with = "BigArray")]
-    pub signature: [u8; 64],
+    pub signature: types::Signature,
     pub transactions: Vec<Transaction>,
     pub stakes: Vec<Stake>,
 }
 impl Block {
     pub fn from(
-        previous_hash: [u8; 32],
+        previous_hash: types::Hash,
         timestamp: u64,
-        public_key: [u8; 32],
-        signature: [u8; 64],
+        public_key: types::PublicKey,
+        signature: types::Signature,
     ) -> Block {
         Block {
             previous_hash,
@@ -31,7 +31,7 @@ impl Block {
             stakes: vec![],
         }
     }
-    pub fn new(previous_hash: [u8; 32]) -> Block {
+    pub fn new(previous_hash: types::Hash) -> Block {
         Block::from(previous_hash, util::timestamp(), [0; 32], [0; 64])
     }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
@@ -95,9 +95,9 @@ impl Block {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BlockHeader {
-    pub previous_hash: [u8; 32],
-    pub transaction_merkle_root: [u8; 32],
-    pub stake_merkle_root: [u8; 32],
+    pub previous_hash: types::Hash,
+    pub transaction_merkle_root: types::MerkleRoot,
+    pub stake_merkle_root: types::MerkleRoot,
     pub timestamp: u64,
 }
 impl BlockHeader {
@@ -112,14 +112,14 @@ impl BlockHeader {
 }
 #[derive(Debug)]
 pub struct BlockMetadata {
-    pub previous_hash: [u8; 32],
+    pub previous_hash: types::Hash,
     pub timestamp: u64,
-    pub public_key: [u8; 32],
-    pub signature: [u8; 64],
-    pub transaction_hashes: Vec<[u8; 32]>,
-    pub transaction_merkle_root: [u8; 32],
-    pub stake_hashes: Vec<[u8; 32]>,
-    pub stake_merkle_root: [u8; 32],
+    pub public_key: types::PublicKey,
+    pub signature: types::Signature,
+    pub transaction_hashes: Vec<types::Hash>,
+    pub transaction_merkle_root: types::MerkleRoot,
+    pub stake_hashes: Vec<types::Hash>,
+    pub stake_merkle_root: types::MerkleRoot,
 }
 impl BlockMetadata {
     pub fn from(block: &Block) -> BlockMetadata {
@@ -136,24 +136,24 @@ impl BlockMetadata {
             stake_hashes,
         }
     }
-    pub fn hash(&self) -> [u8; 32] {
+    pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&BlockHeader::from(self)).unwrap())
     }
-    pub fn transaction_hashes(transactions: &Vec<Transaction>) -> Vec<[u8; 32]> {
+    pub fn transaction_hashes(transactions: &Vec<Transaction>) -> Vec<types::Hash> {
         let mut transaction_hashes = vec![];
         for transaction in transactions {
             transaction_hashes.push(transaction.hash());
         }
         transaction_hashes
     }
-    pub fn stake_hashes(stakes: &Vec<Stake>) -> Vec<[u8; 32]> {
+    pub fn stake_hashes(stakes: &Vec<Stake>) -> Vec<types::Hash> {
         let mut stake_hashes = vec![];
         for stake in stakes {
             stake_hashes.push(stake.hash());
         }
         stake_hashes
     }
-    pub fn merkle_root(transaction_hashes: &[[u8; 32]]) -> [u8; 32] {
+    pub fn merkle_root(transaction_hashes: &[types::Hash]) -> types::MerkleRoot {
         util::CBMT::build_merkle_root(transaction_hashes)
     }
     pub fn sign(&mut self, keypair: &Keypair) {
@@ -168,13 +168,13 @@ impl BlockMetadata {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BlockMetadataLean {
-    pub previous_hash: [u8; 32],
+    pub previous_hash: types::Hash,
     pub timestamp: u64,
-    pub public_key: [u8; 32],
+    pub public_key: types::PublicKey,
     #[serde(with = "BigArray")]
-    pub signature: [u8; 64],
-    pub transaction_hashes: Vec<[u8; 32]>,
-    pub stake_hashes: Vec<[u8; 32]>,
+    pub signature: types::Signature,
+    pub transaction_hashes: Vec<types::Hash>,
+    pub stake_hashes: Vec<types::Hash>,
 }
 impl BlockMetadataLean {
     pub fn from(block_metadata: &BlockMetadata) -> BlockMetadataLean {

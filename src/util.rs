@@ -1,3 +1,4 @@
+use crate::types;
 use ed25519_dalek::Keypair;
 use merkle_cbt::{merkle_tree::Merge, CBMT as ExCBMT};
 use rand::rngs::OsRng;
@@ -29,7 +30,7 @@ pub fn timestamp() -> u64 {
         .expect("Time went backwards")
         .as_secs()
 }
-pub fn hash(input: &[u8]) -> [u8; 32] {
+pub fn hash(input: &[u8]) -> types::Hash {
     blake3::hash(input).into()
 }
 pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>> {

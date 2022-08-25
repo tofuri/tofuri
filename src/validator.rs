@@ -2,17 +2,19 @@ use crate::{
     address,
     block::Block,
     blockchain::Blockchain,
-    constants::{BLOCKS_PER_SECOND_THRESHOLD, MAX_STAKE, SYNC_BLOCKS, SYNC_HISTORY_LENGTH},
+    cli::ValidatorArgs,
+    constants::{
+        BLOCKS_PER_SECOND_THRESHOLD, BLOCK_TIME_MIN, MAX_STAKE, SYNC_BLOCKS, SYNC_HISTORY_LENGTH,
+    },
     db, http,
     p2p::MyBehaviour,
     print,
     stake::Stake,
     sync::Sync,
     transaction::Transaction,
-    util,
+    types, util,
     wallet::Wallet,
 };
-use crate::{cli::ValidatorArgs, constants::BLOCK_TIME_MIN};
 use colored::*;
 use ed25519_dalek::Keypair;
 use libp2p::{
@@ -68,7 +70,7 @@ pub struct Validator {
     pub keypair: Keypair,
     pub multiaddrs: Vec<Multiaddr>,
     pub synchronizer: Synchronizer,
-    pub heartbeats: usize,
+    pub heartbeats: types::Heartbeats,
     pub lag: [f64; 3],
 }
 impl Validator {
@@ -232,7 +234,7 @@ impl Validator {
             } else if http::regex::HASH_BY_HEIGHT.is_match(&first) {
                 let height = match http::regex::HASH_BY_HEIGHT.find(&first) {
                     Some(x) => match x.as_str().trim().get(6..) {
-                        Some(x) => match x.parse::<usize>() {
+                        Some(x) => match x.parse::<types::Height>() {
                             Ok(x) => x,
                             Err(_) => return Ok(()),
                         },

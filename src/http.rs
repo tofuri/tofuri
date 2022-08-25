@@ -1,7 +1,12 @@
-use crate::block::BlockMetadata;
 use crate::{
-    address, block::Block, blockchain::Stakers, p2p::MyBehaviour, stake::Stake,
-    transaction::Transaction, validator::Synchronizer,
+    address,
+    block::{Block, BlockMetadata},
+    p2p::MyBehaviour,
+    stake::Stake,
+    transaction::Transaction,
+    types,
+    types::Stakers,
+    validator::Synchronizer,
 };
 use serde::{Deserialize, Serialize};
 pub mod regex {
@@ -21,7 +26,7 @@ pub mod regex {
         pub static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
     }
 }
-pub fn format_height(height: usize) -> String {
+pub fn format_height(height: types::Height) -> String {
     format!(
         "\
 HTTP/1.1 200 OK
@@ -129,7 +134,7 @@ Validator {} {}/tree/{}
             .stakers
             .iter()
             .map(|&x| (address::encode(&x.0), x.1))
-            .collect::<Vec<(String, usize)>>(),
+            .collect::<Vec<(String, types::Height)>>(),
         behaviour
             .validator
             .blockchain
@@ -164,15 +169,15 @@ Validator {} {}/tree/{}
 }
 #[derive(Serialize, Deserialize)]
 struct Data {
-    public_key: [u8; 32],
+    public_key: types::PublicKey,
     balance: u64,
     staked_balance: u64,
-    height: usize,
-    heartbeats: usize,
+    height: types::Height,
+    heartbeats: types::Heartbeats,
     lag: [f64; 3],
     synchronizer: Synchronizer,
     stakers: Stakers,
-    latest_hashes: Vec<[u8; 32]>,
+    latest_hashes: types::Hashes,
     pending_transactions: Vec<Transaction>,
     pending_stakes: Vec<Stake>,
     pending_blocks: Vec<Block>,

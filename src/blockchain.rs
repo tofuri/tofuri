@@ -8,9 +8,10 @@ use crate::{
         BLOCK_TRANSACTIONS_LIMIT,
         DECIMAL_PRECISION,
         GENESIS_TIMESTAMP,
+        MAX_STAKE, // BLOCKS_BEFORE_UNSTAKE
         MIN_STAKE,
         PENDING_STAKES_LIMIT,
-        PENDING_TRANSACTIONS_LIMIT, // BLOCKS_BEFORE_UNSTAKE
+        PENDING_TRANSACTIONS_LIMIT,
     },
     db,
     stake::Stake,
@@ -179,58 +180,48 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         stake: Stake,
     ) -> Result<(), Box<dyn Error>> {
-        // check if transaction is valid
         if !stake.is_valid() {
-            return Err("stake is not valid".into());
+            return Err("stake not valid".into());
         }
-        // if !stake.deposit {
-        //     // is a witchdrawal
-        //     if let Some(staker) = self.stakers.iter().find(|&e| e.0 == stake.public_key) {
-        //         if staker.1 > self.latest_height() - BLOCKS_BEFORE_UNSTAKE {
-        //             // to early to unstake
-        //             return Err("too early to unstake".into());
-        //         }
-        //     }
-        // }
-        // check if stake is already pending
         if self
             .pending_stakes
             .iter()
             .any(|x| x.signature == stake.signature)
         {
-            return Err("stake is already pending".into());
+            return Err("stake already pending".into());
         }
-        // check if stake is already included in chain (i.e. not a new stake)
         if Stake::get(db, &stake.hash()).is_ok() {
-            return Err("stake is already included in chain".into());
+            return Err("stake already in chain".into());
         }
-        // check if input affords sum
+        let balance = self.get_balance(db, &stake.public_key)?;
+        let staked_balance = self.get_staked_balance(db, &stake.public_key)?;
+        if stake.deposit {
+            if stake.amount + stake.fee > balance {
+                return Err("stake deposit too expensive".into());
+            }
+            if stake.amount + staked_balance > MAX_STAKE {
+                return Err("stake deposit exceeds MAX_STAKE".into());
+            }
+        } else {
+            if stake.fee > balance {
+                return Err("stake withdraw insufficient funds".into());
+            }
+            if stake.amount > staked_balance {
+                return Err("stake withdraw too expensive".into());
+            }
+        }
+        if stake.timestamp < self.latest_block.timestamp {
+            return Err("stake too old (created before latest block)".into());
+        }
         if let Some(index) = self
             .pending_stakes
             .iter()
             .position(|s| s.public_key == stake.public_key)
         {
             if stake.fee <= self.pending_stakes[index].fee {
-                return Err("stake fee too low".into());
-            }
-            let balance = self.get_balance(db, &stake.public_key)?;
-            let staked_balance = self.get_staked_balance(db, &stake.public_key)?;
-            if stake.deposit {
-                if stake.amount + stake.fee > balance {
-                    return Err("stake too expensive 1".into());
-                }
-            } else {
-                if stake.fee > balance {
-                    return Err("stake too expensive 2".into());
-                }
-                if stake.amount > staked_balance {
-                    return Err("stake too expensive 3".into());
-                }
+                return Err("stake fee too low to replace previous pending stake".into());
             }
             self.pending_stakes.remove(index);
-        }
-        if stake.timestamp < self.latest_block.timestamp {
-            return Err("stake too old".into());
         }
         self.pending_stakes.push(stake);
         self.sort_pending_stakes();

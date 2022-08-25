@@ -1,6 +1,6 @@
 use crate::{
     address,
-    constants::{DECIMAL_PRECISION, EXTENSION, MAX_STAKE, MIN_STAKE},
+    constants::{DECIMAL_PRECISION, EXTENSION},
     print,
     stake::Stake,
     transaction::Transaction,
@@ -235,20 +235,7 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
     };
     let amount = (CustomType::<f64>::new("Amount:")
         .with_formatter(&|i| format!("{:.9} axiom", i)) // DECIMAL_PRECISION
-        .with_parser(&|x| {
-            let amount = match x.parse::<f64>() {
-                Ok(a) => a,
-                Err(_) => return Err(()),
-            };
-            if amount * DECIMAL_PRECISION as f64 >= MIN_STAKE as f64
-                && amount * DECIMAL_PRECISION as f64 <= MAX_STAKE as f64
-            {
-                Ok(amount)
-            } else {
-                Err(())
-            }
-        })
-        .with_error_message("Please type a valid number (1 - 100)")
+        .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in axiom using a decimal point as a separator")
         .prompt()
         .unwrap_or_else(|err| {

@@ -1,7 +1,4 @@
-use crate::{
-    constants::{MAX_STAKE, MIN_STAKE},
-    db, types, util,
-};
+use crate::{db, types, util};
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, Signature};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -50,10 +47,7 @@ impl Stake {
         Ok(public_key.verify_strict(&self.hash(), &signature)?)
     }
     pub fn is_valid(&self) -> bool {
-        self.verify().is_ok()
-            && self.timestamp <= util::timestamp()
-            && self.amount >= MIN_STAKE
-            && self.amount <= MAX_STAKE
+        self.verify().is_ok() && self.timestamp <= util::timestamp()
     }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(

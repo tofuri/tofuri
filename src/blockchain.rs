@@ -598,6 +598,8 @@ impl Blockchain {
                         .push_back((stake.public_key, self.latest_height()));
                 }
             } else if staked_balance < MIN_STAKE {
+                self.put_staked_balance(db, &stake.public_key, 0)?; // burn low "staked balance" to make sure "staked balance" never exceeds MAX_STAKE after being minted
+                                                                    // example: A "staked balance" of 0.1 turns into 100.1 after a minted stake.
                 let index = self
                     .stakers
                     .iter()

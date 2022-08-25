@@ -12,7 +12,7 @@
 | Name | Min value | Max value |
 | :- | :-: | :-: |
 | Block time | `10s` | `20s` |
-| Stake amount | `1e9` | `1e12` |
+| Stake amount | `1e9` | `1e11` |
 | Forge reward | `6955550` | `1e9` |
 
 ## Validator

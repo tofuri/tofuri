@@ -600,6 +600,11 @@ impl Blockchain {
             } else if staked_balance < MIN_STAKE {
                 self.put_staked_balance(db, &stake.public_key, 0)?; // burn low "staked balance" to make sure "staked balance" never exceeds MAX_STAKE after being minted
                                                                     // example: A "staked balance" of 0.1 turns into 100.1 after a minted stake.
+                log::warn!(
+                    "{}: {}",
+                    "Burned low balance".red(),
+                    address::encode(&stake.public_key)
+                );
                 let index = self
                     .stakers
                     .iter()

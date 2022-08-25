@@ -65,7 +65,7 @@ impl Stake {
     }
     pub fn get(
         db: &DBWithThreadMode<SingleThreaded>,
-        hash: &[u8],
+        hash: &types::Hash,
     ) -> Result<Stake, Box<dyn Error>> {
         Ok(bincode::deserialize(
             &db.get_cf(db::cf_handle_stakes(db)?, hash)?

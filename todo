@@ -1,4 +1,0 @@
-fix wallet withdraw stake
-
-make it so staker queue only contains (address, height)
-burn all the users stake stored in "staked_balances" if they missbehave (punish staker)

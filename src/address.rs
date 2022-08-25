@@ -1,7 +1,11 @@
 use crate::{constants::PREFIX_ADDRESS, types, util};
 use std::error::Error;
-fn checksum(decoded: &[u8]) -> [u8; 4] {
-    util::hash(decoded).get(0..4).unwrap().try_into().unwrap()
+fn checksum(public_key: &types::PublicKey) -> types::Checksum {
+    util::hash(public_key)
+        .get(0..4)
+        .unwrap()
+        .try_into()
+        .unwrap()
 }
 pub fn encode(public_key: &types::PublicKey) -> String {
     [
@@ -30,10 +34,10 @@ mod tests {
     use test::Bencher;
     #[test]
     fn test_cecksum() {
-        assert_eq!(vec![0x60, 0x7b, 0x1a, 0xff], checksum(&[0; 20]));
+        assert_eq!(vec![0x2a, 0xda, 0x83, 0xc1], checksum(&[0; 32]));
     }
     #[bench]
     fn bench_cecksum(b: &mut Bencher) {
-        b.iter(|| checksum(&[0; 20]));
+        b.iter(|| checksum(&[0; 32]));
     }
 }

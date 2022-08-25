@@ -189,7 +189,7 @@ impl BlockMetadataLean {
     }
     pub fn put(
         db: &DBWithThreadMode<SingleThreaded>,
-        hash: &[u8],
+        hash: &types::Hash,
         block_metadata_lean: BlockMetadataLean,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(

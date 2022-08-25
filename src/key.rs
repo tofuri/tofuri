@@ -1,7 +1,7 @@
 use crate::{constants::PREFIX_ADDRESS_KEY, types, util::hash};
 use std::error::Error;
-fn checksum(decoded: &[u8]) -> [u8; 4] {
-    hash(decoded).get(1..5).unwrap().try_into().unwrap()
+fn checksum(secret_key: &types::SecretKey) -> types::Checksum {
+    hash(secret_key).get(1..5).unwrap().try_into().unwrap()
 }
 pub fn encode(secret_key: &ed25519_dalek::SecretKey) -> String {
     [
@@ -14,11 +14,7 @@ pub fn encode(secret_key: &ed25519_dalek::SecretKey) -> String {
 pub fn decode(secret_key: &str) -> Result<types::SecretKey, Box<dyn Error>> {
     let decoded = hex::decode(secret_key.replacen(PREFIX_ADDRESS_KEY, "", 1))?;
     println!("{:?}", decoded);
-    let secret_key: types::SecretKey = decoded
-        .get(0..32)
-        .ok_or("Invalid address")?
-        .try_into()
-        .unwrap();
+    let secret_key: types::SecretKey = decoded.get(0..32).ok_or("Invalid key")?.try_into().unwrap();
     if checksum(&secret_key) == decoded.get(32..).ok_or("Invalid checksum")? {
         Ok(secret_key)
     } else {

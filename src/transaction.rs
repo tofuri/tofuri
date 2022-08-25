@@ -57,6 +57,7 @@ impl Transaction {
             && self.verify().is_ok()
             && self.timestamp <= util::timestamp()
             && self.input != self.output
+            && self.amount != 0
     }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(

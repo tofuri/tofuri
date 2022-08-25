@@ -124,52 +124,45 @@ impl Blockchain {
         // self.validate_block(db, block);
         Ok(())
     }
+    // now only supports 1 transaction per block
     pub fn try_add_transaction(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
         transaction: Transaction,
     ) -> Result<(), Box<dyn Error>> {
-        // check if transaction is valid
         if !transaction.is_valid() {
-            return Err("transaction is not valid".into());
+            return Err("transaction not valid".into());
         }
-        // check if transaction is already pending
         if self
             .pending_transactions
             .iter()
             .any(|x| x.signature == transaction.signature)
         {
-            return Err("transaction is already pending".into());
+            return Err("transaction already pending".into());
         }
-        // check if transaction is already included in chain (i.e. not a new transaction)
         if Transaction::get(db, &transaction.hash()).is_ok() {
-            return Err("transaction is already included in chain".into());
+            return Err("transaction already in chain".into());
         }
-        // check if input affords sum
-        let mut transactions = vec![transaction.clone()];
-        for _ in 0..self.pending_transactions.len() {
-            for (index, t) in self.pending_transactions.iter().enumerate() {
-                if t.input == transaction.input {
-                    transactions.push(self.pending_transactions.swap_remove(index));
-                    break;
-                }
-            }
-        }
-        transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
         let balance = self.get_balance(db, &transaction.input)?;
-        let mut sum = 0;
-        for t in transactions {
-            if sum + t.amount + t.fee <= balance {
-                sum += t.amount + t.fee;
-                // add a check to see if transaction was actually included or not
-                self.pending_transactions.push(t);
-            } else {
-                break;
-            }
+        if transaction.amount + transaction.fee > balance {
+            return Err("transaction too expensive".into());
         }
-        // if transaction.timestamp < self.latest_block.timestamp {
-        //     return Err("transaction old".into());
-        // }
+        if transaction.timestamp < self.latest_block.timestamp {
+            return Err("transaction too old (created before latest block)".into());
+        }
+        if let Some(index) = self
+            .pending_transactions
+            .iter()
+            .position(|s| s.input == transaction.input)
+        {
+            if transaction.fee <= self.pending_transactions[index].fee {
+                return Err(
+                    "transaction fee too low to replace previous pending transaction".into(),
+                );
+            }
+            self.pending_transactions.remove(index);
+        }
+        self.pending_transactions.push(transaction);
         self.sort_pending_transactions();
         self.limit_pending_transactions();
         Ok(())

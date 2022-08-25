@@ -109,36 +109,51 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         block: Block,
     ) -> Result<(), Box<dyn Error>> {
-        // check if block is valid
         if !block.is_valid() {
-            return Err("block is not valid".into());
+            return Err("block not valid".into());
         }
-        // check if previous block exists
         let previous_block = Block::get(db, &block.previous_hash)?;
-        // check if block extends active chain
         if self.latest_block.previous_hash != previous_block.previous_hash {
             return Err("block does not extend active chain".into());
         }
+        // TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS
+        for transaction in block.transactions.iter() {
+            self.validate_transaction(db, transaction)?;
+        }
+        let inputs = block
+            .transactions
+            .iter()
+            .map(|t| t.input)
+            .collect::<Vec<types::PublicKey>>();
+        if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
+            return Err("block includes multiple transactions from same input".into());
+        }
+        // STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES
+        if self.stakers.is_empty() {
+            self.validate_mint_stake(&block.stakes)?;
+        } else {
+            for stake in block.stakes.iter() {
+                self.validate_stake(db, stake)?;
+            }
+        }
+        let public_keys = block
+            .stakes
+            .iter()
+            .map(|t| t.public_key)
+            .collect::<Vec<types::PublicKey>>();
+        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
+            return Err("block includes multiple stakes from same public_key".into());
+        }
         self.pending_blocks.push(block);
-        // check validator
-        // self.validate_block(db, block);
         Ok(())
     }
-    // now only supports 1 transaction per block
-    pub fn try_add_transaction(
-        &mut self,
+    fn validate_transaction(
+        &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        transaction: Transaction,
+        transaction: &Transaction,
     ) -> Result<(), Box<dyn Error>> {
         if !transaction.is_valid() {
             return Err("transaction not valid".into());
-        }
-        if self
-            .pending_transactions
-            .iter()
-            .any(|x| x.signature == transaction.signature)
-        {
-            return Err("transaction already pending".into());
         }
         if Transaction::get(db, &transaction.hash()).is_ok() {
             return Err("transaction already in chain".into());
@@ -150,6 +165,22 @@ impl Blockchain {
         if transaction.timestamp < self.latest_block.timestamp {
             return Err("transaction too old (created before latest block)".into());
         }
+        Ok(())
+    }
+    // now only supports 1 transaction per block
+    pub fn try_add_transaction(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        transaction: Transaction,
+    ) -> Result<(), Box<dyn Error>> {
+        if self
+            .pending_transactions
+            .iter()
+            .any(|x| x.signature == transaction.signature)
+        {
+            return Err("transaction already pending".into());
+        }
+        self.validate_transaction(db, &transaction)?;
         if let Some(index) = self
             .pending_transactions
             .iter()
@@ -167,21 +198,35 @@ impl Blockchain {
         self.limit_pending_transactions();
         Ok(())
     }
-    // now only supports 1 stake per block
-    pub fn try_add_stake(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        stake: Stake,
-    ) -> Result<(), Box<dyn Error>> {
+    fn validate_mint_stake(&self, stakes: &Vec<Stake>) -> Result<(), Box<dyn Error>> {
+        if stakes.len() != 1 {
+            return Err("only allowed to mind 1 stake".into());
+        }
+        let stake = stakes.get(0).unwrap();
         if !stake.is_valid() {
             return Err("stake not valid".into());
         }
-        if self
-            .pending_stakes
-            .iter()
-            .any(|x| x.signature == stake.signature)
-        {
-            return Err("stake already pending".into());
+        if stake.timestamp < self.latest_block.timestamp {
+            return Err("stake too old (created before latest block)".into());
+        }
+        if !stake.deposit {
+            return Err("mint stake must be deposit".into());
+        }
+        if stake.amount != MAX_STAKE {
+            return Err("stake invalid amount".into());
+        }
+        if stake.fee != 0 {
+            return Err("stake invalid fee".into());
+        }
+        Ok(())
+    }
+    fn validate_stake(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        stake: &Stake,
+    ) -> Result<(), Box<dyn Error>> {
+        if !stake.is_valid() {
+            return Err("stake not valid".into());
         }
         if Stake::get(db, &stake.hash()).is_ok() {
             return Err("stake already in chain".into());
@@ -206,6 +251,22 @@ impl Blockchain {
         if stake.timestamp < self.latest_block.timestamp {
             return Err("stake too old (created before latest block)".into());
         }
+        Ok(())
+    }
+    // now only supports 1 stake per block
+    pub fn try_add_stake(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        stake: Stake,
+    ) -> Result<(), Box<dyn Error>> {
+        if self
+            .pending_stakes
+            .iter()
+            .any(|x| x.signature == stake.signature)
+        {
+            return Err("stake already pending".into());
+        }
+        self.validate_stake(db, &stake)?;
         if let Some(index) = self
             .pending_stakes
             .iter()

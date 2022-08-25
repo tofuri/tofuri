@@ -109,6 +109,13 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         block: Block,
     ) -> Result<(), Box<dyn Error>> {
+        if self
+            .pending_blocks
+            .iter()
+            .any(|b| b.signature == block.signature)
+        {
+            return Err("block already pending".into());
+        }
         if !block.is_valid() {
             return Err("block not valid".into());
         }
@@ -139,10 +146,21 @@ impl Blockchain {
         let public_keys = block
             .stakes
             .iter()
-            .map(|t| t.public_key)
+            .map(|s| s.public_key)
             .collect::<Vec<types::PublicKey>>();
         if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
             return Err("block includes multiple stakes from same public_key".into());
+        }
+        // BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS
+        if let Some(index) = self
+            .pending_blocks
+            .iter()
+            .position(|b| b.public_key == block.public_key)
+        {
+            if block.timestamp <= self.pending_blocks[index].timestamp {
+                return Err("block is not new enough to replace previous pending block".into());
+            }
+            self.pending_blocks.remove(index);
         }
         self.pending_blocks.push(block);
         Ok(())

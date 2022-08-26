@@ -297,7 +297,7 @@ async fn handle_get_json_staked_balance(
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
     let public_key = address::decode(
-        BALANCE
+        STAKED_BALANCE
             .find(first)
             .ok_or("GET STAKED_BALANCE 1")?
             .as_str()

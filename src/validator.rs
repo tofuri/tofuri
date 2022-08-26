@@ -1,5 +1,4 @@
 use crate::{
-    address,
     block::Block,
     blockchain::Blockchain,
     cli::ValidatorArgs,
@@ -27,13 +26,9 @@ use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
-    io::BufRead,
     time::{Duration, SystemTime},
 };
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpListener,
-};
+use tokio::net::TcpListener;
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Synchronizer {
     pub new: usize,
@@ -158,165 +153,10 @@ impl Validator {
         micros -= secs * 1_000_000;
         micros as f64 / 1_000_f64
     }
-    async fn http_api_listener_accept(
+    async fn http_listener_accept(
         listener: &tokio::net::TcpListener,
     ) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
         Ok(listener.accept().await?.0)
-    }
-    async fn http_api_request_handler(
-        mut stream: tokio::net::TcpStream,
-        swarm: &mut Swarm<MyBehaviour>,
-    ) -> Result<(), Box<dyn Error>> {
-        let mut buffer = [0; 1024];
-        let _ = stream.read(&mut buffer).await?;
-        let first = match buffer.lines().next() {
-            Some(first) => match first {
-                Ok(first) => first,
-                Err(_) => "".to_string(),
-            },
-            None => "".to_string(),
-        };
-        print::http_api_request_handler(&first);
-        if http::regex::GET.is_match(&first) {
-            if http::regex::INDEX.is_match(&first) {
-                stream
-                    .write_all(http::format_index(swarm.behaviour()).as_bytes())
-                    .await?;
-            } else if http::regex::JSON.is_match(&first) {
-                stream
-                    .write_all(http::format_json(swarm.behaviour()).as_bytes())
-                    .await?;
-            } else if http::regex::BALANCE.is_match(&first) {
-                let address = match http::regex::BALANCE.find(&first) {
-                    Some(x) => x.as_str().trim().get(9..).unwrap_or(""),
-                    None => "",
-                };
-                let balance = match address::decode(address) {
-                    Ok(public_key) => swarm
-                        .behaviour()
-                        .validator
-                        .blockchain
-                        .get_balance(&swarm.behaviour().validator.db, &public_key)?,
-                    Err(err) => {
-                        error!("{}", err);
-                        0
-                    }
-                };
-                stream
-                    .write_all(http::format_balance(balance).as_bytes())
-                    .await?;
-            } else if http::regex::BALANCE_STAKED.is_match(&first) {
-                let address = match http::regex::BALANCE_STAKED.find(&first) {
-                    Some(x) => x.as_str().trim().get(16..).unwrap_or(""),
-                    None => "",
-                };
-                let balance = match address::decode(address) {
-                    Ok(public_key) => swarm
-                        .behaviour()
-                        .validator
-                        .blockchain
-                        .get_staked_balance(&swarm.behaviour().validator.db, &public_key)?,
-                    Err(err) => {
-                        error!("{}", err);
-                        0
-                    }
-                };
-                stream
-                    .write_all(http::format_balance(balance).as_bytes())
-                    .await?;
-            } else if http::regex::HEIGHT.is_match(&first) {
-                stream
-                    .write_all(
-                        http::format_height(swarm.behaviour().validator.blockchain.latest_height())
-                            .as_bytes(),
-                    )
-                    .await?;
-            } else if http::regex::HASH_BY_HEIGHT.is_match(&first) {
-                let height = match http::regex::HASH_BY_HEIGHT.find(&first) {
-                    Some(x) => match x.as_str().trim().get(6..) {
-                        Some(x) => match x.parse::<types::Height>() {
-                            Ok(x) => x,
-                            Err(_) => return Ok(()),
-                        },
-                        None => return Ok(()),
-                    },
-                    None => return Ok(()),
-                };
-                let behaviour = swarm.behaviour();
-                if height >= behaviour.validator.blockchain.hashes.len() {
-                    return Ok(());
-                }
-                let hash = behaviour
-                    .validator
-                    .blockchain
-                    .hashes
-                    .get(height)
-                    .ok_or("height index out of range")?;
-                stream
-                    .write_all(http::format_hash_by_height(&hex::encode(&hash)).as_bytes())
-                    .await?;
-            } else {
-                stream.write_all(http::format_404().as_bytes()).await?;
-            };
-        } else if http::regex::POST.is_match(&first) {
-            if http::regex::TRANSACTION.is_match(&first) {
-                let transaction: Transaction = bincode::deserialize(&hex::decode(
-                    &buffer
-                        .lines()
-                        .nth(5)
-                        .ok_or("invalid post transaction 1")??
-                        .get(0..304)
-                        .ok_or("invalid post transaction 2")?,
-                )?)?;
-                info!("{:?}", transaction);
-                let behaviour = swarm.behaviour_mut();
-                let status = match behaviour
-                    .validator
-                    .blockchain
-                    .try_add_transaction(&behaviour.validator.db, transaction)
-                {
-                    Ok(()) => 1,
-                    Err(err) => {
-                        error!("{}", err);
-                        0
-                    }
-                };
-                stream
-                    .write_all(http::format_status(status).as_bytes())
-                    .await?;
-            } else if http::regex::STAKE.is_match(&first) {
-                let stake: Stake = bincode::deserialize(&hex::decode(
-                    &buffer
-                        .lines()
-                        .nth(5)
-                        .ok_or("invalid post stake 1")??
-                        .get(0..242)
-                        .ok_or("invalid post stake 2")?,
-                )?)?;
-                info!("{:?}", stake);
-                let behaviour = swarm.behaviour_mut();
-                let status = match behaviour
-                    .validator
-                    .blockchain
-                    .try_add_stake(&behaviour.validator.db, stake)
-                {
-                    Ok(()) => 1,
-                    Err(err) => {
-                        error!("{}", err);
-                        0
-                    }
-                };
-                stream
-                    .write_all(http::format_status(status).as_bytes())
-                    .await?;
-            } else {
-                stream.write_all(http::format_404().as_bytes()).await?;
-            };
-        } else {
-            stream.write_all(http::format_400().as_bytes()).await?;
-        };
-        stream.flush().await?;
-        Ok(())
     }
     pub async fn listen(
         swarm: &mut Swarm<MyBehaviour>,
@@ -325,7 +165,9 @@ impl Validator {
         loop {
             tokio::select! {
                 _ = Validator::heartbeat().fuse() => Validator::heartbeat_handle(swarm)?,
-                Ok(stream) = Validator::http_api_listener_accept(&listener).fuse() => Validator::http_api_request_handler(stream, swarm).await?,
+                Ok(stream) = Validator::http_listener_accept(&listener).fuse() => if let Err(err) = http::handle(stream, swarm).await {
+                    error!("{}", err)
+                },
                 event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
             }
         }

@@ -107,7 +107,7 @@ pub fn pending_transactions(pending_transactions: &Vec<Transaction>) {
 pub fn err(err: Box<dyn Error>) {
     error!("{}", err.to_string().red());
 }
-pub fn http_api_request_handler(first: &str) {
+pub fn http_handle(first: &str) {
     info!("{}: {}", "Interface".cyan(), first.green());
 }
 pub fn p2p_event(event_type: &str, event: String) {

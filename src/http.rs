@@ -134,20 +134,14 @@ Validator {} {}/tree/{}
                 env!("CARGO_PKG_REPOSITORY"),
                 env!("GIT_HASH"),
                 address::encode(behaviour.validator.keypair.public.as_bytes()),
-                match behaviour.validator.blockchain.get_balance(
+                behaviour.validator.blockchain.get_balance(
                     &behaviour.validator.db,
                     behaviour.validator.keypair.public.as_bytes()
-                ) {
-                    Ok(balance) => balance.to_string(),
-                    Err(_) => "Err".to_string(),
-                },
-                match behaviour.validator.blockchain.get_staked_balance(
+                )?,
+                behaviour.validator.blockchain.get_staked_balance(
                     &behaviour.validator.db,
                     behaviour.validator.keypair.public.as_bytes()
-                ) {
-                    Ok(balance) => balance.to_string(),
-                    Err(_) => "Err".to_string(),
-                },
+                )?,
                 behaviour.validator.blockchain.latest_height(),
                 behaviour.validator.heartbeats,
                 behaviour.validator.lag,

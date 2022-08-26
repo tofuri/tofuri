@@ -16,27 +16,19 @@ pub struct Transaction {
     pub signature: types::Signature,
 }
 impl Transaction {
-    pub fn from(
+    pub fn new(
         output: types::PublicKey,
         amount: types::AxiomAmount,
         fee: types::AxiomAmount,
-        timestamp: types::Timestamp,
     ) -> Transaction {
         Transaction {
             input: [0; 32],
             output,
             amount,
             fee,
-            timestamp,
+            timestamp: util::timestamp(),
             signature: [0; 64],
         }
-    }
-    pub fn new(
-        output: types::PublicKey,
-        amount: types::AxiomAmount,
-        fee: types::AxiomAmount,
-    ) -> Transaction {
-        Transaction::from(output, amount, fee, util::timestamp())
     }
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&TransactionHeader::from(self)).unwrap())

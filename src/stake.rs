@@ -16,23 +16,15 @@ pub struct Stake {
     pub signature: types::Signature,
 }
 impl Stake {
-    pub fn from(
-        deposit: bool,
-        amount: types::AxiomAmount,
-        fee: types::AxiomAmount,
-        timestamp: types::Timestamp,
-    ) -> Stake {
+    pub fn new(deposit: bool, amount: types::AxiomAmount, fee: types::AxiomAmount) -> Stake {
         Stake {
             public_key: [0; 32],
             amount,
             deposit,
             fee,
-            timestamp,
+            timestamp: util::timestamp(),
             signature: [0; 64],
         }
-    }
-    pub fn new(deposit: bool, amount: types::AxiomAmount, fee: types::AxiomAmount) -> Stake {
-        Stake::from(deposit, amount, fee, util::timestamp())
     }
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&StakeHeader::from(self)).unwrap())

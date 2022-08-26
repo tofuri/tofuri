@@ -1,4 +1,4 @@
-use crate::{constants::PROTOCOL_VERSION, print, validator::Validator};
+use crate::{constants::PROTOCOL_VERSION, gossipsub, print, validator::Validator};
 use colored::*;
 use libp2p::{
     autonat,
@@ -103,7 +103,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
     fn inject_event(&mut self, event: GossipsubEvent) {
         // print::p2p_event("GossipsubEvent", format!("{:?}", event));
         if let GossipsubEvent::Message { message, .. } = event {
-            if let Err(err) = Validator::gossipsub_message_handler(self, message) {
+            if let Err(err) = gossipsub::handle(self, message) {
                 error!("{}", err)
             }
         }

@@ -7,6 +7,7 @@ pub mod cli;
 pub mod command;
 pub mod constants;
 pub mod db;
+pub mod gossipsub;
 pub mod heartbeat;
 pub mod http;
 pub mod kdf;

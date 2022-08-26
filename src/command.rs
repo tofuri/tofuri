@@ -127,7 +127,7 @@ pub async fn balance(api: &str, address: &str) -> Result<(), Box<dyn Error>> {
     }
     .json::<types::AxiomAmount>()
     .await?;
-    let balance_staked = match reqwest::get(format!("{}/balance_staked/{}", api, address)).await {
+    let staked_balance = match reqwest::get(format!("{}/staked_balance/{}", api, address)).await {
         Ok(r) => r,
         Err(err) => return reqwest_err(err),
     }
@@ -138,7 +138,7 @@ pub async fn balance(api: &str, address: &str) -> Result<(), Box<dyn Error>> {
         (balance as f64 / DECIMAL_PRECISION as f64)
             .to_string()
             .yellow(),
-        (balance_staked as f64 / DECIMAL_PRECISION as f64)
+        (staked_balance as f64 / DECIMAL_PRECISION as f64)
             .to_string()
             .yellow()
     );

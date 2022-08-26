@@ -65,15 +65,15 @@ async fn handle_get(
     } else if JSON.is_match(first) {
         handle_get_json(stream, swarm).await?;
     } else if BALANCE.is_match(first) {
-        handle_get_balance(stream, swarm, first).await?;
+        handle_get_json_balance(stream, swarm, first).await?;
     } else if STAKED_BALANCE.is_match(first) {
-        handle_get_staked_balance(stream, swarm, first).await?;
+        handle_get_json_staked_balance(stream, swarm, first).await?;
     } else if HEIGHT.is_match(first) {
-        handle_get_height(stream, swarm).await?;
+        handle_get_json_height(stream, swarm).await?;
     } else if HASH_BY_HEIGHT.is_match(first) {
-        handle_get_hash_by_height(stream, swarm, first).await?;
+        handle_get_json_hash_by_height(stream, swarm, first).await?;
     } else if BLOCK_BY_HASH.is_match(first) {
-        handle_get_block_by_hash(stream, swarm, first).await?;
+        handle_get_json_block_by_hash(stream, swarm, first).await?;
     } else {
         handle_404(stream).await?;
     };
@@ -86,9 +86,9 @@ async fn handle_post(
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
     if TRANSACTION.is_match(first) {
-        handle_post_transaction(stream, swarm, buffer).await?;
+        handle_post_json_transaction(stream, swarm, buffer).await?;
     } else if STAKE.is_match(first) {
-        handle_post_stake(stream, swarm, buffer).await?;
+        handle_post_json_stake(stream, swarm, buffer).await?;
     } else {
         handle_404(stream).await?;
     };
@@ -226,22 +226,14 @@ Content-Type: application/json
 {}",
                 serde_json::to_string(&Data {
                     public_key: *behaviour.validator.keypair.public.as_bytes(),
-                    balance: behaviour
-                        .validator
-                        .blockchain
-                        .get_balance(
-                            &behaviour.validator.db,
-                            behaviour.validator.keypair.public.as_bytes()
-                        )
-                        .unwrap(),
-                    staked_balance: behaviour
-                        .validator
-                        .blockchain
-                        .get_staked_balance(
-                            &behaviour.validator.db,
-                            behaviour.validator.keypair.public.as_bytes()
-                        )
-                        .unwrap(),
+                    balance: behaviour.validator.blockchain.get_balance(
+                        &behaviour.validator.db,
+                        behaviour.validator.keypair.public.as_bytes()
+                    )?,
+                    staked_balance: behaviour.validator.blockchain.get_staked_balance(
+                        &behaviour.validator.db,
+                        behaviour.validator.keypair.public.as_bytes()
+                    )?,
                     height: behaviour.validator.blockchain.latest_height(),
                     heartbeats: behaviour.validator.heartbeats,
                     lag: behaviour.validator.lag,
@@ -264,15 +256,14 @@ Content-Type: application/json
                     pending_stakes: behaviour.validator.blockchain.pending_stakes.clone(),
                     pending_blocks: behaviour.validator.blockchain.pending_blocks.clone(),
                     latest_block: behaviour.validator.blockchain.latest_block.clone()
-                })
-                .unwrap()
+                })?
             )
             .as_bytes(),
         )
         .await?;
     Ok(())
 }
-async fn handle_get_balance(
+async fn handle_get_json_balance(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -299,14 +290,14 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                balance
+                serde_json::to_string(&balance)?
             )
             .as_bytes(),
         )
         .await?;
     Ok(())
 }
-async fn handle_get_staked_balance(
+async fn handle_get_json_staked_balance(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -333,17 +324,18 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                balance
+                serde_json::to_string(&balance)?
             )
             .as_bytes(),
         )
         .await?;
     Ok(())
 }
-async fn handle_get_height(
+async fn handle_get_json_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
+    let height = swarm.behaviour().validator.blockchain.latest_height();
     stream
         .write_all(
             format!(
@@ -352,14 +344,14 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                swarm.behaviour().validator.blockchain.latest_height()
+                serde_json::to_string(&height)?
             )
             .as_bytes(),
         )
         .await?;
     Ok(())
 }
-async fn handle_get_hash_by_height(
+async fn handle_get_json_hash_by_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -387,14 +379,14 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                hex::encode(&hash)
+                serde_json::to_string(&hex::encode(&hash))?
             )
             .as_bytes(),
         )
         .await?;
     Ok(())
 }
-async fn handle_get_block_by_hash(
+async fn handle_get_json_block_by_hash(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -417,14 +409,14 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&block).unwrap()
+                serde_json::to_string(&block)?
             )
             .as_bytes(),
         )
         .await?;
     Ok(())
 }
-async fn handle_post_transaction(
+async fn handle_post_json_transaction(
     stream: &mut tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
@@ -458,14 +450,14 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                status
+                serde_json::to_string(&status)?
             )
             .as_bytes(),
         )
         .await?;
     Ok(())
 }
-async fn handle_post_stake(
+async fn handle_post_json_stake(
     stream: &mut tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
@@ -499,7 +491,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                status
+                serde_json::to_string(&status)?
             )
             .as_bytes(),
         )

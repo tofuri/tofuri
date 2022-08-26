@@ -17,18 +17,17 @@ use serde::{Deserialize, Serialize};
 use std::{error::Error, io::BufRead};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 lazy_static! {
-    pub static ref GET: Regex = Regex::new(r"^GET [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
-    pub static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
-    pub static ref INDEX: Regex = Regex::new(r" / ").unwrap();
-    pub static ref JSON: Regex = Regex::new(r" /json ").unwrap();
-    pub static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
-    pub static ref STAKED_BALANCE: Regex =
-        Regex::new(r" /staked_balance/0[xX][0-9A-Fa-f]* ").unwrap();
-    pub static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
-    pub static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]+ ").unwrap();
-    pub static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
-    pub static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
-    pub static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
+    static ref GET: Regex = Regex::new(r"^GET [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
+    static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
+    static ref INDEX: Regex = Regex::new(r" / ").unwrap();
+    static ref JSON: Regex = Regex::new(r" /json ").unwrap();
+    static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
+    static ref STAKED_BALANCE: Regex = Regex::new(r" /staked_balance/0[xX][0-9A-Fa-f]* ").unwrap();
+    static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
+    static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]+ ").unwrap();
+    static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
+    static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
+    static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
 }
 pub async fn handle(
     mut stream: tokio::net::TcpStream,
@@ -51,7 +50,7 @@ pub async fn handle(
     stream.flush().await?;
     Ok(())
 }
-pub async fn handle_get(
+async fn handle_get(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -75,7 +74,7 @@ pub async fn handle_get(
     };
     Ok(())
 }
-pub async fn handle_post(
+async fn handle_post(
     stream: &mut tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,
     first: &str,
@@ -90,7 +89,7 @@ pub async fn handle_post(
     };
     Ok(())
 }
-pub async fn handle_get_index(
+async fn handle_get_index(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
@@ -191,7 +190,7 @@ Validator {} {}/tree/{}
         .await?;
     Ok(())
 }
-pub async fn handle_get_json(
+async fn handle_get_json(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
@@ -268,7 +267,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-pub async fn handle_get_balance(
+async fn handle_get_balance(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -302,7 +301,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-pub async fn handle_get_staked_balance(
+async fn handle_get_staked_balance(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -336,7 +335,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-pub async fn handle_get_height(
+async fn handle_get_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
@@ -355,7 +354,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-pub async fn handle_get_hash_by_height(
+async fn handle_get_hash_by_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -390,7 +389,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-pub async fn handle_get_block_by_hash(
+async fn handle_get_block_by_hash(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -420,7 +419,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-pub async fn handle_post_transaction(
+async fn handle_post_transaction(
     stream: &mut tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
@@ -461,7 +460,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-pub async fn handle_post_stake(
+async fn handle_post_stake(
     stream: &mut tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
@@ -502,7 +501,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-pub async fn handle_404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+async fn handle_404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
     stream
         .write_all("HTTP/1.1 404 NOT FOUND".as_bytes())
         .await?;

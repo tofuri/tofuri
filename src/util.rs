@@ -45,7 +45,7 @@ pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>>
 mod tests {
     use super::*;
     use ed25519::signature::{Signer, Verifier};
-    use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
+    use ed25519_dalek::{Digest, Keypair, PublicKey, SecretKey, Sha512, Signature};
     use test::Bencher;
     #[test]
     fn test_hash() {
@@ -103,5 +103,14 @@ mod tests {
         let signature: Signature = keypair.try_sign(message).unwrap();
         let signature_bytes = signature.to_bytes();
         b.iter(|| Signature::try_from(signature_bytes));
+    }
+    #[bench]
+    fn bench_ed25519_dalek_sha512(b: &mut Bencher) {
+        let message = &[0; 32];
+        b.iter(|| {
+            let mut prehashed: Sha512 = Sha512::new();
+            prehashed.update(message);
+            prehashed.finalize();
+        });
     }
 }

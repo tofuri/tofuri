@@ -111,9 +111,11 @@ impl Validator {
     ) -> Result<(), Box<dyn Error>> {
         loop {
             tokio::select! {
-                _ = heartbeat::next().fuse() => heartbeat::handle(swarm)?,
+                _ = heartbeat::next().fuse() => if let Err(err) = heartbeat::handle(swarm) {
+                    error!("{}", err);
+                },
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handle(stream, swarm).await {
-                    error!("{}", err)
+                    error!("{}", err);
                 },
                 event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
             }

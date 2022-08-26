@@ -116,11 +116,6 @@ impl Validator {
         }
         Ok(known)
     }
-    async fn http_listener_accept(
-        listener: &tokio::net::TcpListener,
-    ) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
-        Ok(listener.accept().await?.0)
-    }
     pub async fn listen(
         swarm: &mut Swarm<MyBehaviour>,
         listener: TcpListener,
@@ -128,7 +123,7 @@ impl Validator {
         loop {
             tokio::select! {
                 _ = heartbeat::next().fuse() => heartbeat::handle(swarm)?,
-                Ok(stream) = Validator::http_listener_accept(&listener).fuse() => if let Err(err) = http::handle(stream, swarm).await {
+                Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handle(stream, swarm).await {
                     error!("{}", err)
                 },
                 event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),

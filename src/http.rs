@@ -29,6 +29,11 @@ lazy_static! {
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
 }
+pub async fn next(
+    listener: &tokio::net::TcpListener,
+) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
+    Ok(listener.accept().await?.0)
+}
 pub async fn handle(
     mut stream: tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,

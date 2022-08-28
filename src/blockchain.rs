@@ -238,7 +238,7 @@ impl Blockchain {
         if !stake.deposit {
             return Err("mint stake must be deposit".into());
         }
-        if stake.amount != MAX_STAKE {
+        if stake.amount != MIN_STAKE {
             return Err("stake invalid amount".into());
         }
         if stake.fee != 0 {

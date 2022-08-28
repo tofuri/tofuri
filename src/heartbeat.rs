@@ -1,5 +1,5 @@
 use crate::{
-    constants::{BLOCKS_PER_SECOND_THRESHOLD, BLOCK_TIME_MIN, MAX_STAKE},
+    constants::{BLOCKS_PER_SECOND_THRESHOLD, BLOCK_TIME_MIN, MIN_STAKE},
     p2p::MyBehaviour,
     print,
     stake::Stake,
@@ -51,7 +51,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         }
     } else {
         // cold start
-        let mut stake = Stake::new(true, MAX_STAKE, 0);
+        let mut stake = Stake::new(true, MIN_STAKE, 0);
         stake.sign(&behaviour.validator.keypair);
         behaviour.validator.blockchain.pending_stakes.push(stake);
     }

@@ -314,6 +314,16 @@ impl Blockchain {
     pub fn latest_height(&self) -> types::Height {
         self.hashes.len() - 1
     }
+    pub fn sum_stakes(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
+        let mut sum = 0;
+        for staker in self.stakers.iter() {
+            sum += self.get_staked_balance(db, &staker.0)?;
+        }
+        Ok(sum)
+    }
     fn hashes(
         db: &DBWithThreadMode<SingleThreaded>,
         previous_hash: types::Hash,

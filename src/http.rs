@@ -74,6 +74,8 @@ async fn handle_get(
         handle_get_json_hash_by_height(stream, swarm, first).await?;
     } else if BLOCK_BY_HASH.is_match(first) {
         handle_get_json_block_by_hash(stream, swarm, first).await?;
+    } else if STAKE.is_match(first) {
+        handle_get_json_stake(stream, swarm).await?;
     } else {
         handle_404(stream).await?;
     };
@@ -113,6 +115,8 @@ Validator {} {}/tree/{}
 
  staked_balance: {}
 
+ sum_stakes: {}
+
  height: {}
 
  heartbeats: {}
@@ -142,6 +146,10 @@ Validator {} {}/tree/{}
                     &behaviour.validator.db,
                     behaviour.validator.keypair.public.as_bytes()
                 )?,
+                behaviour
+                    .validator
+                    .blockchain
+                    .sum_stakes(&behaviour.validator.db)?,
                 behaviour.validator.blockchain.latest_height(),
                 behaviour.validator.heartbeats,
                 behaviour.validator.lag,
@@ -198,6 +206,7 @@ async fn handle_get_json(
         public_key: types::PublicKey,
         balance: types::AxiomAmount,
         staked_balance: types::AxiomAmount,
+        sum_stakes: types::AxiomAmount,
         height: types::Height,
         heartbeats: types::Heartbeats,
         lag: [f64; 3],
@@ -228,6 +237,10 @@ Content-Type: application/json
                         &behaviour.validator.db,
                         behaviour.validator.keypair.public.as_bytes()
                     )?,
+                    sum_stakes: behaviour
+                        .validator
+                        .blockchain
+                        .sum_stakes(&behaviour.validator.db,)?,
                     height: behaviour.validator.blockchain.latest_height(),
                     heartbeats: behaviour.validator.heartbeats,
                     lag: behaviour.validator.lag,
@@ -404,6 +417,30 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&block)?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn handle_get_json_stake(
+    stream: &mut tokio::net::TcpStream,
+    swarm: &Swarm<MyBehaviour>,
+) -> Result<(), Box<dyn Error>> {
+    let sum = swarm
+        .behaviour()
+        .validator
+        .blockchain
+        .sum_stakes(&swarm.behaviour().validator.db)?;
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&sum)?
             )
             .as_bytes(),
         )

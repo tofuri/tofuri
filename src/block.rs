@@ -56,6 +56,7 @@ impl Block {
         db: &DBWithThreadMode<SingleThreaded>,
         bytes: &[u8],
     ) -> Result<Block, Box<dyn Error>> {
+        println!("{}", bytes.len());
         let block_metadata_lean: BlockMetadataLean = bincode::deserialize(bytes)?;
         let mut block = Block::from(
             block_metadata_lean.previous_hash,
@@ -153,8 +154,8 @@ impl BlockMetadata {
         }
         stake_hashes
     }
-    pub fn merkle_root(transaction_hashes: &[types::Hash]) -> types::MerkleRoot {
-        util::CBMT::build_merkle_root(transaction_hashes)
+    pub fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
+        util::CBMT::build_merkle_root(hashes)
     }
     pub fn sign(&mut self, keypair: &Keypair) {
         self.public_key = keypair.public.to_bytes();

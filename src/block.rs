@@ -56,7 +56,6 @@ impl Block {
         db: &DBWithThreadMode<SingleThreaded>,
         bytes: &[u8],
     ) -> Result<Block, Box<dyn Error>> {
-        println!("{}", bytes.len());
         let block_metadata_lean: BlockMetadataLean = bincode::deserialize(bytes)?;
         let mut block = Block::from(
             block_metadata_lean.previous_hash,

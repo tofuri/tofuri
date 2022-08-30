@@ -1,23 +1,22 @@
 use crate::{db, types, util};
 use ed25519::signature::Signer;
-use ed25519_dalek::{Keypair, PublicKey, Signature};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
-    pub input: types::PublicKey,
-    pub output: types::PublicKey,
+    pub input: types::PublicKeyBytes,
+    pub output: types::PublicKeyBytes,
     pub amount: types::AxiomAmount,
     pub fee: types::AxiomAmount,
     pub timestamp: types::Timestamp,
     #[serde(with = "BigArray")]
-    pub signature: types::Signature,
+    pub signature: types::SignatureBytes,
 }
 impl Transaction {
     pub fn new(
-        output: types::PublicKey,
+        output: types::PublicKeyBytes,
         amount: types::AxiomAmount,
         fee: types::AxiomAmount,
     ) -> Transaction {
@@ -33,19 +32,19 @@ impl Transaction {
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&TransactionHeader::from(self)).unwrap())
     }
-    pub fn sign(&mut self, keypair: &Keypair) {
+    pub fn sign(&mut self, keypair: &types::Keypair) {
         self.input = keypair.public.to_bytes();
         self.signature = keypair.sign(&self.hash()).to_bytes();
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        let public_key: PublicKey = PublicKey::from_bytes(&self.input)?;
-        let signature: Signature = Signature::from_bytes(&self.signature)?;
+        let public_key = types::PublicKey::from_bytes(&self.input)?;
+        let signature = types::Signature::from_bytes(&self.signature)?;
         Ok(public_key.verify_strict(&self.hash(), &signature)?)
     }
     pub fn is_valid(&self) -> bool {
         // check if output is a valid ed25519 public key
         // strictly verify transaction signature
-        PublicKey::from_bytes(&self.output).is_ok()
+        types::PublicKey::from_bytes(&self.output).is_ok()
             && self.verify().is_ok()
             && self.timestamp <= util::timestamp()
             && self.input != self.output
@@ -71,8 +70,8 @@ impl Transaction {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TransactionHeader {
-    pub input: types::PublicKey,
-    pub output: types::PublicKey,
+    pub input: types::PublicKeyBytes,
+    pub output: types::PublicKeyBytes,
     pub amount: types::AxiomAmount,
     pub fee: types::AxiomAmount,
     pub timestamp: types::Timestamp,

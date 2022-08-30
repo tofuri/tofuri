@@ -2,7 +2,6 @@ use crate::{
     blockchain::Blockchain, cli::ValidatorArgs, constants::SYNC_HISTORY_LENGTH, db, heartbeat,
     http, p2p::MyBehaviour, print, types, util, wallet::Wallet,
 };
-use ed25519_dalek::Keypair;
 use libp2p::{
     futures::{FutureExt, StreamExt},
     Multiaddr, Swarm,
@@ -45,7 +44,7 @@ impl Synchronizer {
 pub struct Validator {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub blockchain: Blockchain,
-    pub keypair: Keypair,
+    pub keypair: types::Keypair,
     pub multiaddrs: Vec<Multiaddr>,
     pub synchronizer: Synchronizer,
     pub heartbeats: types::Heartbeats,

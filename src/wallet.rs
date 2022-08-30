@@ -5,10 +5,9 @@ use chacha20poly1305::{
     ChaCha20Poly1305,
 };
 use colored::*;
-use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use std::{error::Error, fs::File, io::prelude::*, path::Path, process};
 pub struct Wallet {
-    pub keypair: Keypair,
+    pub keypair: types::Keypair,
     pub salt: Vec<u8>,
     pub nonce: Vec<u8>,
     pub ciphertext: Vec<u8>,
@@ -73,10 +72,10 @@ impl Wallet {
         let nonce = &data[32..44];
         let ciphertext = &data[44..];
         let secret_key =
-            SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
-        let public_key: PublicKey = (&secret_key).into();
+            types::SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
+        let public_key: types::PublicKey = (&secret_key).into();
         Ok(Wallet {
-            keypair: Keypair {
+            keypair: types::Keypair {
                 secret: secret_key,
                 public: public_key,
             },
@@ -115,9 +114,7 @@ impl Wallet {
     pub fn key(&self) -> String {
         key::encode(&self.keypair.secret)
     }
-    pub fn encrypt(
-        plaintext: &[u8],
-    ) -> Result<(types::Salt, types::Nonce, types::Ciphertext), Box<dyn Error>> {
+    pub fn encrypt(plaintext: &[u8]) -> Result<([u8; 32], [u8; 12], Vec<u8>), Box<dyn Error>> {
         let passphrase = command::new_passphrase();
         let rng = &mut OsRng;
         let mut salt = [0; 32];

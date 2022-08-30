@@ -19,7 +19,6 @@ use crate::{
     types, util,
 };
 use colored::*;
-use ed25519_dalek::Keypair;
 use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::error::Error;
@@ -67,7 +66,7 @@ impl Blockchain {
     pub fn forge_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        keypair: &Keypair,
+        keypair: &types::Keypair,
     ) -> Result<Block, Box<dyn Error>> {
         let latest_block_metadata = BlockMetadata::from(&self.latest_block);
         let mut block = Block::new(latest_block_metadata.hash());
@@ -139,7 +138,7 @@ impl Blockchain {
             .transactions
             .iter()
             .map(|t| t.input)
-            .collect::<Vec<types::PublicKey>>();
+            .collect::<Vec<types::PublicKeyBytes>>();
         if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
             return Err("block includes multiple transactions from same input".into());
         }
@@ -155,7 +154,7 @@ impl Blockchain {
             .stakes
             .iter()
             .map(|s| s.public_key)
-            .collect::<Vec<types::PublicKey>>();
+            .collect::<Vec<types::PublicKeyBytes>>();
         if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
             return Err("block includes multiple stakes from same public_key".into());
         }
@@ -390,7 +389,7 @@ impl Blockchain {
     fn get_balance_raw(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKey,
+        public_key: &types::PublicKeyBytes,
     ) -> Result<types::AxiomAmount, Box<dyn Error>> {
         let bytes = db
             .get_cf(db::cf_handle_balances(db)?, public_key)?
@@ -402,7 +401,7 @@ impl Blockchain {
     pub fn get_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKey,
+        public_key: &types::PublicKeyBytes,
     ) -> Result<types::AxiomAmount, Box<dyn Error>> {
         match self.get_balance_raw(db, public_key) {
             Ok(balance) => Ok(balance),
@@ -418,7 +417,7 @@ impl Blockchain {
     fn put_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKey,
+        public_key: &types::PublicKeyBytes,
         balance: types::AxiomAmount,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
@@ -431,7 +430,7 @@ impl Blockchain {
     fn get_staked_balance_raw(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKey,
+        public_key: &types::PublicKeyBytes,
     ) -> Result<types::AxiomAmount, Box<dyn Error>> {
         let bytes = db
             .get_cf(db::cf_handle_staked_balances(db)?, public_key)?
@@ -443,7 +442,7 @@ impl Blockchain {
     pub fn get_staked_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKey,
+        public_key: &types::PublicKeyBytes,
     ) -> Result<types::AxiomAmount, Box<dyn Error>> {
         match self.get_staked_balance_raw(db, public_key) {
             Ok(balance) => Ok(balance),
@@ -459,7 +458,7 @@ impl Blockchain {
     fn put_staked_balance(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKey,
+        public_key: &types::PublicKeyBytes,
         staked_balance: types::AxiomAmount,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
@@ -472,7 +471,7 @@ impl Blockchain {
     fn add_reward(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKey,
+        public_key: &types::PublicKeyBytes,
         fees: types::AxiomAmount,
     ) -> Result<(), Box<dyn Error>> {
         let staked_balance = self.get_staked_balance(db, public_key)?;

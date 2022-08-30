@@ -1,6 +1,4 @@
 use crate::types;
-use ed25519_dalek::Keypair;
-use merkle_cbt::{merkle_tree::Merge, CBMT as ExCBMT};
 use rand::rngs::OsRng;
 use std::{
     error::Error,
@@ -9,21 +7,10 @@ use std::{
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
-pub fn keygen() -> Keypair {
+pub fn keygen() -> types::Keypair {
     let mut csprng = OsRng {};
-    Keypair::generate(&mut csprng)
+    types::Keypair::generate(&mut csprng)
 }
-pub struct Hasher;
-impl Merge for Hasher {
-    type Item = [u8; 32];
-    fn merge(left: &Self::Item, right: &Self::Item) -> Self::Item {
-        let mut hasher = blake3::Hasher::new();
-        hasher.update(left);
-        hasher.update(right);
-        hasher.finalize().into()
-    }
-}
-pub type CBMT = ExCBMT<[u8; 32], Hasher>;
 pub fn timestamp() -> types::Timestamp {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

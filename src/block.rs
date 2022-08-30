@@ -1,6 +1,5 @@
 use crate::{db, stake::Stake, transaction::Transaction, types, util};
 use ed25519::signature::Signer;
-use ed25519_dalek::{Keypair, PublicKey, Signature};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -9,9 +8,9 @@ use std::error::Error;
 pub struct Block {
     pub previous_hash: types::Hash,
     pub timestamp: types::Timestamp,
-    pub public_key: types::PublicKey,
+    pub public_key: types::PublicKeyBytes,
     #[serde(with = "BigArray")]
-    pub signature: types::Signature,
+    pub signature: types::SignatureBytes,
     pub transactions: Vec<Transaction>,
     pub stakes: Vec<Stake>,
 }
@@ -19,8 +18,8 @@ impl Block {
     pub fn from(
         previous_hash: types::Hash,
         timestamp: types::Timestamp,
-        public_key: types::PublicKey,
-        signature: types::Signature,
+        public_key: types::PublicKeyBytes,
+        signature: types::SignatureBytes,
     ) -> Block {
         Block {
             previous_hash,
@@ -114,8 +113,8 @@ impl BlockHeader {
 pub struct BlockMetadata {
     pub previous_hash: types::Hash,
     pub timestamp: types::Timestamp,
-    pub public_key: types::PublicKey,
-    pub signature: types::Signature,
+    pub public_key: types::PublicKeyBytes,
+    pub signature: types::SignatureBytes,
     pub transaction_hashes: Vec<types::Hash>,
     pub transaction_merkle_root: types::MerkleRoot,
     pub stake_hashes: Vec<types::Hash>,
@@ -154,15 +153,15 @@ impl BlockMetadata {
         stake_hashes
     }
     pub fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
-        util::CBMT::build_merkle_root(hashes)
+        types::CBMT::build_merkle_root(hashes)
     }
-    pub fn sign(&mut self, keypair: &Keypair) {
+    pub fn sign(&mut self, keypair: &types::Keypair) {
         self.public_key = keypair.public.to_bytes();
         self.signature = keypair.sign(&self.hash()).to_bytes();
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        let public_key: PublicKey = PublicKey::from_bytes(&self.public_key)?;
-        let signature: Signature = Signature::from_bytes(&self.signature)?;
+        let public_key = types::PublicKey::from_bytes(&self.public_key)?;
+        let signature = types::Signature::from_bytes(&self.signature)?;
         Ok(public_key.verify_strict(&self.hash(), &signature)?)
     }
 }
@@ -170,9 +169,9 @@ impl BlockMetadata {
 pub struct BlockMetadataLean {
     pub previous_hash: types::Hash,
     pub timestamp: types::Timestamp,
-    pub public_key: types::PublicKey,
+    pub public_key: types::PublicKeyBytes,
     #[serde(with = "BigArray")]
-    pub signature: types::Signature,
+    pub signature: types::SignatureBytes,
     pub transaction_hashes: Vec<types::Hash>,
     pub stake_hashes: Vec<types::Hash>,
 }

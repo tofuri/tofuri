@@ -203,7 +203,7 @@ async fn handle_get_json(
 ) -> Result<(), Box<dyn Error>> {
     #[derive(Serialize, Deserialize)]
     struct Data {
-        public_key: types::PublicKey,
+        public_key: types::PublicKeyBytes,
         balance: types::AxiomAmount,
         staked_balance: types::AxiomAmount,
         sum_stakes: types::AxiomAmount,

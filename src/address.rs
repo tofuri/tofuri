@@ -1,13 +1,13 @@
 use crate::{constants::PREFIX_ADDRESS, types, util};
 use std::error::Error;
-fn checksum(public_key: &types::PublicKey) -> types::Checksum {
+fn checksum(public_key: &types::PublicKeyBytes) -> types::Checksum {
     util::hash(public_key)
         .get(0..4)
         .unwrap()
         .try_into()
         .unwrap()
 }
-pub fn encode(public_key: &types::PublicKey) -> String {
+pub fn encode(public_key: &types::PublicKeyBytes) -> String {
     [
         PREFIX_ADDRESS,
         &hex::encode(public_key),
@@ -15,9 +15,9 @@ pub fn encode(public_key: &types::PublicKey) -> String {
     ]
     .concat()
 }
-pub fn decode(address: &str) -> Result<types::PublicKey, Box<dyn Error>> {
+pub fn decode(address: &str) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
     let decoded = hex::decode(address.replacen(PREFIX_ADDRESS, "", 1))?;
-    let public_key: types::PublicKey = decoded
+    let public_key: types::PublicKeyBytes = decoded
         .get(0..32)
         .ok_or("Invalid address")?
         .try_into()

@@ -1,19 +1,18 @@
 use crate::{db, types, util};
 use ed25519::signature::Signer;
-use ed25519_dalek::{Keypair, PublicKey, Signature};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Stake {
-    pub public_key: types::PublicKey,
+    pub public_key: types::PublicKeyBytes,
     pub amount: types::AxiomAmount,
     pub deposit: bool, // false -> widthdraw
     pub fee: types::AxiomAmount,
     pub timestamp: types::Timestamp,
     #[serde(with = "BigArray")]
-    pub signature: types::Signature,
+    pub signature: types::SignatureBytes,
 }
 impl Stake {
     pub fn new(deposit: bool, amount: types::AxiomAmount, fee: types::AxiomAmount) -> Stake {
@@ -29,13 +28,13 @@ impl Stake {
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&StakeHeader::from(self)).unwrap())
     }
-    pub fn sign(&mut self, keypair: &Keypair) {
+    pub fn sign(&mut self, keypair: &types::Keypair) {
         self.public_key = keypair.public.to_bytes();
         self.signature = keypair.sign(&self.hash()).to_bytes();
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        let public_key: PublicKey = PublicKey::from_bytes(&self.public_key)?;
-        let signature: Signature = Signature::from_bytes(&self.signature)?;
+        let public_key = types::PublicKey::from_bytes(&self.public_key)?;
+        let signature = types::Signature::from_bytes(&self.signature)?;
         Ok(public_key.verify_strict(&self.hash(), &signature)?)
     }
     pub fn is_valid(&self) -> bool {
@@ -61,7 +60,7 @@ impl Stake {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StakeHeader {
-    pub public_key: types::PublicKey,
+    pub public_key: types::PublicKeyBytes,
     pub amount: types::AxiomAmount,
     pub fee: types::AxiomAmount,
     pub timestamp: types::Timestamp,

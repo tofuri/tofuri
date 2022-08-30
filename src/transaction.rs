@@ -6,8 +6,8 @@ use serde_big_array::BigArray;
 use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
-    pub input: types::PublicKeyBytes,
-    pub output: types::PublicKeyBytes,
+    pub public_key_input: types::PublicKeyBytes,
+    pub public_key_output: types::PublicKeyBytes,
     pub amount: types::AxiomAmount,
     pub fee: types::AxiomAmount,
     pub timestamp: types::Timestamp,
@@ -16,13 +16,13 @@ pub struct Transaction {
 }
 impl Transaction {
     pub fn new(
-        output: types::PublicKeyBytes,
+        public_key_output: types::PublicKeyBytes,
         amount: types::AxiomAmount,
         fee: types::AxiomAmount,
     ) -> Transaction {
         Transaction {
-            input: [0; 32],
-            output,
+            public_key_input: [0; 32],
+            public_key_output,
             amount,
             fee,
             timestamp: util::timestamp(),
@@ -33,21 +33,21 @@ impl Transaction {
         util::hash(&bincode::serialize(&TransactionHeader::from(self)).unwrap())
     }
     pub fn sign(&mut self, keypair: &types::Keypair) {
-        self.input = keypair.public.to_bytes();
+        self.public_key_input = keypair.public.to_bytes();
         self.signature = keypair.sign(&self.hash()).to_bytes();
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        let public_key = types::PublicKey::from_bytes(&self.input)?;
+        let public_key = types::PublicKey::from_bytes(&self.public_key_input)?;
         let signature = types::Signature::from_bytes(&self.signature)?;
         Ok(public_key.verify_strict(&self.hash(), &signature)?)
     }
     pub fn is_valid(&self) -> bool {
         // check if output is a valid ed25519 public key
         // strictly verify transaction signature
-        types::PublicKey::from_bytes(&self.output).is_ok()
+        types::PublicKey::from_bytes(&self.public_key_output).is_ok()
             && self.verify().is_ok()
             && self.timestamp <= util::timestamp()
-            && self.input != self.output
+            && self.public_key_input != self.public_key_output
             && self.amount != 0
     }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
@@ -70,8 +70,8 @@ impl Transaction {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TransactionHeader {
-    pub input: types::PublicKeyBytes,
-    pub output: types::PublicKeyBytes,
+    pub public_key_input: types::PublicKeyBytes,
+    pub public_key_output: types::PublicKeyBytes,
     pub amount: types::AxiomAmount,
     pub fee: types::AxiomAmount,
     pub timestamp: types::Timestamp,
@@ -79,8 +79,8 @@ pub struct TransactionHeader {
 impl TransactionHeader {
     pub fn from(transaction: &Transaction) -> TransactionHeader {
         TransactionHeader {
-            input: transaction.input,
-            output: transaction.output,
+            public_key_input: transaction.public_key_input,
+            public_key_output: transaction.public_key_output,
             amount: transaction.amount,
             fee: transaction.fee,
             timestamp: transaction.timestamp,

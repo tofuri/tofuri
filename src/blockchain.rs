@@ -134,12 +134,14 @@ impl Blockchain {
         for transaction in block.transactions.iter() {
             self.validate_transaction(db, transaction)?;
         }
-        let inputs = block
+        let public_key_inputs = block
             .transactions
             .iter()
-            .map(|t| t.input)
+            .map(|t| t.public_key_input)
             .collect::<Vec<types::PublicKeyBytes>>();
-        if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
+        if (1..public_key_inputs.len())
+            .any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1]))
+        {
             return Err("block includes multiple transactions from same input".into());
         }
         // STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES
@@ -183,7 +185,7 @@ impl Blockchain {
         if Transaction::get(db, &transaction.hash()).is_ok() {
             return Err("transaction already in chain".into());
         }
-        let balance = self.get_balance(db, &transaction.input)?;
+        let balance = self.get_balance(db, &transaction.public_key_input)?;
         if transaction.amount + transaction.fee > balance {
             return Err("transaction too expensive".into());
         }
@@ -209,7 +211,7 @@ impl Blockchain {
         if let Some(index) = self
             .pending_transactions
             .iter()
-            .position(|s| s.input == transaction.input)
+            .position(|s| s.public_key_input == transaction.public_key_input)
         {
             if transaction.fee <= self.pending_transactions[index].fee {
                 return Err(
@@ -489,13 +491,13 @@ impl Blockchain {
     ) -> Result<(), Box<dyn Error>> {
         for t in transactions {
             // input
-            let mut balance = self.get_balance(db, &t.input)?;
+            let mut balance = self.get_balance(db, &t.public_key_input)?;
             balance -= t.amount + t.fee;
-            self.put_balance(db, &t.input, balance)?;
+            self.put_balance(db, &t.public_key_input, balance)?;
             // output
-            let mut balance = self.get_balance(db, &t.output)?;
+            let mut balance = self.get_balance(db, &t.public_key_output)?;
             balance += t.amount;
-            self.put_balance(db, &t.output, balance)?;
+            self.put_balance(db, &t.public_key_output, balance)?;
         }
         for s in stakes {
             if s.deposit {

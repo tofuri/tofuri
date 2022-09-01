@@ -318,7 +318,7 @@ impl Blockchain {
     pub fn sum_stakes(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
+    ) -> Result<types::Amount, Box<dyn Error>> {
         let mut sum = 0;
         for staker in self.stakers.iter() {
             sum += self.get_staked_balance(db, &staker.0)?;
@@ -392,11 +392,11 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKeyBytes,
-    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
+    ) -> Result<types::Amount, Box<dyn Error>> {
         let bytes = db
             .get_cf(db::cf_handle_balances(db)?, public_key)?
             .ok_or("balance not found")?;
-        Ok(types::AxiomAmount::from_le_bytes(
+        Ok(types::Amount::from_le_bytes(
             bytes.as_slice().try_into()?,
         ))
     }
@@ -404,7 +404,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKeyBytes,
-    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
+    ) -> Result<types::Amount, Box<dyn Error>> {
         match self.get_balance_raw(db, public_key) {
             Ok(balance) => Ok(balance),
             Err(err) => {
@@ -420,7 +420,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKeyBytes,
-        balance: types::AxiomAmount,
+        balance: types::Amount,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
             db::cf_handle_balances(db)?,
@@ -433,11 +433,11 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKeyBytes,
-    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
+    ) -> Result<types::Amount, Box<dyn Error>> {
         let bytes = db
             .get_cf(db::cf_handle_staked_balances(db)?, public_key)?
             .ok_or("staked_balance not found")?;
-        Ok(types::AxiomAmount::from_le_bytes(
+        Ok(types::Amount::from_le_bytes(
             bytes.as_slice().try_into()?,
         ))
     }
@@ -445,7 +445,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKeyBytes,
-    ) -> Result<types::AxiomAmount, Box<dyn Error>> {
+    ) -> Result<types::Amount, Box<dyn Error>> {
         match self.get_staked_balance_raw(db, public_key) {
             Ok(balance) => Ok(balance),
             Err(err) => {
@@ -461,7 +461,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKeyBytes,
-        staked_balance: types::AxiomAmount,
+        staked_balance: types::Amount,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
             db::cf_handle_staked_balances(db)?,
@@ -474,7 +474,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKeyBytes,
-        fees: types::AxiomAmount,
+        fees: types::Amount,
     ) -> Result<(), Box<dyn Error>> {
         let staked_balance = self.get_staked_balance(db, public_key)?;
         let mut balance = self.get_balance(db, public_key)?;
@@ -521,7 +521,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn get_fees(transactions: &Vec<Transaction>, stakes: &Vec<Stake>) -> types::AxiomAmount {
+    fn get_fees(transactions: &Vec<Transaction>, stakes: &Vec<Stake>) -> types::Amount {
         let mut fees = 0;
         for t in transactions {
             fees += t.fee;
@@ -548,9 +548,9 @@ impl Blockchain {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
     }
-    pub fn reward(stake_amount: types::AxiomAmount) -> types::AxiomAmount {
+    pub fn reward(stake_amount: types::Amount) -> types::Amount {
         ((2f64.powf((stake_amount as f64 / DECIMAL_PRECISION as f64) / 100f64) - 1f64)
-            * DECIMAL_PRECISION as f64) as types::AxiomAmount
+            * DECIMAL_PRECISION as f64) as types::Amount
     }
     fn next_block(
         &mut self,

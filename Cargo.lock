@@ -301,40 +301,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
-name = "axiom"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "async-std",
- "bincode",
- "blake3",
- "chacha20poly1305 0.10.1",
- "chrono",
- "clap",
- "colored",
- "ed25519",
- "ed25519-dalek",
- "env_logger",
- "hex",
- "inquire",
- "lazy_static",
- "libp2p",
- "log",
- "merkle-cbt",
- "rand 0.7.3",
- "regex",
- "reqwest",
- "rocksdb",
- "serde",
- "serde-big-array",
- "serde_json",
- "tempdir",
- "termion",
- "tokio",
- "zxcvbn",
-]
-
-[[package]]
 name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2759,6 +2725,40 @@ name = "paste"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c520e05135d6e763148b6426a837e239041653ba7becd2e538c076c738025fc"
+
+[[package]]
+name = "pea"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "async-std",
+ "bincode",
+ "blake3",
+ "chacha20poly1305 0.10.1",
+ "chrono",
+ "clap",
+ "colored",
+ "ed25519",
+ "ed25519-dalek",
+ "env_logger",
+ "hex",
+ "inquire",
+ "lazy_static",
+ "libp2p",
+ "log",
+ "merkle-cbt",
+ "rand 0.7.3",
+ "regex",
+ "reqwest",
+ "rocksdb",
+ "serde",
+ "serde-big-array",
+ "serde_json",
+ "tempdir",
+ "termion",
+ "tokio",
+ "zxcvbn",
+]
 
 [[package]]
 name = "peeking_take_while"

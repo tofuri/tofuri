@@ -204,9 +204,9 @@ async fn handle_get_json(
     #[derive(Serialize, Deserialize)]
     struct Data {
         public_key: types::PublicKeyBytes,
-        balance: types::AxiomAmount,
-        staked_balance: types::AxiomAmount,
-        sum_stakes: types::AxiomAmount,
+        balance: types::Amount,
+        staked_balance: types::Amount,
+        sum_stakes: types::Amount,
         height: types::Height,
         heartbeats: types::Heartbeats,
         lag: [f64; 3],

@@ -7,15 +7,15 @@ use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Stake {
     pub public_key: types::PublicKeyBytes,
-    pub amount: types::AxiomAmount,
+    pub amount: types::Amount,
     pub deposit: bool, // false -> widthdraw
-    pub fee: types::AxiomAmount,
+    pub fee: types::Amount,
     pub timestamp: types::Timestamp,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
 impl Stake {
-    pub fn new(deposit: bool, amount: types::AxiomAmount, fee: types::AxiomAmount) -> Stake {
+    pub fn new(deposit: bool, amount: types::Amount, fee: types::Amount) -> Stake {
         Stake {
             public_key: [0; 32],
             amount,
@@ -61,8 +61,8 @@ impl Stake {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StakeHeader {
     pub public_key: types::PublicKeyBytes,
-    pub amount: types::AxiomAmount,
-    pub fee: types::AxiomAmount,
+    pub amount: types::Amount,
+    pub fee: types::Amount,
     pub timestamp: types::Timestamp,
 }
 impl StakeHeader {

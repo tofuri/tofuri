@@ -125,13 +125,13 @@ pub async fn balance(api: &str, address: &str) -> Result<(), Box<dyn Error>> {
         Ok(r) => r,
         Err(err) => return reqwest_err(err),
     }
-    .json::<types::AxiomAmount>()
+    .json::<types::Amount>()
     .await?;
     let staked_balance = match reqwest::get(format!("{}/staked_balance/{}", api, address)).await {
         Ok(r) => r,
         Err(err) => return reqwest_err(err),
     }
-    .json::<types::AxiomAmount>()
+    .json::<types::Amount>()
     .await?;
     println!(
         "Account balance: {}, locked: {}.",
@@ -176,8 +176,8 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
             println!("{}", err.to_string().red());
             process::exit(0)
         })
-        * DECIMAL_PRECISION as f64) as types::AxiomAmount;
-    let fee = CustomType::<types::AxiomAmount>::new("Fee:")
+        * DECIMAL_PRECISION as f64) as types::Amount;
+    let fee = CustomType::<types::Amount>::new("Fee:")
         .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in satoshis using a decimal point as a separator")
@@ -242,8 +242,8 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
             println!("{}", err.to_string().red());
             process::exit(0)
         })
-        * DECIMAL_PRECISION as f64) as types::AxiomAmount;
-    let fee = CustomType::<types::AxiomAmount>::new("Fee:")
+        * DECIMAL_PRECISION as f64) as types::Amount;
+    let fee = CustomType::<types::Amount>::new("Fee:")
         .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in satoshis using a decimal point as a separator")
@@ -261,7 +261,7 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
     } {
         return Ok(());
     }
-    let mut stake = Stake::new(deposit, amount as types::AxiomAmount, fee);
+    let mut stake = Stake::new(deposit, amount as types::Amount, fee);
     stake.sign(&wallet.keypair);
     let client = reqwest::Client::new();
     let res: usize = match client

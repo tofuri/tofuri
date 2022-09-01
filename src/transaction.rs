@@ -8,8 +8,8 @@ use std::error::Error;
 pub struct Transaction {
     pub public_key_input: types::PublicKeyBytes,
     pub public_key_output: types::PublicKeyBytes,
-    pub amount: types::AxiomAmount,
-    pub fee: types::AxiomAmount,
+    pub amount: types::Amount,
+    pub fee: types::Amount,
     pub timestamp: types::Timestamp,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
@@ -17,8 +17,8 @@ pub struct Transaction {
 impl Transaction {
     pub fn new(
         public_key_output: types::PublicKeyBytes,
-        amount: types::AxiomAmount,
-        fee: types::AxiomAmount,
+        amount: types::Amount,
+        fee: types::Amount,
     ) -> Transaction {
         Transaction {
             public_key_input: [0; 32],
@@ -72,8 +72,8 @@ impl Transaction {
 pub struct TransactionHeader {
     pub public_key_input: types::PublicKeyBytes,
     pub public_key_output: types::PublicKeyBytes,
-    pub amount: types::AxiomAmount,
-    pub fee: types::AxiomAmount,
+    pub amount: types::Amount,
+    pub fee: types::Amount,
     pub timestamp: types::Timestamp,
 }
 impl TransactionHeader {

@@ -168,9 +168,9 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
             process::exit(0)
         });
     let amount = (CustomType::<f64>::new("Amount:")
-        .with_formatter(&|i| format!("{:.9} axiom", i)) // DECIMAL_PRECISION
+        .with_formatter(&|i| format!("{:.9} pea", i)) // DECIMAL_PRECISION
         .with_error_message("Please type a valid number")
-        .with_help_message("Type the amount in axiom using a decimal point as a separator")
+        .with_help_message("Type the amount in pea using a decimal point as a separator")
         .prompt()
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
@@ -234,9 +234,9 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
         _ => false,
     };
     let amount = (CustomType::<f64>::new("Amount:")
-        .with_formatter(&|i| format!("{:.9} axiom", i)) // DECIMAL_PRECISION
+        .with_formatter(&|i| format!("{:.9} pea", i)) // DECIMAL_PRECISION
         .with_error_message("Please type a valid number")
-        .with_help_message("Type the amount in axiom using a decimal point as a separator")
+        .with_help_message("Type the amount in pea using a decimal point as a separator")
         .prompt()
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());

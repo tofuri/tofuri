@@ -15,5 +15,5 @@ pub const MIN_STAKE: types::Amount = 10u64.pow(9);
 pub const MAX_STAKE: types::Amount = 10u64.pow(11);
 pub const BLOCK_TIME_MIN: usize = 10;
 pub const BLOCK_TIME_MAX: usize = 20;
-pub const EXTENSION: &str = "axiom";
+pub const EXTENSION: &str = "pea";
 // pub const BLOCKS_BEFORE_UNSTAKE: usize = 2;

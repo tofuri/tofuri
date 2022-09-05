@@ -255,7 +255,15 @@ mod tests {
     fn bench_bincode_serialize(b: &mut Bencher) {
         let block = Block::new([0; 32]);
         let block_metadata = BlockMetadata::from(&block);
-        let block_metadata_lean = BlockMetadataLean::from(&block_metadata);
+        let mut block_metadata_lean = BlockMetadataLean::from(&block_metadata);
+        block_metadata_lean.signature = [0xff; 64];
+        block_metadata_lean.timestamp = util::timestamp();
+        println!("{:?}", block_metadata_lean);
+        println!("{:?}", bincode::serialize(&block_metadata_lean));
+        println!(
+            "{:?}",
+            bincode::serialize(&block_metadata_lean).unwrap().len()
+        );
         b.iter(|| bincode::serialize(&block_metadata_lean));
     }
     #[bench]

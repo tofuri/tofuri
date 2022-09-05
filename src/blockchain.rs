@@ -396,9 +396,7 @@ impl Blockchain {
         let bytes = db
             .get_cf(db::cf_handle_balances(db)?, public_key)?
             .ok_or("balance not found")?;
-        Ok(types::Amount::from_le_bytes(
-            bytes.as_slice().try_into()?,
-        ))
+        Ok(types::Amount::from_le_bytes(bytes.as_slice().try_into()?))
     }
     pub fn get_balance(
         &self,
@@ -437,9 +435,7 @@ impl Blockchain {
         let bytes = db
             .get_cf(db::cf_handle_staked_balances(db)?, public_key)?
             .ok_or("staked_balance not found")?;
-        Ok(types::Amount::from_le_bytes(
-            bytes.as_slice().try_into()?,
-        ))
+        Ok(types::Amount::from_le_bytes(bytes.as_slice().try_into()?))
     }
     pub fn get_staked_balance(
         &self,

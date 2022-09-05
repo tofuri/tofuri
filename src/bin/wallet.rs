@@ -1,5 +1,5 @@
-use pea::{cli::WalletArgs, command, print, wallet::Wallet};
 use clap::Parser;
+use pea::{cli::WalletArgs, command, print, wallet::Wallet};
 use std::error::Error;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

@@ -2,7 +2,7 @@ pub use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
 use std::collections::VecDeque;
 pub type Height = usize;
 pub type Heartbeats = usize;
-pub type Timestamp = u64;
+pub type Timestamp = u32;
 pub type Amount = u64;
 pub type Hash = [u8; 32];
 pub type Checksum = [u8; 4];

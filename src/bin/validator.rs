@@ -1,5 +1,5 @@
-use pea::{cli::ValidatorArgs, db, p2p, print, validator::Validator, wallet::Wallet};
 use clap::Parser;
+use pea::{cli::ValidatorArgs, db, p2p, print, validator::Validator, wallet::Wallet};
 use std::error::Error;
 use tempdir::TempDir;
 use tokio::net::TcpListener;

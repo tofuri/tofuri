@@ -15,7 +15,7 @@ pub fn timestamp() -> types::Timestamp {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
-        .as_secs() as u32
+        .as_secs() as types::Timestamp
 }
 pub fn hash(input: &[u8]) -> types::Hash {
     blake3::hash(input).into()

@@ -25,3 +25,4 @@ impl Merge for Hasher {
     }
 }
 pub type CBMT = ExCBMT<[u8; 32], Hasher>;
+pub type EncryptedWallet = ([u8; 32], [u8; 12], Vec<u8>);

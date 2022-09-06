@@ -312,9 +312,7 @@ pub async fn search(api: &str) -> Result<(), Box<dyn Error>> {
         .with_error_message("Please enter a valid address or block hash.")
         .with_help_message("Enter address or block hash.")
         .with_parser(&|x| {
-            if let Ok(_) = address::decode(x) {
-                return Ok(x.to_string());
-            } else if x.len() == 64 {
+            if address::decode(x).is_ok() || x.len() == 64 {
                 return Ok(x.to_string());
             }
             Err(())
@@ -324,11 +322,10 @@ pub async fn search(api: &str) -> Result<(), Box<dyn Error>> {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    if let Ok(_) = address::decode(&search) {
+    if address::decode(&search).is_ok() {
         println!("{}", "Found Address".green());
         balance(api, &search).await?;
     } else if search.len() == 64 {
-        // balance(api, &search).await?;
         println!("{}", "Found Block".green());
         let block = match reqwest::get(format!("{}/block/{}", api, search)).await {
             Ok(r) => r,

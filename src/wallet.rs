@@ -114,7 +114,7 @@ impl Wallet {
     pub fn key(&self) -> String {
         key::encode(&self.keypair.secret)
     }
-    pub fn encrypt(plaintext: &[u8]) -> Result<([u8; 32], [u8; 12], Vec<u8>), Box<dyn Error>> {
+    pub fn encrypt(plaintext: &[u8]) -> Result<types::EncryptedWallet, Box<dyn Error>> {
         let passphrase = command::new_passphrase();
         let rng = &mut OsRng;
         let mut salt = [0; 32];

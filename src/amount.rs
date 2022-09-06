@@ -10,12 +10,12 @@ pub fn to_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
     }
     let size = 16 - i;
     let mut output = [0; AMOUNT_BYTES];
-    for j in 0..AMOUNT_BYTES {
+    for (j, v) in output.iter_mut().enumerate().take(AMOUNT_BYTES) {
         let k = i + j;
         if k == 16 {
             break;
         }
-        output[j] = bytes[k];
+        *v = bytes[k];
     }
     output[AMOUNT_BYTES - 1] = (output[AMOUNT_BYTES - 1] & 0xf0) | size as u8;
     output
@@ -23,16 +23,16 @@ pub fn to_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
 pub fn from_bytes(input: [u8; AMOUNT_BYTES]) -> u128 {
     let size = input[AMOUNT_BYTES - 1] as usize & 0x0f;
     let mut bytes = [0; 16];
-    for i in 0..AMOUNT_BYTES {
+    for (i, v) in input.iter().enumerate().take(AMOUNT_BYTES) {
         let j = 16 - size + i;
         if j == 16 {
             break;
         }
         if i == AMOUNT_BYTES - 1 {
-            bytes[j] = input[i] & 0xf0;
+            bytes[j] = v & 0xf0;
             break;
         }
-        bytes[j] = input[i];
+        bytes[j] = *v;
     }
     u128::from_be_bytes(bytes)
 }

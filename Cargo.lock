@@ -2734,6 +2734,7 @@ dependencies = [
  "async-std",
  "bincode",
  "blake3",
+ "byteorder",
  "chacha20poly1305 0.10.1",
  "chrono",
  "clap",

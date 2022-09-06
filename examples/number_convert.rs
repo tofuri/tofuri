@@ -8,8 +8,10 @@ fn main() {
     println!("{}", decode(&mut v));
 }
 fn encode(i: u128) -> Vec<u8> {
+    // convert u128 to vec
     let mut v = vec![];
     v.write_u128::<LittleEndian>(i).unwrap();
+    // remove subsequent zeroes
     let mut i = 16;
     for b in v.iter().rev() {
         if b != &0 {
@@ -18,7 +20,9 @@ fn encode(i: u128) -> Vec<u8> {
         i -= 1;
     }
     v.drain(i..);
-    let len = v.len();
+    // size of the number
+    v.push(v.len() as u8);
+    // remove preceding zeroes
     let mut i: u8 = 0;
     for b in v.iter() {
         if b != &0 {
@@ -27,7 +31,6 @@ fn encode(i: u128) -> Vec<u8> {
         i += 1;
     }
     v.drain(0..i as usize);
-    v.push(len as u8);
     v
 }
 fn decode(v: &mut Vec<u8>) -> u128 {

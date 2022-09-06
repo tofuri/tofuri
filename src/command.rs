@@ -1,5 +1,6 @@
 use crate::{
     address,
+    block::{Block, BlockMetadata},
     constants::{DECIMAL_PRECISION, EXTENSION},
     print,
     stake::Stake,
@@ -7,6 +8,7 @@ use crate::{
     types,
     wallet::Wallet,
 };
+use chrono::{Local, TimeZone};
 use colored::*;
 use inquire::{validator::Validation, Confirm, CustomType, Password, PasswordDisplayMode, Select};
 use std::{
@@ -22,6 +24,7 @@ pub async fn main(wallet: &Wallet, api: &str) -> Result<(), Box<dyn Error>> {
         ">>",
         vec![
             "Address",
+            "Search",
             "Key",
             "Data",
             "Balance",
@@ -39,6 +42,7 @@ pub async fn main(wallet: &Wallet, api: &str) -> Result<(), Box<dyn Error>> {
         process::exit(0)
     }) {
         "Address" => address(wallet),
+        "Search" => search(api).await?,
         "Key" => key(wallet),
         "Data" => data(wallet),
         "Balance" => balance(api, &wallet.address()).await?,
@@ -302,6 +306,79 @@ pub async fn ip() -> Result<(), Box<dyn Error>> {
 }
 pub fn address(wallet: &Wallet) {
     println!("{}", wallet.address().green());
+}
+pub async fn search(api: &str) -> Result<(), Box<dyn Error>> {
+    let search = CustomType::<String>::new("Search:")
+        .with_error_message("Please enter a valid address or block hash.")
+        .with_help_message("Enter address or block hash.")
+        .with_parser(&|x| {
+            if let Ok(_) = address::decode(x) {
+                return Ok(x.to_string());
+            } else if x.len() == 64 {
+                return Ok(x.to_string());
+            }
+            Err(())
+        })
+        .prompt()
+        .unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        });
+    if let Ok(_) = address::decode(&search) {
+        println!("{}", "Found Address".green());
+        balance(api, &search).await?;
+    } else if search.len() == 64 {
+        // balance(api, &search).await?;
+        println!("{}", "Found Block".green());
+        let block = match reqwest::get(format!("{}/block/{}", api, search)).await {
+            Ok(r) => r,
+            Err(err) => return reqwest_err(err),
+        }
+        .json::<Block>()
+        .await?;
+        println!(
+            "{}: {}",
+            "Hash".cyan(),
+            hex::encode(BlockMetadata::from(&block).hash())
+        );
+        println!(
+            "{}: {}",
+            "Forger".cyan(),
+            address::encode(&block.public_key)
+        );
+        println!(
+            "{}: {}",
+            "Timestamp".cyan(),
+            Local
+                .timestamp(block.timestamp as i64, 0)
+                .format("%H:%M:%S")
+        );
+        println!(
+            "{}: {}",
+            "Transactions".cyan(),
+            block.transactions.len().to_string().yellow()
+        );
+        for (i, transaction) in block.transactions.iter().enumerate() {
+            println!(
+                "{}: {}",
+                format!("#{}", i).magenta(),
+                hex::encode(transaction.hash())
+            )
+        }
+        println!(
+            "{}: {}",
+            "Stakes".cyan(),
+            block.stakes.len().to_string().yellow()
+        );
+        for (i, stake) in block.stakes.iter().enumerate() {
+            println!(
+                "{}: {}",
+                format!("#{}", i).magenta(),
+                hex::encode(stake.hash())
+            )
+        }
+    }
+    Ok(())
 }
 pub fn key(wallet: &Wallet) {
     println!("{}", "Are you being watched?".yellow());

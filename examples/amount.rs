@@ -1,8 +1,8 @@
-use pea::amount::{from_bytes, to_bytes};
+use pea::amount;
 fn main() {
     let a = 0xff0000000000000000000000000000;
     println!("{}", a);
-    let b = to_bytes(a);
+    let b = amount::to_bytes(a);
     println!("{:x?}", b);
-    println!("{}", from_bytes(b));
+    println!("{}", amount::from_bytes(b));
 }

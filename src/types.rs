@@ -1,9 +1,11 @@
+use crate::constants::AMOUNT_BYTES;
 pub use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
 use std::collections::VecDeque;
 pub type Height = usize;
 pub type Heartbeats = usize;
 pub type Timestamp = u32;
-pub type Amount = u64;
+pub type Amount = u128;
+pub type CompressedAmount = [u8; AMOUNT_BYTES];
 pub type Hash = [u8; 32];
 pub type Checksum = [u8; 4];
 pub type MerkleRoot = [u8; 32];

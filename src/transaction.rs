@@ -1,4 +1,4 @@
-use crate::{db, types, util};
+use crate::{amount, db, types, util};
 use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
@@ -29,6 +29,16 @@ impl Transaction {
             signature: [0; 64],
         }
     }
+    fn from(transaction: &CompressedTransaction) -> Transaction {
+        Transaction {
+            public_key_input: transaction.public_key_input,
+            public_key_output: transaction.public_key_output,
+            amount: amount::from_bytes(transaction.amount),
+            fee: amount::from_bytes(transaction.fee),
+            timestamp: transaction.timestamp,
+            signature: transaction.signature,
+        }
+    }
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&TransactionHeader::from(self)).unwrap())
     }
@@ -54,7 +64,7 @@ impl Transaction {
         db.put_cf(
             db::cf_handle_transactions(db)?,
             self.hash(),
-            bincode::serialize(self)?,
+            bincode::serialize(&CompressedTransaction::from(self))?,
         )?;
         Ok(())
     }
@@ -62,10 +72,11 @@ impl Transaction {
         db: &DBWithThreadMode<SingleThreaded>,
         hash: &[u8],
     ) -> Result<Transaction, Box<dyn Error>> {
-        Ok(bincode::deserialize(
+        let compressed: CompressedTransaction = bincode::deserialize(
             &db.get_cf(db::cf_handle_transactions(db)?, hash)?
                 .ok_or("transaction not found")?,
-        )?)
+        )?;
+        Ok(Transaction::from(&compressed))
     }
 }
 #[derive(Serialize, Deserialize, Debug)]
@@ -87,6 +98,28 @@ impl TransactionHeader {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CompressedTransaction {
+    pub public_key_input: types::PublicKeyBytes,
+    pub public_key_output: types::PublicKeyBytes,
+    pub amount: types::CompressedAmount,
+    pub fee: types::CompressedAmount,
+    pub timestamp: types::Timestamp,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
+}
+impl CompressedTransaction {
+    fn from(transaction: &Transaction) -> CompressedTransaction {
+        CompressedTransaction {
+            public_key_input: transaction.public_key_input,
+            public_key_output: transaction.public_key_output,
+            amount: amount::to_bytes(transaction.amount),
+            fee: amount::to_bytes(transaction.fee),
+            timestamp: transaction.timestamp,
+            signature: transaction.signature,
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,19 +134,21 @@ mod tests {
         let keypair = util::keygen();
         let mut transaction = Transaction::new([0; 32], 0, 0);
         transaction.sign(&keypair);
-        println!("{:?}", transaction);
-        println!("{:?}", bincode::serialize(&transaction));
-        println!("{:?}", bincode::serialize(&transaction).unwrap().len());
-        b.iter(|| bincode::serialize(&transaction));
+        let compressed = CompressedTransaction::from(&transaction);
+        println!("{:?}", compressed);
+        println!("{:?}", bincode::serialize(&compressed));
+        println!("{:?}", bincode::serialize(&compressed).unwrap().len());
+        b.iter(|| bincode::serialize(&compressed));
     }
     #[bench]
     fn bench_bincode_deserialize(b: &mut Bencher) {
         let keypair = util::keygen();
         let mut transaction = Transaction::new([0; 32], 0, 0);
         transaction.sign(&keypair);
-        let bytes = bincode::serialize(&transaction).unwrap();
+        let compressed = CompressedTransaction::from(&transaction);
+        let bytes = bincode::serialize(&compressed).unwrap();
         b.iter(|| {
-            let _: Transaction = bincode::deserialize(&bytes).unwrap();
+            let _: CompressedTransaction = bincode::deserialize(&bytes).unwrap();
         });
     }
 }

@@ -1,4 +1,4 @@
-use crate::{db, types, util};
+use crate::{amount, db, types, util};
 use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
@@ -25,6 +25,16 @@ impl Stake {
             signature: [0; 64],
         }
     }
+    fn from(stake: &CompressedStake) -> Stake {
+        Stake {
+            public_key: stake.public_key,
+            amount: amount::from_bytes(stake.amount),
+            fee: amount::from_bytes(stake.fee),
+            deposit: stake.deposit,
+            timestamp: stake.timestamp,
+            signature: stake.signature,
+        }
+    }
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&StakeHeader::from(self)).unwrap())
     }
@@ -44,7 +54,7 @@ impl Stake {
         db.put_cf(
             db::cf_handle_stakes(db)?,
             self.hash(),
-            bincode::serialize(self)?,
+            bincode::serialize(&CompressedStake::from(self))?,
         )?;
         Ok(())
     }
@@ -52,10 +62,11 @@ impl Stake {
         db: &DBWithThreadMode<SingleThreaded>,
         hash: &types::Hash,
     ) -> Result<Stake, Box<dyn Error>> {
-        Ok(bincode::deserialize(
+        let compressed: CompressedStake = bincode::deserialize(
             &db.get_cf(db::cf_handle_stakes(db)?, hash)?
                 .ok_or("stake not found")?,
-        )?)
+        )?;
+        Ok(Stake::from(&compressed))
     }
 }
 #[derive(Serialize, Deserialize, Debug)]
@@ -75,6 +86,28 @@ impl StakeHeader {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CompressedStake {
+    pub public_key: types::PublicKeyBytes,
+    pub amount: types::CompressedAmount,
+    pub fee: types::CompressedAmount,
+    pub deposit: bool,
+    pub timestamp: types::Timestamp,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
+}
+impl CompressedStake {
+    fn from(stake: &Stake) -> CompressedStake {
+        CompressedStake {
+            public_key: stake.public_key,
+            amount: amount::to_bytes(stake.amount),
+            fee: amount::to_bytes(stake.fee),
+            deposit: stake.deposit,
+            timestamp: stake.timestamp,
+            signature: stake.signature,
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,19 +122,21 @@ mod tests {
         let keypair = util::keygen();
         let mut stake = Stake::new(true, 0, 0);
         stake.sign(&keypair);
-        println!("{:?}", stake);
-        println!("{:?}", bincode::serialize(&stake));
-        println!("{:?}", bincode::serialize(&stake).unwrap().len());
-        b.iter(|| bincode::serialize(&stake));
+        let compressed = CompressedStake::from(&stake);
+        println!("{:?}", compressed);
+        println!("{:?}", bincode::serialize(&compressed));
+        println!("{:?}", bincode::serialize(&compressed).unwrap().len());
+        b.iter(|| bincode::serialize(&compressed));
     }
     #[bench]
     fn bench_bincode_deserialize(b: &mut Bencher) {
         let keypair = util::keygen();
         let mut stake = Stake::new(true, 0, 0);
         stake.sign(&keypair);
-        let bytes = bincode::serialize(&stake).unwrap();
+        let compressed = CompressedStake::from(&stake);
+        let bytes = bincode::serialize(&compressed).unwrap();
         b.iter(|| {
-            let _: Stake = bincode::deserialize(&bytes).unwrap();
+            let _: CompressedStake = bincode::deserialize(&bytes).unwrap();
         });
     }
 }

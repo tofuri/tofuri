@@ -1,8 +1,20 @@
 use pea::amount;
 fn main() {
-    let a = 0;
-    println!("{}", a);
-    let b = amount::to_bytes(a);
-    println!("{:x?}", b);
-    println!("{}", amount::from_bytes(b));
+    let ints = vec![
+        0,
+        1,
+        10,
+        100,
+        100000000,
+        0xff0000000000,
+        0xff0000000000000000000000000000,
+        0xff000000000000000000000000000000,
+    ];
+    for int in ints {
+        println!("{}", int);
+        let bytes = amount::to_bytes(int);
+        println!("{:x?}", bytes);
+        println!("{}", amount::from_bytes(bytes));
+        println!("")
+    }
 }

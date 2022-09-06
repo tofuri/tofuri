@@ -12,6 +12,7 @@ pub mod heartbeat;
 pub mod http;
 pub mod kdf;
 pub mod key;
+pub mod number_convert;
 pub mod p2p;
 pub mod print;
 pub mod stake;

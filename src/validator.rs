@@ -86,8 +86,8 @@ impl Validator {
         db: &DBWithThreadMode<SingleThreaded>,
     ) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
         let mut multiaddrs = vec![];
-        for (i, _) in db.iterator_cf(db::cf_handle_multiaddr(db)?, IteratorMode::Start) {
-            multiaddrs.push(String::from_utf8(i.to_vec())?.parse()?);
+        for i in db.iterator_cf(db::cf_handle_multiaddr(db)?, IteratorMode::Start) {
+            multiaddrs.push(String::from_utf8(i?.0.to_vec())?.parse()?);
         }
         Ok(multiaddrs)
     }

@@ -1,5 +1,8 @@
 use crate::constants::AMOUNT_BYTES;
 pub fn to_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
+    if input == 0 {
+        return [0; AMOUNT_BYTES];
+    }
     let bytes = input.to_be_bytes();
     let mut i = 0;
     for byte in bytes {
@@ -8,7 +11,7 @@ pub fn to_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
         }
         i += 1;
     }
-    let size = 16 - i;
+    let size = 15 - i;
     let mut output = [0; AMOUNT_BYTES];
     for (j, v) in output.iter_mut().enumerate().take(AMOUNT_BYTES) {
         let k = i + j;
@@ -24,7 +27,7 @@ pub fn from_bytes(input: [u8; AMOUNT_BYTES]) -> u128 {
     let size = input[AMOUNT_BYTES - 1] as usize & 0x0f;
     let mut bytes = [0; 16];
     for (i, v) in input.iter().enumerate().take(AMOUNT_BYTES) {
-        let j = 16 - size + i;
+        let j = 15 - size + i;
         if j == 16 {
             break;
         }
@@ -42,15 +45,18 @@ mod tests {
     use test::Bencher;
     #[test]
     fn test_encode() {
-        assert_eq!([1, 0, 0, 9], to_bytes(0x10000000000000000));
+        assert_eq!([1, 0, 0, 8], to_bytes(0x10000000000000000));
     }
     #[test]
     fn test_decode() {
-        assert_eq!(0x10000000000000000, from_bytes([1, 0, 0, 9]));
+        assert_eq!(0x10000000000000000, from_bytes([1, 0, 0, 8]));
     }
     #[test]
-    fn test_decode_size_0xf0() {
-        assert_eq!(0, from_bytes([0xff, 0xff, 0xff, 0xf0]));
+    fn test_decode_max() {
+        assert_eq!(
+            0xfffffff0000000000000000000000000,
+            from_bytes([0xff, 0xff, 0xff, 0xff])
+        );
     }
     #[bench]
     fn bench_encode(b: &mut Bencher) {

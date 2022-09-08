@@ -33,8 +33,8 @@ impl Transaction {
         Transaction {
             public_key_input: transaction.public_key_input,
             public_key_output: transaction.public_key_output,
-            amount: amount::from_bytes(transaction.amount),
-            fee: amount::from_bytes(transaction.fee),
+            amount: amount::from_bytes(&transaction.amount),
+            fee: amount::from_bytes(&transaction.fee),
             timestamp: transaction.timestamp,
             signature: transaction.signature,
         }
@@ -113,8 +113,8 @@ impl CompressedTransaction {
         CompressedTransaction {
             public_key_input: transaction.public_key_input,
             public_key_output: transaction.public_key_output,
-            amount: amount::to_bytes(transaction.amount),
-            fee: amount::to_bytes(transaction.fee),
+            amount: amount::to_bytes(&transaction.amount),
+            fee: amount::to_bytes(&transaction.fee),
             timestamp: transaction.timestamp,
             signature: transaction.signature,
         }

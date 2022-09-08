@@ -28,8 +28,8 @@ impl Stake {
     pub fn from(stake: &CompressedStake) -> Stake {
         Stake {
             public_key: stake.public_key,
-            amount: amount::from_bytes(stake.amount),
-            fee: amount::from_bytes(stake.fee),
+            amount: amount::from_bytes(&stake.amount),
+            fee: amount::from_bytes(&stake.fee),
             deposit: stake.deposit,
             timestamp: stake.timestamp,
             signature: stake.signature,
@@ -100,8 +100,8 @@ impl CompressedStake {
     pub fn from(stake: &Stake) -> CompressedStake {
         CompressedStake {
             public_key: stake.public_key,
-            amount: amount::to_bytes(stake.amount),
-            fee: amount::to_bytes(stake.fee),
+            amount: amount::to_bytes(&stake.amount),
+            fee: amount::to_bytes(&stake.fee),
             deposit: stake.deposit,
             timestamp: stake.timestamp,
             signature: stake.signature,

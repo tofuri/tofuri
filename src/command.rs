@@ -1,5 +1,5 @@
 use crate::{
-    address,
+    address, amount,
     block::{Block, BlockMetadata},
     constants::{DECIMAL_PRECISION, EXTENSION},
     print,
@@ -175,6 +175,13 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
         .with_formatter(&|i| format!("{:.18} pea", i)) // DECIMAL_PRECISION
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in pea using a decimal point as a separator")
+        .with_parser(&|x| match x.parse::<f64>() {
+            Ok(f) => Ok(
+                amount::floor(&((f * DECIMAL_PRECISION as f64) as u128)) as f64
+                    / DECIMAL_PRECISION as f64,
+            ),
+            Err(_) => Err(()),
+        })
         .prompt()
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
@@ -243,6 +250,13 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
         .with_formatter(&|i| format!("{:.18} pea", i)) // DECIMAL_PRECISION
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in pea using a decimal point as a separator")
+        .with_parser(&|x| match x.parse::<f64>() {
+            Ok(f) => Ok(
+                amount::floor(&((f * DECIMAL_PRECISION as f64) as u128)) as f64
+                    / DECIMAL_PRECISION as f64,
+            ),
+            Err(_) => Err(()),
+        })
         .prompt()
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());

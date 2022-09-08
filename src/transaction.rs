@@ -29,7 +29,7 @@ impl Transaction {
             signature: [0; 64],
         }
     }
-    fn from(transaction: &CompressedTransaction) -> Transaction {
+    pub fn from(transaction: &CompressedTransaction) -> Transaction {
         Transaction {
             public_key_input: transaction.public_key_input,
             public_key_output: transaction.public_key_output,
@@ -109,7 +109,7 @@ pub struct CompressedTransaction {
     pub signature: types::SignatureBytes,
 }
 impl CompressedTransaction {
-    fn from(transaction: &Transaction) -> CompressedTransaction {
+    pub fn from(transaction: &Transaction) -> CompressedTransaction {
         CompressedTransaction {
             public_key_input: transaction.public_key_input,
             public_key_output: transaction.public_key_output,

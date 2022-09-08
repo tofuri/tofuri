@@ -3,8 +3,8 @@ use crate::{
     block::{Block, BlockMetadata},
     constants::{DECIMAL_PRECISION, EXTENSION},
     print,
-    stake::Stake,
-    transaction::Transaction,
+    stake::{CompressedStake, Stake},
+    transaction::{CompressedTransaction, Transaction},
     types,
     wallet::Wallet,
 };
@@ -204,7 +204,9 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
     let client = reqwest::Client::new();
     let res: usize = match client
         .post(format!("{}/transaction", api))
-        .body(hex::encode(bincode::serialize(&transaction)?))
+        .body(hex::encode(bincode::serialize(
+            &CompressedTransaction::from(&transaction),
+        )?))
         .send()
         .await
     {
@@ -270,7 +272,9 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
     let res: usize = match client
         .post(format!("{}/stake", api))
-        .body(hex::encode(bincode::serialize(&stake)?))
+        .body(hex::encode(bincode::serialize(&CompressedStake::from(
+            &stake,
+        ))?))
         .send()
         .await
     {

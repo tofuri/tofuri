@@ -3,8 +3,8 @@ use crate::{
     block::{Block, BlockMetadata},
     p2p::MyBehaviour,
     print,
-    stake::Stake,
-    transaction::Transaction,
+    stake::{CompressedStake, Stake},
+    transaction::{CompressedTransaction, Transaction},
     types,
     types::Stakers,
     validator::Synchronizer,
@@ -27,11 +27,17 @@ lazy_static! {
     static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]+ ").unwrap();
     static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
-    static ref TRANSACTION_SERIALIZED: usize =
-        hex::encode(bincode::serialize(&Transaction::new([0; 32], 0, 0)).unwrap()).len();
+    static ref TRANSACTION_SERIALIZED: usize = hex::encode(
+        bincode::serialize(&CompressedTransaction::from(&Transaction::new(
+            [0; 32], 0, 0
+        )))
+        .unwrap()
+    )
+    .len();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
     static ref STAKE_SERIALIZED: usize =
-        hex::encode(bincode::serialize(&Stake::new(false, 0, 0)).unwrap()).len();
+        hex::encode(bincode::serialize(&CompressedStake::from(&Stake::new(false, 0, 0))).unwrap())
+            .len();
 }
 pub async fn next(
     listener: &tokio::net::TcpListener,
@@ -456,7 +462,7 @@ async fn handle_post_json_transaction(
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
-    let transaction: Transaction = bincode::deserialize(&hex::decode(
+    let compressed: CompressedTransaction = bincode::deserialize(&hex::decode(
         &buffer
             .lines()
             .nth(5)
@@ -464,12 +470,12 @@ async fn handle_post_json_transaction(
             .get(0..*TRANSACTION_SERIALIZED)
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
-    info!("{:?}", transaction);
+    info!("{:?}", compressed);
     let behaviour = swarm.behaviour_mut();
     let status = match behaviour
         .validator
         .blockchain
-        .try_add_transaction(&behaviour.validator.db, transaction)
+        .try_add_transaction(&behaviour.validator.db, Transaction::from(&compressed))
     {
         Ok(()) => 1,
         Err(err) => {
@@ -497,7 +503,7 @@ async fn handle_post_json_stake(
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
-    let stake: Stake = bincode::deserialize(&hex::decode(
+    let compressed: CompressedStake = bincode::deserialize(&hex::decode(
         &buffer
             .lines()
             .nth(5)
@@ -505,12 +511,12 @@ async fn handle_post_json_stake(
             .get(0..*STAKE_SERIALIZED)
             .ok_or("POST STAKE 2")?,
     )?)?;
-    info!("{:?}", stake);
+    info!("{:?}", compressed);
     let behaviour = swarm.behaviour_mut();
     let status = match behaviour
         .validator
         .blockchain
-        .try_add_stake(&behaviour.validator.db, stake)
+        .try_add_stake(&behaviour.validator.db, Stake::from(&compressed))
     {
         Ok(()) => 1,
         Err(err) => {

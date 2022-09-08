@@ -25,7 +25,7 @@ impl Stake {
             signature: [0; 64],
         }
     }
-    fn from(stake: &CompressedStake) -> Stake {
+    pub fn from(stake: &CompressedStake) -> Stake {
         Stake {
             public_key: stake.public_key,
             amount: amount::from_bytes(stake.amount),
@@ -97,7 +97,7 @@ pub struct CompressedStake {
     pub signature: types::SignatureBytes,
 }
 impl CompressedStake {
-    fn from(stake: &Stake) -> CompressedStake {
+    pub fn from(stake: &Stake) -> CompressedStake {
         CompressedStake {
             public_key: stake.public_key,
             amount: amount::to_bytes(stake.amount),

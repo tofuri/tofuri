@@ -20,6 +20,10 @@ pub fn to_bytes(input: &u128) -> [u8; AMOUNT_BYTES] {
         }
         *v = bytes[k];
     }
+    // rounding
+    if output[AMOUNT_BYTES - 1] & 0x0f >= 8 {
+        output = (u32::from_be_bytes(output) + 8).to_be_bytes();
+    }
     output[AMOUNT_BYTES - 1] = (output[AMOUNT_BYTES - 1] & 0xf0) | size as u8;
     output
 }

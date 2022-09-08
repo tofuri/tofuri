@@ -10,6 +10,7 @@ use crate::{
         GENESIS_TIMESTAMP,
         MAX_STAKE, // BLOCKS_BEFORE_UNSTAKE
         MIN_STAKE,
+        MIN_STAKE_MULTIPLIER,
         PENDING_STAKES_LIMIT,
         PENDING_TRANSACTIONS_LIMIT,
     },
@@ -545,7 +546,9 @@ impl Blockchain {
         }
     }
     pub fn reward(stake_amount: types::Amount) -> types::Amount {
-        ((2f64.powf((stake_amount as f64 / DECIMAL_PRECISION as f64) / 100f64) - 1f64)
+        ((2f64
+            .powf((stake_amount as f64 / DECIMAL_PRECISION as f64) / MIN_STAKE_MULTIPLIER as f64)
+            - 1f64)
             * DECIMAL_PRECISION as f64) as types::Amount
     }
     fn next_block(

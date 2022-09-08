@@ -2728,7 +2728,7 @@ checksum = "0c520e05135d6e763148b6426a837e239041653ba7becd2e538c076c738025fc"
 
 [[package]]
 name = "pea"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "argon2",
  "async-std",

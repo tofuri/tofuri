@@ -27,7 +27,11 @@ lazy_static! {
     static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]+ ").unwrap();
     static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
+    static ref TRANSACTION_SERIALIZED: usize =
+        hex::encode(bincode::serialize(&Transaction::new([0; 32], 0, 0)).unwrap()).len();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
+    static ref STAKE_SERIALIZED: usize =
+        hex::encode(bincode::serialize(&Stake::new(false, 0, 0)).unwrap()).len();
 }
 pub async fn next(
     listener: &tokio::net::TcpListener,
@@ -457,7 +461,7 @@ async fn handle_post_json_transaction(
             .lines()
             .nth(5)
             .ok_or("POST TRANSACTION 1")??
-            .get(0..304)
+            .get(0..*TRANSACTION_SERIALIZED)
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
     info!("{:?}", transaction);
@@ -498,7 +502,7 @@ async fn handle_post_json_stake(
             .lines()
             .nth(5)
             .ok_or("POST STAKE 1")??
-            .get(0..242)
+            .get(0..*STAKE_SERIALIZED)
             .ok_or("POST STAKE 2")?,
     )?)?;
     info!("{:?}", stake);

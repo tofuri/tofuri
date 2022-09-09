@@ -177,7 +177,7 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
         .with_help_message("Type the amount in pea using a decimal point as a separator")
         .with_parser(&|x| match x.parse::<f64>() {
             Ok(f) => Ok(
-                amount::floor(&((f * DECIMAL_PRECISION as f64) as u128)) as f64
+                amount::round(&((f * DECIMAL_PRECISION as f64) as u128)) as f64
                     / DECIMAL_PRECISION as f64,
             ),
             Err(_) => Err(()),
@@ -252,7 +252,7 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
         .with_help_message("Type the amount in pea using a decimal point as a separator")
         .with_parser(&|x| match x.parse::<f64>() {
             Ok(f) => Ok(
-                amount::floor(&((f * DECIMAL_PRECISION as f64) as u128)) as f64
+                amount::round(&((f * DECIMAL_PRECISION as f64) as u128)) as f64
                     / DECIMAL_PRECISION as f64,
             ),
             Err(_) => Err(()),

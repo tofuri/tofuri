@@ -43,7 +43,7 @@ pub fn from_bytes(input: &[u8; AMOUNT_BYTES]) -> u128 {
     }
     u128::from_be_bytes(bytes)
 }
-pub fn floor(input: &u128) -> u128 {
+pub fn round(input: &u128) -> u128 {
     from_bytes(&to_bytes(input))
 }
 #[cfg(test)]

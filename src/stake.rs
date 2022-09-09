@@ -8,7 +8,7 @@ use std::error::Error;
 pub struct Stake {
     pub public_key: types::PublicKeyBytes,
     pub amount: types::Amount,
-    pub deposit: bool, // false -> widthdraw
+    pub deposit: bool, // false -> withdraw
     pub fee: types::Amount,
     pub timestamp: types::Timestamp,
     #[serde(with = "BigArray")]

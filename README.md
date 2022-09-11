@@ -11,6 +11,7 @@
 ```bash
 git clone https://github.com/pea-project/pea
 cd pea
+rustup default nightly
 cargo build
 ```
 

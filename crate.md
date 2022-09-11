@@ -1,8 +1,8 @@
-# Pea Crate
+# pea
 
 ## Usage
 
-### Building a Transaction
+### Build Transaction
 
 Filename: `examples/transaction.rs`
 
@@ -23,7 +23,7 @@ fn main() {
 }
 ```
 
-### Building a Stake
+### Build Stake
 
 Filename: `examples/stake.rs`
 

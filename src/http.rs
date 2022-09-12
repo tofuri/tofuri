@@ -536,7 +536,6 @@ async fn handle_post_json_transaction(
             .get(0..*TRANSACTION_SERIALIZED)
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
-    info!("{:?}", compressed);
     let behaviour = swarm.behaviour_mut();
     let status = match behaviour
         .validator
@@ -577,7 +576,6 @@ async fn handle_post_json_stake(
             .get(0..*STAKE_SERIALIZED)
             .ok_or("POST STAKE 2")?,
     )?)?;
-    info!("{:?}", compressed);
     let behaviour = swarm.behaviour_mut();
     let status = match behaviour
         .validator

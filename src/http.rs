@@ -11,7 +11,7 @@ use crate::{
 };
 use lazy_static::lazy_static;
 use libp2p::Swarm;
-use log::{error, info};
+use log::error;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{error::Error, io::BufRead};
@@ -402,7 +402,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&hex::encode(&hash))?
+                serde_json::to_string(&hex::encode(hash))?
             )
             .as_bytes(),
         )
@@ -529,7 +529,7 @@ async fn handle_post_json_transaction(
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
     let compressed: CompressedTransaction = bincode::deserialize(&hex::decode(
-        &buffer
+        buffer
             .lines()
             .nth(5)
             .ok_or("POST TRANSACTION 1")??
@@ -569,7 +569,7 @@ async fn handle_post_json_stake(
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
     let compressed: CompressedStake = bincode::deserialize(&hex::decode(
-        &buffer
+        buffer
             .lines()
             .nth(5)
             .ok_or("POST STAKE 1")??

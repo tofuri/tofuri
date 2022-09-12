@@ -208,7 +208,7 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
     }
     let mut transaction = Transaction::new(address::decode(&address)?, amount, fee);
     transaction.sign(&wallet.keypair);
-    println!("Hash: {}", hex::encode(&transaction.hash()).cyan());
+    println!("Hash: {}", hex::encode(transaction.hash()).cyan());
     let client = reqwest::Client::new();
     let res: String = match client
         .post(format!("{}/transaction", api))
@@ -281,7 +281,7 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
     }
     let mut stake = Stake::new(deposit, amount as types::Amount, fee);
     stake.sign(&wallet.keypair);
-    println!("Hash: {}", hex::encode(&stake.hash()).cyan());
+    println!("Hash: {}", hex::encode(stake.hash()).cyan());
     let client = reqwest::Client::new();
     let res: String = match client
         .post(format!("{}/stake", api))

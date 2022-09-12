@@ -1,6 +1,6 @@
 use crate::{
     address, amount,
-    block::{Block, BlockMetadata},
+    block::Block,
     constants::{DECIMAL_PRECISION, EXTENSION},
     print,
     stake::{CompressedStake, Stake},
@@ -341,21 +341,14 @@ pub async fn search(api: &str) -> Result<(), Box<dyn Error>> {
             process::exit(0)
         });
     if address::decode(&search).is_ok() {
-        println!("{}", "Found Address".green());
         balance(api, &search).await?;
     } else if search.len() == 64 {
-        println!("{}", "Found Block".green());
         let block = match reqwest::get(format!("{}/block/{}", api, search)).await {
             Ok(r) => r,
             Err(err) => return reqwest_err(err),
         }
         .json::<Block>()
         .await?;
-        println!(
-            "{}: {}",
-            "Hash".cyan(),
-            hex::encode(BlockMetadata::from(&block).hash())
-        );
         println!(
             "{}: {}",
             "Forger".cyan(),

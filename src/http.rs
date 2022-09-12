@@ -543,10 +543,10 @@ async fn handle_post_json_transaction(
         .blockchain
         .try_add_transaction(&behaviour.validator.db, Transaction::from(&compressed))
     {
-        Ok(()) => 1,
+        Ok(()) => "success".to_string(),
         Err(err) => {
             error!("{}", err);
-            0
+            err.to_string()
         }
     };
     stream
@@ -584,10 +584,10 @@ async fn handle_post_json_stake(
         .blockchain
         .try_add_stake(&behaviour.validator.db, Stake::from(&compressed))
     {
-        Ok(()) => 1,
+        Ok(()) => "success".to_string(),
         Err(err) => {
             error!("{}", err);
-            0
+            err.to_string()
         }
     };
     stream

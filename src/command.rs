@@ -210,7 +210,7 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
     transaction.sign(&wallet.keypair);
     println!("Hash: {}", hex::encode(&transaction.hash()).cyan());
     let client = reqwest::Client::new();
-    let res: usize = match client
+    let res: String = match client
         .post(format!("{}/transaction", api))
         .body(hex::encode(bincode::serialize(
             &CompressedTransaction::from(&transaction),
@@ -225,12 +225,10 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
     .await?;
     println!(
         "{}",
-        if res == 1 {
-            "Success".green()
-        } else if res == 0 {
-            "Declined".red()
+        if res == "success" {
+            res.green()
         } else {
-            "Unexpected status".cyan()
+            res.red()
         }
     );
     Ok(())
@@ -285,7 +283,7 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
     stake.sign(&wallet.keypair);
     println!("Hash: {}", hex::encode(&stake.hash()).cyan());
     let client = reqwest::Client::new();
-    let res: usize = match client
+    let res: String = match client
         .post(format!("{}/stake", api))
         .body(hex::encode(bincode::serialize(&CompressedStake::from(
             &stake,
@@ -300,12 +298,10 @@ pub async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
     .await?;
     println!(
         "{}",
-        if res == 1 {
-            "Success".green()
-        } else if res == 0 {
-            "Declined".red()
+        if res == "success" {
+            res.green()
         } else {
-            "Unexpected status".cyan()
+            res.red()
         }
     );
     Ok(())

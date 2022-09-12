@@ -26,6 +26,8 @@ lazy_static! {
     static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
     static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]+ ").unwrap();
     static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
+    static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
+    static ref STAKE_BY_HASH: Regex = Regex::new(r" /stake/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
     static ref TRANSACTION_SERIALIZED: usize = hex::encode(
         bincode::serialize(&CompressedTransaction::from(&Transaction::new(
@@ -84,6 +86,10 @@ async fn handle_get(
         handle_get_json_hash_by_height(stream, swarm, first).await?;
     } else if BLOCK_BY_HASH.is_match(first) {
         handle_get_json_block_by_hash(stream, swarm, first).await?;
+    } else if TRANSACTION_BY_HASH.is_match(first) {
+        handle_get_json_transaction_by_hash(stream, swarm, first).await?;
+    } else if STAKE_BY_HASH.is_match(first) {
+        handle_get_json_stake_by_hash(stream, swarm, first).await?;
     } else if STAKE.is_match(first) {
         handle_get_json_stake(stream, swarm).await?;
     } else {
@@ -427,6 +433,66 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&block)?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn handle_get_json_transaction_by_hash(
+    stream: &mut tokio::net::TcpStream,
+    swarm: &Swarm<MyBehaviour>,
+    first: &str,
+) -> Result<(), Box<dyn Error>> {
+    let hash = hex::decode(
+        TRANSACTION_BY_HASH
+            .find(first)
+            .ok_or("GET TRANSACTION_BY_HASH 1")?
+            .as_str()
+            .trim()
+            .get(13..)
+            .ok_or("GET TRANSACTION_BY_HASH 2")?,
+    )?;
+    let transaction = Transaction::get(&swarm.behaviour().validator.db, &hash)?;
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&transaction)?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn handle_get_json_stake_by_hash(
+    stream: &mut tokio::net::TcpStream,
+    swarm: &Swarm<MyBehaviour>,
+    first: &str,
+) -> Result<(), Box<dyn Error>> {
+    let hash = hex::decode(
+        STAKE_BY_HASH
+            .find(first)
+            .ok_or("GET STAKE_BY_HASH 1")?
+            .as_str()
+            .trim()
+            .get(7..)
+            .ok_or("GET STAKE_BY_HASH 2")?,
+    )?;
+    let stake = Stake::get(&swarm.behaviour().validator.db, &hash)?;
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&stake)?
             )
             .as_bytes(),
         )

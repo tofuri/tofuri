@@ -60,7 +60,7 @@ impl Stake {
     }
     pub fn get(
         db: &DBWithThreadMode<SingleThreaded>,
-        hash: &types::Hash,
+        hash: &[u8],
     ) -> Result<Stake, Box<dyn Error>> {
         let compressed: CompressedStake = bincode::deserialize(
             &db.get_cf(db::cf_handle_stakes(db)?, hash)?

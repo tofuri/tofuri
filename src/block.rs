@@ -20,18 +20,43 @@ impl Block {
         timestamp: types::Timestamp,
         public_key: types::PublicKeyBytes,
         signature: types::SignatureBytes,
+        transactions: Vec<Transaction>,
+        stakes: Vec<Stake>,
     ) -> Block {
         Block {
             previous_hash,
             timestamp,
             public_key,
             signature,
-            transactions: vec![],
-            stakes: vec![],
+            transactions,
+            stakes,
         }
     }
     pub fn new(previous_hash: types::Hash) -> Block {
-        Block::from(previous_hash, util::timestamp(), [0; 32], [0; 64])
+        Block::from(
+            previous_hash,
+            util::timestamp(),
+            [0; 32],
+            [0; 64],
+            vec![],
+            vec![],
+        )
+    }
+    pub fn genesis() -> Block {
+        Block::new([0; 32])
+    }
+    pub fn sign(&mut self, keypair: &types::Keypair) {
+        self.public_key = keypair.public.to_bytes();
+        self.signature = keypair.sign(&self.hash()).to_bytes();
+    }
+    pub fn verify(&self) -> Result<(), Box<dyn Error>> {
+        let public_key = types::PublicKey::from_bytes(&self.public_key)?;
+        let signature = types::Signature::from_bytes(&self.signature)?;
+        Ok(public_key.verify_strict(&self.hash(), &signature)?)
+    }
+    pub fn hash(&self) -> types::Hash {
+        let block_metadata = BlockMetadata::from(self);
+        util::hash(&bincode::serialize(&BlockHeader::from(&block_metadata)).unwrap())
     }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         let block_metadata = BlockMetadata::from(self);
@@ -42,7 +67,7 @@ impl Block {
         for stake in self.stakes.iter() {
             stake.put(db)?;
         }
-        BlockMetadataLean::put(db, &block_metadata.hash(), block_metadata_lean)?;
+        BlockMetadataLean::put(db, &self.hash(), block_metadata_lean)?;
         Ok(())
     }
     pub fn get(
@@ -56,19 +81,22 @@ impl Block {
         bytes: &[u8],
     ) -> Result<Block, Box<dyn Error>> {
         let block_metadata_lean: BlockMetadataLean = bincode::deserialize(bytes)?;
-        let mut block = Block::from(
+        let mut transactions = vec![];
+        for hash in block_metadata_lean.transaction_hashes {
+            transactions.push(Transaction::get(db, &hash)?);
+        }
+        let mut stakes = vec![];
+        for hash in block_metadata_lean.stake_hashes {
+            stakes.push(Stake::get(db, &hash)?);
+        }
+        Ok(Block::from(
             block_metadata_lean.previous_hash,
             block_metadata_lean.timestamp,
             block_metadata_lean.public_key,
             block_metadata_lean.signature,
-        );
-        for hash in block_metadata_lean.transaction_hashes {
-            block.transactions.push(Transaction::get(db, &hash)?);
-        }
-        for hash in block_metadata_lean.stake_hashes {
-            block.stakes.push(Stake::get(db, &hash)?);
-        }
-        Ok(block)
+            transactions,
+            stakes,
+        ))
     }
     pub fn has_valid_transactions(&self) -> bool {
         for transaction in self.transactions.iter() {
@@ -135,34 +163,22 @@ impl BlockMetadata {
             stake_hashes,
         }
     }
-    pub fn hash(&self) -> types::Hash {
-        util::hash(&bincode::serialize(&BlockHeader::from(self)).unwrap())
-    }
-    pub fn transaction_hashes(transactions: &Vec<Transaction>) -> Vec<types::Hash> {
+    fn transaction_hashes(transactions: &Vec<Transaction>) -> Vec<types::Hash> {
         let mut transaction_hashes = vec![];
         for transaction in transactions {
             transaction_hashes.push(transaction.hash());
         }
         transaction_hashes
     }
-    pub fn stake_hashes(stakes: &Vec<Stake>) -> Vec<types::Hash> {
+    fn stake_hashes(stakes: &Vec<Stake>) -> Vec<types::Hash> {
         let mut stake_hashes = vec![];
         for stake in stakes {
             stake_hashes.push(stake.hash());
         }
         stake_hashes
     }
-    pub fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
+    fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
         types::CBMT::build_merkle_root(hashes)
-    }
-    pub fn sign(&mut self, keypair: &types::Keypair) {
-        self.public_key = keypair.public.to_bytes();
-        self.signature = keypair.sign(&self.hash()).to_bytes();
-    }
-    pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        let public_key = types::PublicKey::from_bytes(&self.public_key)?;
-        let signature = types::Signature::from_bytes(&self.signature)?;
-        Ok(public_key.verify_strict(&self.hash(), &signature)?)
     }
 }
 #[derive(Serialize, Deserialize, Debug)]
@@ -213,16 +229,15 @@ mod tests {
     use test::Bencher;
     #[test]
     fn test_hash() {
-        let block = Block::from([0; 32], 0, [0; 32], [0; 64]);
-        let block_metadata = BlockMetadata::from(&block);
-        println!("{:x?}", block_metadata.hash());
+        let block = Block::from([0; 32], 0, [0; 32], [0; 64], vec![], vec![]);
+        println!("{:x?}", block.hash());
         assert_eq!(
             [
                 0xac, 0x6f, 0x86, 0xff, 0xf6, 0x30, 0xa5, 0x6a, 0x21, 0xf5, 0x9d, 0x3a, 0x0c, 0x1c,
                 0x69, 0x07, 0xfe, 0x3f, 0x7c, 0xaf, 0xd5, 0xfa, 0x91, 0x6f, 0x9b, 0x72, 0x20, 0x32,
                 0xf6, 0x05, 0x9e, 0xd9
             ],
-            block_metadata.hash()
+            block.hash()
         );
     }
     #[bench]
@@ -280,8 +295,7 @@ mod tests {
     #[bench]
     fn bench_hash(b: &mut Bencher) {
         let block = Block::new([0; 32]);
-        let block_metadata = BlockMetadata::from(&block);
-        b.iter(|| block_metadata.hash());
+        b.iter(|| block.hash());
     }
     #[bench]
     fn bench_merkle_root_1(b: &mut Bencher) {

@@ -1,6 +1,6 @@
 use crate::{
     address,
-    block::{Block, BlockMetadata},
+    block::Block,
     constants::{
         BLOCK_STAKES_LIMIT,
         BLOCK_TIME_MAX,
@@ -35,7 +35,7 @@ pub struct Blockchain {
 impl Blockchain {
     pub fn new(db: &DBWithThreadMode<SingleThreaded>) -> Result<Blockchain, Box<dyn Error>> {
         let latest_block = Blockchain::get_latest_block(db)?;
-        let hashes = Blockchain::hashes(db, BlockMetadata::from(&latest_block).hash())?;
+        let hashes = Blockchain::hashes(db, latest_block.hash())?;
         // reinitialize latest_block in case of a broken chain
         let latest_block = Blockchain::get_latest_block(db)?;
         let stakers = Blockchain::stakers(db, &hashes)?;
@@ -69,8 +69,7 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         keypair: &types::Keypair,
     ) -> Result<Block, Box<dyn Error>> {
-        let latest_block_metadata = BlockMetadata::from(&self.latest_block);
-        let mut block = Block::new(latest_block_metadata.hash());
+        let mut block = Block::new(self.latest_block.hash());
         self.sort_pending_transactions();
         let pending_transactions = self.pending_transactions.clone();
         self.pending_transactions.clear();
@@ -91,16 +90,13 @@ impl Blockchain {
                 self.pending_stakes.push(stake);
             }
         }
-        let mut block_metadata = BlockMetadata::from(&block);
-        block_metadata.sign(keypair);
-        block.public_key = block_metadata.public_key;
-        block.signature = block_metadata.signature;
+        block.sign(keypair);
         self.try_add_block(db, block.clone())?;
         info!(
             "{}: {} @ {}",
             "Forged".cyan(),
             (self.latest_height() + 1).to_string().yellow(),
-            hex::encode(block_metadata.hash()).green()
+            hex::encode(block.hash()).green()
         );
         Ok(block)
     }
@@ -228,7 +224,7 @@ impl Blockchain {
     }
     fn validate_mint_stake(&self, stakes: &Vec<Stake>) -> Result<(), Box<dyn Error>> {
         if stakes.len() != 1 {
-            return Err("only allowed to mind 1 stake".into());
+            return Err("only allowed to mint 1 stake".into());
         }
         let stake = stakes.get(0).unwrap();
         if !stake.is_valid() {
@@ -335,8 +331,7 @@ impl Blockchain {
         let mut closure = || -> Result<Option<()>, Box<dyn Error>> {
             match Block::get(db, &previous_hash) {
                 Ok(block) => {
-                    let block_metadata = BlockMetadata::from(&block);
-                    let hash = block_metadata.hash();
+                    let hash = block.hash();
                     if hash != previous_hash {
                         log::error!(
                             "{}: {} != {}",
@@ -365,7 +360,7 @@ impl Blockchain {
         Ok(hashes)
     }
     fn genesis_block() -> Block {
-        Block::from([0; 32], GENESIS_TIMESTAMP, [0; 32], [0; 64])
+        Block::from([0; 32], GENESIS_TIMESTAMP, [0; 32], [0; 64], vec![], vec![])
     }
     fn get_latest_block(db: &DBWithThreadMode<SingleThreaded>) -> Result<Block, Box<dyn Error>> {
         let bytes = db.get(db::key(&db::Key::LatestBlockHash))?;
@@ -377,8 +372,7 @@ impl Blockchain {
             // should be the case if the blockchain haven't been initialized
             let block = Blockchain::genesis_block();
             block.put(db)?;
-            let block_metadata = BlockMetadata::from(&block);
-            Blockchain::put_latest_block_hash(db, block_metadata.hash())?;
+            Blockchain::put_latest_block_hash(db, block.hash())?;
             Ok(block)
         }
     }
@@ -588,8 +582,7 @@ impl Blockchain {
     ) -> Result<(), Box<dyn Error>> {
         let block = self.next_block(db)?;
         block.put(db)?;
-        let block_metadata = BlockMetadata::from(&block);
-        let hash = block_metadata.hash();
+        let hash = block.hash();
         self.hashes.push(hash);
         Blockchain::put_latest_block_hash(db, hash)?;
         self.cache_balances(db, &block.transactions, &block.stakes)?;

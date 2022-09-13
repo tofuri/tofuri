@@ -1,6 +1,6 @@
 use crate::{
     address,
-    block::{Block, BlockMetadata},
+    block::Block,
     p2p::MyBehaviour,
     print,
     stake::{CompressedStake, Stake},
@@ -205,7 +205,7 @@ Validator {} {}/tree/{}
                     .blockchain
                     .pending_blocks
                     .iter()
-                    .map(|x| hex::encode(BlockMetadata::from(x).hash()))
+                    .map(|x| hex::encode(x.hash()))
                     .collect::<Vec<String>>(),
             )
             .as_bytes(),

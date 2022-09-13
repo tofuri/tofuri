@@ -40,12 +40,8 @@ impl fmt::Debug for Block {
                     .transactions
                     .iter()
                     .map(|x| hex::encode(x.hash()))
-                    .collect::<Vec<String>>(),
-                stakes: self
-                    .stakes
-                    .iter()
-                    .map(|x| hex::encode(x.hash()))
-                    .collect::<Vec<String>>(),
+                    .collect(),
+                stakes: self.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
             }
         )
     }

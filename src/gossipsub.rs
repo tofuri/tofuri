@@ -49,7 +49,7 @@ pub fn handle(
         "sync" => {
             let sync: Sync = bincode::deserialize(&message.data)?;
             for i in sync.height..=sync.height + SYNC_BLOCKS {
-                if i > behaviour.validator.blockchain.latest_height() {
+                if i > behaviour.validator.blockchain.hashes.len() {
                     return Ok(());
                 }
                 let hash = behaviour.validator.blockchain.hashes.get(i).unwrap();

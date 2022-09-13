@@ -67,7 +67,7 @@ pub fn validator(validator: &Validator) {
     info!("{}: {}", "Peers".cyan(), validator.multiaddrs.len());
 }
 pub fn blockchain(blockchain: &Blockchain) {
-    info!("{}: {}", "Height".cyan(), blockchain.latest_height());
+    info!("{}: {}", "Height".cyan(), blockchain.hashes.len());
     info!(
         "{}: {}",
         "Pending txns".cyan(),

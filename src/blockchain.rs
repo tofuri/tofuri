@@ -95,7 +95,7 @@ impl Blockchain {
         info!(
             "{}: {} @ {}",
             "Forged".cyan(),
-            (self.latest_height() + 1).to_string().yellow(),
+            (self.hashes.len()).to_string().yellow(),
             hex::encode(block.hash()).green()
         );
         Ok(block)
@@ -308,9 +308,6 @@ impl Blockchain {
     }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
-    }
-    pub fn latest_height(&self) -> types::Height {
-        self.hashes.len() - 1
     }
     pub fn sum_stakes(
         &self,
@@ -598,7 +595,7 @@ impl Blockchain {
                     && !self.stakers.iter().any(|&e| e.0 == stake.public_key)
                 {
                     self.stakers
-                        .push_back((stake.public_key, self.latest_height()));
+                        .push_back((stake.public_key, self.hashes.len()));
                 }
             } else if staked_balance < MIN_STAKE {
                 self.put_staked_balance(db, &stake.public_key, 0)?; // burn low "staked balance" to make sure "staked balance" never exceeds MAX_STAKE after being minted
@@ -622,7 +619,7 @@ impl Blockchain {
             info!(
                 "{}: {} {}",
                 "Accepted".green(),
-                self.latest_height().to_string().yellow(),
+                self.hashes.len().to_string().yellow(),
                 hex::encode(hash)
             );
         }

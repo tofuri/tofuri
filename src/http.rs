@@ -166,7 +166,7 @@ Validator {} {}/tree/{}
                     .validator
                     .blockchain
                     .sum_stakes(&behaviour.validator.db)?,
-                behaviour.validator.blockchain.latest_height(),
+                behaviour.validator.blockchain.hashes.len(),
                 behaviour.validator.heartbeats,
                 behaviour.validator.lag,
                 behaviour.validator.synchronizer,
@@ -257,7 +257,7 @@ Content-Type: application/json
                         .validator
                         .blockchain
                         .sum_stakes(&behaviour.validator.db,)?,
-                    height: behaviour.validator.blockchain.latest_height(),
+                    height: behaviour.validator.blockchain.hashes.len(),
                     heartbeats: behaviour.validator.heartbeats,
                     lag: behaviour.validator.lag,
                     synchronizer: behaviour.validator.synchronizer,
@@ -358,7 +358,7 @@ async fn handle_get_json_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
-    let height = swarm.behaviour().validator.blockchain.latest_height();
+    let height = swarm.behaviour().validator.blockchain.hashes.len();
     stream
         .write_all(
             format!(

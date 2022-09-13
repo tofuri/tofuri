@@ -6,6 +6,7 @@ license = "MIT"
 description = "エンドウ"
 readme = "crate.md"
 categories = ["cryptography::cryptocurrencies"]
+repository = "https://github.com/pea-project/pea"
 
 [dependencies]
 serde_json = "1.0.82"

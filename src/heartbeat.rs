@@ -92,7 +92,8 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         behaviour
             .validator
             .blockchain
-            .hashes.len()
+            .hashes
+            .len()
             .to_string()
             .yellow(),
         behaviour.validator.synchronizer.bps.to_string().yellow()
@@ -100,9 +101,7 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     if behaviour.gossipsub.all_peers().count() > 0 {
         behaviour.gossipsub.publish(
             IdentTopic::new("sync"),
-            bincode::serialize(&Sync::new(
-                behaviour.validator.blockchain.hashes.len(),
-            ))?,
+            bincode::serialize(&Sync::new(behaviour.validator.blockchain.hashes.len()))?,
         )?;
     }
     Ok(())

@@ -1,5 +1,4 @@
 use crate::types;
-pub const GENESIS_TIMESTAMP: types::Timestamp = 1640995200;
 pub const BLOCK_TRANSACTIONS_LIMIT: usize = BLOCK_TIME_MIN * 100;
 pub const BLOCK_STAKES_LIMIT: usize = BLOCK_TIME_MIN;
 pub const PENDING_TRANSACTIONS_LIMIT: usize = BLOCK_TRANSACTIONS_LIMIT;

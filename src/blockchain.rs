@@ -7,7 +7,6 @@ use crate::{
         BLOCK_TIME_MIN,
         BLOCK_TRANSACTIONS_LIMIT,
         DECIMAL_PRECISION,
-        GENESIS_TIMESTAMP,
         MAX_STAKE, // BLOCKS_BEFORE_UNSTAKE
         MIN_STAKE,
         MIN_STAKE_MULTIPLIER,
@@ -356,9 +355,6 @@ impl Blockchain {
         while (closure()?).is_some() {}
         Ok(hashes)
     }
-    fn genesis_block() -> Block {
-        Block::from([0; 32], GENESIS_TIMESTAMP, [0; 32], [0; 64], vec![], vec![])
-    }
     fn get_latest_block(db: &DBWithThreadMode<SingleThreaded>) -> Result<Block, Box<dyn Error>> {
         let bytes = db.get(db::key(&db::Key::LatestBlockHash))?;
         if let Some(bytes) = bytes {
@@ -367,7 +363,7 @@ impl Blockchain {
         } else {
             // latest_block is NOT set
             // should be the case if the blockchain haven't been initialized
-            let block = Blockchain::genesis_block();
+            let block = Block::genesis();
             block.put(db)?;
             Blockchain::put_latest_block_hash(db, block.hash())?;
             Ok(block)

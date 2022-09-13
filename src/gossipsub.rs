@@ -49,8 +49,8 @@ pub fn handle(
         "sync" => {
             let sync: Sync = bincode::deserialize(&message.data)?;
             for i in sync.height..=sync.height + SYNC_BLOCKS {
-                if i > behaviour.validator.blockchain.hashes.len() {
-                    return Ok(());
+                if i >= behaviour.validator.blockchain.hashes.len() {
+                    break;
                 }
                 let hash = behaviour.validator.blockchain.hashes.get(i).unwrap();
                 if behaviour.gossipsub.all_peers().count() > 0 {

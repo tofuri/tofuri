@@ -30,6 +30,8 @@ pub struct Blockchain {
     pub pending_transactions: Vec<Transaction>,
     pub pending_stakes: Vec<Stake>,
     pub pending_blocks: Vec<Block>,
+    pub sum_stakes_now: types::Amount,
+    pub sum_stakes_all_time: types::Amount
 }
 impl Blockchain {
     pub fn new(db: &DBWithThreadMode<SingleThreaded>) -> Result<Blockchain, Box<dyn Error>> {
@@ -49,6 +51,8 @@ impl Blockchain {
             pending_transactions: vec![],
             pending_stakes: vec![],
             pending_blocks: vec![],
+            sum_stakes_now: 0,
+            sum_stakes_all_time: 0
         })
     }
     pub fn stakers(
@@ -329,15 +333,17 @@ impl Blockchain {
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
-    pub fn sum_stakes(
-        &self,
+    fn set_sum_stakes(
+        &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-    ) -> Result<types::Amount, Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         let mut sum = 0;
         for staker in self.stakers.iter() {
             sum += self.get_staked_balance(db, &staker.0)?;
         }
-        Ok(sum)
+        self.sum_stakes_now = sum;
+        self.sum_stakes_all_time += sum;
+        Ok(())
     }
     fn hashes(
         db: &DBWithThreadMode<SingleThreaded>,
@@ -483,7 +489,7 @@ impl Blockchain {
         self.put_balance(db, public_key, balance)?;
         Ok(())
     }
-    fn cache_balances(
+    fn put_balances(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         transactions: &Vec<Transaction>,
@@ -594,7 +600,7 @@ impl Blockchain {
         let hash = block.hash();
         self.hashes.push(hash);
         Blockchain::put_latest_block_hash(db, hash)?;
-        self.cache_balances(db, &block.transactions, &block.stakes)?;
+        self.put_balances(db, &block.transactions, &block.stakes)?;
         let fees = Blockchain::get_fees(&block.transactions, &block.stakes);
         self.add_reward(db, &block.public_key, fees)?;
         if self.stakers.len() > 1 {
@@ -625,6 +631,7 @@ impl Blockchain {
                 self.stakers.remove(index).unwrap();
             }
         }
+        self.set_sum_stakes(db)?;
         self.latest_block = block;
         self.pending_blocks.clear();
         if !forger {

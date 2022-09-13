@@ -127,7 +127,8 @@ Validator {} {}/tree/{}
  public_key: {}
  balance: {}
  staked_balance: {}
- sum_stakes: {}
+ sum_stakes_now: {}
+ sum_stakes_all_time: {}
  height: {}
  heartbeats: {}
  lag: {:?}
@@ -153,7 +154,11 @@ Validator {} {}/tree/{}
                 behaviour
                     .validator
                     .blockchain
-                    .sum_stakes(&behaviour.validator.db)?,
+                    .sum_stakes_now,
+                behaviour
+                    .validator
+                    .blockchain
+                    .sum_stakes_all_time,
                 behaviour.validator.blockchain.hashes.len(),
                 behaviour.validator.heartbeats,
                 behaviour.validator.lag,
@@ -211,7 +216,8 @@ async fn handle_get_json(
         public_key: types::PublicKeyBytes,
         balance: types::Amount,
         staked_balance: types::Amount,
-        sum_stakes: types::Amount,
+        sum_stakes_now: types::Amount,
+        sum_stakes_all_time: types::Amount,
         height: types::Height,
         heartbeats: types::Heartbeats,
         lag: [f64; 3],
@@ -242,10 +248,14 @@ Content-Type: application/json
                         &behaviour.validator.db,
                         behaviour.validator.keypair.public.as_bytes()
                     )?,
-                    sum_stakes: behaviour
+                    sum_stakes_now: behaviour
                         .validator
                         .blockchain
-                        .sum_stakes(&behaviour.validator.db,)?,
+                        .sum_stakes_now,
+                    sum_stakes_all_time: behaviour
+                        .validator
+                        .blockchain
+                        .sum_stakes_all_time,
                     height: behaviour.validator.blockchain.hashes.len(),
                     heartbeats: behaviour.validator.heartbeats,
                     lag: behaviour.validator.lag,
@@ -496,7 +506,7 @@ async fn handle_get_json_stake(
         .behaviour()
         .validator
         .blockchain
-        .sum_stakes(&swarm.behaviour().validator.db)?;
+        .sum_stakes_now;
     stream
         .write_all(
             format!(

@@ -4,10 +4,10 @@ use crate::{
     p2p::MyBehaviour,
     print,
     stake::{CompressedStake, Stake},
+    synchronizer::Synchronizer,
     transaction::{CompressedTransaction, Transaction},
     types,
     types::Stakers,
-    validator::Synchronizer,
 };
 use lazy_static::lazy_static;
 use libp2p::Swarm;

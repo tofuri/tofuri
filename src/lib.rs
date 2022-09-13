@@ -17,6 +17,7 @@ pub mod p2p;
 pub mod print;
 pub mod stake;
 pub mod sync;
+pub mod synchronizer;
 pub mod transaction;
 pub mod types;
 pub mod util;

@@ -33,10 +33,14 @@ pub struct Blockchain {
 }
 impl Blockchain {
     pub fn new(db: &DBWithThreadMode<SingleThreaded>) -> Result<Blockchain, Box<dyn Error>> {
-        let latest_block = Blockchain::get_latest_block(db)?;
-        let hashes = Blockchain::hashes(db, latest_block.hash())?;
-        // reinitialize latest_block in case of a broken chain
-        let latest_block = Blockchain::get_latest_block(db)?;
+        let mut hashes = vec![];
+        let latest_block;
+        if let Some(block) = Blockchain::get_latest_block(db)? {
+            hashes = Blockchain::hashes(db, block.hash())?;
+            latest_block = block;
+        } else {
+            latest_block = Block::new([0; 32]);
+        }
         let stakers = Blockchain::stakers(db, &hashes)?;
         Ok(Blockchain {
             latest_block,
@@ -68,7 +72,12 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         keypair: &types::Keypair,
     ) -> Result<Block, Box<dyn Error>> {
-        let mut block = Block::new(self.latest_block.hash());
+        let mut block;
+        if let Some(hash) = self.hashes.last() {
+            block = Block::new(*hash);
+        } else {
+            block = Block::new([0; 32]);
+        }
         self.sort_pending_transactions();
         let pending_transactions = self.pending_transactions.clone();
         self.pending_transactions.clear();
@@ -90,13 +99,13 @@ impl Blockchain {
             }
         }
         block.sign(keypair);
-        self.try_add_block(db, block.clone())?;
         info!(
             "{}: {} @ {}",
             "Forged".cyan(),
-            (self.hashes.len()).to_string().yellow(),
+            (self.hashes.len() + 1).to_string().yellow(),
             hex::encode(block.hash()).green()
         );
+        self.try_add_block(db, block.clone())?;
         Ok(block)
     }
     pub fn try_add_block(
@@ -114,21 +123,27 @@ impl Blockchain {
         if !block.is_valid() {
             return Err("block not valid".into());
         }
+        if block.previous_hash == [0; 32] {
+            println!("previous block was genesis")
+        } else if self.hashes.contains(&block.previous_hash) {
+            if Block::get(db, &block.hash()).is_ok() {
+                return Err("block already in db".into());
+            }
+        } else {
+            return Err("block does not extend chain".into());
+        }
         if !self.stakers.is_empty() {
-            if block.timestamp < self.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
+            let previous_block = Block::get(db, &block.previous_hash)?;
+            if block.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
                 return Err("block created too early".into());
             }
-            if block.timestamp > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
+            if block.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
                 return Err("block created too late".into());
             }
         }
-        let previous_block = Block::get(db, &block.previous_hash)?;
-        if self.latest_block.previous_hash != previous_block.previous_hash {
-            return Err("block does not extend active chain".into());
-        }
         // TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS
         for transaction in block.transactions.iter() {
-            self.validate_transaction(db, transaction)?;
+            self.validate_transaction(db, transaction, block.timestamp)?;
         }
         let public_key_inputs = block
             .transactions
@@ -141,11 +156,11 @@ impl Blockchain {
             return Err("block includes multiple transactions from same input".into());
         }
         // STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES
-        if self.stakers.is_empty() {
-            self.validate_mint_stake(&block.stakes)?;
+        if self.stakers.is_empty() || block.previous_hash == [0; 32] {
+            self.validate_mint_stake(&block.stakes, block.timestamp)?;
         } else {
             for stake in block.stakes.iter() {
-                self.validate_stake(db, stake)?;
+                self.validate_stake(db, stake, block.timestamp)?;
             }
         }
         let public_keys = block
@@ -174,6 +189,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         transaction: &Transaction,
+        timestamp: types::Timestamp,
     ) -> Result<(), Box<dyn Error>> {
         if !transaction.is_valid() {
             return Err("transaction not valid".into());
@@ -185,8 +201,8 @@ impl Blockchain {
         if transaction.amount + transaction.fee > balance {
             return Err("transaction too expensive".into());
         }
-        if transaction.timestamp < self.latest_block.timestamp {
-            return Err("transaction too old (created before latest block)".into());
+        if transaction.timestamp < timestamp {
+            return Err("transaction too old".into());
         }
         Ok(())
     }
@@ -203,7 +219,7 @@ impl Blockchain {
         {
             return Err("transaction already pending".into());
         }
-        self.validate_transaction(db, &transaction)?;
+        self.validate_transaction(db, &transaction, self.latest_block.timestamp)?;
         if let Some(index) = self
             .pending_transactions
             .iter()
@@ -221,25 +237,29 @@ impl Blockchain {
         self.limit_pending_transactions();
         Ok(())
     }
-    fn validate_mint_stake(&self, stakes: &Vec<Stake>) -> Result<(), Box<dyn Error>> {
+    fn validate_mint_stake(
+        &self,
+        stakes: &Vec<Stake>,
+        timestamp: types::Timestamp,
+    ) -> Result<(), Box<dyn Error>> {
         if stakes.len() != 1 {
             return Err("only allowed to mint 1 stake".into());
         }
         let stake = stakes.get(0).unwrap();
         if !stake.is_valid() {
-            return Err("stake not valid".into());
+            return Err("mint stake not valid".into());
         }
-        if stake.timestamp < self.latest_block.timestamp {
-            return Err("stake too old (created before latest block)".into());
+        if stake.timestamp < timestamp {
+            return Err("mint stake too old".into());
         }
         if !stake.deposit {
             return Err("mint stake must be deposit".into());
         }
         if stake.amount != MIN_STAKE {
-            return Err("stake invalid amount".into());
+            return Err("mint stake invalid amount".into());
         }
         if stake.fee != 0 {
-            return Err("stake invalid fee".into());
+            return Err("mint stake invalid fee".into());
         }
         Ok(())
     }
@@ -247,6 +267,7 @@ impl Blockchain {
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         stake: &Stake,
+        timestamp: types::Timestamp,
     ) -> Result<(), Box<dyn Error>> {
         if !stake.is_valid() {
             return Err("stake not valid".into());
@@ -271,8 +292,8 @@ impl Blockchain {
                 return Err("stake withdraw too expensive".into());
             }
         }
-        if stake.timestamp < self.latest_block.timestamp {
-            return Err("stake too old (created before latest block)".into());
+        if stake.timestamp < timestamp {
+            return Err("stake too old".into());
         }
         Ok(())
     }
@@ -289,7 +310,7 @@ impl Blockchain {
         {
             return Err("stake already pending".into());
         }
-        self.validate_stake(db, &stake)?;
+        self.validate_stake(db, &stake, self.latest_block.timestamp)?;
         if let Some(index) = self
             .pending_stakes
             .iter()
@@ -355,18 +376,13 @@ impl Blockchain {
         while (closure()?).is_some() {}
         Ok(hashes)
     }
-    fn get_latest_block(db: &DBWithThreadMode<SingleThreaded>) -> Result<Block, Box<dyn Error>> {
-        let bytes = db.get(db::key(&db::Key::LatestBlockHash))?;
-        if let Some(bytes) = bytes {
-            // latest_block is set
-            Block::get(db, &bytes)
+    pub fn get_latest_block(
+        db: &DBWithThreadMode<SingleThreaded>,
+    ) -> Result<Option<Block>, Box<dyn Error>> {
+        if let Some(hash) = db.get(db::key(&db::Key::LatestBlockHash))? {
+            Ok(Some(Block::get(db, &hash)?))
         } else {
-            // latest_block is NOT set
-            // should be the case if the blockchain haven't been initialized
-            let block = Block::genesis();
-            block.put(db)?;
-            Blockchain::put_latest_block_hash(db, block.hash())?;
-            Ok(block)
+            Ok(None)
         }
     }
     fn put_latest_block_hash(

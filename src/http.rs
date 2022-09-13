@@ -124,32 +124,20 @@ async fn handle_get_index(
 HTTP/1.1 200 OK
 
 Validator {} {}/tree/{}
-
  public_key: {}
-
  balance: {}
-
  staked_balance: {}
-
  sum_stakes: {}
-
  height: {}
-
  heartbeats: {}
-
  lag: {:?}
-
  {:?}
-
  queue: {:?}
-
  latest_hashes: {:?}
-
  pending_transactions: {:?}
-
  pending_stakes: {:?}
-
- pending_blocks: {:?}",
+ pending_blocks: {:?}
+ latest_block: {:?}",
                 env!("CARGO_PKG_VERSION"),
                 env!("CARGO_PKG_REPOSITORY"),
                 env!("GIT_HASH"),
@@ -207,6 +195,7 @@ Validator {} {}/tree/{}
                     .iter()
                     .map(|x| hex::encode(x.hash()))
                     .collect::<Vec<String>>(),
+                behaviour.validator.blockchain.latest_block
             )
             .as_bytes(),
         )

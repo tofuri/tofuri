@@ -3,8 +3,8 @@ use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
-use std::error::Error;
-#[derive(Serialize, Deserialize, Debug, Clone)]
+use std::{error::Error, fmt};
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Block {
     pub previous_hash: types::Hash,
     pub timestamp: types::Timestamp,
@@ -13,6 +13,42 @@ pub struct Block {
     pub signature: types::SignatureBytes,
     pub transactions: Vec<Transaction>,
     pub stakes: Vec<Stake>,
+}
+impl fmt::Debug for Block {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #![allow(dead_code)]
+        #[derive(Debug)]
+        struct Block {
+            hash: String,
+            previous_hash: String,
+            timestamp: u32,
+            public_key: String,
+            signature: String,
+            transactions: Vec<String>,
+            stakes: Vec<String>,
+        }
+        write!(
+            f,
+            "{:?}",
+            Block {
+                hash: hex::encode(self.hash()),
+                previous_hash: hex::encode(self.previous_hash),
+                timestamp: self.timestamp,
+                public_key: hex::encode(self.public_key),
+                signature: hex::encode(self.signature),
+                transactions: self
+                    .transactions
+                    .iter()
+                    .map(|x| hex::encode(x.hash()))
+                    .collect::<Vec<String>>(),
+                stakes: self
+                    .stakes
+                    .iter()
+                    .map(|x| hex::encode(x.hash()))
+                    .collect::<Vec<String>>(),
+            }
+        )
+    }
 }
 impl Block {
     pub fn from(
@@ -41,9 +77,6 @@ impl Block {
             vec![],
             vec![],
         )
-    }
-    pub fn genesis() -> Block {
-        Block::new([0; 32])
     }
     pub fn sign(&mut self, keypair: &types::Keypair) {
         self.public_key = keypair.public.to_bytes();

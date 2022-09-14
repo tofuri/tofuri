@@ -151,14 +151,8 @@ Validator {} {}/tree/{}
                     &behaviour.validator.db,
                     behaviour.validator.keypair.public.as_bytes()
                 )?,
-                behaviour
-                    .validator
-                    .blockchain
-                    .sum_stakes_now,
-                behaviour
-                    .validator
-                    .blockchain
-                    .sum_stakes_all_time,
+                behaviour.validator.blockchain.sum_stakes_now,
+                behaviour.validator.blockchain.sum_stakes_all_time,
                 behaviour.validator.blockchain.hashes.len(),
                 behaviour.validator.heartbeats,
                 behaviour.validator.lag,
@@ -248,14 +242,8 @@ Content-Type: application/json
                         &behaviour.validator.db,
                         behaviour.validator.keypair.public.as_bytes()
                     )?,
-                    sum_stakes_now: behaviour
-                        .validator
-                        .blockchain
-                        .sum_stakes_now,
-                    sum_stakes_all_time: behaviour
-                        .validator
-                        .blockchain
-                        .sum_stakes_all_time,
+                    sum_stakes_now: behaviour.validator.blockchain.sum_stakes_now,
+                    sum_stakes_all_time: behaviour.validator.blockchain.sum_stakes_all_time,
                     height: behaviour.validator.blockchain.hashes.len(),
                     heartbeats: behaviour.validator.heartbeats,
                     lag: behaviour.validator.lag,
@@ -502,11 +490,7 @@ async fn handle_get_json_stake(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
-    let sum = swarm
-        .behaviour()
-        .validator
-        .blockchain
-        .sum_stakes_now;
+    let sum = swarm.behaviour().validator.blockchain.sum_stakes_now;
     stream
         .write_all(
             format!(

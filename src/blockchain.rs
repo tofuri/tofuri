@@ -31,7 +31,7 @@ pub struct Blockchain {
     pub pending_stakes: Vec<Stake>,
     pub pending_blocks: Vec<Block>,
     pub sum_stakes_now: types::Amount,
-    pub sum_stakes_all_time: types::Amount
+    pub sum_stakes_all_time: types::Amount,
 }
 impl Blockchain {
     pub fn new(db: &DBWithThreadMode<SingleThreaded>) -> Result<Blockchain, Box<dyn Error>> {
@@ -52,7 +52,7 @@ impl Blockchain {
             pending_stakes: vec![],
             pending_blocks: vec![],
             sum_stakes_now: 0,
-            sum_stakes_all_time: 0
+            sum_stakes_all_time: 0,
         })
     }
     pub fn stakers(

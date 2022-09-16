@@ -62,7 +62,7 @@ impl Transaction {
     }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(
-            db::cf_handle_transactions(db)?,
+            db::transactions(db),
             self.hash(),
             bincode::serialize(&CompressedTransaction::from(self))?,
         )?;
@@ -73,7 +73,7 @@ impl Transaction {
         hash: &[u8],
     ) -> Result<Transaction, Box<dyn Error>> {
         let compressed: CompressedTransaction = bincode::deserialize(
-            &db.get_cf(db::cf_handle_transactions(db)?, hash)?
+            &db.get_cf(db::transactions(db), hash)?
                 .ok_or("transaction not found")?,
         )?;
         Ok(Transaction::from(&compressed))

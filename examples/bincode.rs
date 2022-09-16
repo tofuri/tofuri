@@ -1,13 +1,17 @@
 use bincode::Options;
 use pea::{address, constants::DECIMAL_PRECISION, transaction::Transaction, util};
 fn main() {
-    let options = bincode::DefaultOptions::new()
-        .with_varint_encoding();
+    let options = bincode::DefaultOptions::new().with_varint_encoding();
     let input = vec![transaction()];
-    let serialized = options.serialize(&input).unwrap(); 
+    let serialized = options.serialize(&input).unwrap();
     println!("{}", serialized.len());
     println!("{:x?}", serialized);
-    println!("{:x?}", options.deserialize::<Vec<Transaction>>(&serialized).unwrap());
+    println!(
+        "{:x?}",
+        options
+            .deserialize::<Vec<Transaction>>(&serialized)
+            .unwrap()
+    );
 }
 fn transaction() -> Transaction {
     let keypair = util::keygen();

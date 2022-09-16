@@ -329,8 +329,12 @@ mod tests {
     #[bench]
     fn bench_merkle_root_1(b: &mut Bencher) {
         let mut block = Block::new([0; 32]);
+        let keypair = util::keygen();
         for i in 0..1 {
-            block.transactions.push(Transaction::new([0; 32], i, i));
+            block.transactions.push(Transaction::new(
+                vec![Transaction::output([0; 32], i)],
+                &[keypair],
+            ));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
         b.iter(|| BlockMetadata::merkle_root(&transaction_hashes));
@@ -338,8 +342,12 @@ mod tests {
     #[bench]
     fn bench_merkle_root_10(b: &mut Bencher) {
         let mut block = Block::new([0; 32]);
+        let keypair = util::keygen();
         for i in 0..10 {
-            block.transactions.push(Transaction::new([0; 32], i, i));
+            block.transactions.push(Transaction::new(
+                vec![Transaction::output([0; 32], i)],
+                &[keypair],
+            ));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
         b.iter(|| BlockMetadata::merkle_root(&transaction_hashes));
@@ -347,8 +355,12 @@ mod tests {
     #[bench]
     fn bench_merkle_root_100(b: &mut Bencher) {
         let mut block = Block::new([0; 32]);
+        let keypair = util::keygen();
         for i in 0..100 {
-            block.transactions.push(Transaction::new([0; 32], i, i));
+            block.transactions.push(Transaction::new(
+                vec![Transaction::output([0; 32], i)],
+                &[keypair],
+            ));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
         b.iter(|| BlockMetadata::merkle_root(&transaction_hashes));
@@ -356,8 +368,12 @@ mod tests {
     #[bench]
     fn bench_merkle_root_1000(b: &mut Bencher) {
         let mut block = Block::new([0; 32]);
+        let keypair = util::keygen();
         for i in 0..1000 {
-            block.transactions.push(Transaction::new([0; 32], i, i));
+            block.transactions.push(Transaction::new(
+                vec![Transaction::output([0; 32], i)],
+                &[keypair],
+            ));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
         b.iter(|| BlockMetadata::merkle_root(&transaction_hashes));

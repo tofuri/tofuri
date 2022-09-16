@@ -5,18 +5,12 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::error::Error;
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Input {
+struct Input {
     pub public_key: types::PublicKeyBytes,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
 impl Input {
-    pub fn new(hash: &types::Hash, keypair: &types::Keypair) -> Input {
-        Input {
-            public_key: keypair.public.to_bytes(),
-            signature: keypair.sign(hash).to_bytes(),
-        }
-    }
     pub fn verify(&mut self, hash: &types::Hash) -> Result<(), Box<dyn Error>> {
         let public_key = types::PublicKey::from_bytes(&self.public_key)?;
         let signature = types::Signature::from_bytes(&self.signature)?;
@@ -24,14 +18,9 @@ impl Input {
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Output {
+struct Output {
     pub public_key: types::PublicKeyBytes,
     pub amount: types::Amount,
-}
-impl Output {
-    fn new(public_key: types::PublicKeyBytes, amount: types::Amount) -> Output {
-        Output { public_key, amount }
-    }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
@@ -40,6 +29,15 @@ pub struct Transaction {
     pub outputs: Vec<Output>,
 }
 impl Transaction {
+    pub fn input(hash: &types::Hash, keypair: &types::Keypair) -> Input {
+        Input {
+            public_key: keypair.public.to_bytes(),
+            signature: keypair.sign(hash).to_bytes(),
+        }
+    }
+    pub fn output(public_key: types::PublicKeyBytes, amount: types::Amount) -> Output {
+        Output { public_key, amount }
+    }
     pub fn new(outputs: Vec<Output>, keypairs: &[types::Keypair]) -> Transaction {
         let timestamp = util::timestamp();
         let mut transaction = Transaction {
@@ -48,7 +46,10 @@ impl Transaction {
             outputs,
         };
         let hash = transaction.hash();
-        transaction.inputs = keypairs.iter().map(|k| Input::new(&hash, k)).collect();
+        transaction.inputs = keypairs
+            .iter()
+            .map(|k| Transaction::input(&hash, k))
+            .collect();
         transaction
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
@@ -58,7 +59,7 @@ impl Transaction {
         }
         Ok(())
     }
-    fn hash(&self) -> types::Hash {
+    pub fn hash(&self) -> types::Hash {
         #[derive(Serialize)]
         pub struct Data {
             pub timestamp: types::Timestamp,
@@ -71,6 +72,44 @@ impl Transaction {
             })
             .unwrap(),
         )
+    }
+    pub fn sum_inputs(&self, db: &DBWithThreadMode<SingleThreaded>) -> types::Amount {
+        let sum = 0;
+        for input in self.inputs {
+            sum += Transaction::get_balance(db, &input.public_key);
+        }
+        sum
+    }
+    pub fn sum_outputs(&self) -> types::Amount {
+        let sum = 0;
+        for output in self.outputs {
+            sum += output.amount;
+        }
+        sum
+    }
+    fn get_balance(
+        db: &DBWithThreadMode<SingleThreaded>,
+        public_key: &types::PublicKeyBytes,
+    ) -> types::Amount {
+        match db
+            .get_cf(db::cf_handle_balances(db).unwrap(), public_key)
+            .unwrap()
+        {
+            Some(bytes) => types::Amount::from_le_bytes(bytes.as_slice().try_into().unwrap()),
+            None => 0,
+        }
+    }
+    fn put_balance(
+        db: &DBWithThreadMode<SingleThreaded>,
+        public_key: &types::PublicKeyBytes,
+        balance: types::Amount,
+    ) {
+        db.put_cf(
+            db::cf_handle_balances(db).unwrap(),
+            public_key,
+            balance.to_le_bytes(),
+        )
+        .unwrap();
     }
     pub fn is_valid(&self) -> bool {
         self.timestamp <= util::timestamp() && self.verify().is_ok()
@@ -101,6 +140,6 @@ mod tests {
     #[bench]
     fn bench_hash(b: &mut Bencher) {
         let keypair = util::keygen();
-        b.iter(|| Transaction::new(vec![Output::new([0; 32], 0)], &[keypair]));
+        b.iter(|| Transaction::new(vec![Transaction::output([0; 32], 0)], &[keypair]));
     }
 }

@@ -5,7 +5,7 @@ use crate::{
     print,
     stake::{CompressedStake, Stake},
     synchronizer::Synchronizer,
-    transaction::Transaction,
+    transaction::{CompressedTransaction, Transaction},
     types,
     types::Stakers,
 };
@@ -29,7 +29,17 @@ lazy_static! {
     static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
     static ref STAKE_BY_HASH: Regex = Regex::new(r" /stake/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
+    static ref TRANSACTION_SERIALIZED: usize = hex::encode(
+        bincode::serialize(&CompressedTransaction::from(&Transaction::new(
+            [0; 32], 0, 0
+        )))
+        .unwrap()
+    )
+    .len();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
+    static ref STAKE_SERIALIZED: usize =
+        hex::encode(bincode::serialize(&CompressedStake::from(&Stake::new(false, 0, 0))).unwrap())
+            .len();
 }
 pub async fn next(
     listener: &tokio::net::TcpListener,
@@ -501,14 +511,19 @@ async fn handle_post_json_transaction(
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
-    let transaction: Transaction = bincode::deserialize(&hex::decode(
-        buffer.lines().nth(5).ok_or("POST TRANSACTION")??,
+    let compressed: CompressedTransaction = bincode::deserialize(&hex::decode(
+        buffer
+            .lines()
+            .nth(5)
+            .ok_or("POST TRANSACTION 1")??
+            .get(0..*TRANSACTION_SERIALIZED)
+            .ok_or("POST TRANSACTION 2")?,
     )?)?;
     let behaviour = swarm.behaviour_mut();
     let status = match behaviour
         .validator
         .blockchain
-        .try_add_transaction(&behaviour.validator.db, transaction)
+        .try_add_transaction(&behaviour.validator.db, Transaction::from(&compressed))
     {
         Ok(()) => "success".to_string(),
         Err(err) => {
@@ -536,8 +551,14 @@ async fn handle_post_json_stake(
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
-    let compressed: CompressedStake =
-        bincode::deserialize(&hex::decode(buffer.lines().nth(5).ok_or("POST STAKE")??)?)?;
+    let compressed: CompressedStake = bincode::deserialize(&hex::decode(
+        buffer
+            .lines()
+            .nth(5)
+            .ok_or("POST STAKE 1")??
+            .get(0..*STAKE_SERIALIZED)
+            .ok_or("POST STAKE 2")?,
+    )?)?;
     let behaviour = swarm.behaviour_mut();
     let status = match behaviour
         .validator

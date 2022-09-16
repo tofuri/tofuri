@@ -4,7 +4,7 @@ use crate::{
     constants::{DECIMAL_PRECISION, EXTENSION},
     print,
     stake::{CompressedStake, Stake},
-    transaction::Transaction,
+    transaction::{CompressedTransaction, Transaction},
     types,
     wallet::Wallet,
 };
@@ -206,15 +206,15 @@ pub async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error
     } {
         return Ok(());
     }
-    let transaction = Transaction::new(
-        vec![Transaction::output(address::decode(&address)?, amount)],
-        &[&wallet.keypair],
-    );
+    let mut transaction = Transaction::new(address::decode(&address)?, amount, fee);
+    transaction.sign(&wallet.keypair);
     println!("Hash: {}", hex::encode(transaction.hash()).cyan());
     let client = reqwest::Client::new();
     let res: String = match client
         .post(format!("{}/transaction", api))
-        .body(hex::encode(bincode::serialize(&transaction)?))
+        .body(hex::encode(bincode::serialize(
+            &CompressedTransaction::from(&transaction),
+        )?))
         .send()
         .await
     {

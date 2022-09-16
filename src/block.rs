@@ -237,7 +237,7 @@ impl BlockMetadataLean {
         block_metadata_lean: BlockMetadataLean,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
-            db::blocks(db),
+            db::cf_handle_blocks(db)?,
             hash,
             bincode::serialize(&block_metadata_lean)?,
         )?;
@@ -247,7 +247,9 @@ impl BlockMetadataLean {
         db: &DBWithThreadMode<SingleThreaded>,
         hash: &[u8],
     ) -> Result<Vec<u8>, Box<dyn Error>> {
-        Ok(db.get_cf(db::blocks(db), hash)?.ok_or("block not found")?)
+        Ok(db
+            .get_cf(db::cf_handle_blocks(db)?, hash)?
+            .ok_or("block not found")?)
     }
 }
 #[cfg(test)]
@@ -327,12 +329,8 @@ mod tests {
     #[bench]
     fn bench_merkle_root_1(b: &mut Bencher) {
         let mut block = Block::new([0; 32]);
-        let keypair = util::keygen();
         for i in 0..1 {
-            block.transactions.push(Transaction::new(
-                vec![Transaction::output([0; 32], i)],
-                &[&keypair],
-            ));
+            block.transactions.push(Transaction::new([0; 32], i, i));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
         b.iter(|| BlockMetadata::merkle_root(&transaction_hashes));
@@ -340,12 +338,8 @@ mod tests {
     #[bench]
     fn bench_merkle_root_10(b: &mut Bencher) {
         let mut block = Block::new([0; 32]);
-        let keypair = util::keygen();
         for i in 0..10 {
-            block.transactions.push(Transaction::new(
-                vec![Transaction::output([0; 32], i)],
-                &[&keypair],
-            ));
+            block.transactions.push(Transaction::new([0; 32], i, i));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
         b.iter(|| BlockMetadata::merkle_root(&transaction_hashes));
@@ -353,12 +347,8 @@ mod tests {
     #[bench]
     fn bench_merkle_root_100(b: &mut Bencher) {
         let mut block = Block::new([0; 32]);
-        let keypair = util::keygen();
         for i in 0..100 {
-            block.transactions.push(Transaction::new(
-                vec![Transaction::output([0; 32], i)],
-                &[&keypair],
-            ));
+            block.transactions.push(Transaction::new([0; 32], i, i));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
         b.iter(|| BlockMetadata::merkle_root(&transaction_hashes));
@@ -366,12 +356,8 @@ mod tests {
     #[bench]
     fn bench_merkle_root_1000(b: &mut Bencher) {
         let mut block = Block::new([0; 32]);
-        let keypair = util::keygen();
         for i in 0..1000 {
-            block.transactions.push(Transaction::new(
-                vec![Transaction::output([0; 32], i)],
-                &[&keypair],
-            ));
+            block.transactions.push(Transaction::new([0; 32], i, i));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
         b.iter(|| BlockMetadata::merkle_root(&transaction_hashes));

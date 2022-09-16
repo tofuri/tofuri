@@ -149,13 +149,14 @@ impl Blockchain {
         for transaction in block.transactions.iter() {
             self.validate_transaction(db, transaction, block.timestamp)?;
         }
-        let inputs = vec![];
-        for transaction in block.transactions.iter() {
-            for input in transaction.inputs.iter() {
-                inputs.push(input.public_key);
-            }
-        }
-        if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
+        let public_key_inputs = block
+            .transactions
+            .iter()
+            .map(|t| t.public_key_input)
+            .collect::<Vec<types::PublicKeyBytes>>();
+        if (1..public_key_inputs.len())
+            .any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1]))
+        {
             return Err("block includes multiple transactions from same input".into());
         }
         // STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES
@@ -200,7 +201,7 @@ impl Blockchain {
         if Transaction::get(db, &transaction.hash()).is_ok() {
             return Err("transaction already in chain".into());
         }
-        let balance = self.get_balance(db, &transaction.inputs)?;
+        let balance = self.get_balance(db, &transaction.public_key_input)?;
         if transaction.amount + transaction.fee > balance {
             return Err("transaction too expensive".into());
         }
@@ -397,13 +398,52 @@ impl Blockchain {
         db.put(db::key(&db::Key::LatestBlockHash), hash)?;
         Ok(())
     }
+    fn get_balance_raw(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        public_key: &types::PublicKeyBytes,
+    ) -> Result<types::Amount, Box<dyn Error>> {
+        let bytes = db
+            .get_cf(db::cf_handle_balances(db)?, public_key)?
+            .ok_or("balance not found")?;
+        Ok(types::Amount::from_le_bytes(bytes.as_slice().try_into()?))
+    }
+    pub fn get_balance(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        public_key: &types::PublicKeyBytes,
+    ) -> Result<types::Amount, Box<dyn Error>> {
+        match self.get_balance_raw(db, public_key) {
+            Ok(balance) => Ok(balance),
+            Err(err) => {
+                if err.to_string() == "balance not found" {
+                    Ok(0)
+                } else {
+                    Err(err)
+                }
+            }
+        }
+    }
+    fn put_balance(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        public_key: &types::PublicKeyBytes,
+        balance: types::Amount,
+    ) -> Result<(), Box<dyn Error>> {
+        db.put_cf(
+            db::cf_handle_balances(db)?,
+            public_key,
+            balance.to_le_bytes(),
+        )?;
+        Ok(())
+    }
     fn get_staked_balance_raw(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         public_key: &types::PublicKeyBytes,
     ) -> Result<types::Amount, Box<dyn Error>> {
         let bytes = db
-            .get_cf(db::staked_balances(db)?, public_key)?
+            .get_cf(db::cf_handle_staked_balances(db)?, public_key)?
             .ok_or("staked_balance not found")?;
         Ok(types::Amount::from_le_bytes(bytes.as_slice().try_into()?))
     }
@@ -430,7 +470,7 @@ impl Blockchain {
         staked_balance: types::Amount,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
-            db::staked_balances(db)?,
+            db::cf_handle_staked_balances(db)?,
             public_key,
             staked_balance.to_le_bytes(),
         )?;

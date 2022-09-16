@@ -44,14 +44,18 @@ impl Validator {
         multiaddr: &Multiaddr,
         timestamp: types::Timestamp,
     ) {
-        db.put_cf(&db::peers(db), multiaddr, timestamp.to_le_bytes())
-            .unwrap();
+        db.put_cf(
+            &db::cf_handle_multiaddr(db).unwrap(),
+            multiaddr,
+            timestamp.to_le_bytes(),
+        )
+        .unwrap();
     }
     pub fn get_multiaddrs(
         db: &DBWithThreadMode<SingleThreaded>,
     ) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
         let mut multiaddrs = vec![];
-        for i in db.iterator_cf(db::peers(db), IteratorMode::Start) {
+        for i in db.iterator_cf(db::cf_handle_multiaddr(db)?, IteratorMode::Start) {
             multiaddrs.push(String::from_utf8(i?.0.to_vec())?.parse()?);
         }
         Ok(multiaddrs)

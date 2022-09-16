@@ -52,7 +52,7 @@ impl Stake {
     }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(
-            db::stakes(db),
+            db::cf_handle_stakes(db)?,
             self.hash(),
             bincode::serialize(&CompressedStake::from(self))?,
         )?;
@@ -62,8 +62,10 @@ impl Stake {
         db: &DBWithThreadMode<SingleThreaded>,
         hash: &[u8],
     ) -> Result<Stake, Box<dyn Error>> {
-        let compressed: CompressedStake =
-            bincode::deserialize(&db.get_cf(db::stakes(db), hash)?.ok_or("stake not found")?)?;
+        let compressed: CompressedStake = bincode::deserialize(
+            &db.get_cf(db::cf_handle_stakes(db)?, hash)?
+                .ok_or("stake not found")?,
+        )?;
         Ok(Stake::from(&compressed))
     }
 }

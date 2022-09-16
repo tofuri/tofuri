@@ -237,7 +237,7 @@ impl BlockMetadataLean {
         block_metadata_lean: BlockMetadataLean,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
-            db::cf_handle_blocks(db)?,
+            db::blocks(db),
             hash,
             bincode::serialize(&block_metadata_lean)?,
         )?;
@@ -247,9 +247,7 @@ impl BlockMetadataLean {
         db: &DBWithThreadMode<SingleThreaded>,
         hash: &[u8],
     ) -> Result<Vec<u8>, Box<dyn Error>> {
-        Ok(db
-            .get_cf(db::cf_handle_blocks(db)?, hash)?
-            .ok_or("block not found")?)
+        Ok(db.get_cf(db::blocks(db), hash)?.ok_or("block not found")?)
     }
 }
 #[cfg(test)]
@@ -333,7 +331,7 @@ mod tests {
         for i in 0..1 {
             block.transactions.push(Transaction::new(
                 vec![Transaction::output([0; 32], i)],
-                &[keypair],
+                &[&keypair],
             ));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
@@ -346,7 +344,7 @@ mod tests {
         for i in 0..10 {
             block.transactions.push(Transaction::new(
                 vec![Transaction::output([0; 32], i)],
-                &[keypair],
+                &[&keypair],
             ));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
@@ -359,7 +357,7 @@ mod tests {
         for i in 0..100 {
             block.transactions.push(Transaction::new(
                 vec![Transaction::output([0; 32], i)],
-                &[keypair],
+                &[&keypair],
             ));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);
@@ -372,7 +370,7 @@ mod tests {
         for i in 0..1000 {
             block.transactions.push(Transaction::new(
                 vec![Transaction::output([0; 32], i)],
-                &[keypair],
+                &[&keypair],
             ));
         }
         let transaction_hashes = BlockMetadata::transaction_hashes(&block.transactions);

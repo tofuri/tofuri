@@ -1,7 +1,6 @@
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Options, SingleThreaded, DB,
 };
-use std::error::Error;
 pub enum Key {
     LatestBlockHash,
 }
@@ -28,49 +27,24 @@ pub fn open(path: &str) -> DBWithThreadMode<SingleThreaded> {
     options.create_if_missing(true);
     DB::open_cf_descriptors(&options, path, get_descriptors()).unwrap()
 }
-pub fn cf_handle_blocks(
-    db: &DBWithThreadMode<SingleThreaded>,
-) -> Result<&ColumnFamily, Box<dyn Error>> {
-    Ok(db
-        .cf_handle("blocks")
-        .ok_or("blocks column family handle not found")?)
+pub fn blocks(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("blocks").unwrap()
 }
-pub fn cf_handle_transactions(
-    db: &DBWithThreadMode<SingleThreaded>,
-) -> Result<&ColumnFamily, Box<dyn Error>> {
-    Ok(db
-        .cf_handle("transactions")
-        .ok_or("transactions column family handle not found")?)
+pub fn outputs(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("outputs").unwrap()
 }
-pub fn cf_handle_stakes(
-    db: &DBWithThreadMode<SingleThreaded>,
-) -> Result<&ColumnFamily, Box<dyn Error>> {
-    Ok(db
-        .cf_handle("stakes")
-        .ok_or("stakes column family handle not found")?)
+pub fn outputs_unspent(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("outputs_unspent").unwrap()
 }
-pub fn cf_handle_balances(
-    db: &DBWithThreadMode<SingleThreaded>,
-) -> Result<&ColumnFamily, Box<dyn Error>> {
-    Ok(db
-        .cf_handle("balances")
-        .ok_or("balances column family handle not found")?)
+pub fn transactions(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("transactions").unwrap()
 }
-pub fn cf_handle_staked_balances(
-    db: &DBWithThreadMode<SingleThreaded>,
-) -> Result<&ColumnFamily, Box<dyn Error>> {
-    Ok(db
-        .cf_handle("staked_balances")
-        .ok_or("staked_balances column family handle not found")?)
+pub fn stakes(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("stakes").unwrap()
 }
-pub fn cf_handle_multiaddr(
-    db: &DBWithThreadMode<SingleThreaded>,
-) -> Result<&ColumnFamily, Box<dyn Error>> {
-    Ok(db
-        .cf_handle("multiaddr")
-        .ok_or("multiaddr column family handle not found")?)
+pub fn peers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("peers").unwrap()
 }
-#[cfg(test)]
 mod tests {
     use super::*;
     use tempdir::TempDir;

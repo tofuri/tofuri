@@ -16,9 +16,12 @@ fn main() {
 fn transaction() -> Transaction {
     let keypair = util::keygen();
     Transaction::new(
-        Transaction::output(vec![address::decode(
-            "0xbd8685eb128064f3969078db51b4fa94ea7af71844f70bea1f2e86c36186675db9ff2b09",
-        )], 09),
-        &[keypair]
+        Transaction::output(
+            vec![address::decode(
+                "0xbd8685eb128064f3969078db51b4fa94ea7af71844f70bea1f2e86c36186675db9ff2b09",
+            )],
+            09,
+        ),
+        &[&keypair],
     )
 }

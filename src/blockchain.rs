@@ -403,7 +403,7 @@ impl Blockchain {
         public_key: &types::PublicKeyBytes,
     ) -> Result<types::Amount, Box<dyn Error>> {
         let bytes = db
-            .get_cf(db::cf_handle_staked_balances(db)?, public_key)?
+            .get_cf(db::staked_balances(db)?, public_key)?
             .ok_or("staked_balance not found")?;
         Ok(types::Amount::from_le_bytes(bytes.as_slice().try_into()?))
     }
@@ -430,7 +430,7 @@ impl Blockchain {
         staked_balance: types::Amount,
     ) -> Result<(), Box<dyn Error>> {
         db.put_cf(
-            db::cf_handle_staked_balances(db)?,
+            db::staked_balances(db)?,
             public_key,
             staked_balance.to_le_bytes(),
         )?;

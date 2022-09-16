@@ -22,6 +22,32 @@ struct Output {
     pub public_key: types::PublicKeyBytes,
     pub amount: types::Amount,
 }
+impl Output {
+    pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) {
+        let amount = match db.get_cf(db::outputs(db), self.public_key).unwrap() {
+            Some(bytes) => bincode::deserialize(&bytes).unwrap(),
+            None => 0,
+        };
+        db.put_cf(
+            db::transactions(db),
+            self.public_key,
+            bincode::serialize(&self.amount).unwrap(),
+        )
+        .unwrap();
+    }
+    pub fn get(
+        db: &DBWithThreadMode<SingleThreaded>,
+        public_key: types::PublicKeyBytes,
+    ) -> Option<Output> {
+        match db.get_cf(db::outputs(db), public_key).unwrap() {
+            Some(bytes) => Some(Output {
+                public_key,
+                amount: bincode::deserialize(&bytes).unwrap(),
+            }),
+            None => None,
+        }
+    }
+}
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
     pub timestamp: types::Timestamp,
@@ -38,7 +64,7 @@ impl Transaction {
     pub fn output(public_key: types::PublicKeyBytes, amount: types::Amount) -> Output {
         Output { public_key, amount }
     }
-    pub fn new(outputs: Vec<Output>, keypairs: &[types::Keypair]) -> Transaction {
+    pub fn new(outputs: Vec<Output>, keypairs: &[&types::Keypair]) -> Transaction {
         let timestamp = util::timestamp();
         let mut transaction = Transaction {
             timestamp,
@@ -76,6 +102,8 @@ impl Transaction {
     pub fn sum_inputs(&self, db: &DBWithThreadMode<SingleThreaded>) -> types::Amount {
         let sum = 0;
         for input in self.inputs {
+            // find the unspent outputs to the inputs then look at the amounts of the outputs
+            Output::get()
             sum += Transaction::get_balance(db, &input.public_key);
         }
         sum
@@ -87,36 +115,12 @@ impl Transaction {
         }
         sum
     }
-    fn get_balance(
-        db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKeyBytes,
-    ) -> types::Amount {
-        match db
-            .get_cf(db::cf_handle_balances(db).unwrap(), public_key)
-            .unwrap()
-        {
-            Some(bytes) => types::Amount::from_le_bytes(bytes.as_slice().try_into().unwrap()),
-            None => 0,
-        }
-    }
-    fn put_balance(
-        db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKeyBytes,
-        balance: types::Amount,
-    ) {
-        db.put_cf(
-            db::cf_handle_balances(db).unwrap(),
-            public_key,
-            balance.to_le_bytes(),
-        )
-        .unwrap();
-    }
     pub fn is_valid(&self) -> bool {
         self.timestamp <= util::timestamp() && self.verify().is_ok()
     }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(
-            db::cf_handle_transactions(db)?,
+            db::transactions(db),
             self.hash(),
             bincode::serialize(&self)?,
         )?;
@@ -127,7 +131,7 @@ impl Transaction {
         hash: &[u8],
     ) -> Result<Transaction, Box<dyn Error>> {
         let transaction: Transaction = bincode::deserialize(
-            &db.get_cf(db::cf_handle_transactions(db)?, hash)?
+            &db.get_cf(db::transactions(db), hash)?
                 .ok_or("transaction not found")?,
         )?;
         Ok(transaction)
@@ -140,6 +144,6 @@ mod tests {
     #[bench]
     fn bench_hash(b: &mut Bencher) {
         let keypair = util::keygen();
-        b.iter(|| Transaction::new(vec![Transaction::output([0; 32], 0)], &[keypair]));
+        b.iter(|| Transaction::new(vec![Transaction::output([0; 32], 0)], &[&keypair]));
     }
 }

@@ -21,7 +21,10 @@ use crate::{
 use colored::*;
 use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
-use std::error::Error;
+use std::{
+    error::Error,
+    time::{Duration, Instant},
+};
 #[derive(Debug)]
 pub struct Blockchain {
     pub latest_block: Block,
@@ -38,7 +41,10 @@ impl Blockchain {
         let mut hashes = vec![];
         let latest_block;
         if let Some(block) = Blockchain::get_latest_block(db)? {
+            let start = Instant::now();
             hashes = Blockchain::hashes(db, block.hash())?;
+            let duration = start.elapsed();
+            info!("{}: {:?}", "Load hashes".cyan(), duration);
             latest_block = block;
         } else {
             latest_block = Block::new([0; 32]);

@@ -67,18 +67,22 @@ pub fn validator(validator: &Validator) {
     info!("{}: {}", "Peers".cyan(), validator.multiaddrs.len());
 }
 pub fn blockchain(blockchain: &Blockchain) {
-    info!("{}: {}", "Height".cyan(), blockchain.hashes.len());
+    info!("{}: {}", "Height".cyan(), blockchain.get_hashes().len());
     info!(
         "{}: {}",
         "Pending txns".cyan(),
-        blockchain.pending_transactions.len()
+        blockchain.get_pending_transactions().len()
     );
     info!(
         "{}: {}",
         "Pending stakes".cyan(),
-        blockchain.pending_stakes.len()
+        blockchain.get_pending_stakes().len()
     );
-    info!("{}: {}", "Validators".cyan(), blockchain.stakers.len());
+    info!(
+        "{}: {}",
+        "Validators".cyan(),
+        blockchain.get_stakers().len()
+    );
 }
 pub fn validator_args(args: &ValidatorArgs) {
     info!("{}: {}", "--debug".cyan(), args.debug);

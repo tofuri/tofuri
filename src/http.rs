@@ -151,23 +151,23 @@ Validator {} {}/tree/{}
                     .validator
                     .blockchain
                     .get_balance_staked(behaviour.validator.keypair.public.as_bytes()),
-                behaviour.validator.blockchain.sum_stakes_now,
-                behaviour.validator.blockchain.sum_stakes_all_time,
-                behaviour.validator.blockchain.hashes.len(),
+                behaviour.validator.blockchain.get_sum_stakes_now(),
+                behaviour.validator.blockchain.get_sum_stakes_all_time(),
+                behaviour.validator.blockchain.get_hashes().len(),
                 behaviour.validator.heartbeats,
                 behaviour.validator.lag,
                 behaviour.validator.synchronizer,
                 behaviour
                     .validator
                     .blockchain
-                    .stakers
+                    .get_stakers()
                     .iter()
                     .map(|&x| (address::encode(&x.0), x.1))
                     .collect::<Vec<(String, types::Height)>>(),
                 behaviour
                     .validator
                     .blockchain
-                    .hashes
+                    .get_hashes()
                     .iter()
                     .rev()
                     .take(3)
@@ -176,25 +176,25 @@ Validator {} {}/tree/{}
                 behaviour
                     .validator
                     .blockchain
-                    .pending_transactions
+                    .get_pending_transactions()
                     .iter()
                     .map(|x| hex::encode(x.hash()))
                     .collect::<Vec<String>>(),
                 behaviour
                     .validator
                     .blockchain
-                    .pending_stakes
+                    .get_pending_stakes()
                     .iter()
                     .map(|x| hex::encode(x.hash()))
                     .collect::<Vec<String>>(),
                 behaviour
                     .validator
                     .blockchain
-                    .pending_blocks
+                    .get_pending_blocks()
                     .iter()
                     .map(|x| hex::encode(x.hash()))
                     .collect::<Vec<String>>(),
-                behaviour.validator.blockchain.latest_block
+                behaviour.validator.blockchain.get_latest_block()
             )
             .as_bytes(),
         )
@@ -242,17 +242,17 @@ Content-Type: application/json
                         .validator
                         .blockchain
                         .get_balance_staked(behaviour.validator.keypair.public.as_bytes()),
-                    sum_stakes_now: behaviour.validator.blockchain.sum_stakes_now,
-                    sum_stakes_all_time: behaviour.validator.blockchain.sum_stakes_all_time,
-                    height: behaviour.validator.blockchain.hashes.len(),
+                    sum_stakes_now: *behaviour.validator.blockchain.get_sum_stakes_now(),
+                    sum_stakes_all_time: *behaviour.validator.blockchain.get_sum_stakes_all_time(),
+                    height: behaviour.validator.blockchain.get_hashes().len(),
                     heartbeats: behaviour.validator.heartbeats,
                     lag: behaviour.validator.lag,
                     synchronizer: behaviour.validator.synchronizer,
-                    stakers: behaviour.validator.blockchain.stakers.clone(),
+                    stakers: behaviour.validator.blockchain.get_stakers().clone(),
                     latest_hashes: behaviour
                         .validator
                         .blockchain
-                        .hashes
+                        .get_hashes()
                         .iter()
                         .rev()
                         .take(10)
@@ -261,11 +261,11 @@ Content-Type: application/json
                     pending_transactions: behaviour
                         .validator
                         .blockchain
-                        .pending_transactions
+                        .get_pending_transactions()
                         .clone(),
-                    pending_stakes: behaviour.validator.blockchain.pending_stakes.clone(),
-                    pending_blocks: behaviour.validator.blockchain.pending_blocks.clone(),
-                    latest_block: behaviour.validator.blockchain.latest_block.clone()
+                    pending_stakes: behaviour.validator.blockchain.get_pending_stakes().clone(),
+                    pending_blocks: behaviour.validator.blockchain.get_pending_blocks().clone(),
+                    latest_block: behaviour.validator.blockchain.get_latest_block().clone()
                 })?
             )
             .as_bytes(),
@@ -345,7 +345,7 @@ async fn handle_get_json_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
-    let height = swarm.behaviour().validator.blockchain.hashes.len();
+    let height = swarm.behaviour().validator.blockchain.get_hashes().len();
     stream
         .write_all(
             format!(
@@ -378,7 +378,7 @@ async fn handle_get_json_hash_by_height(
         .behaviour()
         .validator
         .blockchain
-        .hashes
+        .get_hashes()
         .get(height)
         .ok_or("GET HASH_BY_HEIGHT 3")?;
     stream
@@ -490,7 +490,7 @@ async fn handle_get_json_stake(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
-    let sum = swarm.behaviour().validator.blockchain.sum_stakes_now;
+    let sum = swarm.behaviour().validator.blockchain.get_sum_stakes_now();
     stream
         .write_all(
             format!(

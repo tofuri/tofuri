@@ -27,7 +27,13 @@ pub fn handle(
                     .blockchain
                     .accept_block(&behaviour.validator.db, false)?
             }
-            if behaviour.validator.blockchain.latest_block.previous_hash == previous_hash {
+            if behaviour
+                .validator
+                .blockchain
+                .get_latest_block()
+                .previous_hash
+                == previous_hash
+            {
                 behaviour.validator.synchronizer.new += 1;
             }
         }
@@ -49,10 +55,10 @@ pub fn handle(
         "sync" => {
             let sync: Sync = bincode::deserialize(&message.data)?;
             for i in sync.height..=sync.height + SYNC_BLOCKS {
-                if i >= behaviour.validator.blockchain.hashes.len() {
+                if i >= behaviour.validator.blockchain.get_hashes().len() {
                     break;
                 }
-                let hash = behaviour.validator.blockchain.hashes.get(i).unwrap();
+                let hash = behaviour.validator.blockchain.get_hashes().get(i).unwrap();
                 if behaviour.gossipsub.all_peers().count() > 0 {
                     behaviour.gossipsub.publish(
                         IdentTopic::new("block"),

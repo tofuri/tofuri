@@ -27,14 +27,14 @@ use std::{
 };
 #[derive(Debug)]
 pub struct Blockchain {
-    pub latest_block: Block,
-    pub hashes: types::Hashes,
-    pub stakers: types::Stakers,
-    pub pending_transactions: Vec<Transaction>,
-    pub pending_stakes: Vec<Stake>,
-    pub pending_blocks: Vec<Block>,
-    pub sum_stakes_now: types::Amount,
-    pub sum_stakes_all_time: types::Amount,
+    latest_block: Block,
+    hashes: types::Hashes,
+    stakers: types::Stakers,
+    pending_transactions: Vec<Transaction>,
+    pending_stakes: Vec<Stake>,
+    pending_blocks: Vec<Block>,
+    sum_stakes_now: types::Amount,
+    sum_stakes_all_time: types::Amount,
     balance: types::Balance,
     balance_staked: types::Balance,
 }
@@ -312,6 +312,9 @@ impl Blockchain {
         self.limit_pending_stakes();
         Ok(())
     }
+    pub fn set_mint_stake(&mut self, stake: Stake) {
+        self.pending_stakes = vec![stake];
+    }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
@@ -360,7 +363,7 @@ impl Blockchain {
         while (closure()?).is_some() {}
         Ok(hashes)
     }
-    pub fn get_latest_block(
+    pub fn latest_block(
         db: &DBWithThreadMode<SingleThreaded>,
     ) -> Result<Option<Block>, Box<dyn Error>> {
         if let Some(hash) = db.get(db::key(&db::Key::LatestBlockHash))? {
@@ -529,7 +532,7 @@ impl Blockchain {
         self.hashes.clear();
         self.balance.clear();
         self.balance_staked.clear();
-        if let Some(block) = Blockchain::get_latest_block(db).unwrap() {
+        if let Some(block) = Blockchain::latest_block(db).unwrap() {
             self.latest_block = block;
         }
         let hashes = Blockchain::hashes(db, self.latest_block.hash()).unwrap();
@@ -608,5 +611,29 @@ impl Blockchain {
             }
         }
         stakers
+    }
+    pub fn get_latest_block(&self) -> &Block {
+        &self.latest_block
+    }
+    pub fn get_hashes(&self) -> &types::Hashes {
+        &self.hashes
+    }
+    pub fn get_stakers(&self) -> &types::Stakers {
+        &self.stakers
+    }
+    pub fn get_pending_transactions(&self) -> &Vec<Transaction> {
+        &self.pending_transactions
+    }
+    pub fn get_pending_stakes(&self) -> &Vec<Stake> {
+        &self.pending_stakes
+    }
+    pub fn get_pending_blocks(&self) -> &Vec<Block> {
+        &self.pending_blocks
+    }
+    pub fn get_sum_stakes_now(&self) -> &types::Amount {
+        &self.sum_stakes_now
+    }
+    pub fn get_sum_stakes_all_time(&self) -> &types::Amount {
+        &self.sum_stakes_all_time
     }
 }

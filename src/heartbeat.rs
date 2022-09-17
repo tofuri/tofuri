@@ -40,11 +40,11 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     let mut forge = true;
-    if !behaviour.validator.blockchain.stakers.is_empty() {
-        if &behaviour.validator.blockchain.stakers[0].0
+    if !behaviour.validator.blockchain.get_stakers().is_empty() {
+        if &behaviour.validator.blockchain.get_stakers()[0].0
             != behaviour.validator.keypair.public.as_bytes()
             || util::timestamp()
-                < behaviour.validator.blockchain.latest_block.timestamp
+                < behaviour.validator.blockchain.get_latest_block().timestamp
                     + BLOCK_TIME_MIN as types::Timestamp
         {
             forge = false;
@@ -53,7 +53,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         // cold start
         let mut stake = Stake::new(true, MIN_STAKE, 0);
         stake.sign(&behaviour.validator.keypair);
-        behaviour.validator.blockchain.pending_stakes.push(stake);
+        behaviour.validator.blockchain.set_mint_stake(stake);
     }
     if forge {
         // forge new block
@@ -92,7 +92,7 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         behaviour
             .validator
             .blockchain
-            .hashes
+            .get_hashes()
             .len()
             .to_string()
             .yellow(),
@@ -101,7 +101,9 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     if behaviour.gossipsub.all_peers().count() > 0 {
         behaviour.gossipsub.publish(
             IdentTopic::new("sync"),
-            bincode::serialize(&Sync::new(behaviour.validator.blockchain.hashes.len()))?,
+            bincode::serialize(&Sync::new(
+                behaviour.validator.blockchain.get_hashes().len(),
+            ))?,
         )?;
     }
     Ok(())

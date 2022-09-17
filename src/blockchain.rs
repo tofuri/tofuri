@@ -666,32 +666,32 @@ impl Blockchain {
         Ok(())
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
-        let mut hashes = vec![];
-        if let Some(block) = Blockchain::get_latest_block(db).unwrap() {
-            let start = Instant::now();
-            hashes = Blockchain::hashes(db, block.hash()).unwrap();
-            let duration = start.elapsed();
-            info!("{}: {:?}", "Load hashes".cyan(), duration);
-            self.latest_block = block;
-        } else {
-            self.latest_block = Block::new([0; 32]);
-        }
-        self.stakers = Blockchain::stakers(db, &hashes).unwrap();
+        self.latest_block = Block::new([0; 32]);
+        self.stakers.clear();
+        self.hashes.clear();
         self.balance.clear();
         self.balance_staked.clear();
-        let previous_block_timestamp = 0;
-        for hash in hashes {
+        if let Some(block) = Blockchain::get_latest_block(db).unwrap() {
+            self.latest_block = block;
+        }
+        let start = Instant::now();
+        let hashes = Blockchain::hashes(db, self.latest_block.hash()).unwrap();
+        info!("{}: {:?}", "Load hashes".cyan(), start.elapsed());
+        self.stakers = Blockchain::stakers(db, &hashes).unwrap();
+        let timestamp = 0;
+        for hash in hashes.iter() {
             println!("{}", hex::encode(hash));
-            let block = Block::get(db, &hash).unwrap();
+            let block = Block::get(db, hash).unwrap();
             let mut balance = self.get_balance(&block.public_key);
             let balance_staked = self.get_balance_staked(&block.public_key);
             balance += Blockchain::reward(balance_staked);
-            if block.timestamp > previous_block_timestamp + BLOCK_TIME_MAX as types::Timestamp {
+            if block.timestamp > timestamp + BLOCK_TIME_MAX as types::Timestamp {
                 balance += MIN_STAKE;
             }
             self.set_balance(block.public_key, balance);
             self.set_balances(&block);
         }
+        self.hashes = hashes;
     }
     pub fn get_balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
         match self.balance.get(public_key) {

@@ -22,7 +22,7 @@ lazy_static! {
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();
     static ref JSON: Regex = Regex::new(r" /json ").unwrap();
     static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
-    static ref STAKED_BALANCE: Regex = Regex::new(r" /staked_balance/0[xX][0-9A-Fa-f]* ").unwrap();
+    static ref BALANCE_STAKED: Regex = Regex::new(r" /balance_staked/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
     static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]+ ").unwrap();
     static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
@@ -78,8 +78,8 @@ async fn handle_get(
         handle_get_json(stream, swarm).await?;
     } else if BALANCE.is_match(first) {
         handle_get_json_balance(stream, swarm, first).await?;
-    } else if STAKED_BALANCE.is_match(first) {
-        handle_get_json_staked_balance(stream, swarm, first).await?;
+    } else if BALANCE_STAKED.is_match(first) {
+        handle_get_json_balance_staked(stream, swarm, first).await?;
     } else if HEIGHT.is_match(first) {
         handle_get_json_height(stream, swarm).await?;
     } else if HASH_BY_HEIGHT.is_match(first) {
@@ -126,7 +126,7 @@ HTTP/1.1 200 OK
 Validator {} {}/tree/{}
  public_key: {}
  balance: {}
- staked_balance: {}
+ balance_staked: {}
  sum_stakes_now: {}
  sum_stakes_all_time: {}
  height: {}
@@ -209,7 +209,7 @@ async fn handle_get_json(
     struct Data {
         public_key: types::PublicKeyBytes,
         balance: types::Amount,
-        staked_balance: types::Amount,
+        balance_staked: types::Amount,
         sum_stakes_now: types::Amount,
         sum_stakes_all_time: types::Amount,
         height: types::Height,
@@ -238,7 +238,7 @@ Content-Type: application/json
                         .validator
                         .blockchain
                         .get_balance(behaviour.validator.keypair.public.as_bytes()),
-                    staked_balance: behaviour
+                    balance_staked: behaviour
                         .validator
                         .blockchain
                         .get_balance_staked(behaviour.validator.keypair.public.as_bytes()),
@@ -307,19 +307,19 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_get_json_staked_balance(
+async fn handle_get_json_balance_staked(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
     let public_key = address::decode(
-        STAKED_BALANCE
+        BALANCE_STAKED
             .find(first)
-            .ok_or("GET STAKED_BALANCE 1")?
+            .ok_or("GET BALANCE_STAKED 1")?
             .as_str()
             .trim()
             .get(16..)
-            .ok_or("GET STAKED_BALANCE 2")?,
+            .ok_or("GET BALANCE_STAKED 2")?,
     )?;
     let balance = swarm
         .behaviour()

@@ -28,7 +28,8 @@ impl Validator {
         let keypair = wallet.keypair;
         let mut multiaddrs = known;
         multiaddrs.append(&mut Validator::get_multiaddrs(&db)?);
-        let blockchain = Blockchain::new(&db)?;
+        let mut blockchain = Blockchain::new(&db)?;
+        blockchain.reload(&db);
         Ok(Validator {
             db,
             blockchain,

@@ -21,7 +21,7 @@ use crate::{
 use colored::*;
 use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
-use std::{error::Error, time::Instant, collections::HashMap};
+use std::{collections::HashMap, error::Error, time::Instant};
 #[derive(Debug)]
 pub struct Blockchain {
     pub latest_block: Block,
@@ -32,7 +32,8 @@ pub struct Blockchain {
     pub pending_blocks: Vec<Block>,
     pub sum_stakes_now: types::Amount,
     pub sum_stakes_all_time: types::Amount,
-    balances: types::Balances
+    balances: types::Balances,
+    balances_staked: types::Balances,
 }
 impl Blockchain {
     pub fn new(db: &DBWithThreadMode<SingleThreaded>) -> Result<Blockchain, Box<dyn Error>> {
@@ -57,7 +58,8 @@ impl Blockchain {
             pending_blocks: vec![],
             sum_stakes_now: 0,
             sum_stakes_all_time: 0,
-            balances: HashMap::new()
+            balances: HashMap::new(),
+            balances_staked: HashMap::new(),
         })
     }
     pub fn stakers(
@@ -678,5 +680,52 @@ impl Blockchain {
             );
         }
         Ok(())
+    }
+    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
+        self.balances.clear();
+        self.balances_staked.clear();
+        for hash in self.hashes.iter() {
+            println!("{}", hex::encode(hash));
+            let block = Block::get(db, hash).unwrap();
+            for transaction in block.transactions {
+                let mut balance_input = match self.balances.get(&transaction.public_key_input) {
+                    Some(balance) => *balance,
+                    None => 0,
+                };
+                let mut balance_output = match self.balances.get(&transaction.public_key_output) {
+                    Some(balance) => *balance,
+                    None => 0,
+                };
+                balance_input -= transaction.amount + transaction.fee;
+                balance_output += transaction.amount;
+                self.balances
+                    .insert(transaction.public_key_input, balance_input)
+                    .unwrap();
+                self.balances
+                    .insert(transaction.public_key_output, balance_output)
+                    .unwrap();
+            }
+            for stake in block.stakes {
+                let mut balance = match self.balances.get(&stake.public_key) {
+                    Some(balance) => *balance,
+                    None => 0,
+                };
+                let mut balance_staked = match self.balances_staked.get(&stake.public_key) {
+                    Some(balance) => *balance,
+                    None => 0,
+                };
+                if stake.deposit {
+                    balance -= stake.amount + stake.fee;
+                    balance_staked += stake.amount;
+                } else {
+                    balance += stake.amount - stake.fee;
+                    balance_staked -= stake.amount;
+                }
+                self.balances.insert(stake.public_key, balance).unwrap();
+                self.balances_staked
+                    .insert(stake.public_key, balance_staked)
+                    .unwrap();
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
 use crate::constants::AMOUNT_BYTES;
 pub use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
-use std::collections::{VecDeque, HashMap};
+use std::collections::{HashMap, VecDeque};
 pub type Height = usize;
 pub type Heartbeats = usize;
 pub type Timestamp = u32;

@@ -684,9 +684,23 @@ impl Blockchain {
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         self.balances.clear();
         self.balances_staked.clear();
+        let previous_block_timestamp = 0;
         for hash in self.hashes.iter() {
             println!("{}", hex::encode(hash));
             let block = Block::get(db, hash).unwrap();
+            let mut balance = match self.balances.get(&block.public_key) {
+                Some(balance) => *balance,
+                None => 0,
+            };
+            let balance_staked = match self.balances_staked.get(&block.public_key) {
+                Some(balance) => *balance,
+                None => 0,
+            };
+            balance += Blockchain::reward(balance_staked);
+            if block.timestamp > previous_block_timestamp + BLOCK_TIME_MAX as types::Timestamp {
+                balance += MIN_STAKE;
+            }
+            self.balances.insert(block.public_key, balance);
             for transaction in block.transactions {
                 let mut balance_input = match self.balances.get(&transaction.public_key_input) {
                     Some(balance) => *balance,
@@ -699,11 +713,9 @@ impl Blockchain {
                 balance_input -= transaction.amount + transaction.fee;
                 balance_output += transaction.amount;
                 self.balances
-                    .insert(transaction.public_key_input, balance_input)
-                    .unwrap();
+                    .insert(transaction.public_key_input, balance_input);
                 self.balances
-                    .insert(transaction.public_key_output, balance_output)
-                    .unwrap();
+                    .insert(transaction.public_key_output, balance_output);
             }
             for stake in block.stakes {
                 let mut balance = match self.balances.get(&stake.public_key) {
@@ -721,10 +733,9 @@ impl Blockchain {
                     balance += stake.amount - stake.fee;
                     balance_staked -= stake.amount;
                 }
-                self.balances.insert(stake.public_key, balance).unwrap();
+                self.balances.insert(stake.public_key, balance);
                 self.balances_staked
-                    .insert(stake.public_key, balance_staked)
-                    .unwrap();
+                    .insert(stake.public_key, balance_staked);
             }
         }
     }

@@ -21,10 +21,7 @@ use crate::{
 use colored::*;
 use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
-use std::{
-    error::Error,
-    time::{Duration, Instant},
-};
+use std::{error::Error, time::Instant};
 #[derive(Debug)]
 pub struct Blockchain {
     pub latest_block: Block,

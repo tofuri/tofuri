@@ -21,7 +21,7 @@ use crate::{
 use colored::*;
 use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
-use std::{error::Error, time::Instant};
+use std::{error::Error, time::Instant, collections::HashMap};
 #[derive(Debug)]
 pub struct Blockchain {
     pub latest_block: Block,
@@ -32,6 +32,7 @@ pub struct Blockchain {
     pub pending_blocks: Vec<Block>,
     pub sum_stakes_now: types::Amount,
     pub sum_stakes_all_time: types::Amount,
+    balances: types::Balances
 }
 impl Blockchain {
     pub fn new(db: &DBWithThreadMode<SingleThreaded>) -> Result<Blockchain, Box<dyn Error>> {
@@ -56,6 +57,7 @@ impl Blockchain {
             pending_blocks: vec![],
             sum_stakes_now: 0,
             sum_stakes_all_time: 0,
+            balances: HashMap::new()
         })
     }
     pub fn stakers(

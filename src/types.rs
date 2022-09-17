@@ -1,6 +1,6 @@
 use crate::constants::AMOUNT_BYTES;
 pub use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
 pub type Height = usize;
 pub type Heartbeats = usize;
 pub type Timestamp = u32;
@@ -28,3 +28,4 @@ impl Merge for Hasher {
 }
 pub type CBMT = ExCBMT<[u8; 32], Hasher>;
 pub type EncryptedWallet = ([u8; 32], [u8; 12], Vec<u8>);
+pub type Balances = HashMap<PublicKeyBytes, Amount>;

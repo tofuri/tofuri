@@ -559,7 +559,7 @@ impl Blockchain {
         }
     }
     pub fn get_balance_staked(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
-        match self.balance.get(public_key) {
+        match self.balance_staked.get(public_key) {
             Some(b) => *b,
             None => 0,
         }

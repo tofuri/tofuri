@@ -54,22 +54,6 @@ impl Blockchain {
             balance_staked: HashMap::new(),
         }
     }
-    pub fn stakers(
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &[types::Hash],
-    ) -> Result<types::Stakers, Box<dyn Error>> {
-        let mut stakers = types::Stakers::new();
-        for (index, hash) in hashes.iter().enumerate() {
-            let block = Block::get(db, hash)?;
-            for stake in block.stakes {
-                // check if stake index already exists for public_key before pushing
-                if !stakers.iter().any(|&e| e.0 == stake.public_key) {
-                    stakers.push_back((stake.public_key, index));
-                }
-            }
-        }
-        Ok(stakers)
-    }
     pub fn forge_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -552,7 +536,7 @@ impl Blockchain {
         let start = Instant::now();
         let hashes = Blockchain::hashes(db, self.latest_block.hash()).unwrap();
         info!("{}: {:?}", "Load hashes".cyan(), start.elapsed());
-        self.stakers = Blockchain::stakers(db, &hashes).unwrap();
+        self.stakers = Blockchain::stakers(db, &hashes);
         let timestamp = 0;
         for hash in hashes.iter() {
             println!("{}", hex::encode(hash));
@@ -612,5 +596,21 @@ impl Blockchain {
             self.set_balance(stake.public_key, balance);
             self.set_balance_staked(stake.public_key, balance_staked);
         }
+    }
+    pub fn stakers(
+        db: &DBWithThreadMode<SingleThreaded>,
+        hashes: &types::Hashes,
+    ) -> types::Stakers {
+        let mut stakers = types::Stakers::new();
+        for (index, hash) in hashes.iter().enumerate() {
+            let block = Block::get(db, hash).unwrap();
+            for stake in block.stakes {
+                // check if stake index already exists for public_key before pushing
+                if !stakers.iter().any(|&e| e.0 == stake.public_key) {
+                    stakers.push_back((stake.public_key, index));
+                }
+            }
+        }
+        stakers
     }
 }

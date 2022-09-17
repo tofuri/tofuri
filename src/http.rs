@@ -143,10 +143,10 @@ Validator {} {}/tree/{}
                 env!("CARGO_PKG_REPOSITORY"),
                 env!("GIT_HASH"),
                 address::encode(behaviour.validator.keypair.public.as_bytes()),
-                behaviour.validator.blockchain.get_balance(
-                    &behaviour.validator.db,
-                    behaviour.validator.keypair.public.as_bytes()
-                )?,
+                behaviour
+                    .validator
+                    .blockchain
+                    .get_balance(behaviour.validator.keypair.public.as_bytes()),
                 behaviour.validator.blockchain.get_staked_balance(
                     &behaviour.validator.db,
                     behaviour.validator.keypair.public.as_bytes()
@@ -234,10 +234,10 @@ Content-Type: application/json
 {}",
                 serde_json::to_string(&Data {
                     public_key: *behaviour.validator.keypair.public.as_bytes(),
-                    balance: behaviour.validator.blockchain.get_balance(
-                        &behaviour.validator.db,
-                        behaviour.validator.keypair.public.as_bytes()
-                    )?,
+                    balance: behaviour
+                        .validator
+                        .blockchain
+                        .get_balance(behaviour.validator.keypair.public.as_bytes()),
                     staked_balance: behaviour.validator.blockchain.get_staked_balance(
                         &behaviour.validator.db,
                         behaviour.validator.keypair.public.as_bytes()
@@ -291,7 +291,7 @@ async fn handle_get_json_balance(
         .behaviour()
         .validator
         .blockchain
-        .get_balance(&swarm.behaviour().validator.db, &public_key)?;
+        .get_balance(&public_key);
     stream
         .write_all(
             format!(

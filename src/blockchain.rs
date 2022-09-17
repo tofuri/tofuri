@@ -208,7 +208,7 @@ impl Blockchain {
         if Transaction::get(db, &transaction.hash()).is_ok() {
             return Err("transaction already in chain".into());
         }
-        let balance = self.get_balance(db, &transaction.public_key_input)?;
+        let balance = self.get_balance(&transaction.public_key_input);
         if transaction.amount + transaction.fee > balance {
             return Err("transaction too expensive".into());
         }
@@ -286,7 +286,7 @@ impl Blockchain {
         if Stake::get(db, &stake.hash()).is_ok() {
             return Err("stake already in chain".into());
         }
-        let balance = self.get_balance(db, &stake.public_key)?;
+        let balance = self.get_balance(&stake.public_key);
         let staked_balance = self.get_staked_balance(db, &stake.public_key)?;
         if stake.deposit {
             if stake.amount + stake.fee > balance {
@@ -405,41 +405,41 @@ impl Blockchain {
         db.put(db::key(&db::Key::LatestBlockHash), hash)?;
         Ok(())
     }
-    fn get_balance_raw(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKeyBytes,
-    ) -> Result<types::Amount, Box<dyn Error>> {
-        let bytes = db
-            .get_cf(db::balances(db), public_key)?
-            .ok_or("balance not found")?;
-        Ok(types::Amount::from_le_bytes(bytes.as_slice().try_into()?))
-    }
-    pub fn get_balance(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKeyBytes,
-    ) -> Result<types::Amount, Box<dyn Error>> {
-        match self.get_balance_raw(db, public_key) {
-            Ok(balance) => Ok(balance),
-            Err(err) => {
-                if err.to_string() == "balance not found" {
-                    Ok(0)
-                } else {
-                    Err(err)
-                }
-            }
-        }
-    }
-    fn put_balance(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKeyBytes,
-        balance: types::Amount,
-    ) -> Result<(), Box<dyn Error>> {
-        db.put_cf(db::balances(db), public_key, balance.to_le_bytes())?;
-        Ok(())
-    }
+    // fn get_balance_raw(
+    // &self,
+    // db: &DBWithThreadMode<SingleThreaded>,
+    // public_key: &types::PublicKeyBytes,
+    // ) -> Result<types::Amount, Box<dyn Error>> {
+    // let bytes = db
+    // .get_cf(db::balances(db), public_key)?
+    // .ok_or("balance not found")?;
+    // Ok(types::Amount::from_le_bytes(bytes.as_slice().try_into()?))
+    // }
+    // pub fn get_balance(
+    // &self,
+    // db: &DBWithThreadMode<SingleThreaded>,
+    // public_key: &types::PublicKeyBytes,
+    // ) -> Result<types::Amount, Box<dyn Error>> {
+    // match self.get_balance_raw(db, public_key) {
+    // Ok(balance) => Ok(balance),
+    // Err(err) => {
+    // if err.to_string() == "balance not found" {
+    // Ok(0)
+    // } else {
+    // Err(err)
+    // }
+    // }
+    // }
+    // }
+    // fn set_balance(
+    // &self,
+    // db: &DBWithThreadMode<SingleThreaded>,
+    // public_key: &types::PublicKeyBytes,
+    // balance: types::Amount,
+    // ) -> Result<(), Box<dyn Error>> {
+    // db.put_cf(db::balances(db), public_key, balance.to_le_bytes())?;
+    // Ok(())
+    // }
     fn get_staked_balance_raw(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -480,49 +480,49 @@ impl Blockchain {
         Ok(())
     }
     fn add_reward(
-        &self,
+        &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        public_key: &types::PublicKeyBytes,
+        public_key: types::PublicKeyBytes,
         fees: types::Amount,
     ) -> Result<(), Box<dyn Error>> {
-        let staked_balance = self.get_staked_balance(db, public_key)?;
-        let mut balance = self.get_balance(db, public_key)?;
+        let staked_balance = self.get_staked_balance(db, &public_key)?;
+        let mut balance = self.get_balance(&public_key);
         balance += Blockchain::reward(staked_balance);
         balance += fees;
-        self.put_balance(db, public_key, balance)?;
+        self.balance.insert(public_key, balance);
         Ok(())
     }
     fn put_balances(
-        &self,
+        &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
         transactions: &Vec<Transaction>,
         stakes: &Vec<Stake>,
     ) -> Result<(), Box<dyn Error>> {
         for t in transactions {
             // input
-            let mut balance = self.get_balance(db, &t.public_key_input)?;
+            let mut balance = self.get_balance(&t.public_key_input);
             balance -= t.amount + t.fee;
-            self.put_balance(db, &t.public_key_input, balance)?;
+            self.balance.insert(t.public_key_input, balance);
             // output
-            let mut balance = self.get_balance(db, &t.public_key_output)?;
+            let mut balance = self.get_balance(&t.public_key_output);
             balance += t.amount;
-            self.put_balance(db, &t.public_key_output, balance)?;
+            self.balance.insert(t.public_key_output, balance);
         }
         for s in stakes {
             if s.deposit {
                 // input
-                let mut balance = self.get_balance(db, &s.public_key)?;
+                let mut balance = self.get_balance(&s.public_key);
                 balance -= s.amount + s.fee;
-                self.put_balance(db, &s.public_key, balance)?;
+                self.balance.insert(s.public_key, balance);
                 let mut staked_balance = self.get_staked_balance(db, &s.public_key)?;
                 staked_balance += s.amount;
                 self.put_staked_balance(db, &s.public_key, staked_balance)?;
             } else {
                 // output
-                let mut balance = self.get_balance(db, &s.public_key)?;
+                let mut balance = self.get_balance(&s.public_key);
                 balance += s.amount;
                 balance -= s.fee;
-                self.put_balance(db, &s.public_key, balance)?;
+                self.balance.insert(s.public_key, balance);
                 let mut staked_balance = self.get_staked_balance(db, &s.public_key)?;
                 staked_balance -= s.amount;
                 self.put_staked_balance(db, &s.public_key, staked_balance)?;
@@ -580,7 +580,7 @@ impl Blockchain {
         let block;
         if self.stakers.is_empty() {
             block = self.pending_blocks.remove(0);
-            self.cold_start_mint_stakers_stakes(db, &block)?;
+            self.cold_start_mint_stakers_stakes(&block)?;
         } else if let Some(index) = self
             .pending_blocks
             .iter()
@@ -605,7 +605,7 @@ impl Blockchain {
         Blockchain::put_latest_block_hash(db, hash)?;
         self.put_balances(db, &block.transactions, &block.stakes)?;
         let fees = Blockchain::get_fees(&block.transactions, &block.stakes);
-        self.add_reward(db, &block.public_key, fees)?;
+        self.add_reward(db, block.public_key, fees)?;
         if self.stakers.len() > 1 {
             self.stakers.rotate_left(1);
         }
@@ -658,20 +658,16 @@ impl Blockchain {
         log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));
         Ok(())
     }
-    fn cold_start_mint_stakers_stakes(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        block: &Block,
-    ) -> Result<(), Box<dyn Error>> {
+    fn cold_start_mint_stakers_stakes(&mut self, block: &Block) -> Result<(), Box<dyn Error>> {
         log::warn!(
             "{}",
             "Staker queue should not be empty unless the network just started up.".yellow()
         );
         for stake in block.stakes.iter() {
-            let mut balance = self.get_balance(db, &stake.public_key)?;
+            let mut balance = self.get_balance(&stake.public_key);
             let minted = stake.amount + stake.fee;
             balance += minted;
-            self.put_balance(db, &stake.public_key, balance)?;
+            self.balance.insert(stake.public_key, balance);
             log::warn!(
                 "{}: {} @ {}",
                 "Minted".cyan(),
@@ -688,28 +684,16 @@ impl Blockchain {
         for hash in self.hashes.iter() {
             println!("{}", hex::encode(hash));
             let block = Block::get(db, hash).unwrap();
-            let mut balance = match self.balance.get(&block.public_key) {
-                Some(balance) => *balance,
-                None => 0,
-            };
-            let balance_staked = match self.balance_staked.get(&block.public_key) {
-                Some(balance) => *balance,
-                None => 0,
-            };
+            let mut balance = self.get_balance(&block.public_key);
+            let balance_staked = self.get_balance_staked(&block.public_key);
             balance += Blockchain::reward(balance_staked);
             if block.timestamp > previous_block_timestamp + BLOCK_TIME_MAX as types::Timestamp {
                 balance += MIN_STAKE;
             }
             self.balance.insert(block.public_key, balance);
             for transaction in block.transactions {
-                let mut balance_input = match self.balance.get(&transaction.public_key_input) {
-                    Some(balance) => *balance,
-                    None => 0,
-                };
-                let mut balance_output = match self.balance.get(&transaction.public_key_output) {
-                    Some(balance) => *balance,
-                    None => 0,
-                };
+                let mut balance_input = self.get_balance(&transaction.public_key_input);
+                let mut balance_output = self.get_balance(&transaction.public_key_output);
                 balance_input -= transaction.amount + transaction.fee;
                 balance_output += transaction.amount;
                 self.balance
@@ -718,14 +702,8 @@ impl Blockchain {
                     .insert(transaction.public_key_output, balance_output);
             }
             for stake in block.stakes {
-                let mut balance = match self.balance.get(&stake.public_key) {
-                    Some(balance) => *balance,
-                    None => 0,
-                };
-                let mut balance_staked = match self.balance_staked.get(&stake.public_key) {
-                    Some(balance) => *balance,
-                    None => 0,
-                };
+                let mut balance = self.get_balance(&stake.public_key);
+                let mut balance_staked = self.get_balance_staked(&stake.public_key);
                 if stake.deposit {
                     balance -= stake.amount + stake.fee;
                     balance_staked += stake.amount;
@@ -736,6 +714,18 @@ impl Blockchain {
                 self.balance.insert(stake.public_key, balance);
                 self.balance_staked.insert(stake.public_key, balance_staked);
             }
+        }
+    }
+    pub fn get_balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
+        match self.balance.get(public_key) {
+            Some(b) => *b,
+            None => 0,
+        }
+    }
+    pub fn get_balance_staked(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
+        match self.balance.get(public_key) {
+            Some(b) => *b,
+            None => 0,
         }
     }
 }

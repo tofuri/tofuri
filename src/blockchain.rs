@@ -24,7 +24,6 @@ use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{
     collections::{HashMap, VecDeque},
     error::Error,
-    time::Instant,
 };
 #[derive(Debug)]
 pub struct Blockchain {
@@ -533,13 +532,10 @@ impl Blockchain {
         if let Some(block) = Blockchain::get_latest_block(db).unwrap() {
             self.latest_block = block;
         }
-        let start = Instant::now();
         let hashes = Blockchain::hashes(db, self.latest_block.hash()).unwrap();
-        info!("{}: {:?}", "Load hashes".cyan(), start.elapsed());
         self.stakers = Blockchain::stakers(db, &hashes);
         let timestamp = 0;
         for hash in hashes.iter() {
-            println!("{}", hex::encode(hash));
             let block = Block::get(db, hash).unwrap();
             let mut balance = self.get_balance(&block.public_key);
             let balance_staked = self.get_balance_staked(&block.public_key);

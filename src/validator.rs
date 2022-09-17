@@ -2,13 +2,15 @@ use crate::{
     blockchain::Blockchain, cli::ValidatorArgs, db, heartbeat, http, p2p::MyBehaviour, print,
     synchronizer::Synchronizer, types, util, wallet::Wallet,
 };
+use colored::*;
 use libp2p::{
     futures::{FutureExt, StreamExt},
     Multiaddr, Swarm,
 };
 use log::error;
+use log::info;
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
-use std::error::Error;
+use std::{error::Error, time::Instant};
 use tokio::net::TcpListener;
 pub struct Validator {
     pub db: DBWithThreadMode<SingleThreaded>,
@@ -29,7 +31,9 @@ impl Validator {
         let mut multiaddrs = known;
         multiaddrs.append(&mut Validator::get_multiaddrs(&db)?);
         let mut blockchain = Blockchain::new();
+        let start = Instant::now();
         blockchain.reload(&db);
+        info!("{}: {:?}", "Reload blockchain".cyan(), start.elapsed());
         Ok(Validator {
             db,
             blockchain,

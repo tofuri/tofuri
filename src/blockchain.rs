@@ -21,7 +21,11 @@ use crate::{
 use colored::*;
 use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
-use std::{collections::{HashMap, VecDeque}, error::Error, time::Instant};
+use std::{
+    collections::{HashMap, VecDeque},
+    error::Error,
+    time::Instant,
+};
 #[derive(Debug)]
 pub struct Blockchain {
     pub latest_block: Block,
@@ -36,7 +40,7 @@ pub struct Blockchain {
     balance_staked: types::Balance,
 }
 impl Blockchain {
-    pub fn new() -> Blockchain{
+    pub fn new() -> Blockchain {
         Blockchain {
             latest_block: Block::new([0; 32]),
             hashes: vec![],
@@ -328,17 +332,13 @@ impl Blockchain {
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
-    fn set_sum_stakes(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-    ) -> Result<(), Box<dyn Error>> {
+    fn set_sum_stakes(&mut self) {
         let mut sum = 0;
         for staker in self.stakers.iter() {
             sum += self.get_balance_staked(&staker.0);
         }
         self.sum_stakes_now = sum;
         self.sum_stakes_all_time += sum;
-        Ok(())
     }
     fn hashes(
         db: &DBWithThreadMode<SingleThreaded>,
@@ -467,18 +467,12 @@ impl Blockchain {
     // )?;
     // Ok(())
     // }
-    fn add_reward(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        public_key: types::PublicKeyBytes,
-        fees: types::Amount,
-    ) -> Result<(), Box<dyn Error>> {
+    fn add_reward(&mut self, public_key: types::PublicKeyBytes, fees: types::Amount) {
         let staked_balance = self.get_balance_staked(&public_key);
         let mut balance = self.get_balance(&public_key);
         balance += Blockchain::reward(staked_balance);
         balance += fees;
         self.set_balance(public_key, balance);
-        Ok(())
     }
     // fn put_balances(
     // &mut self,
@@ -551,15 +545,12 @@ impl Blockchain {
             - 1f64)
             * DECIMAL_PRECISION as f64) as types::Amount
     }
-    fn next_block(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-    ) -> Result<Block, Box<dyn Error>> {
+    fn next_block(&mut self) -> Result<Block, Box<dyn Error>> {
         if self.pending_blocks.is_empty()
             && !self.stakers.is_empty()
             && util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
         {
-            self.punish_staker_first_in_queue(db)?;
+            self.punish_staker_first_in_queue();
             return Err("validator did not show up 1".into());
         }
         if self.pending_blocks.is_empty() {
@@ -576,7 +567,7 @@ impl Blockchain {
         {
             block = self.pending_blocks.remove(index)
         } else {
-            self.punish_staker_first_in_queue(db)?;
+            self.punish_staker_first_in_queue();
             return Err("validator did not show up 2".into());
         }
         Ok(block)
@@ -586,14 +577,14 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         forger: bool,
     ) -> Result<(), Box<dyn Error>> {
-        let block = self.next_block(db)?;
+        let block = self.next_block()?;
         block.put(db)?;
         let hash = block.hash();
         self.hashes.push(hash);
         Blockchain::put_latest_block_hash(db, hash)?;
         self.set_balances(&block);
         let fees = Blockchain::get_fees(&block.transactions, &block.stakes);
-        self.add_reward(db, block.public_key, fees)?;
+        self.add_reward(block.public_key, fees);
         if self.stakers.len() > 1 {
             self.stakers.rotate_left(1);
         }
@@ -622,7 +613,7 @@ impl Blockchain {
                 self.stakers.remove(index).unwrap();
             }
         }
-        self.set_sum_stakes(db)?;
+        self.set_sum_stakes();
         self.latest_block = block;
         self.pending_blocks.clear();
         if !forger {
@@ -635,16 +626,12 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn punish_staker_first_in_queue(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-    ) -> Result<(), Box<dyn Error>> {
+    fn punish_staker_first_in_queue(&mut self) {
         let staker = self.stakers[0];
         let public_key = staker.0;
         self.balance_staked.remove(&public_key);
         self.stakers.remove(0).unwrap();
         log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));
-        Ok(())
     }
     fn cold_start_mint_stakers_stakes(&mut self, block: &Block) -> Result<(), Box<dyn Error>> {
         log::warn!(
@@ -708,7 +695,11 @@ impl Blockchain {
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);
     }
-    fn set_balance_staked(&mut self, public_key: types::PublicKeyBytes, balance_staked: types::Amount) {
+    fn set_balance_staked(
+        &mut self,
+        public_key: types::PublicKeyBytes,
+        balance_staked: types::Amount,
+    ) {
         self.balance_staked.insert(public_key, balance_staked);
     }
     fn set_balances(&mut self, block: &Block) {

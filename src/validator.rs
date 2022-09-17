@@ -28,11 +28,9 @@ impl Validator {
         let keypair = wallet.keypair;
         let mut multiaddrs = known;
         multiaddrs.append(&mut Validator::get_multiaddrs(&db)?);
-        let mut blockchain = Blockchain::new(&db)?;
-        blockchain.reload(&db);
         Ok(Validator {
             db,
-            blockchain,
+            blockchain: Blockchain::new(),
             keypair,
             multiaddrs,
             synchronizer: Synchronizer::new(),
@@ -85,5 +83,8 @@ impl Validator {
                 event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
             }
         }
+    }
+    pub fn reload_blockchain(&mut self) {
+        self.blockchain.reload(&self.db);
     }
 }

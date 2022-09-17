@@ -147,10 +147,10 @@ Validator {} {}/tree/{}
                     .validator
                     .blockchain
                     .get_balance(behaviour.validator.keypair.public.as_bytes()),
-                behaviour.validator.blockchain.get_staked_balance(
-                    &behaviour.validator.db,
-                    behaviour.validator.keypair.public.as_bytes()
-                )?,
+                behaviour
+                    .validator
+                    .blockchain
+                    .get_balance_staked(behaviour.validator.keypair.public.as_bytes()),
                 behaviour.validator.blockchain.sum_stakes_now,
                 behaviour.validator.blockchain.sum_stakes_all_time,
                 behaviour.validator.blockchain.hashes.len(),
@@ -238,10 +238,10 @@ Content-Type: application/json
                         .validator
                         .blockchain
                         .get_balance(behaviour.validator.keypair.public.as_bytes()),
-                    staked_balance: behaviour.validator.blockchain.get_staked_balance(
-                        &behaviour.validator.db,
-                        behaviour.validator.keypair.public.as_bytes()
-                    )?,
+                    staked_balance: behaviour
+                        .validator
+                        .blockchain
+                        .get_balance_staked(behaviour.validator.keypair.public.as_bytes()),
                     sum_stakes_now: behaviour.validator.blockchain.sum_stakes_now,
                     sum_stakes_all_time: behaviour.validator.blockchain.sum_stakes_all_time,
                     height: behaviour.validator.blockchain.hashes.len(),
@@ -325,7 +325,7 @@ async fn handle_get_json_staked_balance(
         .behaviour()
         .validator
         .blockchain
-        .get_staked_balance(&swarm.behaviour().validator.db, &public_key)?;
+        .get_balance_staked(&public_key);
     stream
         .write_all(
             format!(

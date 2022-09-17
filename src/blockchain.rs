@@ -263,19 +263,19 @@ impl Blockchain {
             return Err("stake already in chain".into());
         }
         let balance = self.get_balance(&stake.public_key);
-        let staked_balance = self.get_balance_staked(&stake.public_key);
+        let balance_staked = self.get_balance_staked(&stake.public_key);
         if stake.deposit {
             if stake.amount + stake.fee > balance {
                 return Err("stake deposit too expensive".into());
             }
-            if stake.amount + staked_balance > MAX_STAKE {
+            if stake.amount + balance_staked > MAX_STAKE {
                 return Err("stake deposit exceeds MAX_STAKE".into());
             }
         } else {
             if stake.fee > balance {
                 return Err("stake withdraw insufficient funds".into());
             }
-            if stake.amount > staked_balance {
+            if stake.amount > balance_staked {
                 return Err("stake withdraw too expensive".into());
             }
         }
@@ -378,9 +378,9 @@ impl Blockchain {
         Ok(())
     }
     fn add_reward(&mut self, public_key: types::PublicKeyBytes, fees: types::Amount) {
-        let staked_balance = self.get_balance_staked(&public_key);
+        let balance_staked = self.get_balance_staked(&public_key);
         let mut balance = self.get_balance(&public_key);
-        balance += Blockchain::reward(staked_balance);
+        balance += Blockchain::reward(balance_staked);
         balance += fees;
         self.set_balance(public_key, balance);
     }
@@ -461,15 +461,15 @@ impl Blockchain {
             self.stakers.rotate_left(1);
         }
         for stake in block.stakes.iter() {
-            let staked_balance = self.get_balance_staked(&stake.public_key);
+            let balance_staked = self.get_balance_staked(&stake.public_key);
             if stake.deposit {
-                if staked_balance >= MIN_STAKE
+                if balance_staked >= MIN_STAKE
                     && !self.stakers.iter().any(|&e| e.0 == stake.public_key)
                 {
                     self.stakers
                         .push_back((stake.public_key, self.hashes.len()));
                 }
-            } else if staked_balance < MIN_STAKE {
+            } else if balance_staked < MIN_STAKE {
                 self.balance_staked.remove(&stake.public_key); // burn low "staked balance" to make sure "staked balance" never exceeds MAX_STAKE after being minted
                                                                // example: A "staked balance" of 0.1 turns into 100.1 after a minted stake.
                 log::warn!(

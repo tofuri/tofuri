@@ -481,7 +481,7 @@ impl Blockchain {
             self.latest_block = block;
         }
         let hashes = Blockchain::hashes(db, self.latest_block.hash()).unwrap();
-        let mut previous_block_timestamp = match hashes.get(0) {
+        let mut previous_block_timestamp = match hashes.first() {
             Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
             None => 0,
         };
@@ -544,7 +544,7 @@ impl Blockchain {
         &self.sum_stakes_all_time
     }
     pub fn get_height(&self) -> types::Height {
-        if self.hashes.len() == 0 {
+        if self.hashes.is_empty() {
             return 0;
         }
         self.hashes.len() - 1

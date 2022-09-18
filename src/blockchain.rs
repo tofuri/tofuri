@@ -422,6 +422,29 @@ impl Blockchain {
         }
         Ok(block)
     }
+    fn penalty(&mut self) {
+        let public_key = self.stakers[0].0;
+        self.balance_staked.remove(&public_key);
+        self.stakers.remove(0).unwrap();
+        log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));
+    }
+    fn reward(&mut self, block: &Block) {
+        let balance_staked = self.get_balance_staked(&block.public_key);
+        let mut balance = self.get_balance(&block.public_key);
+        balance += block.reward(balance_staked);
+        self.set_balance(block.public_key, balance);
+    }
+    fn reward_cold_start(&mut self, block: &Block) {
+        let mut balance = self.get_balance(&block.public_key);
+        balance += MIN_STAKE;
+        self.set_balance(block.public_key, balance);
+        log::warn!(
+            "{}: {} @ {}",
+            "Minted".cyan(),
+            MIN_STAKE.to_string().yellow(),
+            address::encode(&block.public_key).green()
+        );
+    }
     pub fn accept_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -447,29 +470,6 @@ impl Blockchain {
             );
         }
         Ok(())
-    }
-    fn penalty(&mut self) {
-        let public_key = self.stakers[0].0;
-        self.balance_staked.remove(&public_key);
-        self.stakers.remove(0).unwrap();
-        log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));
-    }
-    fn reward(&mut self, block: &Block) {
-        let balance_staked = self.get_balance_staked(&block.public_key);
-        let mut balance = self.get_balance(&block.public_key);
-        balance += block.reward(balance_staked);
-        self.set_balance(block.public_key, balance);
-    }
-    fn reward_cold_start(&mut self, block: &Block) {
-        let mut balance = self.get_balance(&block.public_key);
-        balance += MIN_STAKE;
-        self.set_balance(block.public_key, balance);
-        log::warn!(
-            "{}: {} @ {}",
-            "Minted".cyan(),
-            MIN_STAKE.to_string().yellow(),
-            address::encode(&block.public_key).green()
-        );
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         self.latest_block = Block::new([0; 32]);

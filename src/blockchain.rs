@@ -508,21 +508,28 @@ impl Blockchain {
             self.latest_block = block;
         }
         let hashes = Blockchain::hashes(db, self.latest_block.hash()).unwrap();
-        let timestamp = 0;
+        let mut previous_block_timestamp = match hashes.get(0) {
+            Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
+            None => 0,
+        };
         for (index, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
-            let mut balance = self.get_balance(&block.public_key);
-            let balance_staked = self.get_balance_staked(&block.public_key);
-            balance += block.reward(balance_staked);
-            // if self.stakers.is_empty() {
-            // self.reward_cold_start(&block);
-            // }
-            if block.timestamp > timestamp + BLOCK_TIME_MAX as types::Timestamp {
-                balance += MIN_STAKE;
+            // penalty
+            let diff = block.timestamp - previous_block_timestamp - 1;
+            for _ in 0..diff / BLOCK_TIME_MAX as u32 {
+                if !self.stakers.is_empty() {
+                    self.penalty();
+                }
             }
-            self.set_balance(block.public_key, balance);
+            // reward
+            if self.stakers.is_empty() {
+                self.reward_cold_start(&block);
+            } else {
+                self.reward(&block);
+            }
             self.set_balances(&block);
             self.set_stakers(index, &block);
+            previous_block_timestamp = block.timestamp;
         }
         self.hashes = hashes;
     }

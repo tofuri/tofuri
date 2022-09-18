@@ -481,6 +481,23 @@ impl Blockchain {
         self.stakers.remove(0).unwrap();
         log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));
     }
+    fn reward(&mut self, block: &Block) {
+        let balance_staked = self.get_balance_staked(&block.public_key);
+        let mut balance = self.get_balance(&block.public_key);
+        balance += block.reward(balance_staked);
+        self.set_balance(block.public_key, balance);
+    }
+    fn reward_cold_start(&mut self, block: &Block) {
+        let mut balance = self.get_balance(&block.public_key);
+        balance += MIN_STAKE;
+        self.set_balance(block.public_key, balance);
+        log::warn!(
+            "{}: {} @ {}",
+            "Minted".cyan(),
+            MIN_STAKE.to_string().yellow(),
+            address::encode(&block.public_key).green()
+        );
+    }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         self.latest_block = Block::new([0; 32]);
         self.stakers.clear();
@@ -521,6 +538,30 @@ impl Blockchain {
             None => 0,
         }
     }
+    pub fn get_latest_block(&self) -> &Block {
+        &self.latest_block
+    }
+    pub fn get_hashes(&self) -> &types::Hashes {
+        &self.hashes
+    }
+    pub fn get_stakers(&self) -> &types::Stakers {
+        &self.stakers
+    }
+    pub fn get_pending_transactions(&self) -> &Vec<Transaction> {
+        &self.pending_transactions
+    }
+    pub fn get_pending_stakes(&self) -> &Vec<Stake> {
+        &self.pending_stakes
+    }
+    pub fn get_pending_blocks(&self) -> &Vec<Block> {
+        &self.pending_blocks
+    }
+    pub fn get_sum_stakes_now(&self) -> &types::Amount {
+        &self.sum_stakes_now
+    }
+    pub fn get_sum_stakes_all_time(&self) -> &types::Amount {
+        &self.sum_stakes_all_time
+    }
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);
     }
@@ -560,46 +601,5 @@ impl Blockchain {
                 self.stakers.push_back((stake.public_key, index));
             }
         }
-    }
-    pub fn get_latest_block(&self) -> &Block {
-        &self.latest_block
-    }
-    pub fn get_hashes(&self) -> &types::Hashes {
-        &self.hashes
-    }
-    pub fn get_stakers(&self) -> &types::Stakers {
-        &self.stakers
-    }
-    pub fn get_pending_transactions(&self) -> &Vec<Transaction> {
-        &self.pending_transactions
-    }
-    pub fn get_pending_stakes(&self) -> &Vec<Stake> {
-        &self.pending_stakes
-    }
-    pub fn get_pending_blocks(&self) -> &Vec<Block> {
-        &self.pending_blocks
-    }
-    pub fn get_sum_stakes_now(&self) -> &types::Amount {
-        &self.sum_stakes_now
-    }
-    pub fn get_sum_stakes_all_time(&self) -> &types::Amount {
-        &self.sum_stakes_all_time
-    }
-    fn reward(&mut self, block: &Block) {
-        let balance_staked = self.get_balance_staked(&block.public_key);
-        let mut balance = self.get_balance(&block.public_key);
-        balance += block.reward(balance_staked);
-        self.set_balance(block.public_key, balance);
-    }
-    fn reward_cold_start(&mut self, block: &Block) {
-        let mut balance = self.get_balance(&block.public_key);
-        balance += MIN_STAKE;
-        self.set_balance(block.public_key, balance);
-        log::warn!(
-            "{}: {} @ {}",
-            "Minted".cyan(),
-            MIN_STAKE.to_string().yellow(),
-            address::encode(&block.public_key).green()
-        );
     }
 }

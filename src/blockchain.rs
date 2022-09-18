@@ -6,10 +6,8 @@ use crate::{
         BLOCK_TIME_MAX,
         BLOCK_TIME_MIN,
         BLOCK_TRANSACTIONS_LIMIT,
-        DECIMAL_PRECISION,
         MAX_STAKE, // BLOCKS_BEFORE_UNSTAKE
         MIN_STAKE,
-        MIN_STAKE_MULTIPLIER,
         PENDING_STAKES_LIMIT,
         PENDING_TRANSACTIONS_LIMIT,
     },
@@ -379,23 +377,6 @@ impl Blockchain {
         db.put(db::key(&db::Key::LatestBlockHash), hash)?;
         Ok(())
     }
-    fn add_reward(&mut self, public_key: types::PublicKeyBytes, fees: types::Amount) {
-        let balance_staked = self.get_balance_staked(&public_key);
-        let mut balance = self.get_balance(&public_key);
-        balance += Blockchain::reward(balance_staked);
-        balance += fees;
-        self.set_balance(public_key, balance);
-    }
-    fn get_fees(transactions: &Vec<Transaction>, stakes: &Vec<Stake>) -> types::Amount {
-        let mut fees = 0;
-        for t in transactions {
-            fees += t.fee;
-        }
-        for s in stakes {
-            fees += s.fee;
-        }
-        fees
-    }
     fn sort_pending_transactions(&mut self) {
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
     }
@@ -413,12 +394,6 @@ impl Blockchain {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
     }
-    pub fn reward(stake_amount: types::Amount) -> types::Amount {
-        ((2f64
-            .powf((stake_amount as f64 / DECIMAL_PRECISION as f64) / MIN_STAKE_MULTIPLIER as f64)
-            - 1f64)
-            * DECIMAL_PRECISION as f64) as types::Amount
-    }
     fn next_block(&mut self) -> Result<Block, Box<dyn Error>> {
         if self.pending_blocks.is_empty()
             && !self.stakers.is_empty()
@@ -433,7 +408,7 @@ impl Blockchain {
         let block;
         if self.stakers.is_empty() {
             block = self.pending_blocks.remove(0);
-            self.cold_start_mint_stakers_stakes(&block)?;
+            self.cold_start_mint_stakers_stakes(&block);
         } else if let Some(index) = self
             .pending_blocks
             .iter()
@@ -457,8 +432,7 @@ impl Blockchain {
         self.hashes.push(hash);
         Blockchain::put_latest_block_hash(db, hash)?;
         self.set_balances(&block);
-        let fees = Blockchain::get_fees(&block.transactions, &block.stakes);
-        self.add_reward(block.public_key, fees);
+        self.reward(&block);
         if self.stakers.len() > 1 {
             self.stakers.rotate_left(1);
         }
@@ -507,7 +481,7 @@ impl Blockchain {
         self.stakers.remove(0).unwrap();
         log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));
     }
-    fn cold_start_mint_stakers_stakes(&mut self, block: &Block) -> Result<(), Box<dyn Error>> {
+    fn cold_start_mint_stakers_stakes(&mut self, block: &Block) {
         log::warn!(
             "{}",
             "Staker queue should not be empty unless the network just started up.".yellow()
@@ -524,7 +498,6 @@ impl Blockchain {
                 address::encode(&stake.public_key).green()
             );
         }
-        Ok(())
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         self.latest_block = Block::new([0; 32]);
@@ -542,10 +515,15 @@ impl Blockchain {
             let block = Block::get(db, hash).unwrap();
             let mut balance = self.get_balance(&block.public_key);
             let balance_staked = self.get_balance_staked(&block.public_key);
-            balance += Blockchain::reward(balance_staked);
+            // balance += Blockchain::reward(balance_staked);
+            balance += block.reward(balance_staked);
+            // if self.stakers.is_empty() {
+            // self.cold_start_mint_stakers_stakes(&block);
+            // }
             if block.timestamp > timestamp + BLOCK_TIME_MAX as types::Timestamp {
                 balance += MIN_STAKE;
             }
+            // self.add_reward(public_key, fees);
             self.set_balance(block.public_key, balance);
             self.set_balances(&block);
         }
@@ -635,5 +613,11 @@ impl Blockchain {
     }
     pub fn get_sum_stakes_all_time(&self) -> &types::Amount {
         &self.sum_stakes_all_time
+    }
+    fn reward(&mut self, block: &Block) {
+        let balance_staked = self.get_balance_staked(&block.public_key);
+        let mut balance = self.get_balance(&block.public_key);
+        balance += block.reward(balance_staked);
+        self.set_balance(block.public_key, balance);
     }
 }

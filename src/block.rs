@@ -148,6 +148,19 @@ impl Block {
             && self.has_valid_stakes()
             && self.timestamp <= util::timestamp()
     }
+    pub fn fees(&self) -> types::Amount {
+        let mut fees = 0;
+        for transaction in self.transactions.iter() {
+            fees += transaction.fee;
+        }
+        for stake in self.stakes.iter() {
+            fees += stake.fee;
+        }
+        fees
+    }
+    pub fn reward(&self, balance_staked: types::Amount) -> types::Amount {
+        self.fees() + util::reward(balance_staked)
+    }
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BlockHeader {

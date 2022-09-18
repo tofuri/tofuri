@@ -1,4 +1,7 @@
-use crate::types;
+use crate::{
+    constants::{DECIMAL_PRECISION, MIN_STAKE_MULTIPLIER},
+    types,
+};
 use rand::rngs::OsRng;
 use std::{
     error::Error,
@@ -27,6 +30,11 @@ pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>>
         .lines()
         .map(|l| l.expect("Could not parse line"))
         .collect())
+}
+pub fn reward(balance_staked: types::Amount) -> types::Amount {
+    ((2f64.powf((balance_staked as f64 / DECIMAL_PRECISION as f64) / MIN_STAKE_MULTIPLIER as f64)
+        - 1f64)
+        * DECIMAL_PRECISION as f64) as types::Amount
 }
 #[cfg(test)]
 mod tests {

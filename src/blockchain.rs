@@ -491,9 +491,8 @@ impl Blockchain {
             self.latest_block = block;
         }
         let hashes = Blockchain::hashes(db, self.latest_block.hash()).unwrap();
-        self.stakers = Blockchain::stakers(db, &hashes);
         let timestamp = 0;
-        for hash in hashes.iter() {
+        for (index, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
             let mut balance = self.get_balance(&block.public_key);
             let balance_staked = self.get_balance_staked(&block.public_key);
@@ -506,6 +505,7 @@ impl Blockchain {
             }
             self.set_balance(block.public_key, balance);
             self.set_balances(&block);
+            self.set_stakers(index, &block);
         }
         self.hashes = hashes;
     }
@@ -554,21 +554,12 @@ impl Blockchain {
             self.set_balance_staked(stake.public_key, balance_staked);
         }
     }
-    pub fn stakers(
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &types::Hashes,
-    ) -> types::Stakers {
-        let mut stakers = types::Stakers::new();
-        for (index, hash) in hashes.iter().enumerate() {
-            let block = Block::get(db, hash).unwrap();
-            for stake in block.stakes {
-                // check if stake index already exists for public_key before pushing
-                if !stakers.iter().any(|&e| e.0 == stake.public_key) {
-                    stakers.push_back((stake.public_key, index));
-                }
+    fn set_stakers(&mut self, index: usize, block: &Block) {
+        for stake in block.stakes.iter() {
+            if !self.stakers.iter().any(|&e| e.0 == stake.public_key) {
+                self.stakers.push_back((stake.public_key, index));
             }
         }
-        stakers
     }
     pub fn get_latest_block(&self) -> &Block {
         &self.latest_block

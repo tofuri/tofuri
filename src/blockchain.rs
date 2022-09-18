@@ -310,9 +310,6 @@ impl Blockchain {
         self.limit_pending_stakes();
         Ok(())
     }
-    pub fn set_mint_stake(&mut self, stake: Stake) {
-        self.pending_stakes = vec![stake];
-    }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
@@ -591,5 +588,8 @@ impl Blockchain {
                 );
             }
         }
+    }
+    pub fn set_cold_start_stake(&mut self, stake: Stake) {
+        self.pending_stakes = vec![stake];
     }
 }

@@ -53,7 +53,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         // cold start
         let mut stake = Stake::new(true, MIN_STAKE, 0);
         stake.sign(&behaviour.validator.keypair);
-        behaviour.validator.blockchain.set_mint_stake(stake);
+        behaviour.validator.blockchain.set_cold_start_stake(stake);
     }
     if forge {
         // forge new block

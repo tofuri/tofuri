@@ -485,7 +485,7 @@ impl Blockchain {
             Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
             None => 0,
         };
-        for (index, hash) in hashes.iter().enumerate() {
+        for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
             // penalty
             let diff = block.timestamp - previous_block_timestamp - 1;
@@ -501,7 +501,7 @@ impl Blockchain {
                 self.reward(&block);
             }
             self.set_balances(&block);
-            self.set_stakers(index, &block);
+            self.set_stakers(height, &block);
             self.set_sum_stakes();
             previous_block_timestamp = block.timestamp;
         }
@@ -582,7 +582,7 @@ impl Blockchain {
             self.set_balance_staked(stake.public_key, balance_staked);
         }
     }
-    fn set_stakers(&mut self, index: usize, block: &Block) {
+    fn set_stakers(&mut self, height: usize, block: &Block) {
         if self.stakers.len() > 1 {
             self.stakers.rotate_left(1);
         }
@@ -592,7 +592,7 @@ impl Blockchain {
                 && balance_staked >= MIN_STAKE
                 && !self.stakers.iter().any(|&e| e.0 == stake.public_key)
             {
-                self.stakers.push_back((stake.public_key, index));
+                self.stakers.push_back((stake.public_key, height));
             } else if balance_staked < MIN_STAKE {
                 self.balance_staked.remove(&stake.public_key);
                 let i = self

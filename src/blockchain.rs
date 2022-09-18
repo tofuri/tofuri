@@ -408,7 +408,7 @@ impl Blockchain {
         let block;
         if self.stakers.is_empty() {
             block = self.pending_blocks.remove(0);
-            self.cold_start_mint_stakers_stakes(&block);
+            self.reward_cold_start(&block);
         } else if let Some(index) = self
             .pending_blocks
             .iter()
@@ -481,24 +481,6 @@ impl Blockchain {
         self.stakers.remove(0).unwrap();
         log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));
     }
-    fn cold_start_mint_stakers_stakes(&mut self, block: &Block) {
-        log::warn!(
-            "{}",
-            "Staker queue should not be empty unless the network just started up.".yellow()
-        );
-        for stake in block.stakes.iter() {
-            let mut balance = self.get_balance(&stake.public_key);
-            let minted = stake.amount + stake.fee;
-            balance += minted;
-            self.set_balance(stake.public_key, balance);
-            log::warn!(
-                "{}: {} @ {}",
-                "Minted".cyan(),
-                minted.to_string().yellow(),
-                address::encode(&stake.public_key).green()
-            );
-        }
-    }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         self.latest_block = Block::new([0; 32]);
         self.stakers.clear();
@@ -515,15 +497,13 @@ impl Blockchain {
             let block = Block::get(db, hash).unwrap();
             let mut balance = self.get_balance(&block.public_key);
             let balance_staked = self.get_balance_staked(&block.public_key);
-            // balance += Blockchain::reward(balance_staked);
             balance += block.reward(balance_staked);
             // if self.stakers.is_empty() {
-            // self.cold_start_mint_stakers_stakes(&block);
+            // self.reward_cold_start(&block);
             // }
             if block.timestamp > timestamp + BLOCK_TIME_MAX as types::Timestamp {
                 balance += MIN_STAKE;
             }
-            // self.add_reward(public_key, fees);
             self.set_balance(block.public_key, balance);
             self.set_balances(&block);
         }
@@ -619,5 +599,16 @@ impl Blockchain {
         let mut balance = self.get_balance(&block.public_key);
         balance += block.reward(balance_staked);
         self.set_balance(block.public_key, balance);
+    }
+    fn reward_cold_start(&mut self, block: &Block) {
+        let mut balance = self.get_balance(&block.public_key);
+        balance += MIN_STAKE;
+        self.set_balance(block.public_key, balance);
+        log::warn!(
+            "{}: {} @ {}",
+            "Minted".cyan(),
+            MIN_STAKE.to_string().yellow(),
+            address::encode(&block.public_key).green()
+        );
     }
 }

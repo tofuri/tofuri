@@ -86,7 +86,7 @@ impl Blockchain {
         info!(
             "{}: {} @ {}",
             "Forged".cyan(),
-            (self.hashes.len() + 1).to_string().yellow(),
+            (self.get_height() + 1).to_string().yellow(),
             hex::encode(block.hash()).green()
         );
         self.try_add_block(db, block.clone())?;
@@ -430,38 +430,11 @@ impl Blockchain {
         let block = self.next_block()?;
         block.put(db)?;
         let hash = block.hash();
-        self.hashes.push(hash);
         Blockchain::put_latest_block_hash(db, hash)?;
-        self.set_balances(&block);
+        self.hashes.push(hash);
         self.reward(&block);
-        if self.stakers.len() > 1 {
-            self.stakers.rotate_left(1);
-        }
-        for stake in block.stakes.iter() {
-            let balance_staked = self.get_balance_staked(&stake.public_key);
-            if stake.deposit {
-                if balance_staked >= MIN_STAKE
-                    && !self.stakers.iter().any(|&e| e.0 == stake.public_key)
-                {
-                    self.stakers
-                        .push_back((stake.public_key, self.hashes.len()));
-                }
-            } else if balance_staked < MIN_STAKE {
-                self.balance_staked.remove(&stake.public_key); // burn low "staked balance" to make sure "staked balance" never exceeds MAX_STAKE after being minted
-                                                               // example: A "staked balance" of 0.1 turns into 100.1 after a minted stake.
-                log::warn!(
-                    "{}: {}",
-                    "Burned low balance".red(),
-                    address::encode(&stake.public_key)
-                );
-                let index = self
-                    .stakers
-                    .iter()
-                    .position(|s| s.0 == stake.public_key)
-                    .unwrap();
-                self.stakers.remove(index).unwrap();
-            }
-        }
+        self.set_balances(&block);
+        self.set_stakers(self.get_height(), &block);
         self.set_sum_stakes();
         self.latest_block = block;
         self.pending_blocks.clear();
@@ -469,7 +442,7 @@ impl Blockchain {
             info!(
                 "{}: {} {}",
                 "Accepted".green(),
-                self.hashes.len().to_string().yellow(),
+                self.get_height().to_string().yellow(),
                 hex::encode(hash)
             );
         }
@@ -529,6 +502,7 @@ impl Blockchain {
             }
             self.set_balances(&block);
             self.set_stakers(index, &block);
+            self.set_sum_stakes();
             previous_block_timestamp = block.timestamp;
         }
         self.hashes = hashes;
@@ -569,6 +543,12 @@ impl Blockchain {
     pub fn get_sum_stakes_all_time(&self) -> &types::Amount {
         &self.sum_stakes_all_time
     }
+    pub fn get_height(&self) -> types::Height {
+        if self.hashes.len() == 0 {
+            return 0;
+        }
+        self.hashes.len() - 1
+    }
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);
     }
@@ -603,9 +583,29 @@ impl Blockchain {
         }
     }
     fn set_stakers(&mut self, index: usize, block: &Block) {
+        if self.stakers.len() > 1 {
+            self.stakers.rotate_left(1);
+        }
         for stake in block.stakes.iter() {
-            if !self.stakers.iter().any(|&e| e.0 == stake.public_key) {
+            let balance_staked = self.get_balance_staked(&stake.public_key);
+            if stake.deposit
+                && balance_staked >= MIN_STAKE
+                && !self.stakers.iter().any(|&e| e.0 == stake.public_key)
+            {
                 self.stakers.push_back((stake.public_key, index));
+            } else if balance_staked < MIN_STAKE {
+                self.balance_staked.remove(&stake.public_key);
+                let i = self
+                    .stakers
+                    .iter()
+                    .position(|s| s.0 == stake.public_key)
+                    .unwrap();
+                self.stakers.remove(i).unwrap();
+                log::warn!(
+                    "{}: {}",
+                    "Burned low balance".red(),
+                    address::encode(&stake.public_key)
+                );
             }
         }
     }

@@ -153,7 +153,7 @@ Validator {} {}/tree/{}
                     .get_balance_staked(behaviour.validator.keypair.public.as_bytes()),
                 behaviour.validator.blockchain.get_sum_stakes_now(),
                 behaviour.validator.blockchain.get_sum_stakes_all_time(),
-                behaviour.validator.blockchain.get_hashes().len(),
+                behaviour.validator.blockchain.get_height(),
                 behaviour.validator.heartbeats,
                 behaviour.validator.lag,
                 behaviour.validator.synchronizer,
@@ -244,7 +244,7 @@ Content-Type: application/json
                         .get_balance_staked(behaviour.validator.keypair.public.as_bytes()),
                     sum_stakes_now: *behaviour.validator.blockchain.get_sum_stakes_now(),
                     sum_stakes_all_time: *behaviour.validator.blockchain.get_sum_stakes_all_time(),
-                    height: behaviour.validator.blockchain.get_hashes().len(),
+                    height: behaviour.validator.blockchain.get_height(),
                     heartbeats: behaviour.validator.heartbeats,
                     lag: behaviour.validator.lag,
                     synchronizer: behaviour.validator.synchronizer,
@@ -345,7 +345,7 @@ async fn handle_get_json_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
-    let height = swarm.behaviour().validator.blockchain.get_hashes().len();
+    let height = swarm.behaviour().validator.blockchain.get_height();
     stream
         .write_all(
             format!(

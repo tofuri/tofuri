@@ -395,33 +395,6 @@ impl Blockchain {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
     }
-    fn next_block(&mut self) -> Result<Block, Box<dyn Error>> {
-        if self.pending_blocks.is_empty()
-            && !self.stakers.is_empty()
-            && util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
-        {
-            self.penalty();
-            return Err("validator did not show up 1".into());
-        }
-        if self.pending_blocks.is_empty() {
-            return Err("no pending blocks".into());
-        }
-        let block;
-        if self.stakers.is_empty() {
-            block = self.pending_blocks.remove(0);
-            self.reward_cold_start(&block);
-        } else if let Some(index) = self
-            .pending_blocks
-            .iter()
-            .position(|x| x.public_key == self.stakers[0].0)
-        {
-            block = self.pending_blocks.remove(index)
-        } else {
-            self.penalty();
-            return Err("validator did not show up 2".into());
-        }
-        Ok(block)
-    }
     fn penalty(&mut self) {
         let public_key = self.stakers[0].0;
         self.balance_staked.remove(&public_key);
@@ -444,6 +417,27 @@ impl Blockchain {
             MIN_STAKE.to_string().yellow(),
             address::encode(&block.public_key).green()
         );
+    }
+    fn next_block(&mut self) -> Result<Block, Box<dyn Error>> {
+        let block;
+        if self.stakers.is_empty() {
+            block = self.pending_blocks.remove(0);
+            self.reward_cold_start(&block);
+        } else if let Some(index) = self
+            .pending_blocks
+            .iter()
+            .position(|x| x.public_key == self.stakers[0].0)
+        {
+            block = self.pending_blocks.remove(index)
+        } else if util::timestamp()
+            > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
+        {
+            self.penalty();
+            return Err("staker didn't show up in time".into());
+        } else {
+            return Err("no pending blocks, waiting...".into());
+        }
+        Ok(block)
     }
     pub fn accept_block(
         &mut self,

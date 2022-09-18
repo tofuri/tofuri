@@ -31,7 +31,7 @@ pub fn env_logger_init(log_path: bool) {
         builder.format(|buf, record| {
             writeln!(
                 buf,
-                "[{} {} {}{}{}]: {}",
+                "[{} {} {}{}{}] {}",
                 Local::now().format("%H:%M:%S"),
                 colored_level(record.level()),
                 record.file_static().unwrap().black(),
@@ -44,7 +44,7 @@ pub fn env_logger_init(log_path: bool) {
         builder.format(|buf, record| {
             writeln!(
                 buf,
-                "[{} {}]: {}",
+                "[{} {}] {}",
                 Local::now().format("%H:%M:%S"),
                 colored_level(record.level()),
                 record.args()
@@ -54,48 +54,44 @@ pub fn env_logger_init(log_path: bool) {
     builder.filter(None, LevelFilter::Info).init();
 }
 pub fn build() {
-    info!("{}: {}", "Version".cyan(), env!("CARGO_PKG_VERSION"));
-    info!("{}: {}", "Commit".cyan(), env!("GIT_HASH"));
-    info!("{}: {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY"));
+    info!("{} {}", "Version".cyan(), env!("CARGO_PKG_VERSION"));
+    info!("{} {}", "Commit".cyan(), env!("GIT_HASH"));
+    info!("{} {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY"));
 }
 pub fn validator(validator: &Validator) {
     info!(
-        "{}: {}",
+        "{} {}",
         "PubKey".cyan(),
         address::encode(validator.keypair.public.as_bytes())
     );
-    info!("{}: {}", "Peers".cyan(), validator.multiaddrs.len());
+    info!("{} {}", "Peers".cyan(), validator.multiaddrs.len());
 }
 pub fn blockchain(blockchain: &Blockchain) {
-    info!("{}: {}", "Height".cyan(), blockchain.get_hashes().len());
+    info!("{} {}", "Height".cyan(), blockchain.get_hashes().len());
     info!(
-        "{}: {}",
+        "{} {}",
         "Pending txns".cyan(),
         blockchain.get_pending_transactions().len()
     );
     info!(
-        "{}: {}",
+        "{} {}",
         "Pending stakes".cyan(),
         blockchain.get_pending_stakes().len()
     );
-    info!(
-        "{}: {}",
-        "Validators".cyan(),
-        blockchain.get_stakers().len()
-    );
+    info!("{} {}", "Validators".cyan(), blockchain.get_stakers().len());
 }
 pub fn validator_args(args: &ValidatorArgs) {
-    info!("{}: {}", "--debug".cyan(), args.debug);
-    info!("{}: {}", "--multiaddr".cyan(), args.multiaddr);
-    info!("{}: {}", "--tempdb".cyan(), args.tempdb);
-    info!("{}: {}", "--tempkey".cyan(), args.tempkey);
+    info!("{} {}", "--debug".cyan(), args.debug);
+    info!("{} {}", "--multiaddr".cyan(), args.multiaddr);
+    info!("{} {}", "--tempdb".cyan(), args.tempdb);
+    info!("{} {}", "--tempkey".cyan(), args.tempkey);
 }
 pub fn wallet_args(args: &WalletArgs) {
-    info!("{}: {}", "--api".cyan(), args.api);
+    info!("{} {}", "--api".cyan(), args.api);
 }
 pub fn http(listener: &TcpListener) -> Result<(), Box<dyn Error>> {
     info!(
-        "{}: http://{}",
+        "{} http://{}",
         "Interface".cyan(),
         listener.local_addr()?.to_string().green()
     );
@@ -103,7 +99,7 @@ pub fn http(listener: &TcpListener) -> Result<(), Box<dyn Error>> {
 }
 pub fn pending_transactions(pending_transactions: &Vec<Transaction>) {
     info!(
-        "{}: {}",
+        "{} {}",
         "Pending txns".magenta(),
         pending_transactions.len().to_string().yellow()
     );
@@ -112,14 +108,14 @@ pub fn err(err: Box<dyn Error>) {
     error!("{}", err.to_string().red());
 }
 pub fn http_handle(first: &str) {
-    info!("{}: {}", "Interface".cyan(), first.green());
+    info!("{} {}", "Interface".cyan(), first.green());
 }
 pub fn p2p_event(event_type: &str, event: String) {
-    info!("{}: {}", event_type.cyan(), event)
+    info!("{} {}", event_type.cyan(), event)
 }
 pub fn heartbeat_lag(heartbeats: types::Heartbeats, millis: f64) {
     debug!(
-        "{}: {} {}ms",
+        "{} {} {}ms",
         "Heartbeat".cyan(),
         heartbeats,
         millis.to_string().yellow(),
@@ -131,6 +127,6 @@ pub fn known_peers(known: &Vec<Multiaddr>) {
         return;
     }
     for multiaddr in known.iter() {
-        info!("{}: {}", "Known peer".cyan(), multiaddr);
+        info!("{} {}", "Known peer".cyan(), multiaddr);
     }
 }

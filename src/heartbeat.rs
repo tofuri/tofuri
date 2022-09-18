@@ -81,7 +81,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         Ok(hash) => {
             if !forge {
                 info!(
-                    "{}: {} {}",
+                    "{} {} {}",
                     "Accepted".green(),
                     behaviour
                         .validator
@@ -102,7 +102,7 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     info!(
-        "{}: {} @ {}bps",
+        "{} {} {}bps",
         "Synchronize".cyan(),
         behaviour
             .validator

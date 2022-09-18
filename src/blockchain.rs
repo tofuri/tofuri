@@ -76,7 +76,7 @@ impl Blockchain {
         }
         block.sign(keypair);
         info!(
-            "{}: {} @ {}",
+            "{} {} {}",
             "Forged".cyan(),
             (self.get_height() + 1).to_string().yellow(),
             hex::encode(block.hash()).green()
@@ -323,7 +323,7 @@ impl Blockchain {
                     let hash = block.hash();
                     if hash != previous_hash {
                         log::error!(
-                            "{}: {} != {}",
+                            "{} {} != {}",
                             "Detected broken chain!".red(),
                             hex::encode(hash),
                             hex::encode(previous_hash)
@@ -386,7 +386,7 @@ impl Blockchain {
         let public_key = self.stakers[0].0;
         self.balance_staked.remove(&public_key);
         self.stakers.remove(0).unwrap();
-        log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));
+        log::warn!("{} {}", "Burned".red(), address::encode(&public_key));
     }
     fn reward(&mut self, block: &Block) {
         let balance_staked = self.get_balance_staked(&block.public_key);
@@ -399,7 +399,7 @@ impl Blockchain {
         balance += MIN_STAKE;
         self.set_balance(block.public_key, balance);
         log::warn!(
-            "{}: {} @ {}",
+            "{} {} {}",
             "Minted".cyan(),
             MIN_STAKE.to_string().yellow(),
             address::encode(&block.public_key).green()
@@ -572,7 +572,7 @@ impl Blockchain {
                     .unwrap();
                 self.stakers.remove(index).unwrap();
                 log::warn!(
-                    "{}: {}",
+                    "{} {}",
                     "Burned low balance".red(),
                     address::encode(&stake.public_key)
                 );

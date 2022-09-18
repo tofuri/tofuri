@@ -345,38 +345,34 @@ pub async fn search(api: &str) -> Result<(), Box<dyn Error>> {
         }
         .json::<Block>()
         .await?;
+        println!("{} {}", "Forger".cyan(), address::encode(&block.public_key));
         println!(
-            "{}: {}",
-            "Forger".cyan(),
-            address::encode(&block.public_key)
-        );
-        println!(
-            "{}: {}",
+            "{} {}",
             "Timestamp".cyan(),
             Local
                 .timestamp(block.timestamp as i64, 0)
                 .format("%H:%M:%S")
         );
         println!(
-            "{}: {}",
+            "{} {}",
             "Transactions".cyan(),
             block.transactions.len().to_string().yellow()
         );
         for (i, transaction) in block.transactions.iter().enumerate() {
             println!(
-                "{}: {}",
+                "{} {}",
                 format!("#{}", i).magenta(),
                 hex::encode(transaction.hash())
             )
         }
         println!(
-            "{}: {}",
+            "{} {}",
             "Stakes".cyan(),
             block.stakes.len().to_string().yellow()
         );
         for (i, stake) in block.stakes.iter().enumerate() {
             println!(
-                "{}: {}",
+                "{} {}",
                 format!("#{}", i).magenta(),
                 hex::encode(stake.hash())
             )

@@ -33,7 +33,7 @@ impl Validator {
         let mut blockchain = Blockchain::new();
         let start = Instant::now();
         blockchain.reload(&db);
-        info!("{}: {:?}", "Reload blockchain".cyan(), start.elapsed());
+        info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
         Ok(Validator {
             db,
             blockchain,

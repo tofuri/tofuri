@@ -442,8 +442,7 @@ impl Blockchain {
     pub fn accept_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        forger: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<types::Hash, Box<dyn Error>> {
         let block = self.next_block()?;
         block.put(db)?;
         let hash = block.hash();
@@ -455,15 +454,7 @@ impl Blockchain {
         self.set_sum_stakes();
         self.latest_block = block;
         self.pending_blocks.clear();
-        if !forger {
-            info!(
-                "{}: {} {}",
-                "Accepted".green(),
-                self.get_height().to_string().yellow(),
-                hex::encode(hash)
-            );
-        }
-        Ok(())
+        Ok(hash)
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         self.latest_block = Block::new([0; 32]);

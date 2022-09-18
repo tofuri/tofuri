@@ -25,7 +25,7 @@ pub fn handle(
                 behaviour
                     .validator
                     .blockchain
-                    .accept_block(&behaviour.validator.db, false)?
+                    .accept_block(&behaviour.validator.db)?;
             }
             if behaviour
                 .validator

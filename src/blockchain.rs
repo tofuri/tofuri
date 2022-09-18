@@ -588,19 +588,17 @@ impl Blockchain {
         }
         for stake in block.stakes.iter() {
             let balance_staked = self.get_balance_staked(&stake.public_key);
-            if stake.deposit
-                && balance_staked >= MIN_STAKE
-                && !self.stakers.iter().any(|&e| e.0 == stake.public_key)
-            {
+            let any = self.stakers.iter().any(|&e| e.0 == stake.public_key);
+            if !any && balance_staked >= MIN_STAKE {
                 self.stakers.push_back((stake.public_key, height));
-            } else if balance_staked < MIN_STAKE {
+            } else if any && balance_staked < MIN_STAKE {
                 self.balance_staked.remove(&stake.public_key);
-                let i = self
+                let index = self
                     .stakers
                     .iter()
-                    .position(|s| s.0 == stake.public_key)
+                    .position(|staker| staker.0 == stake.public_key)
                     .unwrap();
-                self.stakers.remove(i).unwrap();
+                self.stakers.remove(index).unwrap();
                 log::warn!(
                     "{}: {}",
                     "Burned low balance".red(),

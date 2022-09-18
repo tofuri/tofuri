@@ -63,23 +63,15 @@ impl Blockchain {
             block = Block::new([0; 32]);
         }
         self.sort_pending_transactions();
-        let pending_transactions = self.pending_transactions.clone();
-        self.pending_transactions.clear();
-        for transaction in pending_transactions {
+        for transaction in self.pending_transactions.iter() {
             if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
-                block.transactions.push(transaction);
-            } else {
-                self.pending_transactions.push(transaction);
+                block.transactions.push(transaction.clone());
             }
         }
         self.sort_pending_stakes();
-        let pending_stakes = self.pending_stakes.clone();
-        self.pending_stakes.clear();
-        for stake in pending_stakes {
+        for stake in self.pending_stakes.iter() {
             if block.stakes.len() < BLOCK_STAKES_LIMIT {
-                block.stakes.push(stake);
-            } else {
-                self.pending_stakes.push(stake);
+                block.stakes.push(stake.clone());
             }
         }
         block.sign(keypair);
@@ -217,7 +209,6 @@ impl Blockchain {
             self.pending_transactions.remove(index);
         }
         self.pending_transactions.push(transaction);
-        self.sort_pending_transactions();
         self.limit_pending_transactions();
         Ok(())
     }
@@ -306,7 +297,6 @@ impl Blockchain {
             self.pending_stakes.remove(index);
         }
         self.pending_stakes.push(stake);
-        self.sort_pending_stakes();
         self.limit_pending_stakes();
         Ok(())
     }

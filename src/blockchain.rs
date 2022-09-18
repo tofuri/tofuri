@@ -17,7 +17,6 @@ use crate::{
     types, util,
 };
 use colored::*;
-use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{
     collections::{HashMap, VecDeque},
@@ -75,12 +74,6 @@ impl Blockchain {
             }
         }
         block.sign(keypair);
-        info!(
-            "{} {} {}",
-            "Forged".cyan(),
-            (self.get_height() + 1).to_string().yellow(),
-            hex::encode(block.hash()).green()
-        );
         self.try_add_block(db, block.clone())?;
         Ok(block)
     }

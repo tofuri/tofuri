@@ -79,19 +79,17 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         .accept_block(&behaviour.validator.db)
     {
         Ok(hash) => {
-            if !forge {
-                info!(
-                    "{} {} {}",
-                    "Accepted".green(),
-                    behaviour
-                        .validator
-                        .blockchain
-                        .get_height()
-                        .to_string()
-                        .yellow(),
-                    hex::encode(hash)
-                )
-            }
+            info!(
+                "{} {} {}",
+                if forge { "Forged" } else { "Accepted" }.green(),
+                behaviour
+                    .validator
+                    .blockchain
+                    .get_height()
+                    .to_string()
+                    .yellow(),
+                hex::encode(hash)
+            )
         }
         Err(err) => debug!("{}", err),
     }

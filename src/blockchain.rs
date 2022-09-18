@@ -359,6 +359,7 @@ impl Blockchain {
             }
         };
         while (closure()?).is_some() {}
+        hashes.reverse();
         Ok(hashes)
     }
     pub fn latest_block(

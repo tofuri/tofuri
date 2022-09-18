@@ -399,7 +399,7 @@ impl Blockchain {
             && !self.stakers.is_empty()
             && util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
         {
-            self.punish_staker_first_in_queue();
+            self.penalty();
             return Err("validator did not show up 1".into());
         }
         if self.pending_blocks.is_empty() {
@@ -416,7 +416,7 @@ impl Blockchain {
         {
             block = self.pending_blocks.remove(index)
         } else {
-            self.punish_staker_first_in_queue();
+            self.penalty();
             return Err("validator did not show up 2".into());
         }
         Ok(block)
@@ -474,9 +474,8 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn punish_staker_first_in_queue(&mut self) {
-        let staker = self.stakers[0];
-        let public_key = staker.0;
+    fn penalty(&mut self) {
+        let public_key = self.stakers[0].0;
         self.balance_staked.remove(&public_key);
         self.stakers.remove(0).unwrap();
         log::warn!("{}: {}", "Burned".red(), address::encode(&public_key));

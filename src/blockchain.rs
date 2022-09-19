@@ -417,6 +417,30 @@ impl Blockchain {
         }
         Ok(block)
     }
+    pub fn try_accept_block(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        block: Block,
+    ) -> Result<types::Hash, Box<dyn Error>> {
+        let block = self.next_block()?;
+        block.put(db)?;
+        let hash = block.hash();
+        Blockchain::put_latest_block_hash(db, hash)?;
+        self.hashes.push(hash);
+        if self.stakers.is_empty() {
+            self.reward_cold_start(&block);
+        } else {
+            self.reward(&block);
+        }
+        self.set_balances(&block);
+        self.set_stakers(self.get_height(), &block);
+        self.set_sum_stakes();
+        self.latest_block = block;
+        self.pending_blocks.clear();
+        self.pending_transactions.clear();
+        self.pending_stakes.clear();
+        Ok(hash)
+    }
     pub fn accept_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,

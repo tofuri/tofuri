@@ -129,7 +129,6 @@ pub async fn swarm(validator: Validator) -> Result<Swarm<MyBehaviour>, Box<dyn E
         IdentTopic::new("stake"),
         IdentTopic::new("transaction"),
         IdentTopic::new("ip"),
-        IdentTopic::new("sync"),
     ]
     .iter()
     {

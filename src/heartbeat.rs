@@ -1,9 +1,8 @@
 use crate::{
-    constants::{BLOCKS_PER_SECOND_THRESHOLD, BLOCK_TIME_MIN, MIN_STAKE},
+    constants::{ BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS},
     p2p::MyBehaviour,
     print,
     stake::Stake,
-    sync::Sync,
     types, util,
 };
 use colored::*;
@@ -36,9 +35,9 @@ pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    if behaviour.validator.synchronizer.bps >= BLOCKS_PER_SECOND_THRESHOLD {
-        return Ok(());
-    }
+    // if behaviour.validator.synchronizer.bps >= BLOCKS_PER_SECOND_THRESHOLD {
+        // return Ok(());
+    // }
     let mut forge = true;
     if !behaviour.validator.blockchain.get_stakers().is_empty() {
         if &behaviour.validator.blockchain.get_stakers()[0].0
@@ -96,28 +95,35 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    if behaviour.validator.synchronizer.bps < BLOCKS_PER_SECOND_THRESHOLD {
+    // if behaviour.validator.synchronizer.bps < BLOCKS_PER_SECOND_THRESHOLD {
+        // return Ok(());
+    // }
+    if behaviour.validator.blockchain.get_hashes().len() == 0 {
         return Ok(());
     }
-    info!(
-        "{} {} {}bps",
-        "Synchronize".cyan(),
+    if behaviour.gossipsub.all_peers().count() == 0 {
+        return Ok(());
+    }
+    // info!(
+        // "{} {} {}bps",
+        // "Synchronize".cyan(),
+        // behaviour
+            // .validator
+            // .blockchain
+            // .get_hashes()
+            // .len()
+            // .to_string()
+            // .yellow(),
+        // behaviour.validator.synchronizer.bps.to_string().yellow()
+    // );
+    for _ in 0..SYNC_BLOCKS {
+        let block = behaviour.validator.synchronizer.get_block(
+            &behaviour.validator.db,
+            behaviour.validator.blockchain.get_hashes(),
+        );
         behaviour
-            .validator
-            .blockchain
-            .get_hashes()
-            .len()
-            .to_string()
-            .yellow(),
-        behaviour.validator.synchronizer.bps.to_string().yellow()
-    );
-    if behaviour.gossipsub.all_peers().count() > 0 {
-        behaviour.gossipsub.publish(
-            IdentTopic::new("sync"),
-            bincode::serialize(&Sync::new(
-                behaviour.validator.blockchain.get_hashes().len(),
-            ))?,
-        )?;
+            .gossipsub
+            .publish(IdentTopic::new("block"), bincode::serialize(&block)?)?;
     }
     Ok(())
 }

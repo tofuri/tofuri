@@ -1,7 +1,9 @@
-use crate::constants::SYNC_HISTORY_LENGTH;
+use crate::{block::Block, constants::SYNC_HISTORY_LENGTH, types};
+use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Synchronizer {
+    pub index: usize,
     pub new: usize,
     pub bps: usize, // new blocks per second
     pub history: [usize; SYNC_HISTORY_LENGTH],
@@ -14,9 +16,10 @@ impl Default for Synchronizer {
 impl Synchronizer {
     pub fn new() -> Synchronizer {
         Synchronizer {
+            index: 0,
             new: 0,
-            bps: 9,
-            history: [9; SYNC_HISTORY_LENGTH],
+            bps: 0,
+            history: [0; SYNC_HISTORY_LENGTH],
         }
     }
     pub fn heartbeat_handle(&mut self) {
@@ -28,5 +31,15 @@ impl Synchronizer {
             self.bps += x;
         }
         self.bps /= SYNC_HISTORY_LENGTH;
+    }
+    pub fn get_block(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        hashes: &types::Hashes,
+    ) -> Block {
+        if self.index >= hashes.len() {
+            self.index = 0;
+        }
+        Block::get(db, &hashes[self.index]).unwrap()
     }
 }

@@ -417,6 +417,7 @@ impl Blockchain {
         }
         Ok(block)
     }
+    // directly accept block without waiting for heartbeat. try to accept blocks as soon as they are received by network.
     pub fn try_accept_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,

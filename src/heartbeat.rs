@@ -94,6 +94,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     }
     Ok(())
 }
+// broadcast blocks to network
 fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     // if behaviour.validator.synchronizer.bps < BLOCKS_PER_SECOND_THRESHOLD {
         // return Ok(());

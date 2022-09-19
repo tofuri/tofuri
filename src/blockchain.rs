@@ -4,7 +4,6 @@ use crate::{
     constants::{
         BLOCK_STAKES_LIMIT,
         BLOCK_TIME_MAX,
-        BLOCK_TIME_MIN,
         BLOCK_TRANSACTIONS_LIMIT,
         MAX_STAKE, // BLOCKS_BEFORE_UNSTAKE
         MIN_STAKE,
@@ -101,15 +100,15 @@ impl Blockchain {
         } else {
             return Err("block does not extend chain".into());
         }
-        if !self.stakers.is_empty() {
-            let previous_block = Block::get(db, &block.previous_hash)?;
-            if block.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
-                return Err("block created too early".into());
-            }
-            if block.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
-                return Err("block created too late".into());
-            }
-        }
+        // if !self.stakers.is_empty() {
+        // let previous_block = Block::get(db, &block.previous_hash)?;
+        // if block.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
+        // return Err("block created too early".into());
+        // }
+        // if block.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
+        // return Err("block created too late".into());
+        // }
+        // }
         // TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS
         for transaction in block.transactions.iter() {
             self.validate_transaction(db, transaction, block.timestamp)?;
@@ -402,7 +401,6 @@ impl Blockchain {
         let block;
         if self.stakers.is_empty() {
             block = self.pending_blocks.remove(0);
-            self.reward_cold_start(&block);
         } else if let Some(index) = self
             .pending_blocks
             .iter()
@@ -428,7 +426,11 @@ impl Blockchain {
         let hash = block.hash();
         Blockchain::put_latest_block_hash(db, hash)?;
         self.hashes.push(hash);
-        self.reward(&block);
+        if self.stakers.is_empty() {
+            self.reward_cold_start(&block);
+        } else {
+            self.reward(&block);
+        }
         self.set_balances(&block);
         self.set_stakers(self.get_height(), &block);
         self.set_sum_stakes();
@@ -454,14 +456,12 @@ impl Blockchain {
         };
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
-            // penalty
             let diff = block.timestamp - previous_block_timestamp - 1;
             for _ in 0..diff / BLOCK_TIME_MAX as u32 {
                 if !self.stakers.is_empty() {
                     self.penalty();
                 }
             }
-            // reward
             if self.stakers.is_empty() {
                 self.reward_cold_start(&block);
             } else {

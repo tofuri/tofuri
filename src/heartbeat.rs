@@ -34,9 +34,6 @@ pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    // if behaviour.validator.synchronizer.bps >= BLOCKS_PER_SECOND_THRESHOLD {
-    // return Ok(());
-    // }
     let mut forge = true;
     if !behaviour.validator.blockchain.get_stakers().is_empty() {
         if &behaviour.validator.blockchain.get_stakers()[0].0
@@ -48,13 +45,11 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
             forge = false;
         }
     } else {
-        // cold start
         let mut stake = Stake::new(true, MIN_STAKE, 0);
         stake.sign(&behaviour.validator.keypair);
         behaviour.validator.blockchain.set_cold_start_stake(stake);
     }
     if forge {
-        // forge new block
         match behaviour
             .validator
             .blockchain
@@ -70,56 +65,19 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
             Err(err) => error!("{}", err),
         };
     }
-    // accept forged blocks
     behaviour
         .validator
         .blockchain
         .try_append_loop(&behaviour.validator.db);
-    // match behaviour
-    // .validator
-    // .blockchain
-    // .append_loop(&behaviour.validator.db)
-    // {
-    // Ok(hash) => {
-    // info!(
-    // "{} {} {}",
-    // if forge { "Forged" } else { "Accepted" }.green(),
-    // behaviour
-    // .validator
-    // .blockchain
-    // .get_height()
-    // .to_string()
-    // .yellow(),
-    // hex::encode(hash)
-    // )
-    // }
-    // Err(err) => debug!("{}", err),
-    // }
     Ok(())
 }
-// broadcast blocks to network
 fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    // if behaviour.validator.synchronizer.bps < BLOCKS_PER_SECOND_THRESHOLD {
-    // return Ok(());
-    // }
     if behaviour.validator.blockchain.get_hashes().len() == 0 {
         return Ok(());
     }
     if behaviour.gossipsub.all_peers().count() == 0 {
         return Ok(());
     }
-    // info!(
-    // "{} {} {}bps",
-    // "Synchronize".cyan(),
-    // behaviour
-    // .validator
-    // .blockchain
-    // .get_hashes()
-    // .len()
-    // .to_string()
-    // .yellow(),
-    // behaviour.validator.synchronizer.bps.to_string().yellow()
-    // );
     for _ in 0..SYNC_BLOCKS {
         let block = behaviour.validator.synchronizer.get_block(
             &behaviour.validator.db,

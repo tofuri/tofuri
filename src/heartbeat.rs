@@ -1,13 +1,12 @@
 use crate::{
-    constants::{ BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS},
+    constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS},
     p2p::MyBehaviour,
     print,
     stake::Stake,
     types, util,
 };
-use colored::*;
 use libp2p::{gossipsub::IdentTopic, Swarm};
-use log::{debug, error, info};
+use log::error;
 use std::{
     error::Error,
     time::{Duration, SystemTime},
@@ -36,7 +35,7 @@ pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
 }
 fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     // if behaviour.validator.synchronizer.bps >= BLOCKS_PER_SECOND_THRESHOLD {
-        // return Ok(());
+    // return Ok(());
     // }
     let mut forge = true;
     if !behaviour.validator.blockchain.get_stakers().is_empty() {
@@ -72,32 +71,36 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         };
     }
     // accept forged blocks
-    match behaviour
+    behaviour
         .validator
         .blockchain
-        .accept_block(&behaviour.validator.db)
-    {
-        Ok(hash) => {
-            info!(
-                "{} {} {}",
-                if forge { "Forged" } else { "Accepted" }.green(),
-                behaviour
-                    .validator
-                    .blockchain
-                    .get_height()
-                    .to_string()
-                    .yellow(),
-                hex::encode(hash)
-            )
-        }
-        Err(err) => debug!("{}", err),
-    }
+        .try_append_loop(&behaviour.validator.db);
+    // match behaviour
+    // .validator
+    // .blockchain
+    // .append_loop(&behaviour.validator.db)
+    // {
+    // Ok(hash) => {
+    // info!(
+    // "{} {} {}",
+    // if forge { "Forged" } else { "Accepted" }.green(),
+    // behaviour
+    // .validator
+    // .blockchain
+    // .get_height()
+    // .to_string()
+    // .yellow(),
+    // hex::encode(hash)
+    // )
+    // }
+    // Err(err) => debug!("{}", err),
+    // }
     Ok(())
 }
 // broadcast blocks to network
 fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     // if behaviour.validator.synchronizer.bps < BLOCKS_PER_SECOND_THRESHOLD {
-        // return Ok(());
+    // return Ok(());
     // }
     if behaviour.validator.blockchain.get_hashes().len() == 0 {
         return Ok(());
@@ -106,16 +109,16 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     // info!(
-        // "{} {} {}bps",
-        // "Synchronize".cyan(),
-        // behaviour
-            // .validator
-            // .blockchain
-            // .get_hashes()
-            // .len()
-            // .to_string()
-            // .yellow(),
-        // behaviour.validator.synchronizer.bps.to_string().yellow()
+    // "{} {} {}bps",
+    // "Synchronize".cyan(),
+    // behaviour
+    // .validator
+    // .blockchain
+    // .get_hashes()
+    // .len()
+    // .to_string()
+    // .yellow(),
+    // behaviour.validator.synchronizer.bps.to_string().yellow()
     // );
     for _ in 0..SYNC_BLOCKS {
         let block = behaviour.validator.synchronizer.get_block(

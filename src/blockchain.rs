@@ -33,6 +33,7 @@ pub struct Blockchain {
     sum_stakes_all_time: types::Amount,
     balance: types::Balance,
     balance_staked: types::Balance,
+    stakers_history: types::StakersHistory,
 }
 impl Blockchain {
     pub fn new() -> Blockchain {
@@ -47,111 +48,8 @@ impl Blockchain {
             sum_stakes_all_time: 0,
             balance: HashMap::new(),
             balance_staked: HashMap::new(),
+            stakers_history: HashMap::new(),
         }
-    }
-    pub fn forge_block(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        keypair: &types::Keypair,
-    ) -> Result<Block, Box<dyn Error>> {
-        let mut block;
-        if let Some(hash) = self.hashes.last() {
-            block = Block::new(*hash);
-        } else {
-            block = Block::new([0; 32]);
-        }
-        self.sort_pending_transactions();
-        for transaction in self.pending_transactions.iter() {
-            if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
-                block.transactions.push(transaction.clone());
-            }
-        }
-        self.sort_pending_stakes();
-        for stake in self.pending_stakes.iter() {
-            if block.stakes.len() < BLOCK_STAKES_LIMIT {
-                block.stakes.push(stake.clone());
-            }
-        }
-        block.sign(keypair);
-        self.try_add_block(db, block.clone())?;
-        Ok(block)
-    }
-    pub fn try_add_block(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        block: Block,
-    ) -> Result<(), Box<dyn Error>> {
-        if self
-            .pending_blocks
-            .iter()
-            .any(|b| b.signature == block.signature)
-        {
-            return Err("block already pending".into());
-        }
-        if !block.is_valid() {
-            return Err("block not valid".into());
-        }
-        if block.previous_hash == [0; 32] {
-            println!("previous block was genesis")
-        } else if self.hashes.contains(&block.previous_hash) {
-            if Block::get(db, &block.hash()).is_ok() {
-                return Err("block already in db".into());
-            }
-        } else {
-            return Err("block does not extend chain".into());
-        }
-        // if !self.stakers.is_empty() {
-        // let previous_block = Block::get(db, &block.previous_hash)?;
-        // if block.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
-        // return Err("block created too early".into());
-        // }
-        // if block.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
-        // return Err("block created too late".into());
-        // }
-        // }
-        // TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS
-        for transaction in block.transactions.iter() {
-            self.validate_transaction(db, transaction, block.timestamp)?;
-        }
-        let public_key_inputs = block
-            .transactions
-            .iter()
-            .map(|t| t.public_key_input)
-            .collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_key_inputs.len())
-            .any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1]))
-        {
-            return Err("block includes multiple transactions from same input".into());
-        }
-        // STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES
-        if self.stakers.is_empty() || block.previous_hash == [0; 32] {
-            self.validate_mint_stake(&block.stakes, block.timestamp)?;
-        } else {
-            for stake in block.stakes.iter() {
-                self.validate_stake(db, stake, block.timestamp)?;
-            }
-        }
-        let public_keys = block
-            .stakes
-            .iter()
-            .map(|s| s.public_key)
-            .collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
-            return Err("block includes multiple stakes from same public_key".into());
-        }
-        // BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS
-        if let Some(index) = self
-            .pending_blocks
-            .iter()
-            .position(|b| b.public_key == block.public_key)
-        {
-            if block.timestamp <= self.pending_blocks[index].timestamp {
-                return Err("block is not new enough to replace previous pending block".into());
-            }
-            self.pending_blocks.remove(index);
-        }
-        self.pending_blocks.push(block);
-        Ok(())
     }
     fn validate_transaction(
         &self,
@@ -295,14 +193,6 @@ impl Blockchain {
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
-    fn set_sum_stakes(&mut self) {
-        let mut sum = 0;
-        for staker in self.stakers.iter() {
-            sum += self.get_balance_staked(&staker.0);
-        }
-        self.sum_stakes_now = sum;
-        self.sum_stakes_all_time += sum;
-    }
     fn hashes(
         db: &DBWithThreadMode<SingleThreaded>,
         previous_hash: types::Hash,
@@ -397,72 +287,251 @@ impl Blockchain {
             address::encode(&block.public_key).green()
         );
     }
-    fn next_block(&mut self) -> Result<Block, Box<dyn Error>> {
-        let block;
-        if self.stakers.is_empty() {
-            block = self.pending_blocks.remove(0);
-        } else if let Some(index) = self
-            .pending_blocks
-            .iter()
-            .position(|x| x.public_key == self.stakers[0].0)
-        {
-            block = self.pending_blocks.remove(index)
-        } else if util::timestamp()
-            > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
-        {
-            self.penalty();
-            return Err("staker didn't show up in time".into());
+    // create block
+    pub fn forge_block(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        keypair: &types::Keypair,
+    ) -> Result<Block, Box<dyn Error>> {
+        let mut block;
+        if let Some(hash) = self.hashes.last() {
+            block = Block::new(*hash);
         } else {
-            return Err("no pending blocks, waiting...".into());
+            block = Block::new([0; 32]);
         }
+        self.sort_pending_transactions();
+        for transaction in self.pending_transactions.iter() {
+            if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
+                block.transactions.push(transaction.clone());
+            }
+        }
+        self.sort_pending_stakes();
+        for stake in self.pending_stakes.iter() {
+            if block.stakes.len() < BLOCK_STAKES_LIMIT {
+                block.stakes.push(stake.clone());
+            }
+        }
+        block.sign(keypair);
+        // self.pending_blocks_push(db, block.clone())?;
+        let hash = self.append(db, block.clone(), true).unwrap();
+        log::info!(
+            "{} {} {}",
+            "Forged".green(),
+            self.get_height().to_string().yellow(),
+            hex::encode(hash)
+        );
         Ok(block)
     }
-    // directly accept block without waiting for heartbeat. try to accept blocks as soon as they are received by network.
-    pub fn try_accept_block(
+    // validate block
+    pub fn pending_blocks_push(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
         block: Block,
-    ) -> Result<types::Hash, Box<dyn Error>> {
-        let block = self.next_block()?;
-        block.put(db)?;
-        let hash = block.hash();
-        Blockchain::put_latest_block_hash(db, hash)?;
-        self.hashes.push(hash);
-        if self.stakers.is_empty() {
-            self.reward_cold_start(&block);
-        } else {
-            self.reward(&block);
+    ) -> Result<(), Box<dyn Error>> {
+        if self
+            .pending_blocks
+            .iter()
+            .any(|b| b.signature == block.signature)
+        {
+            return Err("block already pending".into());
         }
-        self.set_balances(&block);
-        self.set_stakers(self.get_height(), &block);
-        self.set_sum_stakes();
-        self.latest_block = block;
-        self.pending_blocks.clear();
-        self.pending_transactions.clear();
-        self.pending_stakes.clear();
-        Ok(hash)
+        if !block.is_valid() {
+            return Err("block not valid".into());
+        }
+        if block.previous_hash == [0; 32] {
+            println!("previous block was genesis")
+        } else if self.hashes.contains(&block.previous_hash) {
+            if Block::get(db, &block.hash()).is_ok() {
+                return Err("block already in db".into());
+            }
+        } else {
+            return Err("block does not extend chain".into());
+        }
+        // if !self.stakers.is_empty() {
+        // let previous_block = Block::get(db, &block.previous_hash)?;
+        // if block.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
+        // return Err("block created too early".into());
+        // }
+        // if block.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
+        // return Err("block created too late".into());
+        // }
+        // }
+        // TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS TRANSACTIONS
+        for transaction in block.transactions.iter() {
+            self.validate_transaction(db, transaction, block.timestamp)?;
+        }
+        let public_key_inputs = block
+            .transactions
+            .iter()
+            .map(|t| t.public_key_input)
+            .collect::<Vec<types::PublicKeyBytes>>();
+        if (1..public_key_inputs.len())
+            .any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1]))
+        {
+            return Err("block includes multiple transactions from same input".into());
+        }
+        // STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES STAKES
+        if self.stakers.is_empty() || block.previous_hash == [0; 32] {
+            self.validate_mint_stake(&block.stakes, block.timestamp)?;
+        } else {
+            for stake in block.stakes.iter() {
+                self.validate_stake(db, stake, block.timestamp)?;
+            }
+        }
+        let public_keys = block
+            .stakes
+            .iter()
+            .map(|s| s.public_key)
+            .collect::<Vec<types::PublicKeyBytes>>();
+        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
+            return Err("block includes multiple stakes from same public_key".into());
+        }
+        // BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS BLOCKS
+        if let Some(index) = self
+            .pending_blocks
+            .iter()
+            .position(|b| b.public_key == block.public_key)
+        {
+            if block.timestamp <= self.pending_blocks[index].timestamp {
+                return Err("block is not new enough to replace previous pending block".into());
+            }
+            self.pending_blocks.remove(index);
+        }
+        self.pending_blocks.push(block);
+        Ok(())
     }
-    pub fn accept_block(
+    // save block
+    // fn next_block(&mut self) -> Result<Block, Box<dyn Error>> {
+    // // if let Some(staker) = self.stakers.get(0) {
+    // // self.stakers_history.insert(block.hash(), *staker);
+    // // }
+    // let block;
+    // if self.stakers.is_empty() {
+    // block = self.pending_blocks.remove(0);
+    // } else if let Some(index) = self
+    // .pending_blocks
+    // .iter()
+    // .position(|x| x.public_key == self.stakers[0].0)
+    // {
+    // block = self.pending_blocks.remove(index)
+    // } else if util::timestamp()
+    // > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
+    // {
+    // self.penalty();
+    // return Err("staker didn't show up in time".into());
+    // } else {
+    // return Err("no pending blocks, waiting...".into());
+    // }
+    // Ok(block)
+    // }
+    pub fn try_append_loop(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
+        // if self.stakers.is_empty() {
+        // self.append(db, self.pending_blocks.remove(0));
+        // return;
+        // }
+        for block in self.pending_blocks.clone() {
+            self.try_append(db, block);
+        }
+        if util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
+            self.penalty();
+            log::error!("staker didn't show up in time");
+            // return Err("staker didn't show up in time".into());
+        } else {
+            log::info!("no pending blocks, waiting...");
+            // return Err("no pending blocks, waiting...".into());
+        }
+    }
+    pub fn try_append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: Block) {
+        // dont know who should have validated a block at a certain height (not latest) because self.stakers updates and only works for latest block
+        // make a list of block => staker and only accept blocks from behind whos public_key matches the staker
+        if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
+            if public_key != &block.public_key {
+                println!("block public_key don't match stakers history");
+                return;
+            }
+        } else {
+            println!("block didn't have a staker because network was down");
+        }
+        let hash;
+        if block.previous_hash == self.latest_block.hash() {
+            hash = self.append(db, block, true).unwrap();
+        } else {
+            hash = self.append(db, block, false).unwrap();
+        }
+        log::info!(
+            "{} {} {}",
+            "Accepted".green(),
+            self.get_height().to_string().yellow(),
+            hex::encode(hash)
+        );
+
+        // if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
+        // if public_key == &block.public_key {
+        // let hash;
+        // if block.previous_hash == self.latest_block.hash() {
+        // hash = self.append(db, block, true).unwrap();
+        // } else {
+        // hash = self.append(db, block, false).unwrap();
+        // }
+        // log::info!(
+        // "{} {} {}",
+        // "Accepted".green(),
+        // self.get_height().to_string().yellow(),
+        // hex::encode(hash)
+        // );
+        // } else {
+        // println!("block public_key don't match stakers history");
+        // }
+        // } else {
+        // println!("block didn't have a staker because network was down");
+        // }
+
+        // if block.previous_hash == self.latest_block.hash() {
+        // self.append(db, block, true);
+        // } else if let Some(public_key) = self.stakers_history.get(&block.hash()) {
+        // if &block.public_key == public_key {
+        // self.append(db, block, false);
+        // }
+        // } else {
+        // println!("block didn't have a staker because network was down");
+        // }
+    }
+    pub fn append(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
+        block: Block,
+        latest: bool,
     ) -> Result<types::Hash, Box<dyn Error>> {
-        let block = self.next_block()?;
         block.put(db)?;
         let hash = block.hash();
-        Blockchain::put_latest_block_hash(db, hash)?;
-        self.hashes.push(hash);
-        if self.stakers.is_empty() {
-            self.reward_cold_start(&block);
+        if latest {
+            Blockchain::put_latest_block_hash(db, hash)?;
+            self.hashes.push(hash);
+            // if let Some(staker) = self.stakers.get(0) {
+            // self.stakers_history.insert(block.hash(), *staker);
+            // }
+            if self.stakers.is_empty() {
+                self.reward_cold_start(&block);
+            } else {
+                self.reward(&block);
+            }
+            self.set_balances(&block);
+            self.set_stakers(self.get_height(), &block);
+            self.set_sum_stakes();
+            self.latest_block = block;
+            self.pending_blocks.clear();
+            self.pending_transactions.clear();
+            self.pending_stakes.clear();
         } else {
-            self.reward(&block);
+            // check if this fork is greater than previous fork
+            println!("{}", hex::encode(block.previous_hash));
+            println!("{:x?}", self.hashes);
+            if block.previous_hash != [0; 32]
+                && self.height(block.previous_hash).unwrap() + 1 > self.get_height()
+            {
+                self.reload(db);
+            }
         }
-        self.set_balances(&block);
-        self.set_stakers(self.get_height(), &block);
-        self.set_sum_stakes();
-        self.latest_block = block;
-        self.pending_blocks.clear();
-        self.pending_transactions.clear();
-        self.pending_stakes.clear();
         Ok(hash)
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
@@ -471,6 +540,7 @@ impl Blockchain {
         self.hashes.clear();
         self.balance.clear();
         self.balance_staked.clear();
+        self.stakers_history.clear();
         if let Some(block) = Blockchain::latest_block(db).unwrap() {
             self.latest_block = block;
         }
@@ -481,6 +551,10 @@ impl Blockchain {
         };
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
+            // self.staker_history.push(self.stakers[0]);
+            // if let Some(staker) = self.stakers.get(0) {
+            // self.stakers_history.insert(block.hash(), *staker);
+            // }
             let diff = block.timestamp - previous_block_timestamp - 1;
             for _ in 0..diff / BLOCK_TIME_MAX as u32 {
                 if !self.stakers.is_empty() {
@@ -541,6 +615,9 @@ impl Blockchain {
         }
         self.hashes.len() - 1
     }
+    pub fn get_stakers_history(&self) -> &types::StakersHistory {
+        &self.stakers_history
+    }
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);
     }
@@ -598,8 +675,19 @@ impl Blockchain {
                 );
             }
         }
+        if let Some(staker) = self.stakers.get(0) {
+            self.stakers_history.insert(block.hash(), staker.0);
+        }
     }
     pub fn set_cold_start_stake(&mut self, stake: Stake) {
         self.pending_stakes = vec![stake];
+    }
+    fn set_sum_stakes(&mut self) {
+        let mut sum = 0;
+        for staker in self.stakers.iter() {
+            sum += self.get_balance_staked(&staker.0);
+        }
+        self.sum_stakes_now = sum;
+        self.sum_stakes_all_time += sum;
     }
 }

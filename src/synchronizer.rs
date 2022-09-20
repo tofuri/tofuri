@@ -40,6 +40,8 @@ impl Synchronizer {
         if self.index >= hashes.len() {
             self.index = 0;
         }
-        Block::get(db, &hashes[self.index]).unwrap()
+        let block = Block::get(db, &hashes[self.index]).unwrap();
+        self.index += 1;
+        block
     }
 }

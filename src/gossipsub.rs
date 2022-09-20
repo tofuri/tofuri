@@ -12,17 +12,6 @@ pub fn handle(
                 .validator
                 .blockchain
                 .pending_blocks_push(&behaviour.validator.db, block)?;
-            // behaviour
-            // .validator
-            // .blockchain
-            // .try_add_block(&behaviour.validator.db, block)?;
-            // if behaviour.validator.synchronizer.bps >= BLOCKS_PER_SECOND_THRESHOLD {
-            // // accept block early for faster synchronization
-            // behaviour
-            // .validator
-            // .blockchain
-            // .accept_block(&behaviour.validator.db)?;
-            // }
             behaviour.validator.synchronizer.new += 1;
         }
         "stake" => {

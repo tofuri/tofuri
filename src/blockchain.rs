@@ -11,6 +11,7 @@ use crate::{
     types, util,
 };
 use colored::*;
+use log::{error, info, warn};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{
     collections::{HashMap, VecDeque},
@@ -60,13 +61,13 @@ impl Blockchain {
                 Ok(block) => {
                     let hash = block.hash();
                     if hash != previous_hash {
-                        log::error!(
+                        error!(
                             "{} {} != {}",
                             "Detected broken chain!".red(),
                             hex::encode(hash),
                             hex::encode(previous_hash)
                         );
-                        log::warn!("{}", "Pruning broken chain".yellow());
+                        warn!("{}", "Pruning broken chain".yellow());
                         hashes.clear();
                         Blockchain::set_latest_block_hash(db, previous_hash)?;
                     }
@@ -91,7 +92,7 @@ impl Blockchain {
         let public_key = self.stakers[0].0;
         self.balance_staked.remove(&public_key);
         self.stakers.remove(0).unwrap();
-        log::warn!("{} {}", "Burned".red(), address::encode(&public_key));
+        warn!("{} {}", "Burned".red(), address::encode(&public_key));
     }
     fn penalty_reload(
         &mut self,
@@ -118,7 +119,7 @@ impl Blockchain {
         let mut balance = self.get_balance(&block.public_key);
         balance += MIN_STAKE;
         self.set_balance(block.public_key, balance);
-        log::warn!(
+        warn!(
             "{} {} {}",
             "Minted".cyan(),
             MIN_STAKE.to_string().yellow(),
@@ -223,7 +224,7 @@ impl Blockchain {
         }
         block.sign(keypair);
         let hash = self.append(db, block.clone(), true).unwrap();
-        log::info!(
+        info!(
             "{} {} {}",
             "Forged".green(),
             self.get_height().to_string().yellow(),
@@ -234,16 +235,16 @@ impl Blockchain {
     pub fn append_handle(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         if util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
             self.penalty();
-            log::error!("staker didn't show up in time");
+            warn!("staker didn't show up in time");
         }
         for block in self.pending_blocks.clone() {
             if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
                 if public_key != &block.public_key {
-                    println!("block public_key don't match stakers history");
+                    warn!("block public_key don't match stakers history");
                     return;
                 }
             } else {
-                println!("block didn't have a staker because network was down");
+                warn!("block didn't have a staker because network was down");
             }
             let hash;
             if block.previous_hash == self.latest_block.hash()
@@ -253,7 +254,7 @@ impl Blockchain {
             } else {
                 hash = self.append(db, block, false).unwrap();
             }
-            log::info!(
+            info!(
                 "{} {} {}",
                 "Accepted".green(),
                 self.get_height().to_string().yellow(),
@@ -287,7 +288,7 @@ impl Blockchain {
         } else {
             if let Some(height) = self.height(block.previous_hash) {
                 if height + 1 > self.get_height() {
-                    log::warn!("Fork detected! Reloading...");
+                    warn!("Fork detected! Reloading...");
                     self.reload(db);
                 }
             }
@@ -418,7 +419,7 @@ impl Blockchain {
                     .position(|staker| staker.0 == stake.public_key)
                     .unwrap();
                 self.stakers.remove(index).unwrap();
-                log::warn!(
+                warn!(
                     "{} {}",
                     "Burned low balance".red(),
                     address::encode(&stake.public_key)

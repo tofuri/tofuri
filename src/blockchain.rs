@@ -93,6 +93,18 @@ impl Blockchain {
         self.stakers.remove(0).unwrap();
         log::warn!("{} {}", "Burned".red(), address::encode(&public_key));
     }
+    fn penalty_reload(
+        &mut self,
+        timestamp: &types::Timestamp,
+        previous_timestamp: &types::Timestamp,
+    ) {
+        let diff = timestamp - previous_timestamp - 1;
+        for _ in 0..diff / BLOCK_TIME_MAX as u32 {
+            if !self.stakers.is_empty() {
+                self.penalty();
+            }
+        }
+    }
     fn reward(&mut self, block: &Block) {
         let balance_staked = self.get_balance_staked(&block.public_key);
         let mut balance = self.get_balance(&block.public_key);
@@ -299,12 +311,7 @@ impl Blockchain {
         };
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
-            let diff = block.timestamp - previous_block_timestamp - 1;
-            for _ in 0..diff / BLOCK_TIME_MAX as u32 {
-                if !self.stakers.is_empty() {
-                    self.penalty();
-                }
-            }
+            self.penalty_reload(&block.timestamp, &previous_block_timestamp);
             if self.stakers.is_empty() {
                 self.reward_cold_start(&block);
             } else {

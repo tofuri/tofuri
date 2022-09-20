@@ -46,7 +46,7 @@ impl Blockchain {
             stakers_history: HashMap::new(),
         }
     }
-    pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
+    fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
     fn hashes(
@@ -68,7 +68,7 @@ impl Blockchain {
                         );
                         log::warn!("{}", "Pruning broken chain".yellow());
                         hashes.clear();
-                        Blockchain::put_latest_block_hash(db, previous_hash)?;
+                        Blockchain::set_latest_block_hash(db, previous_hash)?;
                     }
                     hashes.push(hash);
                     previous_hash = block.previous_hash;
@@ -141,22 +141,6 @@ impl Blockchain {
         }
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
-        Ok(())
-    }
-    pub fn latest_block(
-        db: &DBWithThreadMode<SingleThreaded>,
-    ) -> Result<Option<Block>, Box<dyn Error>> {
-        if let Some(hash) = db.get(db::key(&db::Key::LatestBlockHash))? {
-            Ok(Some(Block::get(db, &hash)?))
-        } else {
-            Ok(None)
-        }
-    }
-    fn put_latest_block_hash(
-        db: &DBWithThreadMode<SingleThreaded>,
-        hash: types::Hash,
-    ) -> Result<(), Box<dyn Error>> {
-        db.put(db::key(&db::Key::LatestBlockHash), hash)?;
         Ok(())
     }
     fn penalty(&mut self) {
@@ -266,7 +250,7 @@ impl Blockchain {
         block.put(db)?;
         let hash = block.hash();
         if latest {
-            Blockchain::put_latest_block_hash(db, hash)?;
+            Blockchain::set_latest_block_hash(db, hash)?;
             self.hashes.push(hash);
             if self.stakers.is_empty() {
                 self.reward_cold_start(&block);
@@ -298,9 +282,7 @@ impl Blockchain {
         self.balance.clear();
         self.balance_staked.clear();
         self.stakers_history.clear();
-        if let Some(block) = Blockchain::latest_block(db).unwrap() {
-            self.latest_block = block;
-        }
+        self.set_latest_block(db).unwrap();
         let hashes = Blockchain::hashes(db, self.latest_block.hash()).unwrap();
         let mut previous_block_timestamp = match hashes.first() {
             Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
@@ -442,6 +424,22 @@ impl Blockchain {
         }
         self.sum_stakes_now = sum;
         self.sum_stakes_all_time += sum;
+    }
+    fn set_latest_block(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+    ) -> Result<(), Box<dyn Error>> {
+        if let Some(hash) = db.get(db::key(&db::Key::LatestBlockHash))? {
+            self.latest_block = Block::get(db, &hash)?;
+        }
+        Ok(())
+    }
+    fn set_latest_block_hash(
+        db: &DBWithThreadMode<SingleThreaded>,
+        hash: types::Hash,
+    ) -> Result<(), Box<dyn Error>> {
+        db.put(db::key(&db::Key::LatestBlockHash), hash)?;
+        Ok(())
     }
     fn sort_pending_transactions(&mut self) {
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));

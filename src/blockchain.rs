@@ -2,14 +2,8 @@ use crate::{
     address,
     block::Block,
     constants::{
-        BLOCK_STAKES_LIMIT,
-        BLOCK_TIME_MAX,
-        BLOCK_TIME_MIN,
-        BLOCK_TRANSACTIONS_LIMIT,
-        MAX_STAKE, // BLOCKS_BEFORE_UNSTAKE
-        MIN_STAKE,
-        PENDING_STAKES_LIMIT,
-        PENDING_TRANSACTIONS_LIMIT,
+        BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE,
+        MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     db,
     stake::Stake,
@@ -126,16 +120,6 @@ impl Blockchain {
         {
             return Err("block created too late".into());
         }
-        // if let Some(index) = self
-        // .pending_blocks
-        // .iter()
-        // .position(|b| b.public_key == block.public_key)
-        // {
-        // if block.timestamp <= self.pending_blocks[index].timestamp {
-        // return Err("block is not new enough to replace previous pending block".into());
-        // }
-        // self.pending_blocks.remove(index);
-        // }
         Ok(())
     }
     fn validate_transaction(
@@ -365,7 +349,6 @@ impl Blockchain {
             address::encode(&block.public_key).green()
         );
     }
-    // create block
     pub fn forge_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -390,7 +373,6 @@ impl Blockchain {
             }
         }
         block.sign(keypair);
-        // self.pending_blocks_push(db, block.clone())?;
         let hash = self.append(db, block.clone(), true).unwrap();
         log::info!(
             "{} {} {}",
@@ -400,7 +382,6 @@ impl Blockchain {
         );
         Ok(block)
     }
-    // validate block
     pub fn pending_blocks_push(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -413,34 +394,21 @@ impl Blockchain {
         } else {
             self.validate_stakes(db, &block)?;
         }
-        // if block.previous_hash == self.latest_block.hash() {
-        // self.try_append(db, block);
-        // } else {
-        // self.pending_blocks.push(block);
-        // }
         self.pending_blocks.push(block);
         Ok(())
     }
     pub fn try_append_loop(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
-        // if self.stakers.is_empty() {
-        // self.append(db, self.pending_blocks.remove(0));
-        // return;
-        // }
         for block in self.pending_blocks.clone() {
             self.try_append(db, block);
         }
         if util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
             self.penalty();
             log::error!("staker didn't show up in time");
-            // return Err("staker didn't show up in time".into());
         } else {
             log::info!("no pending blocks, waiting...");
-            // return Err("no pending blocks, waiting...".into());
         }
     }
     pub fn try_append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: Block) {
-        // dont know who should have validated a block at a certain height (not latest) because self.stakers updates and only works for latest block
-        // make a list of block => staker and only accept blocks from behind whos public_key matches the staker
         if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
             if public_key != &block.public_key {
                 println!("block public_key don't match stakers history");
@@ -461,37 +429,6 @@ impl Blockchain {
             self.get_height().to_string().yellow(),
             hex::encode(hash)
         );
-
-        // if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
-        // if public_key == &block.public_key {
-        // let hash;
-        // if block.previous_hash == self.latest_block.hash() {
-        // hash = self.append(db, block, true).unwrap();
-        // } else {
-        // hash = self.append(db, block, false).unwrap();
-        // }
-        // log::info!(
-        // "{} {} {}",
-        // "Accepted".green(),
-        // self.get_height().to_string().yellow(),
-        // hex::encode(hash)
-        // );
-        // } else {
-        // println!("block public_key don't match stakers history");
-        // }
-        // } else {
-        // println!("block didn't have a staker because network was down");
-        // }
-
-        // if block.previous_hash == self.latest_block.hash() {
-        // self.append(db, block, true);
-        // } else if let Some(public_key) = self.stakers_history.get(&block.hash()) {
-        // if &block.public_key == public_key {
-        // self.append(db, block, false);
-        // }
-        // } else {
-        // println!("block didn't have a staker because network was down");
-        // }
     }
     pub fn append(
         &mut self,
@@ -504,9 +441,6 @@ impl Blockchain {
         if latest {
             Blockchain::put_latest_block_hash(db, hash)?;
             self.hashes.push(hash);
-            // if let Some(staker) = self.stakers.get(0) {
-            // self.stakers_history.insert(block.hash(), *staker);
-            // }
             if self.stakers.is_empty() {
                 self.reward_cold_start(&block);
             } else {
@@ -520,7 +454,6 @@ impl Blockchain {
             self.pending_transactions.clear();
             self.pending_stakes.clear();
         } else {
-            // check if this fork is greater than previous fork
             println!("{}", hex::encode(block.previous_hash));
             println!("{:x?}", self.hashes);
             if block.previous_hash != [0; 32]
@@ -548,10 +481,6 @@ impl Blockchain {
         };
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
-            // self.staker_history.push(self.stakers[0]);
-            // if let Some(staker) = self.stakers.get(0) {
-            // self.stakers_history.insert(block.hash(), *staker);
-            // }
             let diff = block.timestamp - previous_block_timestamp - 1;
             for _ in 0..diff / BLOCK_TIME_MAX as u32 {
                 if !self.stakers.is_empty() {

@@ -68,7 +68,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     behaviour
         .validator
         .blockchain
-        .try_append_loop(&behaviour.validator.db);
+        .append_handle(&behaviour.validator.db);
     Ok(())
 }
 fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {

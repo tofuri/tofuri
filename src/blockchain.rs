@@ -98,6 +98,9 @@ impl Blockchain {
         timestamp: &types::Timestamp,
         previous_timestamp: &types::Timestamp,
     ) {
+        if timestamp == previous_timestamp {
+            return;
+        }
         let diff = timestamp - previous_timestamp - 1;
         for _ in 0..diff / BLOCK_TIME_MAX as u32 {
             if !self.stakers.is_empty() {
@@ -228,40 +231,35 @@ impl Blockchain {
         );
         Ok(block)
     }
-    pub fn try_append_loop(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
-        for block in self.pending_blocks.clone() {
-            self.try_append(db, block);
-        }
+    pub fn append_handle(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         if util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
             self.penalty();
             log::error!("staker didn't show up in time");
-        } else {
-            log::info!("no pending blocks, waiting...");
         }
-    }
-    pub fn try_append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: Block) {
-        if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
-            if public_key != &block.public_key {
-                println!("block public_key don't match stakers history");
-                return;
+        for block in self.pending_blocks.clone() {
+            if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
+                if public_key != &block.public_key {
+                    println!("block public_key don't match stakers history");
+                    return;
+                }
+            } else {
+                println!("block didn't have a staker because network was down");
             }
-        } else {
-            println!("block didn't have a staker because network was down");
+            let hash;
+            if block.previous_hash == self.latest_block.hash()
+                || self.latest_block.previous_hash == [0; 32]
+            {
+                hash = self.append(db, block, true).unwrap();
+            } else {
+                hash = self.append(db, block, false).unwrap();
+            }
+            log::info!(
+                "{} {} {}",
+                "Accepted".green(),
+                self.get_height().to_string().yellow(),
+                hex::encode(hash)
+            );
         }
-        let hash;
-        if block.previous_hash == self.latest_block.hash()
-            || self.latest_block.previous_hash == [0; 32]
-        {
-            hash = self.append(db, block, true).unwrap();
-        } else {
-            hash = self.append(db, block, false).unwrap();
-        }
-        log::info!(
-            "{} {} {}",
-            "Accepted".green(),
-            self.get_height().to_string().yellow(),
-            hex::encode(hash)
-        );
     }
     pub fn append(
         &mut self,

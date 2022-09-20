@@ -30,4 +30,3 @@ pub type CBMT = ExCBMT<[u8; 32], Hasher>;
 pub type EncryptedWallet = ([u8; 32], [u8; 12], Vec<u8>);
 pub type Balance = HashMap<PublicKeyBytes, Amount>;
 pub type StakersHistory = HashMap<Hash, PublicKeyBytes>;
-// pub type StakerHistory = Vec<Staker>;

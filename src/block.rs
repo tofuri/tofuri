@@ -1,6 +1,6 @@
 use crate::{
     blockchain::Blockchain,
-    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN},
+    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN, MIN_STAKE},
     db,
     stake::Stake,
     transaction::Transaction,
@@ -147,21 +147,59 @@ impl Block {
     pub fn reward(&self, balance_staked: types::Amount) -> types::Amount {
         self.fees() + util::reward(balance_staked)
     }
-    pub fn has_valid_transactions(&self) -> bool {
+    // pub fn has_valid_transactions(&self) -> bool {
+    // for transaction in self.transactions.iter() {
+    // if !transaction.is_valid() {
+    // return false;
+    // }
+    // }
+    // true
+    // }
+    pub fn has_valid_transactions(
+        &self,
+        blockchain: &Blockchain,
+        db: &DBWithThreadMode<SingleThreaded>,
+    ) -> Result<(), Box<dyn Error>> {
         for transaction in self.transactions.iter() {
-            if !transaction.is_valid() {
-                return false;
-            }
+            transaction.validate(blockchain, db, self.timestamp)?;
         }
-        true
+        let public_key_inputs = self
+            .transactions
+            .iter()
+            .map(|t| t.public_key_input)
+            .collect::<Vec<types::PublicKeyBytes>>();
+        if (1..public_key_inputs.len())
+            .any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1]))
+        {
+            return Err("block includes multiple transactions from same input".into());
+        }
+        Ok(())
     }
-    pub fn has_valid_stakes(&self) -> bool {
+    // pub fn has_valid_stakes(&self) -> bool {
+    // for stake in self.stakes.iter() {
+    // if !stake.is_valid() {
+    // return false;
+    // }
+    // }
+    // true
+    // }
+    pub fn has_valid_stakes(
+        &self,
+        blockchain: &Blockchain,
+        db: &DBWithThreadMode<SingleThreaded>,
+    ) -> Result<(), Box<dyn Error>> {
         for stake in self.stakes.iter() {
-            if !stake.is_valid() {
-                return false;
-            }
+            stake.validate(blockchain, db, self.timestamp)?;
         }
-        true
+        let public_keys = self
+            .stakes
+            .iter()
+            .map(|s| s.public_key)
+            .collect::<Vec<types::PublicKeyBytes>>();
+        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
+            return Err("block includes multiple stakes from same public_key".into());
+        }
+        Ok(())
     }
     pub fn validate(
         &self,
@@ -175,10 +213,17 @@ impl Block {
         {
             return Err("block already pending".into());
         }
-        if !self.has_valid_transactions() {
+        if !self.verify().is_ok() {
+            return Err("block has invalid signature".into());
+        }
+        if !self.has_valid_transactions(blockchain, db).is_ok() {
             return Err("block has invalid transaction(s)".into());
         }
-        if !self.has_valid_stakes() {
+        if blockchain.get_stakers().is_empty() || self.previous_hash == [0; 32] {
+            if !self.validate_mint().is_ok() {
+                return Err("block has invalid mint stake".into());
+            }
+        } else if !self.has_valid_stakes(blockchain, db).is_ok() {
             return Err("block has invalid stake(s)".into());
         }
         if self.timestamp > util::timestamp() {
@@ -201,6 +246,34 @@ impl Block {
             && self.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
         {
             return Err("block created too late".into());
+        }
+        Ok(())
+    }
+    pub fn validate_mint(&self) -> Result<(), Box<dyn Error>> {
+        if self.stakes.len() != 1 {
+            return Err("only allowed to mint 1 stake".into());
+        }
+        let stake = self.stakes.get(0).unwrap();
+        if !stake.verify().is_ok() {
+            return Err("mint stake has invalid signature".into());
+        }
+        if stake.amount == 0 {
+            return Err("mint stake has invalid amount".into());
+        }
+        if stake.timestamp > util::timestamp() {
+            return Err("mint stake has invalid timestamp (mint stake is from the future)".into());
+        }
+        if stake.timestamp < self.timestamp {
+            return Err("mint stake too old".into());
+        }
+        if !stake.deposit {
+            return Err("mint stake must be deposit".into());
+        }
+        if stake.amount != MIN_STAKE {
+            return Err("mint stake invalid amount".into());
+        }
+        if stake.fee != 0 {
+            return Err("mint stake invalid fee".into());
         }
         Ok(())
     }

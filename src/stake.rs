@@ -47,9 +47,9 @@ impl Stake {
         let signature = types::Signature::from_bytes(&self.signature)?;
         Ok(public_key.verify_strict(&self.hash(), &signature)?)
     }
-    pub fn is_valid(&self) -> bool {
-        self.verify().is_ok() && self.timestamp <= util::timestamp() && self.amount != 0
-    }
+    // pub fn is_valid(&self) -> bool {
+    // self.verify().is_ok() && self.timestamp <= util::timestamp() && self.amount != 0
+    // }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(
             db::stakes(db),
@@ -72,8 +72,14 @@ impl Stake {
         db: &DBWithThreadMode<SingleThreaded>,
         timestamp: types::Timestamp,
     ) -> Result<(), Box<dyn Error>> {
-        if !self.is_valid() {
-            return Err("stake not valid".into());
+        if !self.verify().is_ok() {
+            return Err("stake has invalid signature".into());
+        }
+        if self.amount == 0 {
+            return Err("stake has invalid amount".into());
+        }
+        if self.timestamp > util::timestamp() {
+            return Err("stake has invalid timestamp (stake is from the future)".into());
         }
         if Stake::get(db, &self.hash()).is_ok() {
             return Err("stake already in chain".into());

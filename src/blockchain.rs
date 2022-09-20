@@ -87,66 +87,6 @@ impl Blockchain {
         hashes.reverse();
         Ok(hashes)
     }
-    fn validate_mint_stake(&self, block: &Block) -> Result<(), Box<dyn Error>> {
-        if block.stakes.len() != 1 {
-            return Err("only allowed to mint 1 stake".into());
-        }
-        let stake = block.stakes.get(0).unwrap();
-        if !stake.is_valid() {
-            return Err("mint stake not valid".into());
-        }
-        if stake.timestamp < block.timestamp {
-            return Err("mint stake too old".into());
-        }
-        if !stake.deposit {
-            return Err("mint stake must be deposit".into());
-        }
-        if stake.amount != MIN_STAKE {
-            return Err("mint stake invalid amount".into());
-        }
-        if stake.fee != 0 {
-            return Err("mint stake invalid fee".into());
-        }
-        Ok(())
-    }
-    fn validate_transactions(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        block: &Block,
-    ) -> Result<(), Box<dyn Error>> {
-        for transaction in block.transactions.iter() {
-            transaction.validate(self, db, block.timestamp)?;
-        }
-        let public_key_inputs = block
-            .transactions
-            .iter()
-            .map(|t| t.public_key_input)
-            .collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_key_inputs.len())
-            .any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1]))
-        {
-            return Err("block includes multiple transactions from same input".into());
-        }
-        Ok(())
-    }
-    fn validate_stakes(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        block: &Block,
-    ) -> Result<(), Box<dyn Error>> {
-        for stake in block.stakes.iter() {
-            stake.validate(self, db, block.timestamp)?;
-        }
-        let public_keys = block
-            .stakes
-            .iter()
-            .map(|s| s.public_key)
-            .collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
-            return Err("block includes multiple stakes from same public_key".into());
-        }
-        Ok(())
-    }
     pub fn try_add_transaction(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -298,12 +238,6 @@ impl Blockchain {
         block: Block,
     ) -> Result<(), Box<dyn Error>> {
         block.validate(self, db)?;
-        self.validate_transactions(db, &block)?;
-        if self.stakers.is_empty() || block.previous_hash == [0; 32] {
-            self.validate_mint_stake(&block)?;
-        } else {
-            self.validate_stakes(db, &block)?;
-        }
         self.pending_blocks.push(block);
         Ok(())
     }

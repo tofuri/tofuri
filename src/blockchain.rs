@@ -138,7 +138,6 @@ impl Blockchain {
         {
             return Err("transaction already pending".into());
         }
-        transaction.validate(self, db, self.latest_block.timestamp)?;
         if let Some(index) = self
             .pending_transactions
             .iter()
@@ -151,6 +150,7 @@ impl Blockchain {
             }
             self.pending_transactions.remove(index);
         }
+        transaction.validate(self, db, self.latest_block.timestamp)?;
         self.pending_transactions.push(transaction);
         self.limit_pending_transactions();
         Ok(())
@@ -167,7 +167,6 @@ impl Blockchain {
         {
             return Err("stake already pending".into());
         }
-        stake.validate(self, db, self.latest_block.timestamp)?;
         if let Some(index) = self
             .pending_stakes
             .iter()
@@ -178,6 +177,7 @@ impl Blockchain {
             }
             self.pending_stakes.remove(index);
         }
+        stake.validate(self, db, self.latest_block.timestamp)?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
         Ok(())

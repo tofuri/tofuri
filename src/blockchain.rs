@@ -52,6 +52,47 @@ impl Blockchain {
             stakers_history: HashMap::new(),
         }
     }
+    pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
+        self.hashes.iter().position(|&x| x == hash)
+    }
+    fn hashes(
+        db: &DBWithThreadMode<SingleThreaded>,
+        previous_hash: types::Hash,
+    ) -> Result<Vec<types::Hash>, Box<dyn Error>> {
+        let mut hashes = vec![];
+        let mut previous_hash = previous_hash;
+        let mut closure = || -> Result<Option<()>, Box<dyn Error>> {
+            match Block::get(db, &previous_hash) {
+                Ok(block) => {
+                    let hash = block.hash();
+                    if hash != previous_hash {
+                        log::error!(
+                            "{} {} != {}",
+                            "Detected broken chain!".red(),
+                            hex::encode(hash),
+                            hex::encode(previous_hash)
+                        );
+                        log::warn!("{}", "Pruning broken chain".yellow());
+                        hashes.clear();
+                        Blockchain::put_latest_block_hash(db, previous_hash)?;
+                    }
+                    hashes.push(hash);
+                    previous_hash = block.previous_hash;
+                    Ok(Some(()))
+                }
+                Err(err) => {
+                    if err.to_string() == "block not found" {
+                        Ok(None)
+                    } else {
+                        Err(err)
+                    }
+                }
+            }
+        };
+        while (closure()?).is_some() {}
+        hashes.reverse();
+        Ok(hashes)
+    }
     fn validate_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -194,7 +235,24 @@ impl Blockchain {
         }
         Ok(())
     }
-    // now only supports 1 transaction per block
+    fn validate_stakes(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        block: &Block,
+    ) -> Result<(), Box<dyn Error>> {
+        for stake in block.stakes.iter() {
+            self.validate_stake(db, stake, block.timestamp)?;
+        }
+        let public_keys = block
+            .stakes
+            .iter()
+            .map(|s| s.public_key)
+            .collect::<Vec<types::PublicKeyBytes>>();
+        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
+            return Err("block includes multiple stakes from same public_key".into());
+        }
+        Ok(())
+    }
     pub fn try_add_transaction(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -224,25 +282,6 @@ impl Blockchain {
         self.limit_pending_transactions();
         Ok(())
     }
-    fn validate_stakes(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        block: &Block,
-    ) -> Result<(), Box<dyn Error>> {
-        for stake in block.stakes.iter() {
-            self.validate_stake(db, stake, block.timestamp)?;
-        }
-        let public_keys = block
-            .stakes
-            .iter()
-            .map(|s| s.public_key)
-            .collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
-            return Err("block includes multiple stakes from same public_key".into());
-        }
-        Ok(())
-    }
-    // now only supports 1 stake per block
     pub fn try_add_stake(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -269,47 +308,6 @@ impl Blockchain {
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
         Ok(())
-    }
-    pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
-        self.hashes.iter().position(|&x| x == hash)
-    }
-    fn hashes(
-        db: &DBWithThreadMode<SingleThreaded>,
-        previous_hash: types::Hash,
-    ) -> Result<Vec<types::Hash>, Box<dyn Error>> {
-        let mut hashes = vec![];
-        let mut previous_hash = previous_hash;
-        let mut closure = || -> Result<Option<()>, Box<dyn Error>> {
-            match Block::get(db, &previous_hash) {
-                Ok(block) => {
-                    let hash = block.hash();
-                    if hash != previous_hash {
-                        log::error!(
-                            "{} {} != {}",
-                            "Detected broken chain!".red(),
-                            hex::encode(hash),
-                            hex::encode(previous_hash)
-                        );
-                        log::warn!("{}", "Pruning broken chain".yellow());
-                        hashes.clear();
-                        Blockchain::put_latest_block_hash(db, previous_hash)?;
-                    }
-                    hashes.push(hash);
-                    previous_hash = block.previous_hash;
-                    Ok(Some(()))
-                }
-                Err(err) => {
-                    if err.to_string() == "block not found" {
-                        Ok(None)
-                    } else {
-                        Err(err)
-                    }
-                }
-            }
-        };
-        while (closure()?).is_some() {}
-        hashes.reverse();
-        Ok(hashes)
     }
     pub fn latest_block(
         db: &DBWithThreadMode<SingleThreaded>,

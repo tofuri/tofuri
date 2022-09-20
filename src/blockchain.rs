@@ -2,7 +2,7 @@ use crate::{
     address,
     block::Block,
     constants::{
-        BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE,
+        BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TRANSACTIONS_LIMIT, MIN_STAKE,
         PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     db,
@@ -87,40 +87,6 @@ impl Blockchain {
         hashes.reverse();
         Ok(hashes)
     }
-    fn validate_stake(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        stake: &Stake,
-        timestamp: types::Timestamp,
-    ) -> Result<(), Box<dyn Error>> {
-        if !stake.is_valid() {
-            return Err("stake not valid".into());
-        }
-        if Stake::get(db, &stake.hash()).is_ok() {
-            return Err("stake already in chain".into());
-        }
-        let balance = self.get_balance(&stake.public_key);
-        let balance_staked = self.get_balance_staked(&stake.public_key);
-        if stake.deposit {
-            if stake.amount + stake.fee > balance {
-                return Err("stake deposit too expensive".into());
-            }
-            if stake.amount + balance_staked > MAX_STAKE {
-                return Err("stake deposit exceeds MAX_STAKE".into());
-            }
-        } else {
-            if stake.fee > balance {
-                return Err("stake withdraw insufficient funds".into());
-            }
-            if stake.amount > balance_staked {
-                return Err("stake withdraw too expensive".into());
-            }
-        }
-        if stake.timestamp < timestamp {
-            return Err("stake too old".into());
-        }
-        Ok(())
-    }
     fn validate_mint_stake(&self, block: &Block) -> Result<(), Box<dyn Error>> {
         if block.stakes.len() != 1 {
             return Err("only allowed to mint 1 stake".into());
@@ -169,7 +135,7 @@ impl Blockchain {
         block: &Block,
     ) -> Result<(), Box<dyn Error>> {
         for stake in block.stakes.iter() {
-            self.validate_stake(db, stake, block.timestamp)?;
+            stake.validate(self, db, block.timestamp)?;
         }
         let public_keys = block
             .stakes
@@ -194,7 +160,6 @@ impl Blockchain {
             return Err("transaction already pending".into());
         }
         transaction.validate(self, db, self.latest_block.timestamp)?;
-        // self.validate_transaction(db, &transaction, self.latest_block.timestamp)?;
         if let Some(index) = self
             .pending_transactions
             .iter()
@@ -223,7 +188,7 @@ impl Blockchain {
         {
             return Err("stake already pending".into());
         }
-        self.validate_stake(db, &stake, self.latest_block.timestamp)?;
+        stake.validate(self, db, self.latest_block.timestamp)?;
         if let Some(index) = self
             .pending_stakes
             .iter()

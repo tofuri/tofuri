@@ -1,4 +1,4 @@
-use crate::{amount, db, types, util};
+use crate::{amount, blockchain::Blockchain, constants::MAX_STAKE, db, types, util};
 use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
@@ -65,6 +65,40 @@ impl Stake {
         let compressed: CompressedStake =
             bincode::deserialize(&db.get_cf(db::stakes(db), hash)?.ok_or("stake not found")?)?;
         Ok(Stake::from(&compressed))
+    }
+    pub fn validate(
+        &self,
+        blockchain: &Blockchain,
+        db: &DBWithThreadMode<SingleThreaded>,
+        timestamp: types::Timestamp,
+    ) -> Result<(), Box<dyn Error>> {
+        if !self.is_valid() {
+            return Err("stake not valid".into());
+        }
+        if Stake::get(db, &self.hash()).is_ok() {
+            return Err("stake already in chain".into());
+        }
+        let balance = blockchain.get_balance(&self.public_key);
+        let balance_staked = blockchain.get_balance_staked(&self.public_key);
+        if self.deposit {
+            if self.amount + self.fee > balance {
+                return Err("stake deposit too expensive".into());
+            }
+            if self.amount + balance_staked > MAX_STAKE {
+                return Err("stake deposit exceeds MAX_STAKE".into());
+            }
+        } else {
+            if self.fee > balance {
+                return Err("stake withdraw insufficient funds".into());
+            }
+            if self.amount > balance_staked {
+                return Err("stake withdraw too expensive".into());
+            }
+        }
+        if self.timestamp < timestamp {
+            return Err("stake too old".into());
+        }
+        Ok(())
     }
 }
 #[derive(Serialize, Deserialize, Debug)]

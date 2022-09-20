@@ -2,8 +2,8 @@ use crate::{
     address,
     block::Block,
     constants::{
-        BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE,
-        MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
+        BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE,
+        PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     db,
     stake::Stake,
@@ -86,41 +86,6 @@ impl Blockchain {
         while (closure()?).is_some() {}
         hashes.reverse();
         Ok(hashes)
-    }
-    fn validate_block(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        block: &Block,
-    ) -> Result<(), Box<dyn Error>> {
-        if self
-            .pending_blocks
-            .iter()
-            .any(|b| b.signature == block.signature)
-        {
-            return Err("block already pending".into());
-        }
-        if !block.is_valid() {
-            return Err("block not valid".into());
-        }
-        if block.previous_hash == [0; 32] {
-            println!("previous block was genesis")
-        } else if self.hashes.contains(&block.previous_hash) {
-            if Block::get(db, &block.hash()).is_ok() {
-                return Err("block already in db".into());
-            }
-        } else {
-            return Err("block does not extend chain".into());
-        }
-        let previous_block = Block::get(db, &block.previous_hash)?;
-        if block.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
-            return Err("block created too early".into());
-        }
-        if !self.stakers.is_empty()
-            && block.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
-        {
-            return Err("block created too late".into());
-        }
-        Ok(())
     }
     fn validate_transaction(
         &self,
@@ -387,7 +352,7 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         block: Block,
     ) -> Result<(), Box<dyn Error>> {
-        self.validate_block(db, &block)?;
+        block.validate(&self, db)?;
         self.validate_transactions(db, &block)?;
         if self.stakers.is_empty() || block.previous_hash == [0; 32] {
             self.validate_mint_stake(&block)?;

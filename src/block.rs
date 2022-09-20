@@ -1,4 +1,11 @@
-use crate::{db, stake::Stake, transaction::Transaction, types, util};
+use crate::{
+    blockchain::Blockchain,
+    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN},
+    db,
+    stake::Stake,
+    transaction::Transaction,
+    types, util,
+};
 use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
@@ -127,6 +134,19 @@ impl Block {
             stakes,
         ))
     }
+    pub fn fees(&self) -> types::Amount {
+        let mut fees = 0;
+        for transaction in self.transactions.iter() {
+            fees += transaction.fee;
+        }
+        for stake in self.stakes.iter() {
+            fees += stake.fee;
+        }
+        fees
+    }
+    pub fn reward(&self, balance_staked: types::Amount) -> types::Amount {
+        self.fees() + util::reward(balance_staked)
+    }
     pub fn has_valid_transactions(&self) -> bool {
         for transaction in self.transactions.iter() {
             if !transaction.is_valid() {
@@ -143,23 +163,46 @@ impl Block {
         }
         true
     }
-    pub fn is_valid(&self) -> bool {
-        self.has_valid_transactions()
-            && self.has_valid_stakes()
-            && self.timestamp <= util::timestamp()
-    }
-    pub fn fees(&self) -> types::Amount {
-        let mut fees = 0;
-        for transaction in self.transactions.iter() {
-            fees += transaction.fee;
+    pub fn validate(
+        &self,
+        blockchain: &Blockchain,
+        db: &DBWithThreadMode<SingleThreaded>,
+    ) -> Result<(), Box<dyn Error>> {
+        if blockchain
+            .get_pending_blocks()
+            .iter()
+            .any(|b| b.signature == self.signature)
+        {
+            return Err("block already pending".into());
         }
-        for stake in self.stakes.iter() {
-            fees += stake.fee;
+        if !self.has_valid_transactions() {
+            return Err("block has invalid transaction(s)".into());
         }
-        fees
-    }
-    pub fn reward(&self, balance_staked: types::Amount) -> types::Amount {
-        self.fees() + util::reward(balance_staked)
+        if !self.has_valid_stakes() {
+            return Err("block has invalid stake(s)".into());
+        }
+        if self.timestamp > util::timestamp() {
+            return Err("block has invalid timestamp (block is from the future)".into());
+        }
+        if self.previous_hash == [0; 32] {
+            println!("previous block was genesis")
+        } else if blockchain.get_hashes().contains(&self.previous_hash) {
+            if Block::get(db, &self.hash()).is_ok() {
+                return Err("block already in db".into());
+            }
+        } else {
+            return Err("block does not extend chain".into());
+        }
+        let previous_block = Block::get(db, &self.previous_hash)?;
+        if self.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
+            return Err("block created too early".into());
+        }
+        if !blockchain.get_stakers().is_empty()
+            && self.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
+        {
+            return Err("block created too late".into());
+        }
+        Ok(())
     }
 }
 #[derive(Serialize, Deserialize, Debug)]

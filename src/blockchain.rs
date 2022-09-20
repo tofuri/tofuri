@@ -3,7 +3,7 @@ use crate::{
     block::Block,
     constants::{
         BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TRANSACTIONS_LIMIT, MIN_STAKE,
-        PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
+        PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     db,
     stake::Stake,
@@ -124,6 +124,7 @@ impl Blockchain {
         }
         block.validate(self, db)?;
         self.pending_blocks.push(block);
+        self.limit_pending_blocks();
         Ok(())
     }
     pub fn pending_transactions_push(
@@ -453,6 +454,11 @@ impl Blockchain {
     }
     fn sort_pending_stakes(&mut self) {
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
+    }
+    fn limit_pending_blocks(&mut self) {
+        while self.pending_blocks.len() > PENDING_BLOCKS_LIMIT {
+            self.pending_blocks.remove(self.pending_blocks.len() - 1);
+        }
     }
     fn limit_pending_transactions(&mut self) {
         while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {

@@ -16,3 +16,4 @@ pub const BLOCK_TIME_MIN: usize = 2;
 pub const BLOCK_TIME_MAX: usize = 4;
 pub const EXTENSION: &str = "pea";
 pub const AMOUNT_BYTES: usize = 4;
+pub const PENDING_BLOCKS_LIMIT: usize = 10;

@@ -237,7 +237,9 @@ impl Blockchain {
             println!("block didn't have a staker because network was down");
         }
         let hash;
-        if block.previous_hash == self.latest_block.hash() {
+        if block.previous_hash == self.latest_block.hash()
+            || self.latest_block.previous_hash == [0; 32]
+        {
             hash = self.append(db, block, true).unwrap();
         } else {
             hash = self.append(db, block, false).unwrap();
@@ -273,12 +275,11 @@ impl Blockchain {
             self.pending_transactions.clear();
             self.pending_stakes.clear();
         } else {
-            println!("{}", hex::encode(block.previous_hash));
-            println!("{:x?}", self.hashes);
-            if block.previous_hash != [0; 32]
-                && self.height(block.previous_hash).unwrap() + 1 > self.get_height()
-            {
-                self.reload(db);
+            if let Some(height) = self.height(block.previous_hash) {
+                if height + 1 > self.get_height() {
+                    log::warn!("Fork detected! Reloading...");
+                    self.reload(db);
+                }
             }
         }
         Ok(hash)

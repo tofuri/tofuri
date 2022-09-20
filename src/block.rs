@@ -152,36 +152,6 @@ impl Block {
         blockchain: &Blockchain,
         db: &DBWithThreadMode<SingleThreaded>,
     ) -> Result<(), Box<dyn Error>> {
-        if !self.verify().is_ok() {
-            return Err("block has invalid signature".into());
-        }
-        if self.timestamp > util::timestamp() {
-            return Err("block has invalid timestamp (block is from the future)".into());
-        }
-        if self.previous_hash == [0; 32] {
-            println!("previous block was genesis")
-        } else if blockchain.get_hashes().contains(&self.previous_hash) {
-            if Block::get(db, &self.hash()).is_ok() {
-                return Err("block already in db".into());
-            }
-        } else {
-            return Err("block does not extend chain".into());
-        }
-        let previous_block = Block::get(db, &self.previous_hash)?;
-        if self.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
-            return Err("block created too early".into());
-        }
-        if !blockchain.get_stakers().is_empty()
-            && self.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
-        {
-            return Err("block created too late".into());
-        }
-        for transaction in self.transactions.iter() {
-            transaction.validate(blockchain, db, self.timestamp)?;
-        }
-        for stake in self.stakes.iter() {
-            stake.validate(blockchain, db, self.timestamp)?;
-        }
         let public_key_inputs = self
             .transactions
             .iter()
@@ -200,7 +170,31 @@ impl Block {
         if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
             return Err("block includes multiple stakes from same public_key".into());
         }
-        if blockchain.get_stakers().is_empty() || self.previous_hash == [0; 32] {
+        if !self.verify().is_ok() {
+            return Err("block has invalid signature".into());
+        }
+        if self.timestamp > util::timestamp() {
+            return Err("block has invalid timestamp (block is from the future)".into());
+        }
+        if self.previous_hash == [0; 32] {
+            log::info!("previous block was genesis")
+        } else if blockchain.get_hashes().contains(&self.previous_hash) {
+            if Block::get(db, &self.hash()).is_ok() {
+                return Err("block already in db".into());
+            }
+            let previous_block = Block::get(db, &self.previous_hash)?;
+            if self.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
+                return Err("block created too early".into());
+            }
+            if !blockchain.get_stakers().is_empty()
+                && self.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
+            {
+                return Err("block created too late".into());
+            }
+        } else {
+            return Err("block does not extend chain".into());
+        }
+        if blockchain.get_stakers().is_empty() {
             if self.stakes.len() != 1 {
                 return Err("only allowed to mint 1 stake".into());
             }
@@ -228,6 +222,13 @@ impl Block {
             if stake.fee != 0 {
                 return Err("mint stake invalid fee".into());
             }
+        } else {
+            for stake in self.stakes.iter() {
+                stake.validate(blockchain, db, self.timestamp)?;
+            }
+        }
+        for transaction in self.transactions.iter() {
+            transaction.validate(blockchain, db, self.timestamp)?;
         }
         Ok(())
     }

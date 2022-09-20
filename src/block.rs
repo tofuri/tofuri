@@ -147,15 +147,7 @@ impl Block {
     pub fn reward(&self, balance_staked: types::Amount) -> types::Amount {
         self.fees() + util::reward(balance_staked)
     }
-    // pub fn has_valid_transactions(&self) -> bool {
-    // for transaction in self.transactions.iter() {
-    // if !transaction.is_valid() {
-    // return false;
-    // }
-    // }
-    // true
-    // }
-    pub fn has_valid_transactions(
+    pub fn validate_transactions(
         &self,
         blockchain: &Blockchain,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -175,15 +167,7 @@ impl Block {
         }
         Ok(())
     }
-    // pub fn has_valid_stakes(&self) -> bool {
-    // for stake in self.stakes.iter() {
-    // if !stake.is_valid() {
-    // return false;
-    // }
-    // }
-    // true
-    // }
-    pub fn has_valid_stakes(
+    pub fn validate_stakes(
         &self,
         blockchain: &Blockchain,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -216,14 +200,14 @@ impl Block {
         if !self.verify().is_ok() {
             return Err("block has invalid signature".into());
         }
-        if !self.has_valid_transactions(blockchain, db).is_ok() {
+        if !self.validate_transactions(blockchain, db).is_ok() {
             return Err("block has invalid transaction(s)".into());
         }
         if blockchain.get_stakers().is_empty() || self.previous_hash == [0; 32] {
             if !self.validate_mint().is_ok() {
                 return Err("block has invalid mint stake".into());
             }
-        } else if !self.has_valid_stakes(blockchain, db).is_ok() {
+        } else if !self.validate_stakes(blockchain, db).is_ok() {
             return Err("block has invalid stake(s)".into());
         }
         if self.timestamp > util::timestamp() {

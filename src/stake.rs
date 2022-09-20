@@ -47,9 +47,6 @@ impl Stake {
         let signature = types::Signature::from_bytes(&self.signature)?;
         Ok(public_key.verify_strict(&self.hash(), &signature)?)
     }
-    // pub fn is_valid(&self) -> bool {
-    // self.verify().is_ok() && self.timestamp <= util::timestamp() && self.amount != 0
-    // }
     pub fn put(&self, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(
             db::stakes(db),

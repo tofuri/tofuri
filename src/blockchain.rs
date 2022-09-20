@@ -323,6 +323,7 @@ impl Blockchain {
             previous_block_timestamp = block.timestamp;
         }
         self.hashes = hashes;
+        self.penalty_reload(&util::timestamp(), &self.latest_block.timestamp.clone());
     }
     pub fn get_balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
         match self.balance.get(public_key) {

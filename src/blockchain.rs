@@ -159,23 +159,6 @@ impl Blockchain {
         db.put(db::key(&db::Key::LatestBlockHash), hash)?;
         Ok(())
     }
-    fn sort_pending_transactions(&mut self) {
-        self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
-    }
-    fn limit_pending_transactions(&mut self) {
-        while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
-            self.pending_transactions
-                .remove(self.pending_transactions.len() - 1);
-        }
-    }
-    fn sort_pending_stakes(&mut self) {
-        self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
-    }
-    fn limit_pending_stakes(&mut self) {
-        while self.pending_stakes.len() > PENDING_STAKES_LIMIT {
-            self.pending_stakes.remove(self.pending_stakes.len() - 1);
-        }
-    }
     fn penalty(&mut self) {
         let public_key = self.stakers[0].0;
         self.balance_staked.remove(&public_key);
@@ -459,5 +442,22 @@ impl Blockchain {
         }
         self.sum_stakes_now = sum;
         self.sum_stakes_all_time += sum;
+    }
+    fn sort_pending_transactions(&mut self) {
+        self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
+    }
+    fn sort_pending_stakes(&mut self) {
+        self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
+    }
+    fn limit_pending_transactions(&mut self) {
+        while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
+            self.pending_transactions
+                .remove(self.pending_transactions.len() - 1);
+        }
+    }
+    fn limit_pending_stakes(&mut self) {
+        while self.pending_stakes.len() > PENDING_STAKES_LIMIT {
+            self.pending_stakes.remove(self.pending_stakes.len() - 1);
+        }
     }
 }

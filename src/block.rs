@@ -152,13 +152,6 @@ impl Block {
         blockchain: &Blockchain,
         db: &DBWithThreadMode<SingleThreaded>,
     ) -> Result<(), Box<dyn Error>> {
-        if blockchain
-            .get_pending_blocks()
-            .iter()
-            .any(|b| b.signature == self.signature)
-        {
-            return Err("block already pending".into());
-        }
         if !self.verify().is_ok() {
             return Err("block has invalid signature".into());
         }

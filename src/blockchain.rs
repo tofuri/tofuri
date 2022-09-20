@@ -115,6 +115,13 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         block: Block,
     ) -> Result<(), Box<dyn Error>> {
+        if self
+            .pending_blocks
+            .iter()
+            .any(|b| b.signature == block.signature)
+        {
+            return Err("block already pending".into());
+        }
         block.validate(self, db)?;
         self.pending_blocks.push(block);
         Ok(())

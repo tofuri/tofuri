@@ -87,62 +87,6 @@ impl Blockchain {
         hashes.reverse();
         Ok(hashes)
     }
-    pub fn try_add_transaction(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        transaction: Transaction,
-    ) -> Result<(), Box<dyn Error>> {
-        if self
-            .pending_transactions
-            .iter()
-            .any(|x| x.signature == transaction.signature)
-        {
-            return Err("transaction already pending".into());
-        }
-        transaction.validate(self, db, self.latest_block.timestamp)?;
-        if let Some(index) = self
-            .pending_transactions
-            .iter()
-            .position(|s| s.public_key_input == transaction.public_key_input)
-        {
-            if transaction.fee <= self.pending_transactions[index].fee {
-                return Err(
-                    "transaction fee too low to replace previous pending transaction".into(),
-                );
-            }
-            self.pending_transactions.remove(index);
-        }
-        self.pending_transactions.push(transaction);
-        self.limit_pending_transactions();
-        Ok(())
-    }
-    pub fn try_add_stake(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        stake: Stake,
-    ) -> Result<(), Box<dyn Error>> {
-        if self
-            .pending_stakes
-            .iter()
-            .any(|x| x.signature == stake.signature)
-        {
-            return Err("stake already pending".into());
-        }
-        stake.validate(self, db, self.latest_block.timestamp)?;
-        if let Some(index) = self
-            .pending_stakes
-            .iter()
-            .position(|s| s.public_key == stake.public_key)
-        {
-            if stake.fee <= self.pending_stakes[index].fee {
-                return Err("stake fee too low to replace previous pending stake".into());
-            }
-            self.pending_stakes.remove(index);
-        }
-        self.pending_stakes.push(stake);
-        self.limit_pending_stakes();
-        Ok(())
-    }
     fn penalty(&mut self) {
         let public_key = self.stakers[0].0;
         self.balance_staked.remove(&public_key);
@@ -206,6 +150,62 @@ impl Blockchain {
     ) -> Result<(), Box<dyn Error>> {
         block.validate(self, db)?;
         self.pending_blocks.push(block);
+        Ok(())
+    }
+    pub fn pending_transactions_push(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        transaction: Transaction,
+    ) -> Result<(), Box<dyn Error>> {
+        if self
+            .pending_transactions
+            .iter()
+            .any(|x| x.signature == transaction.signature)
+        {
+            return Err("transaction already pending".into());
+        }
+        transaction.validate(self, db, self.latest_block.timestamp)?;
+        if let Some(index) = self
+            .pending_transactions
+            .iter()
+            .position(|s| s.public_key_input == transaction.public_key_input)
+        {
+            if transaction.fee <= self.pending_transactions[index].fee {
+                return Err(
+                    "transaction fee too low to replace previous pending transaction".into(),
+                );
+            }
+            self.pending_transactions.remove(index);
+        }
+        self.pending_transactions.push(transaction);
+        self.limit_pending_transactions();
+        Ok(())
+    }
+    pub fn pending_stakes_push(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        stake: Stake,
+    ) -> Result<(), Box<dyn Error>> {
+        if self
+            .pending_stakes
+            .iter()
+            .any(|x| x.signature == stake.signature)
+        {
+            return Err("stake already pending".into());
+        }
+        stake.validate(self, db, self.latest_block.timestamp)?;
+        if let Some(index) = self
+            .pending_stakes
+            .iter()
+            .position(|s| s.public_key == stake.public_key)
+        {
+            if stake.fee <= self.pending_stakes[index].fee {
+                return Err("stake fee too low to replace previous pending stake".into());
+            }
+            self.pending_stakes.remove(index);
+        }
+        self.pending_stakes.push(stake);
+        self.limit_pending_stakes();
         Ok(())
     }
     pub fn try_append_loop(&mut self, db: &DBWithThreadMode<SingleThreaded>) {

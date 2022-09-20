@@ -525,7 +525,7 @@ async fn handle_post_json_transaction(
     let status = match behaviour
         .validator
         .blockchain
-        .try_add_transaction(&behaviour.validator.db, Transaction::from(&compressed))
+        .pending_transactions_push(&behaviour.validator.db, Transaction::from(&compressed))
     {
         Ok(()) => "success".to_string(),
         Err(err) => {
@@ -565,7 +565,7 @@ async fn handle_post_json_stake(
     let status = match behaviour
         .validator
         .blockchain
-        .try_add_stake(&behaviour.validator.db, Stake::from(&compressed))
+        .pending_stakes_push(&behaviour.validator.db, Stake::from(&compressed))
     {
         Ok(()) => "success".to_string(),
         Err(err) => {

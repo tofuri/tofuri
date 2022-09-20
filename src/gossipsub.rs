@@ -19,14 +19,14 @@ pub fn handle(
             behaviour
                 .validator
                 .blockchain
-                .try_add_stake(&behaviour.validator.db, stake)?;
+                .pending_stakes_push(&behaviour.validator.db, stake)?;
         }
         "transaction" => {
             let transaction: Transaction = bincode::deserialize(&message.data)?;
             behaviour
                 .validator
                 .blockchain
-                .try_add_transaction(&behaviour.validator.db, transaction)?;
+                .pending_transactions_push(&behaviour.validator.db, transaction)?;
         }
         "ip" => {}
         _ => {}

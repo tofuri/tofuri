@@ -110,39 +110,6 @@ impl Blockchain {
             address::encode(&block.public_key).green()
         );
     }
-    pub fn forge_block(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        keypair: &types::Keypair,
-    ) -> Result<Block, Box<dyn Error>> {
-        let mut block;
-        if let Some(hash) = self.hashes.last() {
-            block = Block::new(*hash);
-        } else {
-            block = Block::new([0; 32]);
-        }
-        self.sort_pending_transactions();
-        for transaction in self.pending_transactions.iter() {
-            if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
-                block.transactions.push(transaction.clone());
-            }
-        }
-        self.sort_pending_stakes();
-        for stake in self.pending_stakes.iter() {
-            if block.stakes.len() < BLOCK_STAKES_LIMIT {
-                block.stakes.push(stake.clone());
-            }
-        }
-        block.sign(keypair);
-        let hash = self.append(db, block.clone(), true).unwrap();
-        log::info!(
-            "{} {} {}",
-            "Forged".green(),
-            self.get_height().to_string().yellow(),
-            hex::encode(hash)
-        );
-        Ok(block)
-    }
     pub fn pending_blocks_push(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -207,6 +174,39 @@ impl Blockchain {
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
         Ok(())
+    }
+    pub fn forge_block(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        keypair: &types::Keypair,
+    ) -> Result<Block, Box<dyn Error>> {
+        let mut block;
+        if let Some(hash) = self.hashes.last() {
+            block = Block::new(*hash);
+        } else {
+            block = Block::new([0; 32]);
+        }
+        self.sort_pending_transactions();
+        for transaction in self.pending_transactions.iter() {
+            if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
+                block.transactions.push(transaction.clone());
+            }
+        }
+        self.sort_pending_stakes();
+        for stake in self.pending_stakes.iter() {
+            if block.stakes.len() < BLOCK_STAKES_LIMIT {
+                block.stakes.push(stake.clone());
+            }
+        }
+        block.sign(keypair);
+        let hash = self.append(db, block.clone(), true).unwrap();
+        log::info!(
+            "{} {} {}",
+            "Forged".green(),
+            self.get_height().to_string().yellow(),
+            hex::encode(hash)
+        );
+        Ok(block)
     }
     pub fn try_append_loop(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         for block in self.pending_blocks.clone() {

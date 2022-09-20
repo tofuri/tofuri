@@ -1,4 +1,4 @@
-use crate::{amount, db, types, util};
+use crate::{amount, blockchain::Blockchain, db, types, util};
 use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
@@ -77,6 +77,27 @@ impl Transaction {
                 .ok_or("transaction not found")?,
         )?;
         Ok(Transaction::from(&compressed))
+    }
+    pub fn validate(
+        &self,
+        blockchain: &Blockchain,
+        db: &DBWithThreadMode<SingleThreaded>,
+        timestamp: types::Timestamp,
+    ) -> Result<(), Box<dyn Error>> {
+        if !self.is_valid() {
+            return Err("transaction not valid".into());
+        }
+        if Transaction::get(db, &self.hash()).is_ok() {
+            return Err("transaction already in chain".into());
+        }
+        let balance = blockchain.get_balance(&self.public_key_input);
+        if self.amount + self.fee > balance {
+            return Err("transaction too expensive".into());
+        }
+        if self.timestamp < timestamp {
+            return Err("transaction too old".into());
+        }
+        Ok(())
     }
 }
 #[derive(Serialize, Deserialize, Debug)]

@@ -87,27 +87,6 @@ impl Blockchain {
         hashes.reverse();
         Ok(hashes)
     }
-    fn validate_transaction(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        transaction: &Transaction,
-        timestamp: types::Timestamp,
-    ) -> Result<(), Box<dyn Error>> {
-        if !transaction.is_valid() {
-            return Err("transaction not valid".into());
-        }
-        if Transaction::get(db, &transaction.hash()).is_ok() {
-            return Err("transaction already in chain".into());
-        }
-        let balance = self.get_balance(&transaction.public_key_input);
-        if transaction.amount + transaction.fee > balance {
-            return Err("transaction too expensive".into());
-        }
-        if transaction.timestamp < timestamp {
-            return Err("transaction too old".into());
-        }
-        Ok(())
-    }
     fn validate_stake(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -170,7 +149,7 @@ impl Blockchain {
         block: &Block,
     ) -> Result<(), Box<dyn Error>> {
         for transaction in block.transactions.iter() {
-            self.validate_transaction(db, transaction, block.timestamp)?;
+            transaction.validate(self, db, block.timestamp)?;
         }
         let public_key_inputs = block
             .transactions
@@ -214,7 +193,8 @@ impl Blockchain {
         {
             return Err("transaction already pending".into());
         }
-        self.validate_transaction(db, &transaction, self.latest_block.timestamp)?;
+        transaction.validate(self, db, self.latest_block.timestamp)?;
+        // self.validate_transaction(db, &transaction, self.latest_block.timestamp)?;
         if let Some(index) = self
             .pending_transactions
             .iter()
@@ -352,7 +332,7 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         block: Block,
     ) -> Result<(), Box<dyn Error>> {
-        block.validate(&self, db)?;
+        block.validate(self, db)?;
         self.validate_transactions(db, &block)?;
         if self.stakers.is_empty() || block.previous_hash == [0; 32] {
             self.validate_mint_stake(&block)?;

@@ -6,32 +6,6 @@ pub struct Tree {
     branches: Vec<Branch>,
     hashes: HashMap<types::Hash, types::Hash>,
 }
-impl fmt::Debug for Tree {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        #![allow(dead_code)]
-        #[derive(Debug)]
-        struct Tree {
-            branches: Vec<(String, types::Height)>,
-            hashes: HashMap<String, String>,
-        }
-        write!(
-            f,
-            "{:?}",
-            Tree {
-                branches: self
-                    .branches
-                    .iter()
-                    .map(|(hash, height)| (hex::encode(hash), *height))
-                    .collect(),
-                hashes: self
-                    .hashes
-                    .iter()
-                    .map(|(hash, previous_hash)| (hex::encode(hash), hex::encode(previous_hash)))
-                    .collect(),
-            }
-        )
-    }
-}
 impl Tree {
     pub fn new() -> Tree {
         Tree {
@@ -80,5 +54,31 @@ impl Tree {
             };
         }
         height
+    }
+}
+impl fmt::Debug for Tree {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #![allow(dead_code)]
+        #[derive(Debug)]
+        struct Tree {
+            branches: Vec<(String, types::Height)>,
+            hashes: HashMap<String, String>,
+        }
+        write!(
+            f,
+            "{:?}",
+            Tree {
+                branches: self
+                    .branches
+                    .iter()
+                    .map(|(hash, height)| (hex::encode(hash), *height))
+                    .collect(),
+                hashes: self
+                    .hashes
+                    .iter()
+                    .map(|(hash, previous_hash)| (hex::encode(hash), hex::encode(previous_hash)))
+                    .collect(),
+            }
+        )
     }
 }

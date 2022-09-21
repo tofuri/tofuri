@@ -283,7 +283,7 @@ impl Blockchain {
         block.put(&self.db)?;
         let hash = block.hash();
         if latest {
-            Blockchain::set_latest_block_hash(&self.db, hash)?;
+            // self.set_latest_block();
             self.hashes.push(hash);
             if let Some(stake) = block.stakes.first() {
                 if stake.fee == 0 {
@@ -313,7 +313,6 @@ impl Blockchain {
         self.balance.clear();
         self.balance_staked.clear();
         self.stakers_history.clear();
-        self.set_latest_block().unwrap();
         self.tree.reload(&self.db);
         if let Some(main) = self.tree.main() {
             info!(
@@ -323,6 +322,7 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
+        self.set_latest_block();
         let hashes = self.tree.get_main_hashes();
         let mut previous_block_timestamp = match hashes.first() {
             Some(hash) => Block::get(&self.db, hash).unwrap().timestamp - 1,
@@ -553,18 +553,13 @@ impl Blockchain {
         self.sum_stakes_now = sum;
         self.sum_stakes_all_time += sum;
     }
-    fn set_latest_block(&mut self) -> Result<(), Box<dyn Error>> {
-        if let Some(hash) = self.db.get(db::key(&db::Key::LatestBlockHash))? {
-            self.latest_block = Block::get(&self.db, &hash)?;
-        }
-        Ok(())
-    }
-    fn set_latest_block_hash(
-        db: &DBWithThreadMode<SingleThreaded>,
-        hash: types::Hash,
-    ) -> Result<(), Box<dyn Error>> {
-        db.put(db::key(&db::Key::LatestBlockHash), hash)?;
-        Ok(())
+    fn set_latest_block(&mut self) {
+        self.latest_block = if let Some(main) = self.tree.main() {
+            let hash = main.0;
+            Block::get(&self.db, &hash).unwrap()
+        } else {
+            Block::new([0; 32])
+        };
     }
     pub fn set_lag(&mut self, millis: f64) {
         self.lag.rotate_right(1);

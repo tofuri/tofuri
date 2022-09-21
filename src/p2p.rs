@@ -14,7 +14,7 @@ use libp2p::{
     mdns::{Mdns, MdnsConfig, MdnsEvent},
     ping::{self, Ping, PingEvent},
     relay::v2::relay::{self, Relay},
-    swarm::{NetworkBehaviourEventProcess},
+    swarm::NetworkBehaviourEventProcess,
     NetworkBehaviour, PeerId, Swarm,
 };
 use log::error;

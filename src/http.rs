@@ -250,10 +250,7 @@ Content-Type: application/json
                         .take(10)
                         .cloned()
                         .collect(),
-                    pending_transactions: behaviour
-                        .blockchain
-                        .get_pending_transactions()
-                        .clone(),
+                    pending_transactions: behaviour.blockchain.get_pending_transactions().clone(),
                     pending_stakes: behaviour.blockchain.get_pending_stakes().clone(),
                     pending_blocks: behaviour.blockchain.get_pending_blocks().clone(),
                     latest_block: behaviour.blockchain.get_latest_block().clone()
@@ -278,10 +275,7 @@ async fn handle_get_json_balance(
             .get(9..)
             .ok_or("GET BALANCE 2")?,
     )?;
-    let balance = swarm
-        .behaviour()
-        .blockchain
-        .get_balance(&public_key);
+    let balance = swarm.behaviour().blockchain.get_balance(&public_key);
     stream
         .write_all(
             format!(
@@ -311,10 +305,7 @@ async fn handle_get_json_balance_staked(
             .get(16..)
             .ok_or("GET BALANCE_STAKED 2")?,
     )?;
-    let balance = swarm
-        .behaviour()
-        .blockchain
-        .get_balance_staked(&public_key);
+    let balance = swarm.behaviour().blockchain.get_balance_staked(&public_key);
     stream
         .write_all(
             format!(

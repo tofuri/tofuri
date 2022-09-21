@@ -8,16 +8,12 @@ pub fn handle(
     match message.topic.as_str() {
         "block" => {
             let block: Block = bincode::deserialize(&message.data)?;
-            behaviour
-                .blockchain
-                .pending_blocks_push(block)?;
+            behaviour.blockchain.pending_blocks_push(block)?;
             behaviour.blockchain.synchronizer.new += 1;
         }
         "stake" => {
             let stake: Stake = bincode::deserialize(&message.data)?;
-            behaviour
-                .blockchain
-                .pending_stakes_push(stake)?;
+            behaviour.blockchain.pending_stakes_push(stake)?;
         }
         "transaction" => {
             let transaction: Transaction = bincode::deserialize(&message.data)?;

@@ -50,10 +50,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         behaviour.blockchain.set_cold_start_stake(stake);
     }
     if forge {
-        match behaviour
-            .blockchain
-            .forge_block()
-        {
+        match behaviour.blockchain.forge_block() {
             Ok(block) => {
                 if behaviour.gossipsub.all_peers().count() > 0 {
                     behaviour
@@ -64,9 +61,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
             Err(err) => error!("{}", err),
         };
     }
-    behaviour
-        .blockchain
-        .append_handle();
+    behaviour.blockchain.append_handle();
     Ok(())
 }
 fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {

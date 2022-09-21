@@ -20,6 +20,9 @@ impl Tree {
         self.sort();
         self.branches.first()
     }
+    pub fn get(&mut self, hash: &types::Hash) -> Option<&types::Hash> {
+        self.hashes.get(hash)
+    }
     pub fn insert(&mut self, hash: types::Hash, previous_hash: types::Hash) {
         if self.hashes.insert(hash, previous_hash).is_some() {
             return;
@@ -30,23 +33,23 @@ impl Tree {
             .position(|(hash, _)| hash == &previous_hash)
         {
             // extend branch
-            self.branches[index] = (hash, self.height(previous_hash));
+            self.branches[index] = (hash, self.height(&previous_hash));
         } else {
             // new branch
-            self.branches.push((hash, self.height(previous_hash)));
+            self.branches.push((hash, self.height(&previous_hash)));
         }
     }
-    fn height(&self, previous_hash: types::Hash) -> types::Height {
+    fn height(&self, previous_hash: &types::Hash) -> types::Height {
         let mut hash = previous_hash;
         let mut height = 0;
         loop {
-            match self.hashes.get(&hash) {
+            match self.hashes.get(hash) {
                 Some(previous_hash) => {
-                    hash = *previous_hash;
+                    hash = previous_hash;
                     height += 1;
                 }
                 None => {
-                    if hash != [0; 32] {
+                    if hash != &[0; 32] {
                         panic!("broken chain")
                     }
                     break;

@@ -361,7 +361,9 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
-        let hashes = Blockchain::hashes(&self.db, self.latest_block.hash()).unwrap();
+        // let hashes = Blockchain::hashes(&self.db, self.latest_block.hash()).unwrap();
+        let hashes = self.tree.get_main_hashes();
+        println!("{:x?}", hashes);
         let mut previous_block_timestamp = match hashes.first() {
             Some(hash) => Block::get(&self.db, hash).unwrap().timestamp - 1,
             None => 0,

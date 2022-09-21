@@ -54,6 +54,14 @@ impl Blockchain {
         multiaddrs.append(&mut Self::multiaddrs(&db).unwrap());
         let mut tree = Tree::default();
         tree.load(&db);
+        if let Some(main) = tree.main() {
+            info!(
+                "{} {} {}",
+                "Main branch".cyan(),
+                main.1.to_string().yellow(),
+                hex::encode(main.0)
+            );
+        }
         let mut blockchain = Self {
             latest_block: Block::new([0; 32]),
             hashes: vec![],

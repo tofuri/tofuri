@@ -18,6 +18,7 @@ pub mod print;
 pub mod stake;
 pub mod synchronizer;
 pub mod transaction;
+pub mod tree;
 pub mod types;
 pub mod util;
 pub mod validator;

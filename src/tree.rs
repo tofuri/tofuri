@@ -13,9 +13,6 @@ impl Tree {
             hashes: HashMap::new(),
         }
     }
-    fn sort(&mut self) {
-        self.branches.sort_by(|a, b| b.1.cmp(&a.1));
-    }
     pub fn main(&mut self) -> Option<&Branch> {
         self.sort();
         self.branches.first()
@@ -38,6 +35,9 @@ impl Tree {
             // new branch
             self.branches.push((hash, self.height(&previous_hash)));
         }
+    }
+    fn sort(&mut self) {
+        self.branches.sort_by(|a, b| b.1.cmp(&a.1));
     }
     fn height(&self, previous_hash: &types::Hash) -> types::Height {
         let mut hash = previous_hash;

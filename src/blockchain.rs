@@ -1,21 +1,31 @@
 use crate::{
     address,
     block::Block,
+    cli::ValidatorArgs,
     constants::{
         BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TRANSACTIONS_LIMIT, MIN_STAKE,
         PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
-    db,
+    db, heartbeat, http,
+    print,
     stake::Stake,
+    synchronizer::Synchronizer,
     transaction::Transaction,
     types, util,
+    p2p::MyBehaviour
 };
 use colored::*;
+use libp2p::{
+    futures::{FutureExt, StreamExt},
+    Multiaddr, Swarm,
+};
 use log::{error, info, warn};
-use rocksdb::{DBWithThreadMode, SingleThreaded};
+use tokio::net::TcpListener;
+use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::{
     collections::{HashMap, VecDeque},
     error::Error,
+    time::Instant,
 };
 #[derive(Debug)]
 pub struct Blockchain {
@@ -30,10 +40,24 @@ pub struct Blockchain {
     balance: types::Balance,
     balance_staked: types::Balance,
     stakers_history: types::StakersHistory,
+    pub db: DBWithThreadMode<SingleThreaded>,
+    pub keypair: types::Keypair,
+    multiaddrs: Vec<Multiaddr>,
+    pub synchronizer: Synchronizer,
+    pub heartbeats: types::Heartbeats,
+    pub lag: [f64; 3],
+    sync_index: usize,
 }
 impl Blockchain {
-    pub fn new() -> Blockchain {
-        Blockchain {
+    pub fn new(
+        keypair: types::Keypair,
+        db: DBWithThreadMode<SingleThreaded>,
+        known: Vec<Multiaddr>,
+    ) -> Self {
+        let mut multiaddrs = known;
+        multiaddrs.append(&mut Self::multiaddrs(&db).unwrap());
+        let start = Instant::now();
+        let mut blockchain = Self {
             latest_block: Block::new([0; 32]),
             hashes: vec![],
             stakers: VecDeque::new(),
@@ -45,7 +69,82 @@ impl Blockchain {
             balance: HashMap::new(),
             balance_staked: HashMap::new(),
             stakers_history: HashMap::new(),
+            db,
+            keypair,
+            multiaddrs,
+            synchronizer: Synchronizer::new(),
+            heartbeats: 0,
+            lag: [0.0; 3],
+            sync_index: 0
+        };
+        blockchain.reload();
+        info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
+        blockchain
+    }
+    pub fn get_next_sync_block(
+        &mut self,
+    ) -> Block {
+        if self.sync_index >= self.hashes.len() {
+            self.sync_index = 0;
         }
+        let block = Block::get(&self.db, &self.hashes[self.sync_index]).unwrap();
+        self.sync_index += 1;
+        block
+    }
+    pub fn put_multiaddr(
+        db: &DBWithThreadMode<SingleThreaded>,
+        multiaddr: &Multiaddr,
+        timestamp: types::Timestamp,
+    ) {
+        db.put_cf(db::peers(db), multiaddr, timestamp.to_le_bytes())
+            .unwrap();
+    }
+    pub fn multiaddrs(
+        db: &DBWithThreadMode<SingleThreaded>,
+    ) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
+        let mut multiaddrs = vec![];
+        for i in db.iterator_cf(db::peers(db), IteratorMode::Start) {
+            multiaddrs.push(String::from_utf8(i?.0.to_vec())?.parse()?);
+        }
+        Ok(multiaddrs)
+    }
+    pub fn get_known(args: &ValidatorArgs) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
+        let lines = util::read_lines(&args.known)?;
+        let mut known = vec![];
+        for line in lines {
+            match line.parse() {
+                Ok(multiaddr) => {
+                    known.push(multiaddr);
+                }
+                Err(err) => error!("{}", err),
+            }
+        }
+        Ok(known)
+    }
+    pub async fn listen(
+        swarm: &mut Swarm<MyBehaviour>,
+        listener: TcpListener,
+    ) -> Result<(), Box<dyn Error>> {
+        loop {
+            tokio::select! {
+                _ = heartbeat::next().fuse() => if let Err(err) = heartbeat::handle(swarm) {
+                    error!("{}", err);
+                },
+                Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handle(stream, swarm).await {
+                    error!("{}", err);
+                },
+                event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
+            }
+        }
+    }
+    pub fn heartbeat(&mut self) {
+        self.heartbeats += 1;
+    }
+    pub fn get_multiaddrs(&self) -> &Vec<Multiaddr> {
+        &self.multiaddrs
+    }
+    pub fn get_heartbeats(&self) -> &types::Heartbeats {
+        &self.heartbeats
     }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
@@ -128,7 +227,6 @@ impl Blockchain {
     }
     pub fn pending_blocks_push(
         &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
         block: Block,
     ) -> Result<(), Box<dyn Error>> {
         if self
@@ -138,14 +236,13 @@ impl Blockchain {
         {
             return Err("block already pending".into());
         }
-        block.validate(self, db)?;
+        block.validate(self, &self.db)?;
         self.pending_blocks.push(block);
         self.limit_pending_blocks();
         Ok(())
     }
     pub fn pending_transactions_push(
         &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
         transaction: Transaction,
     ) -> Result<(), Box<dyn Error>> {
         if self
@@ -168,14 +265,13 @@ impl Blockchain {
             self.pending_transactions.remove(index);
         }
         let balance = self.get_balance(&transaction.public_key_input);
-        transaction.validate(db, balance, self.latest_block.timestamp)?;
+        transaction.validate(&self.db, balance, self.latest_block.timestamp)?;
         self.pending_transactions.push(transaction);
         self.limit_pending_transactions();
         Ok(())
     }
     pub fn pending_stakes_push(
         &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
         stake: Stake,
     ) -> Result<(), Box<dyn Error>> {
         if self
@@ -197,15 +293,13 @@ impl Blockchain {
         }
         let balance = self.get_balance(&stake.public_key);
         let balance_staked = self.get_balance_staked(&stake.public_key);
-        stake.validate(db, balance, balance_staked, self.latest_block.timestamp)?;
+        stake.validate(&self.db, balance, balance_staked, self.latest_block.timestamp)?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
         Ok(())
     }
     pub fn forge_block(
         &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        keypair: &types::Keypair,
     ) -> Result<Block, Box<dyn Error>> {
         let mut block;
         if let Some(hash) = self.hashes.last() {
@@ -225,8 +319,8 @@ impl Blockchain {
                 block.stakes.push(stake.clone());
             }
         }
-        block.sign(keypair);
-        let hash = self.append(db, block.clone(), true).unwrap();
+        block.sign(&self.keypair);
+        let hash = self.append(block.clone(), true).unwrap();
         info!(
             "{} {} {}",
             "Forged".green(),
@@ -235,7 +329,7 @@ impl Blockchain {
         );
         Ok(block)
     }
-    pub fn append_handle(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
+    pub fn append_handle(&mut self) {
         if util::timestamp() > self.latest_block.timestamp + BLOCK_TIME_MAX as types::Timestamp {
             self.penalty();
             warn!("staker didn't show up in time");
@@ -253,9 +347,9 @@ impl Blockchain {
             if block.previous_hash == self.latest_block.hash()
                 || self.latest_block.previous_hash == [0; 32]
             {
-                hash = self.append(db, block, true).unwrap();
+                hash = self.append(block, true).unwrap();
             } else {
-                hash = self.append(db, block, false).unwrap();
+                hash = self.append(block, false).unwrap();
             }
             info!(
                 "{} {} {}",
@@ -267,14 +361,13 @@ impl Blockchain {
     }
     pub fn append(
         &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
         block: Block,
         latest: bool,
     ) -> Result<types::Hash, Box<dyn Error>> {
-        block.put(db)?;
+        block.put(&self.db)?;
         let hash = block.hash();
         if latest {
-            Blockchain::set_latest_block_hash(db, hash)?;
+            Blockchain::set_latest_block_hash(&self.db, hash)?;
             self.hashes.push(hash);
             if let Some(stake) = block.stakes.first() {
                 if stake.fee == 0 {
@@ -293,27 +386,27 @@ impl Blockchain {
             if let Some(height) = self.height(block.previous_hash) {
                 if height + 1 > self.get_height() {
                     warn!("Fork detected! Reloading...");
-                    self.reload(db);
+                    self.reload();
                 }
             }
         }
         Ok(hash)
     }
-    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
+    pub fn reload(&mut self) {
         self.latest_block = Block::new([0; 32]);
         self.stakers.clear();
         self.hashes.clear();
         self.balance.clear();
         self.balance_staked.clear();
         self.stakers_history.clear();
-        self.set_latest_block(db).unwrap();
-        let hashes = Blockchain::hashes(db, self.latest_block.hash()).unwrap();
+        self.set_latest_block().unwrap();
+        let hashes = Blockchain::hashes(&self.db, self.latest_block.hash()).unwrap();
         let mut previous_block_timestamp = match hashes.first() {
-            Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
+            Some(hash) => Block::get(&self.db, hash).unwrap().timestamp - 1,
             None => 0,
         };
         for (height, hash) in hashes.iter().enumerate() {
-            let block = Block::get(db, hash).unwrap();
+            let block = Block::get(&self.db, hash).unwrap();
             self.penalty_reload(&block.timestamp, &previous_block_timestamp);
             if let Some(stake) = block.stakes.first() {
                 if stake.fee == 0 {
@@ -504,10 +597,9 @@ impl Blockchain {
     }
     fn set_latest_block(
         &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
     ) -> Result<(), Box<dyn Error>> {
-        if let Some(hash) = db.get(db::key(&db::Key::LatestBlockHash))? {
-            self.latest_block = Block::get(db, &hash)?;
+        if let Some(hash) = self.db.get(db::key(&db::Key::LatestBlockHash))? {
+            self.latest_block = Block::get(&self.db, &hash)?;
         }
         Ok(())
     }

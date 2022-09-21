@@ -21,5 +21,4 @@ pub mod transaction;
 pub mod tree;
 pub mod types;
 pub mod util;
-pub mod validator;
 pub mod wallet;

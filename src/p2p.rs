@@ -1,4 +1,4 @@
-use crate::{constants::PROTOCOL_VERSION, gossipsub, print, validator::Validator};
+use crate::{constants::PROTOCOL_VERSION, gossipsub, print, blockchain::Blockchain};
 use colored::*;
 use libp2p::{
     autonat,
@@ -27,12 +27,12 @@ pub struct MyBehaviour {
     pub autonat: autonat::Behaviour,
     pub relay: Relay,
     #[behaviour(ignore)]
-    pub validator: Validator,
+    pub blockchain: Blockchain,
 }
 impl MyBehaviour {
     async fn new(
         local_key: identity::Keypair,
-        validator: Validator,
+        blockchain: Blockchain,
     ) -> Result<Self, Box<dyn Error>> {
         let local_public_key = local_key.public();
         let local_peer_id = PeerId::from(local_public_key.clone());
@@ -55,7 +55,7 @@ impl MyBehaviour {
                 autonat::Config::default(),
             ),
             relay: Relay::new(local_peer_id, Default::default()),
-            validator,
+            blockchain,
         })
     }
 }
@@ -119,11 +119,11 @@ impl NetworkBehaviourEventProcess<relay::Event> for MyBehaviour {
         print::p2p_event("relay::Event", format!("{:?}", event));
     }
 }
-pub async fn swarm(validator: Validator) -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
+pub async fn swarm(blockchain: Blockchain) -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
     let transport = libp2p::development_transport(local_key.clone()).await?;
-    let mut behaviour = MyBehaviour::new(local_key, validator).await?;
+    let mut behaviour = MyBehaviour::new(local_key, blockchain).await?;
     for ident_topic in [
         IdentTopic::new("block"),
         IdentTopic::new("stake"),

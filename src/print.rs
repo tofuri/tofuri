@@ -4,7 +4,6 @@ use crate::{
     cli::{ValidatorArgs, WalletArgs},
     transaction::Transaction,
     types,
-    validator::Validator,
 };
 use chrono::Local;
 use colored::*;
@@ -58,15 +57,13 @@ pub fn build() {
     info!("{} {}", "Commit".cyan(), env!("GIT_HASH"));
     info!("{} {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY"));
 }
-pub fn validator(validator: &Validator) {
+pub fn blockchain(blockchain: &Blockchain) {
     info!(
         "{} {}",
         "PubKey".cyan(),
-        address::encode(validator.keypair.public.as_bytes())
+        address::encode(blockchain.keypair.public.as_bytes())
     );
-    info!("{} {}", "Peers".cyan(), validator.multiaddrs.len());
-}
-pub fn blockchain(blockchain: &Blockchain) {
+    info!("{} {}", "Peers".cyan(), blockchain.get_multiaddrs().len());
     info!("{} {}", "Height".cyan(), blockchain.get_hashes().len());
     info!(
         "{} {}",

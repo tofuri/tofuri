@@ -1,4 +1,4 @@
-use crate::{block::Block, constants::SYNC_HISTORY_LENGTH, types};
+use crate::{block::Block, constants::SYNC_HISTORY_LENGTH, types, blockchain::Blockchain};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -32,16 +32,15 @@ impl Synchronizer {
         }
         self.bps /= SYNC_HISTORY_LENGTH;
     }
-    pub fn get_block(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &types::Hashes,
-    ) -> Block {
-        if self.index >= hashes.len() {
-            self.index = 0;
-        }
-        let block = Block::get(db, &hashes[self.index]).unwrap();
-        self.index += 1;
-        block
-    }
+    // pub fn get_block(
+        // &mut self,
+        // blockchain: &Blockchain,
+    // ) -> Block {
+        // if self.index >= blockchain.get_hashes().len() {
+            // self.index = 0;
+        // }
+        // let block = Block::get(&blockchain.db, &blockchain.get_hashes()[self.index]).unwrap();
+        // self.index += 1;
+        // block
+    // }
 }

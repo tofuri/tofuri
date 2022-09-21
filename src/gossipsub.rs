@@ -9,24 +9,21 @@ pub fn handle(
         "block" => {
             let block: Block = bincode::deserialize(&message.data)?;
             behaviour
-                .validator
                 .blockchain
-                .pending_blocks_push(&behaviour.validator.db, block)?;
-            behaviour.validator.synchronizer.new += 1;
+                .pending_blocks_push(block)?;
+            behaviour.blockchain.synchronizer.new += 1;
         }
         "stake" => {
             let stake: Stake = bincode::deserialize(&message.data)?;
             behaviour
-                .validator
                 .blockchain
-                .pending_stakes_push(&behaviour.validator.db, stake)?;
+                .pending_stakes_push(stake)?;
         }
         "transaction" => {
             let transaction: Transaction = bincode::deserialize(&message.data)?;
             behaviour
-                .validator
                 .blockchain
-                .pending_transactions_push(&behaviour.validator.db, transaction)?;
+                .pending_transactions_push(transaction)?;
         }
         "ip" => {}
         _ => {}

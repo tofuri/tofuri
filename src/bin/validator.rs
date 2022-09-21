@@ -1,5 +1,5 @@
 use clap::Parser;
-use pea::{cli::ValidatorArgs, db, p2p, print, validator::Validator, wallet::Wallet};
+use pea::{cli::ValidatorArgs, db, p2p, print, blockchain::Blockchain, wallet::Wallet};
 use std::error::Error;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
@@ -15,19 +15,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
         false => "./db",
     };
     let db = db::open(path);
-    let known = Validator::get_known(&args)?;
+    let known = Blockchain::get_known(&args)?;
     print::known_peers(&known);
     let wallet = match args.tempkey {
         true => Wallet::new(),
         false => Wallet::import(&args.wallet, &args.passphrase)?,
     };
-    let validator = Validator::new(wallet, db, known)?;
-    print::validator(&validator);
-    print::blockchain(&validator.blockchain);
-    let mut swarm = p2p::swarm(validator).await?;
+    let blockchain = Blockchain::new(wallet.keypair, db, known);
+    print::blockchain(&blockchain);
+    let mut swarm = p2p::swarm(blockchain).await?;
     swarm.listen_on(args.multiaddr.parse()?)?;
     let listener = TcpListener::bind(args.http).await?;
     print::http(&listener)?;
-    Validator::listen(&mut swarm, listener).await?;
+    Blockchain::listen(&mut swarm, listener).await?;
     Ok(())
 }

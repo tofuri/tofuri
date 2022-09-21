@@ -76,22 +76,8 @@ impl Tree {
                 }
             };
         }
-        let (_, vec) = hashes
-            .iter()
-            .find(|(&previous_hash, _)| previous_hash == [0; 32])
-            .unwrap();
         let previous_hash = [0; 32];
-        // let mut closure = || -> bool {
-        // if vec.is_empty() {
-        // return false;
-        // }
-        // for hash in vec {
-        // self.insert(*hash, previous_hash);
-        // closure()
-        // }
-        // true
-        // };
-        // while closure() {}
+        let (_, vec) = hashes.iter().find(|(&x, _)| x == previous_hash).unwrap();
         fn recurse(
             tree: &mut Tree,
             hashes: &HashMap<types::Hash, Vec<types::Hash>>,
@@ -106,75 +92,7 @@ impl Tree {
             }
         }
         recurse(self, &hashes, previous_hash, vec);
-        // loop {
-        // for hash in vec {
-        // self.insert(hash, previous_hash);
-        // }
-        // }
-        // for (previous_hash, vec) in hashes {
-        // for hash in vec {
-        // self.insert(hash, previous_hash);
-        // println!("{}", hex::encode(hash));
-        // }
-        // }
-        println!("{:?}", self);
     }
-    // pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
-    // let mut hashes: Vec<(types::Hash, types::Hash)> = vec![];
-    // for res in db.iterator_cf(db::blocks(db), IteratorMode::Start) {
-    // let (hash, bytes) = res.unwrap();
-    // let block: BlockMetadataLean = bincode::deserialize(&bytes).unwrap();
-    // hashes.push((hash.to_vec().try_into().unwrap(), block.previous_hash));
-    // }
-    // for (hash, previous_hash) in hashes {
-    // self.insert(hash, previous_hash);
-    // println!("{}", hex::encode(hash));
-    // }
-    // println!("{:?}", self);
-    // }
-    // pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
-    // let mut hashes: Hashes = HashMap::new();
-    // for res in db.iterator_cf(db::blocks(db), IteratorMode::Start) {
-    // let (hash, bytes) = res.unwrap();
-    // let block: BlockMetadataLean = bincode::deserialize(&bytes).unwrap();
-    // hashes.insert(hash.to_vec().try_into().unwrap(), block.previous_hash);
-    // // println!("{:?}", hex::encode(document.unwrap().0));
-    // }
-    // let mut hashes2 = HashMap::new();
-    // loop {
-    // println!("{} - {}", hashes.len(), hashes2.len());
-    // if hashes.len() == hashes2.len() {
-    // hashes2.clear();
-    // break
-    // }
-    // let mut hash = hashes.iter().last().unwrap().0;
-    // let mut branch = vec![];
-    // loop {
-    // match hashes.get(hash) {
-    // Some(previous_hash) => {
-    // branch.push(hash);
-    // hashes2.insert(hash, previous_hash);
-    // hash = &previous_hash;
-    // }
-    // None => {
-    // if hash != &[0; 32] {
-    // panic!("broken chain")
-    // }
-    // break;
-    // }
-    // };
-    // }
-    // println!("{:?}", branch);
-    // println!("{}", hex::encode(hash));
-    // for (index, hash) in branch.iter().enumerate() {
-    // if index == 0 {
-    // self.insert(**hash, [0; 32])
-    // } else {
-    // self.insert(**hash, *branch[index - 1])
-    // }
-    // }
-    // }
-    // }
 }
 impl fmt::Debug for Tree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

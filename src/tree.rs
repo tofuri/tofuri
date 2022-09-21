@@ -76,6 +76,9 @@ impl Tree {
                 }
             };
         }
+        if hashes.is_empty() {
+            return;
+        }
         let previous_hash = [0; 32];
         let (_, vec) = hashes.iter().find(|(&x, _)| x == previous_hash).unwrap();
         fn recurse(

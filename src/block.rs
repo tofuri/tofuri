@@ -1,6 +1,6 @@
 use crate::{
     blockchain::Blockchain,
-    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN, MIN_STAKE},
+    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN, MIN_STAKE, TRUST_FORK_AFTER_BLOCKS},
     db,
     stake::Stake,
     transaction::Transaction,
@@ -152,6 +152,47 @@ impl Block {
         blockchain: &Blockchain,
         db: &DBWithThreadMode<SingleThreaded>,
     ) -> Result<(), Box<dyn Error>> {
+        let height;
+        if self.previous_hash == [0; 32] {
+            height = 0;
+        } else {
+            height = blockchain
+                .height(self.previous_hash)
+                .ok_or("block doesn't extend chain")?;
+        }
+        if height + TRUST_FORK_AFTER_BLOCKS < blockchain.get_height() {
+            return Err("block doesn't extend untrusted fork".into());
+        }
+        let mut balance_public_keys = vec![];
+        let mut balance_staked_public_keys = vec![];
+        for transaction in self.transactions.iter() {
+            balance_public_keys.push(transaction.public_key_input);
+        }
+        for stake in self.stakes.iter() {
+            balance_staked_public_keys.push(stake.public_key);
+        }
+        println!("{}", height);
+        let (balances, balances_staked) = blockchain.get_balances_at_height(
+            db,
+            balance_public_keys,
+            balance_staked_public_keys,
+            height,
+        );
+        let staker_public_key: Option<&types::PublicKeyBytes>;
+        if self.previous_hash == blockchain.get_latest_block().hash()
+            && !blockchain.get_stakers().is_empty()
+        {
+            staker_public_key = Some(&blockchain.get_stakers()[0].0);
+        } else {
+            staker_public_key = blockchain.get_stakers_history().get(&self.previous_hash);
+        }
+        println!("{:x?}", staker_public_key);
+        println!("{:?}", balances);
+        if let Some(public_key) = staker_public_key {
+            if public_key != &self.public_key {
+                return Err("block isn't signed by the staker first in queue".into());
+            }
+        }
         let public_key_inputs = self
             .transactions
             .iter()
@@ -186,15 +227,17 @@ impl Block {
             if self.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
                 return Err("block created too early".into());
             }
-            if !blockchain.get_stakers().is_empty()
+            if staker_public_key.is_some()
                 && self.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
             {
                 return Err("block created too late".into());
             }
+        } else if Block::get(db, &self.previous_hash).is_ok() {
+            log::info!("FOUND PREVIOUS BLOCK");
         } else {
             return Err("block does not extend chain".into());
         }
-        if blockchain.get_stakers().is_empty() {
+        if staker_public_key.is_none() {
             if self.stakes.len() != 1 {
                 return Err("only allowed to mint 1 stake".into());
             }
@@ -224,11 +267,14 @@ impl Block {
             }
         } else {
             for stake in self.stakes.iter() {
-                stake.validate(blockchain, db, self.timestamp)?;
+                let balance = balances.get(&stake.public_key).unwrap();
+                let balance_staked = balances_staked.get(&stake.public_key).unwrap();
+                stake.validate(db, *balance, *balance_staked, self.timestamp)?;
             }
         }
         for transaction in self.transactions.iter() {
-            transaction.validate(blockchain, db, self.timestamp)?;
+            let balance = balances.get(&transaction.public_key_input).unwrap();
+            transaction.validate(db, *balance, self.timestamp)?;
         }
         Ok(())
     }

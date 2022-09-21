@@ -47,7 +47,7 @@ impl Blockchain {
             stakers_history: HashMap::new(),
         }
     }
-    fn height(&self, hash: types::Hash) -> Option<types::Height> {
+    pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
     fn hashes(
@@ -167,7 +167,8 @@ impl Blockchain {
             }
             self.pending_transactions.remove(index);
         }
-        transaction.validate(self, db, self.latest_block.timestamp)?;
+        let balance = self.get_balance(&transaction.public_key_input);
+        transaction.validate(db, balance, self.latest_block.timestamp)?;
         self.pending_transactions.push(transaction);
         self.limit_pending_transactions();
         Ok(())
@@ -194,7 +195,9 @@ impl Blockchain {
             }
             self.pending_stakes.remove(index);
         }
-        stake.validate(self, db, self.latest_block.timestamp)?;
+        let balance = self.get_balance(&stake.public_key);
+        let balance_staked = self.get_balance_staked(&stake.public_key);
+        stake.validate(db, balance, balance_staked, self.latest_block.timestamp)?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
         Ok(())
@@ -238,14 +241,14 @@ impl Blockchain {
             warn!("staker didn't show up in time");
         }
         for block in self.pending_blocks.clone() {
-            if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
-                if public_key != &block.public_key {
-                    warn!("block public_key don't match stakers history");
-                    return;
-                }
-            } else {
-                warn!("block didn't have a staker because network was down");
-            }
+            // if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
+                // if public_key != &block.public_key {
+                    // warn!("block public_key don't match stakers history");
+                    // return;
+                // }
+            // } else {
+                // warn!("block didn't have a staker because network was down");
+            // }
             let hash;
             if block.previous_hash == self.latest_block.hash()
                 || self.latest_block.previous_hash == [0; 32]
@@ -273,11 +276,12 @@ impl Blockchain {
         if latest {
             Blockchain::set_latest_block_hash(db, hash)?;
             self.hashes.push(hash);
-            if self.stakers.is_empty() {
-                self.reward_cold_start(&block);
-            } else {
-                self.reward(&block);
+            if let Some(stake) = block.stakes.first() {
+                if stake.fee == 0 {
+                    self.reward_cold_start(&block);
+                }
             }
+            self.reward(&block);
             self.set_balances(&block);
             self.set_stakers(self.get_height(), &block);
             self.set_sum_stakes();
@@ -311,11 +315,14 @@ impl Blockchain {
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
             self.penalty_reload(&block.timestamp, &previous_block_timestamp);
-            if self.stakers.is_empty() {
-                self.reward_cold_start(&block);
-            } else {
-                self.reward(&block);
+            
+            if let Some(stake) = block.stakes.first() {
+                if stake.fee == 0 {
+                    self.reward_cold_start(&block);
+                }
             }
+            self.reward(&block);
+
             self.set_balances(&block);
             self.set_stakers(height, &block);
             self.set_sum_stakes();
@@ -368,6 +375,62 @@ impl Blockchain {
     }
     pub fn get_stakers_history(&self) -> &types::StakersHistory {
         &self.stakers_history
+    }
+    pub fn get_balances_at_height(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        balance_public_keys: Vec<types::PublicKeyBytes>,
+        balance_staked_public_keys: Vec<types::PublicKeyBytes>,
+        height: types::Height,
+    ) -> (
+        HashMap<types::PublicKeyBytes, types::Amount>,
+        HashMap<types::PublicKeyBytes, types::Amount>,
+    ) {
+        let mut balances = HashMap::new();
+        let mut balances_staked = HashMap::new();
+        for public_key in balance_public_keys.iter() {
+            balances.insert(*public_key, self.get_balance(&public_key));
+        }
+        for public_key in balance_staked_public_keys.iter() {
+            balances.insert(*public_key, self.get_balance(&public_key));
+            balances_staked.insert(*public_key, self.get_balance_staked(&public_key));
+        }
+        let n = self.get_height() - height;
+        for hash in self.hashes.iter().rev().take(n) {
+            let block = Block::get(db, hash).unwrap();
+            for transaction in block.transactions.iter() {
+                for  public_key in balance_public_keys.iter() {
+                    if public_key == &transaction.public_key_input {
+                        let mut balance = *balances.get(public_key).unwrap();
+                        balance += transaction.amount + transaction.fee;
+                        balances.insert(*public_key, balance);
+                    }
+                    if public_key == &transaction.public_key_output {
+                        let mut balance = *balances.get(public_key).unwrap();
+                        balance -= transaction.amount;
+                        balances.insert(*public_key, balance);
+                    }
+                }
+            }
+            for stake in block.stakes.iter() {
+                for public_key in balance_staked_public_keys.iter() {
+                    if public_key == &stake.public_key {
+                        let mut balance = *balances.get(public_key).unwrap();
+                        let mut balance_staked = *balances_staked.get(public_key).unwrap();
+                        if stake.deposit {
+                            balance += stake.amount + stake.fee;
+                            balance_staked -= stake.amount;
+                        } else {
+                            balance -= stake.amount - stake.fee;
+                            balance_staked += stake.amount;
+                        }
+                        balances.insert(*public_key, balance);
+                        balances_staked.insert(*public_key, balance_staked);
+                    }
+                }
+            }
+        }
+        (balances, balances_staked)
     }
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);

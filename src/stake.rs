@@ -1,4 +1,4 @@
-use crate::{amount, blockchain::Blockchain, constants::MAX_STAKE, db, types, util};
+use crate::{amount, constants::MAX_STAKE, db, types, util};
 use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
@@ -65,8 +65,9 @@ impl Stake {
     }
     pub fn validate(
         &self,
-        blockchain: &Blockchain,
         db: &DBWithThreadMode<SingleThreaded>,
+        balance: types::Amount,
+        balance_staked: types::Amount,
         timestamp: types::Timestamp,
     ) -> Result<(), Box<dyn Error>> {
         if !self.verify().is_ok() {
@@ -75,14 +76,15 @@ impl Stake {
         if self.amount == 0 {
             return Err("stake has invalid amount".into());
         }
+        if self.fee == 0 {
+            return Err("stake invalid fee".into());
+        }
         if self.timestamp > util::timestamp() {
             return Err("stake has invalid timestamp (stake is from the future)".into());
         }
         if Stake::get(db, &self.hash()).is_ok() {
             return Err("stake already in chain".into());
         }
-        let balance = blockchain.get_balance(&self.public_key);
-        let balance_staked = blockchain.get_balance_staked(&self.public_key);
         if self.deposit {
             if self.amount + self.fee > balance {
                 return Err("stake deposit too expensive".into());

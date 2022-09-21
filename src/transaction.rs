@@ -1,4 +1,4 @@
-use crate::{amount, blockchain::Blockchain, db, types, util};
+use crate::{amount, db, types, util};
 use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
@@ -71,8 +71,8 @@ impl Transaction {
     }
     pub fn validate(
         &self,
-        blockchain: &Blockchain,
         db: &DBWithThreadMode<SingleThreaded>,
+        balance: types::Amount,
         timestamp: types::Timestamp,
     ) -> Result<(), Box<dyn Error>> {
         if !types::PublicKey::from_bytes(&self.public_key_output).is_ok() {
@@ -92,10 +92,12 @@ impl Transaction {
         if self.amount == 0 {
             return Err("transaction has invalid amount".into());
         }
+        if self.fee == 0 {
+            return Err("transaction invalid fee".into());
+        }
         if Transaction::get(db, &self.hash()).is_ok() {
             return Err("transaction already in chain".into());
         }
-        let balance = blockchain.get_balance(&self.public_key_input);
         if self.amount + self.fee > balance {
             return Err("transaction too expensive".into());
         }

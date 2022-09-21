@@ -105,9 +105,6 @@ impl Blockchain {
         }
         Ok(known)
     }
-    pub fn heartbeat(&mut self) {
-        self.heartbeats += 1;
-    }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
@@ -480,6 +477,9 @@ impl Blockchain {
     }
     pub fn get_heartbeats(&self) -> &types::Heartbeats {
         &self.heartbeats
+    }
+    pub fn get_heartbeats_mut(&mut self) -> &mut types::Heartbeats {
+        &mut self.heartbeats
     }
     pub fn get_synchronizer(&self) -> &Synchronizer {
         &self.synchronizer

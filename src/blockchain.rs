@@ -52,7 +52,8 @@ impl Blockchain {
     ) -> Self {
         let mut multiaddrs = known;
         multiaddrs.append(&mut Self::multiaddrs(&db).unwrap());
-        let start = Instant::now();
+        let mut tree = Tree::default();
+        tree.load(&db);
         let mut blockchain = Self {
             latest_block: Block::new([0; 32]),
             hashes: vec![],
@@ -72,8 +73,9 @@ impl Blockchain {
             heartbeats: 0,
             lag: [0.0; 3],
             sync_index: 0,
-            tree: Tree::default(),
+            tree,
         };
+        let start = Instant::now();
         blockchain.reload();
         info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
         blockchain

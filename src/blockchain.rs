@@ -75,14 +75,6 @@ impl Blockchain {
         info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
         blockchain
     }
-    pub fn get_next_sync_block(&mut self) -> Block {
-        if self.sync_index >= self.hashes.len() {
-            self.sync_index = 0;
-        }
-        let block = Block::get(&self.db, &self.hashes[self.sync_index]).unwrap();
-        self.sync_index += 1;
-        block
-    }
     pub fn put_multiaddr(
         db: &DBWithThreadMode<SingleThreaded>,
         multiaddr: &Multiaddr,
@@ -115,31 +107,6 @@ impl Blockchain {
     }
     pub fn heartbeat(&mut self) {
         self.heartbeats += 1;
-    }
-    pub fn get_keypair(&self) -> &types::Keypair {
-        &self.keypair
-    }
-    pub fn get_db(&self) -> &DBWithThreadMode<SingleThreaded> {
-        &self.db
-    }
-    pub fn get_lag(&self) -> &[f64; 3] {
-        &self.lag
-    }
-    pub fn set_lag(&mut self, millis: f64) {
-        self.lag.rotate_right(1);
-        self.lag[0] = millis;
-    }
-    pub fn get_multiaddrs(&self) -> &Vec<Multiaddr> {
-        &self.multiaddrs
-    }
-    pub fn get_heartbeats(&self) -> &types::Heartbeats {
-        &self.heartbeats
-    }
-    pub fn get_synchronizer(&self) -> &Synchronizer {
-        &self.synchronizer
-    }
-    pub fn get_synchronizer_mut(&mut self) -> &mut Synchronizer {
-        &mut self.synchronizer
     }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
@@ -508,6 +475,35 @@ impl Blockchain {
         }
         (balances, balances_staked)
     }
+    pub fn get_multiaddrs(&self) -> &Vec<Multiaddr> {
+        &self.multiaddrs
+    }
+    pub fn get_heartbeats(&self) -> &types::Heartbeats {
+        &self.heartbeats
+    }
+    pub fn get_synchronizer(&self) -> &Synchronizer {
+        &self.synchronizer
+    }
+    pub fn get_synchronizer_mut(&mut self) -> &mut Synchronizer {
+        &mut self.synchronizer
+    }
+    pub fn get_keypair(&self) -> &types::Keypair {
+        &self.keypair
+    }
+    pub fn get_db(&self) -> &DBWithThreadMode<SingleThreaded> {
+        &self.db
+    }
+    pub fn get_lag(&self) -> &[f64; 3] {
+        &self.lag
+    }
+    pub fn get_next_sync_block(&mut self) -> Block {
+        if self.sync_index >= self.hashes.len() {
+            self.sync_index = 0;
+        }
+        let block = Block::get(&self.db, &self.hashes[self.sync_index]).unwrap();
+        self.sync_index += 1;
+        block
+    }
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);
     }
@@ -592,6 +588,10 @@ impl Blockchain {
     ) -> Result<(), Box<dyn Error>> {
         db.put(db::key(&db::Key::LatestBlockHash), hash)?;
         Ok(())
+    }
+    pub fn set_lag(&mut self, millis: f64) {
+        self.lag.rotate_right(1);
+        self.lag[0] = millis;
     }
     fn sort_pending_transactions(&mut self) {
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));

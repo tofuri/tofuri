@@ -70,7 +70,7 @@ impl Stake {
         balance_staked: types::Amount,
         timestamp: types::Timestamp,
     ) -> Result<(), Box<dyn Error>> {
-        if !self.verify().is_ok() {
+        if self.verify().is_err() {
             return Err("stake has invalid signature".into());
         }
         if self.amount == 0 {

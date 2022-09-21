@@ -48,7 +48,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         }
     } else {
         let mut stake = Stake::new(true, MIN_STAKE, 0);
-        stake.sign(&behaviour.blockchain.get_keypair());
+        stake.sign(behaviour.blockchain.get_keypair());
         behaviour.blockchain.set_cold_start_stake(stake);
     }
     if forge {
@@ -67,7 +67,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    if behaviour.blockchain.get_hashes().len() == 0 {
+    if behaviour.blockchain.get_hashes().is_empty() {
         return Ok(());
     }
     if behaviour.gossipsub.all_peers().count() == 0 {

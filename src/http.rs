@@ -389,7 +389,7 @@ async fn handle_get_json_block_by_hash(
             .get(7..)
             .ok_or("GET BLOCK_BY_HASH 2")?,
     )?;
-    let block = Block::get(&swarm.behaviour().blockchain.get_db(), &hash)?;
+    let block = Block::get(swarm.behaviour().blockchain.get_db(), &hash)?;
     stream
         .write_all(
             format!(
@@ -419,7 +419,7 @@ async fn handle_get_json_transaction_by_hash(
             .get(13..)
             .ok_or("GET TRANSACTION_BY_HASH 2")?,
     )?;
-    let transaction = Transaction::get(&swarm.behaviour().blockchain.get_db(), &hash)?;
+    let transaction = Transaction::get(swarm.behaviour().blockchain.get_db(), &hash)?;
     stream
         .write_all(
             format!(
@@ -449,7 +449,7 @@ async fn handle_get_json_stake_by_hash(
             .get(7..)
             .ok_or("GET STAKE_BY_HASH 2")?,
     )?;
-    let stake = Stake::get(&swarm.behaviour().blockchain.get_db(), &hash)?;
+    let stake = Stake::get(swarm.behaviour().blockchain.get_db(), &hash)?;
     stream
         .write_all(
             format!(

@@ -335,14 +335,13 @@ impl Blockchain {
             // } else {
             // warn!("block didn't have a staker because network was down");
             // }
-            let hash;
-            if block.previous_hash == self.latest_block.hash()
+            let hash = if block.previous_hash == self.latest_block.hash()
                 || self.latest_block.previous_hash == [0; 32]
             {
-                hash = self.append(block, true).unwrap();
+                self.append(block, true).unwrap()
             } else {
-                hash = self.append(block, false).unwrap();
-            }
+                self.append(block, false).unwrap()
+            };
             info!(
                 "{} {} {}",
                 "Accepted".green(),
@@ -370,12 +369,10 @@ impl Blockchain {
             self.pending_blocks.clear();
             self.pending_transactions.clear();
             self.pending_stakes.clear();
-        } else {
-            if let Some(height) = self.height(block.previous_hash) {
-                if height + 1 > self.get_height() {
-                    warn!("Fork detected! Reloading...");
-                    self.reload();
-                }
+        } else if let Some(height) = self.height(block.previous_hash) {
+            if height + 1 > self.get_height() {
+                warn!("Fork detected! Reloading...");
+                self.reload();
             }
         }
         Ok(hash)
@@ -468,11 +465,11 @@ impl Blockchain {
         let mut balances = HashMap::new();
         let mut balances_staked = HashMap::new();
         for public_key in balance_public_keys.iter() {
-            balances.insert(*public_key, self.get_balance(&public_key));
+            balances.insert(*public_key, self.get_balance(public_key));
         }
         for public_key in balance_staked_public_keys.iter() {
-            balances.insert(*public_key, self.get_balance(&public_key));
-            balances_staked.insert(*public_key, self.get_balance_staked(&public_key));
+            balances.insert(*public_key, self.get_balance(public_key));
+            balances_staked.insert(*public_key, self.get_balance_staked(public_key));
         }
         let n = self.get_height() - height;
         for hash in self.hashes.iter().rev().take(n) {

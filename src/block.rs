@@ -152,14 +152,13 @@ impl Block {
         blockchain: &Blockchain,
         db: &DBWithThreadMode<SingleThreaded>,
     ) -> Result<(), Box<dyn Error>> {
-        let height;
-        if self.previous_hash == [0; 32] {
-            height = 0;
+        let height = if self.previous_hash == [0; 32] {
+            0
         } else {
-            height = blockchain
+            blockchain
                 .height(self.previous_hash)
-                .ok_or("block doesn't extend chain")?;
-        }
+                .ok_or("block doesn't extend chain")?
+        };
         if height + TRUST_FORK_AFTER_BLOCKS < blockchain.get_height() {
             return Err("block doesn't extend untrusted fork".into());
         }
@@ -178,14 +177,13 @@ impl Block {
             balance_staked_public_keys,
             height,
         );
-        let staker_public_key: Option<&types::PublicKeyBytes>;
-        if self.previous_hash == blockchain.get_latest_block().hash()
+        let staker_public_key = if self.previous_hash == blockchain.get_latest_block().hash()
             && !blockchain.get_stakers().is_empty()
         {
-            staker_public_key = Some(&blockchain.get_stakers()[0].0);
+            Some(&blockchain.get_stakers()[0].0)
         } else {
-            staker_public_key = blockchain.get_stakers_history().get(&self.previous_hash);
-        }
+            blockchain.get_stakers_history().get(&self.previous_hash)
+        };
         println!("{:x?}", staker_public_key);
         println!("{:?}", balances);
         if let Some(public_key) = staker_public_key {
@@ -211,7 +209,7 @@ impl Block {
         if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
             return Err("block includes multiple stakes from same public_key".into());
         }
-        if !self.verify().is_ok() {
+        if self.verify().is_err() {
             return Err("block has invalid signature".into());
         }
         if self.timestamp > util::timestamp() {
@@ -242,7 +240,7 @@ impl Block {
                 return Err("only allowed to mint 1 stake".into());
             }
             let stake = self.stakes.get(0).unwrap();
-            if !stake.verify().is_ok() {
+            if stake.verify().is_err() {
                 return Err("mint stake has invalid signature".into());
             }
             if stake.amount == 0 {

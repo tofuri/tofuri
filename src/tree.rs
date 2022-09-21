@@ -85,3 +85,8 @@ impl fmt::Debug for Tree {
         )
     }
 }
+impl Default for Tree {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -75,10 +75,10 @@ impl Transaction {
         balance: types::Amount,
         timestamp: types::Timestamp,
     ) -> Result<(), Box<dyn Error>> {
-        if !types::PublicKey::from_bytes(&self.public_key_output).is_ok() {
+        if types::PublicKey::from_bytes(&self.public_key_output).is_err() {
             return Err("transaction has invalid public_key_output".into());
         }
-        if !self.verify().is_ok() {
+        if self.verify().is_err() {
             return Err("transaction has invalid signature".into());
         }
         if self.timestamp > util::timestamp() {

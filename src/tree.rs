@@ -51,8 +51,7 @@ impl Tree {
                 }
                 None => {
                     if hash != &[0; 32] {
-                        // panic!("broken chain")
-                        height = 0;
+                        panic!("broken chain")
                     }
                     break;
                 }

@@ -242,12 +242,12 @@ impl Blockchain {
         }
         for block in self.pending_blocks.clone() {
             // if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
-                // if public_key != &block.public_key {
-                    // warn!("block public_key don't match stakers history");
-                    // return;
-                // }
+            // if public_key != &block.public_key {
+            // warn!("block public_key don't match stakers history");
+            // return;
+            // }
             // } else {
-                // warn!("block didn't have a staker because network was down");
+            // warn!("block didn't have a staker because network was down");
             // }
             let hash;
             if block.previous_hash == self.latest_block.hash()
@@ -315,14 +315,12 @@ impl Blockchain {
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
             self.penalty_reload(&block.timestamp, &previous_block_timestamp);
-            
             if let Some(stake) = block.stakes.first() {
                 if stake.fee == 0 {
                     self.reward_cold_start(&block);
                 }
             }
             self.reward(&block);
-
             self.set_balances(&block);
             self.set_stakers(height, &block);
             self.set_sum_stakes();
@@ -399,7 +397,7 @@ impl Blockchain {
         for hash in self.hashes.iter().rev().take(n) {
             let block = Block::get(db, hash).unwrap();
             for transaction in block.transactions.iter() {
-                for  public_key in balance_public_keys.iter() {
+                for public_key in balance_public_keys.iter() {
                     if public_key == &transaction.public_key_input {
                         let mut balance = *balances.get(public_key).unwrap();
                         balance += transaction.amount + transaction.fee;

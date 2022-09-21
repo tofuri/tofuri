@@ -7,6 +7,7 @@ use crate::{
     types, util,
 };
 use ed25519::signature::Signer;
+use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -216,7 +217,7 @@ impl Block {
             return Err("block has invalid timestamp (block is from the future)".into());
         }
         if self.previous_hash == [0; 32] {
-            log::info!("previous block was genesis")
+            info!("previous block was genesis")
         } else if blockchain.get_hashes().contains(&self.previous_hash) {
             if Block::get(db, &self.hash()).is_ok() {
                 return Err("block already in db".into());
@@ -231,7 +232,7 @@ impl Block {
                 return Err("block created too late".into());
             }
         } else if Block::get(db, &self.previous_hash).is_ok() {
-            log::info!("FOUND PREVIOUS BLOCK");
+            info!("FOUND PREVIOUS BLOCK");
         } else {
             return Err("block does not extend chain".into());
         }

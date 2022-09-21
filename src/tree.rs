@@ -59,7 +59,8 @@ impl Tree {
         }
         height
     }
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
+    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
+        self.clear();
         let mut hashes: HashMap<types::Hash, Vec<types::Hash>> = HashMap::new();
         for res in db.iterator_cf(db::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
@@ -95,6 +96,10 @@ impl Tree {
             }
         }
         recurse(self, &hashes, previous_hash, vec);
+    }
+    pub fn clear(&mut self) {
+        self.branches.clear();
+        self.hashes.clear();
     }
 }
 impl fmt::Debug for Tree {

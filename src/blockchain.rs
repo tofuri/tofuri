@@ -52,16 +52,6 @@ impl Blockchain {
     ) -> Self {
         let mut multiaddrs = known;
         multiaddrs.append(&mut Self::multiaddrs(&db).unwrap());
-        let mut tree = Tree::default();
-        tree.load(&db);
-        if let Some(main) = tree.main() {
-            info!(
-                "{} {} {}",
-                "Main branch".cyan(),
-                main.1.to_string().yellow(),
-                hex::encode(main.0)
-            );
-        }
         let mut blockchain = Self {
             latest_block: Block::new([0; 32]),
             hashes: vec![],
@@ -81,7 +71,7 @@ impl Blockchain {
             heartbeats: 0,
             lag: [0.0; 3],
             sync_index: 0,
-            tree,
+            tree: Tree::default(),
         };
         let start = Instant::now();
         blockchain.reload();
@@ -362,6 +352,15 @@ impl Blockchain {
         self.balance_staked.clear();
         self.stakers_history.clear();
         self.set_latest_block().unwrap();
+        self.tree.reload(&self.db);
+        if let Some(main) = self.tree.main() {
+            info!(
+                "{} {} {}",
+                "Main branch".cyan(),
+                main.1.to_string().yellow(),
+                hex::encode(main.0)
+            );
+        }
         let hashes = Blockchain::hashes(&self.db, self.latest_block.hash()).unwrap();
         let mut previous_block_timestamp = match hashes.first() {
             Some(hash) => Block::get(&self.db, hash).unwrap().timestamp - 1,

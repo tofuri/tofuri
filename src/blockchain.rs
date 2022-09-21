@@ -10,6 +10,7 @@ use crate::{
     stake::Stake,
     synchronizer::Synchronizer,
     transaction::Transaction,
+    tree::Tree,
     types, util,
 };
 use colored::*;
@@ -41,6 +42,7 @@ pub struct Blockchain {
     heartbeats: types::Heartbeats,
     lag: [f64; 3],
     sync_index: usize,
+    tree: Tree,
 }
 impl Blockchain {
     pub fn new(
@@ -70,6 +72,7 @@ impl Blockchain {
             heartbeats: 0,
             lag: [0.0; 3],
             sync_index: 0,
+            tree: Tree::default(),
         };
         blockchain.reload();
         info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
@@ -495,6 +498,9 @@ impl Blockchain {
     }
     pub fn get_lag(&self) -> &[f64; 3] {
         &self.lag
+    }
+    pub fn get_tree(&self) -> &Tree {
+        &self.tree
     }
     pub fn get_next_sync_block(&mut self) -> Block {
         if self.sync_index >= self.hashes.len() {

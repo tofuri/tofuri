@@ -111,44 +111,6 @@ impl Blockchain {
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
     }
-    fn hashes(
-        db: &DBWithThreadMode<SingleThreaded>,
-        previous_hash: types::Hash,
-    ) -> Result<Vec<types::Hash>, Box<dyn Error>> {
-        let mut hashes = vec![];
-        let mut previous_hash = previous_hash;
-        let mut closure = || -> Result<Option<()>, Box<dyn Error>> {
-            match Block::get(db, &previous_hash) {
-                Ok(block) => {
-                    let hash = block.hash();
-                    if hash != previous_hash {
-                        error!(
-                            "{} {} != {}",
-                            "Detected broken chain!".red(),
-                            hex::encode(hash),
-                            hex::encode(previous_hash)
-                        );
-                        warn!("{}", "Pruning broken chain".yellow());
-                        hashes.clear();
-                        Blockchain::set_latest_block_hash(db, previous_hash)?;
-                    }
-                    hashes.push(hash);
-                    previous_hash = block.previous_hash;
-                    Ok(Some(()))
-                }
-                Err(err) => {
-                    if err.to_string() == "block not found" {
-                        Ok(None)
-                    } else {
-                        Err(err)
-                    }
-                }
-            }
-        };
-        while (closure()?).is_some() {}
-        hashes.reverse();
-        Ok(hashes)
-    }
     fn penalty(&mut self) {
         let public_key = self.stakers[0].0;
         self.balance_staked.remove(&public_key);
@@ -361,9 +323,7 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
-        // let hashes = Blockchain::hashes(&self.db, self.latest_block.hash()).unwrap();
         let hashes = self.tree.get_main_hashes();
-        println!("{:x?}", hashes);
         let mut previous_block_timestamp = match hashes.first() {
             Some(hash) => Block::get(&self.db, hash).unwrap().timestamp - 1,
             None => 0,

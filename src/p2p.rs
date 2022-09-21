@@ -1,8 +1,11 @@
-use crate::{constants::PROTOCOL_VERSION, gossipsub, print, blockchain::Blockchain};
+use crate::{
+    blockchain::Blockchain, constants::PROTOCOL_VERSION, gossipsub, heartbeat, http, print,
+};
 use colored::*;
 use libp2p::{
     autonat,
     floodsub::{Floodsub, FloodsubEvent},
+    futures::{FutureExt, StreamExt},
     gossipsub::{
         Gossipsub, GossipsubConfigBuilder, GossipsubEvent, IdentTopic, MessageAuthenticity,
     },
@@ -11,11 +14,12 @@ use libp2p::{
     mdns::{Mdns, MdnsConfig, MdnsEvent},
     ping::{self, Ping, PingEvent},
     relay::v2::relay::{self, Relay},
-    swarm::{NetworkBehaviourEventProcess, Swarm},
-    NetworkBehaviour, PeerId,
+    swarm::{NetworkBehaviourEventProcess},
+    NetworkBehaviour, PeerId, Swarm,
 };
 use log::error;
 use std::{error::Error, time::Duration};
+use tokio::net::TcpListener;
 #[derive(NetworkBehaviour)]
 #[behaviour(event_process = true)]
 pub struct MyBehaviour {
@@ -135,4 +139,20 @@ pub async fn swarm(blockchain: Blockchain) -> Result<Swarm<MyBehaviour>, Box<dyn
         behaviour.gossipsub.subscribe(ident_topic)?;
     }
     Ok(Swarm::new(transport, behaviour, local_peer_id))
+}
+pub async fn listen(
+    swarm: &mut Swarm<MyBehaviour>,
+    listener: TcpListener,
+) -> Result<(), Box<dyn Error>> {
+    loop {
+        tokio::select! {
+            _ = heartbeat::next().fuse() => if let Err(err) = heartbeat::handle(swarm) {
+                error!("{}", err);
+            },
+            Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handle(stream, swarm).await {
+                error!("{}", err);
+            },
+            event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
+        }
+    }
 }

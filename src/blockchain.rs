@@ -6,21 +6,15 @@ use crate::{
         BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TRANSACTIONS_LIMIT, MIN_STAKE,
         PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
-    db, heartbeat, http,
-    print,
+    db,
     stake::Stake,
     synchronizer::Synchronizer,
     transaction::Transaction,
     types, util,
-    p2p::MyBehaviour
 };
 use colored::*;
-use libp2p::{
-    futures::{FutureExt, StreamExt},
-    Multiaddr, Swarm,
-};
+use libp2p::Multiaddr;
 use log::{error, info, warn};
-use tokio::net::TcpListener;
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::{
     collections::{HashMap, VecDeque},
@@ -75,15 +69,13 @@ impl Blockchain {
             synchronizer: Synchronizer::new(),
             heartbeats: 0,
             lag: [0.0; 3],
-            sync_index: 0
+            sync_index: 0,
         };
         blockchain.reload();
         info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
         blockchain
     }
-    pub fn get_next_sync_block(
-        &mut self,
-    ) -> Block {
+    pub fn get_next_sync_block(&mut self) -> Block {
         if self.sync_index >= self.hashes.len() {
             self.sync_index = 0;
         }
@@ -120,22 +112,6 @@ impl Blockchain {
             }
         }
         Ok(known)
-    }
-    pub async fn listen(
-        swarm: &mut Swarm<MyBehaviour>,
-        listener: TcpListener,
-    ) -> Result<(), Box<dyn Error>> {
-        loop {
-            tokio::select! {
-                _ = heartbeat::next().fuse() => if let Err(err) = heartbeat::handle(swarm) {
-                    error!("{}", err);
-                },
-                Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handle(stream, swarm).await {
-                    error!("{}", err);
-                },
-                event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
-            }
-        }
     }
     pub fn heartbeat(&mut self) {
         self.heartbeats += 1;
@@ -225,10 +201,7 @@ impl Blockchain {
             address::encode(&block.public_key).green()
         );
     }
-    pub fn pending_blocks_push(
-        &mut self,
-        block: Block,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn pending_blocks_push(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
         if self
             .pending_blocks
             .iter()
@@ -270,10 +243,7 @@ impl Blockchain {
         self.limit_pending_transactions();
         Ok(())
     }
-    pub fn pending_stakes_push(
-        &mut self,
-        stake: Stake,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn pending_stakes_push(&mut self, stake: Stake) -> Result<(), Box<dyn Error>> {
         if self
             .pending_stakes
             .iter()
@@ -293,14 +263,17 @@ impl Blockchain {
         }
         let balance = self.get_balance(&stake.public_key);
         let balance_staked = self.get_balance_staked(&stake.public_key);
-        stake.validate(&self.db, balance, balance_staked, self.latest_block.timestamp)?;
+        stake.validate(
+            &self.db,
+            balance,
+            balance_staked,
+            self.latest_block.timestamp,
+        )?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
         Ok(())
     }
-    pub fn forge_block(
-        &mut self,
-    ) -> Result<Block, Box<dyn Error>> {
+    pub fn forge_block(&mut self) -> Result<Block, Box<dyn Error>> {
         let mut block;
         if let Some(hash) = self.hashes.last() {
             block = Block::new(*hash);
@@ -359,11 +332,7 @@ impl Blockchain {
             );
         }
     }
-    pub fn append(
-        &mut self,
-        block: Block,
-        latest: bool,
-    ) -> Result<types::Hash, Box<dyn Error>> {
+    pub fn append(&mut self, block: Block, latest: bool) -> Result<types::Hash, Box<dyn Error>> {
         block.put(&self.db)?;
         let hash = block.hash();
         if latest {
@@ -595,9 +564,7 @@ impl Blockchain {
         self.sum_stakes_now = sum;
         self.sum_stakes_all_time += sum;
     }
-    fn set_latest_block(
-        &mut self,
-    ) -> Result<(), Box<dyn Error>> {
+    fn set_latest_block(&mut self) -> Result<(), Box<dyn Error>> {
         if let Some(hash) = self.db.get(db::key(&db::Key::LatestBlockHash))? {
             self.latest_block = Block::get(&self.db, &hash)?;
         }

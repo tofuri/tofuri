@@ -1,5 +1,5 @@
 use clap::Parser;
-use pea::{cli::ValidatorArgs, db, p2p, print, blockchain::Blockchain, wallet::Wallet};
+use pea::{blockchain::Blockchain, cli::ValidatorArgs, db, p2p, print, wallet::Wallet};
 use std::error::Error;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
@@ -27,6 +27,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     swarm.listen_on(args.multiaddr.parse()?)?;
     let listener = TcpListener::bind(args.http).await?;
     print::http(&listener)?;
-    Blockchain::listen(&mut swarm, listener).await?;
+    p2p::listen(&mut swarm, listener).await?;
     Ok(())
 }

@@ -34,12 +34,12 @@ pub struct Blockchain {
     balance: types::Balance,
     balance_staked: types::Balance,
     stakers_history: types::StakersHistory,
-    pub db: DBWithThreadMode<SingleThreaded>,
-    pub keypair: types::Keypair,
+    db: DBWithThreadMode<SingleThreaded>,
+    keypair: types::Keypair,
     multiaddrs: Vec<Multiaddr>,
-    pub synchronizer: Synchronizer,
-    pub heartbeats: types::Heartbeats,
-    pub lag: [f64; 3],
+    synchronizer: Synchronizer,
+    heartbeats: types::Heartbeats,
+    lag: [f64; 3],
     sync_index: usize,
 }
 impl Blockchain {
@@ -116,11 +116,30 @@ impl Blockchain {
     pub fn heartbeat(&mut self) {
         self.heartbeats += 1;
     }
+    pub fn get_keypair(&self) -> &types::Keypair {
+        &self.keypair
+    }
+    pub fn get_db(&self) -> &DBWithThreadMode<SingleThreaded> {
+        &self.db
+    }
+    pub fn get_lag(&self) -> &[f64; 3] {
+        &self.lag
+    }
+    pub fn set_lag(&mut self, millis: f64) {
+        self.lag.rotate_right(1);
+        self.lag[0] = millis;
+    }
     pub fn get_multiaddrs(&self) -> &Vec<Multiaddr> {
         &self.multiaddrs
     }
     pub fn get_heartbeats(&self) -> &types::Heartbeats {
         &self.heartbeats
+    }
+    pub fn get_synchronizer(&self) -> &Synchronizer {
+        &self.synchronizer
+    }
+    pub fn get_synchronizer_mut(&mut self) -> &mut Synchronizer {
+        &mut self.synchronizer
     }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)

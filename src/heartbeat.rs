@@ -24,20 +24,19 @@ pub async fn next() {
 pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let behaviour = swarm.behaviour_mut();
     behaviour.blockchain.heartbeat();
-    behaviour.blockchain.synchronizer.heartbeat_handle();
+    behaviour.blockchain.get_synchronizer_mut().heartbeat_handle();
     handle_block(behaviour)?;
     handle_sync(behaviour)?;
     let millis = lag();
-    print::heartbeat_lag(behaviour.blockchain.heartbeats, millis);
-    behaviour.blockchain.lag.rotate_right(1);
-    behaviour.blockchain.lag[0] = millis;
+    print::heartbeat_lag(behaviour.blockchain.get_heartbeats(), millis);
+    behaviour.blockchain.set_lag(millis);
     Ok(())
 }
 fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     let mut forge = true;
     if !behaviour.blockchain.get_stakers().is_empty() {
         if &behaviour.blockchain.get_stakers()[0].0
-            != behaviour.blockchain.keypair.public.as_bytes()
+            != behaviour.blockchain.get_keypair().public.as_bytes()
             || util::timestamp()
                 < behaviour.blockchain.get_latest_block().timestamp
                     + BLOCK_TIME_MIN as types::Timestamp
@@ -46,7 +45,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         }
     } else {
         let mut stake = Stake::new(true, MIN_STAKE, 0);
-        stake.sign(&behaviour.blockchain.keypair);
+        stake.sign(&behaviour.blockchain.get_keypair());
         behaviour.blockchain.set_cold_start_stake(stake);
     }
     if forge {

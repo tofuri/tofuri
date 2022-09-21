@@ -143,19 +143,19 @@ Validator {} {}/tree/{}
                 env!("CARGO_PKG_VERSION"),
                 env!("CARGO_PKG_REPOSITORY"),
                 env!("GIT_HASH"),
-                address::encode(behaviour.blockchain.keypair.public.as_bytes()),
+                address::encode(behaviour.blockchain.get_keypair().public.as_bytes()),
                 behaviour
                     .blockchain
-                    .get_balance(behaviour.blockchain.keypair.public.as_bytes()),
+                    .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
                 behaviour
                     .blockchain
-                    .get_balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
+                    .get_balance_staked(behaviour.blockchain.get_keypair().public.as_bytes()),
                 behaviour.blockchain.get_sum_stakes_now(),
                 behaviour.blockchain.get_sum_stakes_all_time(),
                 behaviour.blockchain.get_height(),
-                behaviour.blockchain.heartbeats,
-                behaviour.blockchain.lag,
-                behaviour.blockchain.synchronizer,
+                behaviour.blockchain.get_heartbeats(),
+                behaviour.blockchain.get_lag(),
+                behaviour.blockchain.get_synchronizer(),
                 behaviour
                     .blockchain
                     .get_stakers()
@@ -228,19 +228,19 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&Data {
-                    public_key: *behaviour.blockchain.keypair.public.as_bytes(),
+                    public_key: *behaviour.blockchain.get_keypair().public.as_bytes(),
                     balance: behaviour
                         .blockchain
-                        .get_balance(behaviour.blockchain.keypair.public.as_bytes()),
+                        .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
                     balance_staked: behaviour
                         .blockchain
-                        .get_balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
+                        .get_balance_staked(behaviour.blockchain.get_keypair().public.as_bytes()),
                     sum_stakes_now: *behaviour.blockchain.get_sum_stakes_now(),
                     sum_stakes_all_time: *behaviour.blockchain.get_sum_stakes_all_time(),
                     height: behaviour.blockchain.get_height(),
-                    heartbeats: behaviour.blockchain.heartbeats,
-                    lag: behaviour.blockchain.lag,
-                    synchronizer: behaviour.blockchain.synchronizer,
+                    heartbeats: *behaviour.blockchain.get_heartbeats(),
+                    lag: *behaviour.blockchain.get_lag(),
+                    synchronizer: *behaviour.blockchain.get_synchronizer(),
                     stakers: behaviour.blockchain.get_stakers().clone(),
                     latest_hashes: behaviour
                         .blockchain
@@ -389,7 +389,7 @@ async fn handle_get_json_block_by_hash(
             .get(7..)
             .ok_or("GET BLOCK_BY_HASH 2")?,
     )?;
-    let block = Block::get(&swarm.behaviour().blockchain.db, &hash)?;
+    let block = Block::get(&swarm.behaviour().blockchain.get_db(), &hash)?;
     stream
         .write_all(
             format!(
@@ -419,7 +419,7 @@ async fn handle_get_json_transaction_by_hash(
             .get(13..)
             .ok_or("GET TRANSACTION_BY_HASH 2")?,
     )?;
-    let transaction = Transaction::get(&swarm.behaviour().blockchain.db, &hash)?;
+    let transaction = Transaction::get(&swarm.behaviour().blockchain.get_db(), &hash)?;
     stream
         .write_all(
             format!(
@@ -449,7 +449,7 @@ async fn handle_get_json_stake_by_hash(
             .get(7..)
             .ok_or("GET STAKE_BY_HASH 2")?,
     )?;
-    let stake = Stake::get(&swarm.behaviour().blockchain.db, &hash)?;
+    let stake = Stake::get(&swarm.behaviour().blockchain.get_db(), &hash)?;
     stream
         .write_all(
             format!(

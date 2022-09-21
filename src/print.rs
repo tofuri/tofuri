@@ -61,7 +61,7 @@ pub fn blockchain(blockchain: &Blockchain) {
     info!(
         "{} {}",
         "PubKey".cyan(),
-        address::encode(blockchain.keypair.public.as_bytes())
+        address::encode(blockchain.get_keypair().public.as_bytes())
     );
     info!("{} {}", "Peers".cyan(), blockchain.get_multiaddrs().len());
     info!("{} {}", "Height".cyan(), blockchain.get_hashes().len());
@@ -110,7 +110,7 @@ pub fn http_handle(first: &str) {
 pub fn p2p_event(event_type: &str, event: String) {
     info!("{} {}", event_type.cyan(), event)
 }
-pub fn heartbeat_lag(heartbeats: types::Heartbeats, millis: f64) {
+pub fn heartbeat_lag(heartbeats: &types::Heartbeats, millis: f64) {
     debug!(
         "{} {} {}ms",
         "Heartbeat".cyan(),

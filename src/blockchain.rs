@@ -345,18 +345,6 @@ impl Blockchain {
         self.hashes = hashes;
         self.penalty_reload(&util::timestamp(), &self.latest_block.timestamp.clone());
     }
-    pub fn get_balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
-        match self.balance.get(public_key) {
-            Some(b) => *b,
-            None => 0,
-        }
-    }
-    pub fn get_balance_staked(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
-        match self.balance_staked.get(public_key) {
-            Some(b) => *b,
-            None => 0,
-        }
-    }
     pub fn get_latest_block(&self) -> &Block {
         &self.latest_block
     }
@@ -381,14 +369,61 @@ impl Blockchain {
     pub fn get_sum_stakes_all_time(&self) -> &types::Amount {
         &self.sum_stakes_all_time
     }
+    pub fn get_stakers_history(&self) -> &types::StakersHistory {
+        &self.stakers_history
+    }
+    pub fn get_multiaddrs(&self) -> &Vec<Multiaddr> {
+        &self.multiaddrs
+    }
+    pub fn get_heartbeats(&self) -> &types::Heartbeats {
+        &self.heartbeats
+    }
+    pub fn get_heartbeats_mut(&mut self) -> &mut types::Heartbeats {
+        &mut self.heartbeats
+    }
+    pub fn get_synchronizer(&self) -> &Synchronizer {
+        &self.synchronizer
+    }
+    pub fn get_synchronizer_mut(&mut self) -> &mut Synchronizer {
+        &mut self.synchronizer
+    }
+    pub fn get_keypair(&self) -> &types::Keypair {
+        &self.keypair
+    }
+    pub fn get_db(&self) -> &DBWithThreadMode<SingleThreaded> {
+        &self.db
+    }
+    pub fn get_lag(&self) -> &[f64; 3] {
+        &self.lag
+    }
+    pub fn get_tree(&self) -> &Tree {
+        &self.tree
+    }
     pub fn get_height(&self) -> types::Height {
         if self.hashes.is_empty() {
             return 0;
         }
         self.hashes.len() - 1
     }
-    pub fn get_stakers_history(&self) -> &types::StakersHistory {
-        &self.stakers_history
+    pub fn get_balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
+        match self.balance.get(public_key) {
+            Some(b) => *b,
+            None => 0,
+        }
+    }
+    pub fn get_balance_staked(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
+        match self.balance_staked.get(public_key) {
+            Some(b) => *b,
+            None => 0,
+        }
+    }
+    pub fn get_next_sync_block(&mut self) -> Block {
+        if self.sync_index >= self.hashes.len() {
+            self.sync_index = 0;
+        }
+        let block = Block::get(&self.db, &self.hashes[self.sync_index]).unwrap();
+        self.sync_index += 1;
+        block
     }
     pub fn get_balances_at_height(
         &self,
@@ -445,41 +480,6 @@ impl Blockchain {
             }
         }
         (balances, balances_staked)
-    }
-    pub fn get_multiaddrs(&self) -> &Vec<Multiaddr> {
-        &self.multiaddrs
-    }
-    pub fn get_heartbeats(&self) -> &types::Heartbeats {
-        &self.heartbeats
-    }
-    pub fn get_heartbeats_mut(&mut self) -> &mut types::Heartbeats {
-        &mut self.heartbeats
-    }
-    pub fn get_synchronizer(&self) -> &Synchronizer {
-        &self.synchronizer
-    }
-    pub fn get_synchronizer_mut(&mut self) -> &mut Synchronizer {
-        &mut self.synchronizer
-    }
-    pub fn get_keypair(&self) -> &types::Keypair {
-        &self.keypair
-    }
-    pub fn get_db(&self) -> &DBWithThreadMode<SingleThreaded> {
-        &self.db
-    }
-    pub fn get_lag(&self) -> &[f64; 3] {
-        &self.lag
-    }
-    pub fn get_tree(&self) -> &Tree {
-        &self.tree
-    }
-    pub fn get_next_sync_block(&mut self) -> Block {
-        if self.sync_index >= self.hashes.len() {
-            self.sync_index = 0;
-        }
-        let block = Block::get(&self.db, &self.hashes[self.sync_index]).unwrap();
-        self.sync_index += 1;
-        block
     }
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);

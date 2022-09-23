@@ -238,7 +238,7 @@ impl Blockchain {
             }
         }
         block.sign(&self.keypair);
-        let hash = self.append(block.clone(), true).unwrap();
+        let hash = self.append(&block, true).unwrap();
         info!(
             "{} {} {}",
             "Forged".green(),
@@ -264,9 +264,9 @@ impl Blockchain {
             let hash = if block.previous_hash == self.latest_block.hash()
                 || self.latest_block.previous_hash == [0; 32]
             {
-                self.append(block, true).unwrap()
+                self.append(&block, true).unwrap()
             } else {
-                self.append(block, false).unwrap()
+                self.append(&block, false).unwrap()
             };
             info!(
                 "{} {} {}",
@@ -276,11 +276,10 @@ impl Blockchain {
             );
         }
     }
-    pub fn append(&mut self, block: Block, latest: bool) -> Result<types::Hash, Box<dyn Error>> {
+    pub fn append(&mut self, block: &Block, latest: bool) -> Result<types::Hash, Box<dyn Error>> {
         block.put(&self.db)?;
         let hash = block.hash();
         if latest {
-            // self.set_latest_block();
             self.hashes.push(hash);
             if let Some(stake) = block.stakes.first() {
                 if stake.fee == 0 {
@@ -291,7 +290,7 @@ impl Blockchain {
             self.set_balances(&block);
             self.set_stakers(self.get_height(), &block);
             self.set_sum_stakes();
-            self.latest_block = block;
+            self.set_latest_block();
             self.pending_blocks.clear();
             self.pending_transactions.clear();
             self.pending_stakes.clear();
@@ -547,8 +546,7 @@ impl Blockchain {
     }
     fn set_latest_block(&mut self) {
         self.latest_block = if let Some(main) = self.tree.main() {
-            let hash = main.0;
-            Block::get(&self.db, &hash).unwrap()
+            Block::get(&self.db, &main.0).unwrap()
         } else {
             Block::new([0; 32])
         };

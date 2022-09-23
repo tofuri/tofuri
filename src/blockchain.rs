@@ -303,7 +303,6 @@ impl Blockchain {
         Ok(hash)
     }
     pub fn reload(&mut self) {
-        self.latest_block = Block::new([0; 32]);
         self.stakers.clear();
         self.hashes.clear();
         self.balance.clear();

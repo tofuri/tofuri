@@ -410,12 +410,12 @@ impl Blockchain {
         self.sync_index += 1;
         block
     }
-    pub fn get_balances_at_height(
+    pub fn get_balances_at_hash(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         balance_public_keys: Vec<types::PublicKeyBytes>,
         balance_staked_public_keys: Vec<types::PublicKeyBytes>,
-        height: types::Height,
+        previous_hash: types::Hash,
     ) -> (
         HashMap<types::PublicKeyBytes, types::Amount>,
         HashMap<types::PublicKeyBytes, types::Amount>,
@@ -429,39 +429,48 @@ impl Blockchain {
             balances.insert(*public_key, self.get_balance(public_key));
             balances_staked.insert(*public_key, self.get_balance_staked(public_key));
         }
-        let n = self.get_height() - height;
-        for hash in self.hashes.iter().rev().take(n) {
-            let block = Block::get(db, hash).unwrap();
-            for transaction in block.transactions.iter() {
-                for public_key in balance_public_keys.iter() {
-                    if public_key == &transaction.public_key_input {
-                        let mut balance = *balances.get(public_key).unwrap();
-                        balance += transaction.amount + transaction.fee;
-                        balances.insert(*public_key, balance);
-                    }
-                    if public_key == &transaction.public_key_output {
-                        let mut balance = *balances.get(public_key).unwrap();
-                        balance -= transaction.amount;
-                        balances.insert(*public_key, balance);
-                    }
+        if let Some(main) = self.tree.main() {
+            let mut hash = main.0;
+            loop {
+                if hash == previous_hash || hash == [0; 32] {
+                    break;
                 }
-            }
-            for stake in block.stakes.iter() {
-                for public_key in balance_staked_public_keys.iter() {
-                    if public_key == &stake.public_key {
-                        let mut balance = *balances.get(public_key).unwrap();
-                        let mut balance_staked = *balances_staked.get(public_key).unwrap();
-                        if stake.deposit {
-                            balance += stake.amount + stake.fee;
-                            balance_staked -= stake.amount;
-                        } else {
-                            balance -= stake.amount - stake.fee;
-                            balance_staked += stake.amount;
+                let block = Block::get(db, &hash).unwrap();
+                for transaction in block.transactions.iter() {
+                    for public_key in balance_public_keys.iter() {
+                        if public_key == &transaction.public_key_input {
+                            let mut balance = *balances.get(public_key).unwrap();
+                            balance += transaction.amount + transaction.fee;
+                            balances.insert(*public_key, balance);
                         }
-                        balances.insert(*public_key, balance);
-                        balances_staked.insert(*public_key, balance_staked);
+                        if public_key == &transaction.public_key_output {
+                            let mut balance = *balances.get(public_key).unwrap();
+                            balance -= transaction.amount;
+                            balances.insert(*public_key, balance);
+                        }
                     }
                 }
+                for stake in block.stakes.iter() {
+                    for public_key in balance_staked_public_keys.iter() {
+                        if public_key == &stake.public_key {
+                            let mut balance = *balances.get(public_key).unwrap();
+                            let mut balance_staked = *balances_staked.get(public_key).unwrap();
+                            if stake.deposit {
+                                balance += stake.amount + stake.fee;
+                                balance_staked -= stake.amount;
+                            } else {
+                                balance -= stake.amount - stake.fee;
+                                balance_staked += stake.amount;
+                            }
+                            balances.insert(*public_key, balance);
+                            balances_staked.insert(*public_key, balance_staked);
+                        }
+                    }
+                }
+                match self.tree.get(&hash) {
+                    Some(previous_hash) => hash = *previous_hash,
+                    None => panic!("broken chain"),
+                };
             }
         }
         (balances, balances_staked)

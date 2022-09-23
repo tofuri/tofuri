@@ -153,13 +153,17 @@ impl Block {
         blockchain: &Blockchain,
         db: &DBWithThreadMode<SingleThreaded>,
     ) -> Result<(), Box<dyn Error>> {
-        let height = if self.previous_hash == [0; 32] {
-            0
-        } else {
-            blockchain.get_tree().height(&self.previous_hash)?
-        };
-        if height + TRUST_FORK_AFTER_BLOCKS < blockchain.get_height() {
-            return Err("block doesn't extend untrusted fork".into());
+        // let height = if self.previous_hash == [0; 32] {
+        // 0
+        // } else {
+        // blockchain.get_tree().height(&self.previous_hash)?
+        // };
+        // if height + TRUST_FORK_AFTER_BLOCKS < blockchain.get_height() {
+        // return Err("block doesn't extend untrusted fork".into());
+        // }
+        if self.previous_hash != [0; 32] && blockchain.get_tree().get(&self.previous_hash).is_none()
+        {
+            return Err("block doesn't extend chain".into());
         }
         let mut balance_public_keys = vec![];
         let mut balance_staked_public_keys = vec![];
@@ -169,12 +173,11 @@ impl Block {
         for stake in self.stakes.iter() {
             balance_staked_public_keys.push(stake.public_key);
         }
-        println!("{}", height);
-        let (balances, balances_staked) = blockchain.get_balances_at_height(
+        let (balances, balances_staked) = blockchain.get_balances_at_hash(
             db,
             balance_public_keys,
             balance_staked_public_keys,
-            height,
+            self.previous_hash,
         );
         let staker_public_key = if self.previous_hash == blockchain.get_latest_block().hash()
             && !blockchain.get_stakers().is_empty()

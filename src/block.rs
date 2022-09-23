@@ -156,9 +156,7 @@ impl Block {
         let height = if self.previous_hash == [0; 32] {
             0
         } else {
-            blockchain
-                .height(self.previous_hash)
-                .ok_or("block doesn't extend chain")?
+            blockchain.get_tree().height(&self.previous_hash)?
         };
         if height + TRUST_FORK_AFTER_BLOCKS < blockchain.get_height() {
             return Err("block doesn't extend untrusted fork".into());

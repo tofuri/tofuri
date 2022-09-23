@@ -1,6 +1,7 @@
 use crate::{block::BlockMetadataLean, db, types};
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::collections::HashMap;
+use std::error::Error;
 use std::fmt;
 type Branch = (types::Hash, types::Height);
 pub struct Tree {
@@ -51,18 +52,19 @@ impl Tree {
             .position(|(hash, _)| hash == &previous_hash)
         {
             // extend branch
-            self.branches[index] = (hash, self.height(&previous_hash));
+            self.branches[index] = (hash, self.height(&previous_hash).unwrap());
             Some(false)
         } else {
             // new branch
-            self.branches.push((hash, self.height(&previous_hash)));
+            self.branches
+                .push((hash, self.height(&previous_hash).unwrap()));
             Some(true)
         }
     }
     pub fn sort_branches(&mut self) {
         self.branches.sort_by(|a, b| b.1.cmp(&a.1));
     }
-    fn height(&self, previous_hash: &types::Hash) -> types::Height {
+    pub fn height(&self, previous_hash: &types::Hash) -> Result<types::Height, Box<dyn Error>> {
         let mut hash = previous_hash;
         let mut height = 0;
         loop {
@@ -73,13 +75,13 @@ impl Tree {
                 }
                 None => {
                     if hash != &[0; 32] {
-                        panic!("broken chain")
+                        return Err("broken chain".into());
                     }
                     break;
                 }
             };
         }
-        height
+        Ok(height)
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         self.clear();

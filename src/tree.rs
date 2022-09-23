@@ -18,7 +18,7 @@ impl Tree {
     pub fn main(&self) -> Option<&Branch> {
         self.branches.first()
     }
-    pub fn get_vec(&mut self) -> Vec<types::Hash> {
+    pub fn get_vec(&self) -> Vec<types::Hash> {
         let mut vec = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;
@@ -39,7 +39,7 @@ impl Tree {
         vec.reverse();
         vec
     }
-    pub fn get(&mut self, hash: &types::Hash) -> Option<&types::Hash> {
+    pub fn get(&self, hash: &types::Hash) -> Option<&types::Hash> {
         self.hashes.get(hash)
     }
     pub fn insert(&mut self, hash: types::Hash, previous_hash: types::Hash) -> Option<bool> {

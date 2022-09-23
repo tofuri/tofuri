@@ -391,10 +391,11 @@ impl Blockchain {
         &self.tree
     }
     pub fn get_height(&self) -> types::Height {
-        if self.hashes.is_empty() {
-            return 0;
+        if let Some(main) = self.tree.main() {
+            main.1
+        } else {
+            0
         }
-        self.hashes.len() - 1
     }
     pub fn get_balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
         match self.balance.get(public_key) {

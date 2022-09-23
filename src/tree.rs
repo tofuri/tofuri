@@ -17,7 +17,7 @@ impl Tree {
     pub fn main(&self) -> Option<&Branch> {
         self.branches.first()
     }
-    pub fn get_main_hashes(&mut self) -> Vec<types::Hash> {
+    pub fn get_vec(&mut self) -> Vec<types::Hash> {
         let mut vec = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;

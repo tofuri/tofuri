@@ -320,7 +320,7 @@ impl Blockchain {
             );
         }
         self.set_latest_block();
-        let hashes = self.tree.get_main_hashes();
+        let hashes = self.tree.get_vec();
         let mut previous_block_timestamp = match hashes.first() {
             Some(hash) => Block::get(&self.db, hash).unwrap().timestamp - 1,
             None => 0,

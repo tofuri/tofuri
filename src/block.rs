@@ -1,6 +1,6 @@
 use crate::{
     blockchain::Blockchain,
-    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN, MIN_STAKE, TRUST_FORK_AFTER_BLOCKS},
+    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN, MIN_STAKE},
     db,
     stake::Stake,
     transaction::Transaction,

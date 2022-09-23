@@ -1,7 +1,6 @@
 use crate::{block::BlockMetadataLean, db, types};
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::collections::HashMap;
-use std::error::Error;
 use std::fmt;
 type Branch = (types::Hash, types::Height);
 pub struct Tree {

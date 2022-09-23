@@ -24,10 +24,6 @@ pub async fn next() {
 pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let behaviour = swarm.behaviour_mut();
     *behaviour.blockchain.get_heartbeats_mut() += 1;
-    behaviour
-        .blockchain
-        .get_synchronizer_mut()
-        .heartbeat_handle();
     handle_block(behaviour)?;
     handle_sync(behaviour)?;
     let millis = lag();

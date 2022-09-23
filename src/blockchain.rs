@@ -8,7 +8,6 @@ use crate::{
     },
     db,
     stake::Stake,
-    synchronizer::Synchronizer,
     transaction::Transaction,
     tree::Tree,
     types, util,
@@ -38,7 +37,6 @@ pub struct Blockchain {
     db: DBWithThreadMode<SingleThreaded>,
     keypair: types::Keypair,
     multiaddrs: Vec<Multiaddr>,
-    synchronizer: Synchronizer,
     heartbeats: types::Heartbeats,
     lag: [f64; 3],
     sync_index: usize,
@@ -67,7 +65,6 @@ impl Blockchain {
             db,
             keypair,
             multiaddrs,
-            synchronizer: Synchronizer::new(),
             heartbeats: 0,
             lag: [0.0; 3],
             sync_index: 0,
@@ -380,12 +377,6 @@ impl Blockchain {
     }
     pub fn get_heartbeats_mut(&mut self) -> &mut types::Heartbeats {
         &mut self.heartbeats
-    }
-    pub fn get_synchronizer(&self) -> &Synchronizer {
-        &self.synchronizer
-    }
-    pub fn get_synchronizer_mut(&mut self) -> &mut Synchronizer {
-        &mut self.synchronizer
     }
     pub fn get_keypair(&self) -> &types::Keypair {
         &self.keypair

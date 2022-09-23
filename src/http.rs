@@ -4,7 +4,6 @@ use crate::{
     p2p::MyBehaviour,
     print,
     stake::{CompressedStake, Stake},
-    synchronizer::Synchronizer,
     transaction::{CompressedTransaction, Transaction},
     types,
     types::Stakers,
@@ -132,7 +131,6 @@ Validator {} {}/tree/{}
  height: {}
  heartbeats: {}
  lag: {:?}
- {:?}
  queue: {:?}
  stakers_history: {:?}
  latest_hashes: {:?}
@@ -155,7 +153,6 @@ Validator {} {}/tree/{}
                 behaviour.blockchain.get_height(),
                 behaviour.blockchain.get_heartbeats(),
                 behaviour.blockchain.get_lag(),
-                behaviour.blockchain.get_synchronizer(),
                 behaviour
                     .blockchain
                     .get_stakers()
@@ -210,7 +207,6 @@ async fn handle_get_json(
         height: types::Height,
         heartbeats: types::Heartbeats,
         lag: [f64; 3],
-        synchronizer: Synchronizer,
         stakers: Stakers,
         latest_hashes: types::Hashes,
         pending_transactions: Vec<Transaction>,
@@ -240,7 +236,6 @@ Content-Type: application/json
                     height: behaviour.blockchain.get_height(),
                     heartbeats: *behaviour.blockchain.get_heartbeats(),
                     lag: *behaviour.blockchain.get_lag(),
-                    synchronizer: *behaviour.blockchain.get_synchronizer(),
                     stakers: behaviour.blockchain.get_stakers().clone(),
                     latest_hashes: behaviour
                         .blockchain

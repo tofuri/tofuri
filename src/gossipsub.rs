@@ -9,7 +9,6 @@ pub fn handle(
         "block" => {
             let block: Block = bincode::deserialize(&message.data)?;
             behaviour.blockchain.pending_blocks_push(block)?;
-            behaviour.blockchain.get_synchronizer_mut().new += 1;
         }
         "stake" => {
             let stake: Stake = bincode::deserialize(&message.data)?;

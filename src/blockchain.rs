@@ -238,7 +238,7 @@ impl Blockchain {
             }
         }
         block.sign(&self.keypair);
-        let hash = self.append(&block, true).unwrap();
+        let hash = self.append(&block).unwrap();
         info!(
             "{} {} {}",
             "Forged".green(),
@@ -261,13 +261,7 @@ impl Blockchain {
             // } else {
             // warn!("block didn't have a staker because network was down");
             // }
-            let hash = if block.previous_hash == self.latest_block.hash()
-                || self.latest_block.previous_hash == [0; 32]
-            {
-                self.append(&block, true).unwrap()
-            } else {
-                self.append(&block, false).unwrap()
-            };
+            let hash = self.append(&block).unwrap();
             info!(
                 "{} {} {}",
                 "Accepted".green(),
@@ -276,28 +270,29 @@ impl Blockchain {
             );
         }
     }
-    pub fn append(&mut self, block: &Block, latest: bool) -> Result<types::Hash, Box<dyn Error>> {
+    pub fn append(&mut self, block: &Block) -> Result<types::Hash, Box<dyn Error>> {
         block.put(&self.db)?;
         let hash = block.hash();
-        if latest {
-            self.hashes.push(hash);
-            if let Some(stake) = block.stakes.first() {
-                if stake.fee == 0 {
-                    self.reward_cold_start(&block);
-                }
-            }
-            self.reward(&block);
-            self.set_balances(&block);
-            self.set_stakers(self.get_height(), &block);
-            self.set_sum_stakes();
-            self.set_latest_block();
-            self.pending_blocks.clear();
-            self.pending_transactions.clear();
-            self.pending_stakes.clear();
-        } else if let Some(height) = self.height(block.previous_hash) {
-            if height + 1 > self.get_height() {
-                warn!("Fork detected! Reloading...");
+        if let Some(new_branch) = self.tree.insert(hash, block.previous_hash) {
+            let hash = self.tree.main().unwrap().0;
+            self.tree.sort_branches();
+            if new_branch && hash != self.tree.main().unwrap().0 {
                 self.reload();
+            } else {
+                self.hashes.push(hash);
+                if let Some(stake) = block.stakes.first() {
+                    if stake.fee == 0 {
+                        self.reward_cold_start(&block);
+                    }
+                }
+                self.reward(&block);
+                self.set_balances(&block);
+                self.set_stakers(self.get_height(), &block);
+                self.set_sum_stakes();
+                self.set_latest_block();
+                self.pending_blocks.clear();
+                self.pending_transactions.clear();
+                self.pending_stakes.clear();
             }
         }
         Ok(hash)

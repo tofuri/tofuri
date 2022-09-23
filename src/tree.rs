@@ -41,9 +41,9 @@ impl Tree {
     pub fn get(&mut self, hash: &types::Hash) -> Option<&types::Hash> {
         self.hashes.get(hash)
     }
-    pub fn insert(&mut self, hash: types::Hash, previous_hash: types::Hash) {
+    pub fn insert(&mut self, hash: types::Hash, previous_hash: types::Hash) -> Option<bool> {
         if self.hashes.insert(hash, previous_hash).is_some() {
-            return;
+            return None;
         }
         if let Some(index) = self
             .branches
@@ -52,12 +52,14 @@ impl Tree {
         {
             // extend branch
             self.branches[index] = (hash, self.height(&previous_hash));
+            Some(false)
         } else {
             // new branch
             self.branches.push((hash, self.height(&previous_hash)));
+            Some(true)
         }
     }
-    fn sort(&mut self) {
+    pub fn sort_branches(&mut self) {
         self.branches.sort_by(|a, b| b.1.cmp(&a.1));
     }
     fn height(&self, previous_hash: &types::Hash) -> types::Height {
@@ -116,7 +118,7 @@ impl Tree {
             }
         }
         recurse(self, &hashes, previous_hash, vec);
-        self.sort();
+        self.sort_branches();
     }
     pub fn clear(&mut self) {
         self.branches.clear();

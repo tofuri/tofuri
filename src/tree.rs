@@ -52,19 +52,18 @@ impl Tree {
             .position(|(hash, _)| hash == &previous_hash)
         {
             // extend branch
-            self.branches[index] = (hash, self.height(&previous_hash).unwrap());
+            self.branches[index] = (hash, self.height(&previous_hash));
             Some(false)
         } else {
             // new branch
-            self.branches
-                .push((hash, self.height(&previous_hash).unwrap()));
+            self.branches.push((hash, self.height(&previous_hash)));
             Some(true)
         }
     }
     pub fn sort_branches(&mut self) {
         self.branches.sort_by(|a, b| b.1.cmp(&a.1));
     }
-    pub fn height(&self, previous_hash: &types::Hash) -> Result<types::Height, Box<dyn Error>> {
+    fn height(&self, previous_hash: &types::Hash) -> types::Height {
         let mut hash = previous_hash;
         let mut height = 0;
         loop {
@@ -75,13 +74,13 @@ impl Tree {
                 }
                 None => {
                     if hash != &[0; 32] {
-                        return Err("broken chain".into());
+                        panic!("broken chain")
                     }
                     break;
                 }
             };
         }
-        Ok(height)
+        height
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         self.clear();

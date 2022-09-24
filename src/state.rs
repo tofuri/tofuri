@@ -135,11 +135,6 @@ impl State {
         }
         self.set_balance(block.public_key, balance);
     }
-    pub fn penalty(&mut self) {
-        let (public_key, _) = self.stakers.remove(0).unwrap();
-        self.balance_staked.remove(&public_key).unwrap();
-        warn!("{} {:?}", "Penalty".red(), address::encode(&public_key));
-    }
     fn penalty_reload(
         &mut self,
         timestamp: &types::Timestamp,
@@ -157,7 +152,13 @@ impl State {
             }
         }
     }
-    fn update(&mut self, block: &Block, height: types::Height) {
+    pub fn penalty(&mut self) {
+        if let Some((public_key, _)) = self.stakers.remove(0) {
+            self.balance_staked.remove(&public_key).unwrap();
+            warn!("{} {:?}", "Penalty".red(), address::encode(&public_key));
+        }
+    }
+    pub fn update(&mut self, block: &Block, height: types::Height) {
         self.set_reward(&block);
         self.set_balances(&block);
         self.set_stakers(&block, height);

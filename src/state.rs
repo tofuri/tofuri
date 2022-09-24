@@ -1,6 +1,4 @@
-use crate::{
-    address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, tree::Tree, types, util,
-};
+use crate::{address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types, util};
 use colored::*;
 use log::warn;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -120,7 +118,7 @@ impl State {
             }
         }
     }
-    fn reward(&mut self, block: &Block) {
+    fn set_reward(&mut self, block: &Block) {
         let balance_staked = self.get_balance_staked(&block.public_key);
         let mut balance = self.get_balance(&block.public_key);
         balance += block.reward(balance_staked);
@@ -160,7 +158,7 @@ impl State {
         }
     }
     fn update(&mut self, block: &Block, height: types::Height) {
-        self.reward(&block);
+        self.set_reward(&block);
         self.set_balances(&block);
         self.set_stakers(&block, height);
         self.set_sum_stakes();

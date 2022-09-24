@@ -1,7 +1,4 @@
-use crate::{
-    blockchain::Blockchain, constants::MIN_STAKE, db, stake::Stake, transaction::Transaction,
-    types, util,
-};
+use crate::{blockchain::Blockchain, db, stake::Stake, transaction::Transaction, types, util};
 use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};

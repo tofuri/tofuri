@@ -54,13 +54,6 @@ impl State {
             None => 0,
         }
     }
-    fn set_latest_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, tree: &Tree) {
-        self.latest_block = if let Some(main) = tree.main() {
-            Block::get(db, &main.0).unwrap()
-        } else {
-            Block::new([0; 32])
-        };
-    }
     fn set_sum_stakes(&mut self) {
         let mut sum = 0;
         for staker in self.stakers.iter() {
@@ -166,33 +159,36 @@ impl State {
             }
         }
     }
+    fn update(&mut self, block: &Block, height: types::Height) {
+        self.reward(&block);
+        self.set_balances(&block);
+        self.set_stakers(&block, height);
+        self.set_sum_stakes();
+    }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
+        self.latest_block = Block::new([0; 32]);
         self.stakers.clear();
         self.balance.clear();
         self.balance_staked.clear();
         let mut previous_block_timestamp = match hashes.first() {
-            Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
+            Some(hash) => {
+                self.latest_block = Block::get(db, hash).unwrap();
+                self.latest_block.timestamp - 1
+            }
             None => 0,
         };
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
             self.penalty_reload(&block.timestamp, &previous_block_timestamp);
-            self.reward(&block);
-            self.set_balances(&block);
-            self.set_stakers(&block, height);
-            self.set_sum_stakes();
+            self.update(&block, height);
             previous_block_timestamp = block.timestamp;
         }
-        self.hashes = hashes;
         self.penalty_reload(&util::timestamp(), &self.latest_block.timestamp.clone());
+        self.hashes = hashes;
     }
     pub fn append(&mut self, block: Block, height: types::Height) {
-        let hash = block.hash();
-        self.reward(&block);
-        self.set_balances(&block);
-        self.set_stakers(&block, height);
-        self.hashes.push(hash);
-        self.set_sum_stakes();
+        self.update(&block, height);
+        self.hashes.push(block.hash());
         self.latest_block = block;
     }
 }

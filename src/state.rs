@@ -135,11 +135,7 @@ impl State {
         }
         self.set_balance(block.public_key, balance);
     }
-    fn penalty_reload(
-        &mut self,
-        timestamp: &types::Timestamp,
-        previous_timestamp: &types::Timestamp,
-    ) {
+    fn set_penalty(&mut self, timestamp: &types::Timestamp, previous_timestamp: &types::Timestamp) {
         if timestamp == previous_timestamp {
             return;
         }
@@ -152,17 +148,17 @@ impl State {
             }
         }
     }
+    fn set(&mut self, block: &Block, height: types::Height) {
+        self.set_reward(&block);
+        self.set_balances(&block);
+        self.set_stakers(&block, height);
+        self.set_sum_stakes();
+    }
     pub fn penalty(&mut self) {
         if let Some((public_key, _)) = self.stakers.remove(0) {
             self.balance_staked.remove(&public_key).unwrap();
             warn!("{} {:?}", "Penalty".red(), address::encode(&public_key));
         }
-    }
-    pub fn update(&mut self, block: &Block, height: types::Height) {
-        self.set_reward(&block);
-        self.set_balances(&block);
-        self.set_stakers(&block, height);
-        self.set_sum_stakes();
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
         self.latest_block = Block::new([0; 32]);
@@ -178,15 +174,15 @@ impl State {
         };
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
-            self.penalty_reload(&block.timestamp, &previous_block_timestamp);
-            self.update(&block, height);
+            self.set_penalty(&block.timestamp, &previous_block_timestamp);
+            self.set(&block, height);
             previous_block_timestamp = block.timestamp;
         }
-        self.penalty_reload(&util::timestamp(), &self.latest_block.timestamp.clone());
+        self.set_penalty(&util::timestamp(), &self.latest_block.timestamp.clone());
         self.hashes = hashes;
     }
     pub fn append(&mut self, block: Block, height: types::Height) {
-        self.update(&block, height);
+        self.set(&block, height);
         self.hashes.push(block.hash());
         self.latest_block = block;
     }

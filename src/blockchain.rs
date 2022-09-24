@@ -231,6 +231,7 @@ impl Blockchain {
         Ok(block)
     }
     pub fn append_handle(&mut self) {
+        println!("{:?}", self.state.get_latest_block());
         if util::timestamp()
             > self.state.get_latest_block().timestamp + BLOCK_TIME_MAX as types::Timestamp
         {
@@ -254,8 +255,7 @@ impl Blockchain {
             self.tree.sort_branches();
             let height = self.tree.main().unwrap().1;
             // update state & state100
-            self.state.update(block, height);
-            // self.state100.update(block, height);
+            self.state.append(block.clone(), height);
             if new_branch && previous_hash != self.tree.main().unwrap().0 {
                 self.reload();
             } else {

@@ -252,14 +252,6 @@ impl Blockchain {
             warn!("staker didn't show up in time");
         }
         for block in self.pending_blocks.clone() {
-            // if let Some(public_key) = self.stakers_history.get(&block.previous_hash) {
-            // if public_key != &block.public_key {
-            // warn!("block public_key don't match stakers history");
-            // return;
-            // }
-            // } else {
-            // warn!("block didn't have a staker because network was down");
-            // }
             let hash = self.append(&block).unwrap();
             info!(
                 "{} {} {}",

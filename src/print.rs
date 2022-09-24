@@ -1,4 +1,10 @@
-use crate::{address, blockchain::Blockchain, cli::WalletArgs, transaction::Transaction, types};
+use crate::{
+    address,
+    blockchain::Blockchain,
+    cli::{ValidatorArgs, WalletArgs},
+    transaction::Transaction,
+    types,
+};
 use chrono::Local;
 use colored::*;
 use env_logger::Builder;

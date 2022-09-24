@@ -132,7 +132,6 @@ Validator {} {}/tree/{}
  heartbeats: {}
  lag: {:?}
  queue: {:?}
- stakers_history: {:?}
  latest_hashes: {:?}
  pending_transactions: {:?}
  pending_stakes: {:?}
@@ -159,7 +158,6 @@ Validator {} {}/tree/{}
                     .iter()
                     .map(|&x| (address::encode(&x.0), x.1))
                     .collect::<Vec<(String, types::Height)>>(),
-                behaviour.blockchain.get_stakers_history().len(),
                 behaviour
                     .blockchain
                     .get_hashes()

@@ -168,24 +168,17 @@ impl Block {
         for stake in self.stakes.iter() {
             balance_staked_public_keys.push(stake.public_key);
         }
-        let (balances, balances_staked) = blockchain.get_balances_at_hash(
+        let (balances, balances_staked, stakers) = blockchain.get_balances_at_hash(
             db,
             balance_public_keys,
             balance_staked_public_keys,
             self.previous_hash,
         );
-        let staker_public_key = if self.previous_hash == blockchain.get_latest_block().hash()
-            && !blockchain.get_stakers().is_empty()
-        {
-            Some(&blockchain.get_stakers()[0].0)
-        } else {
-            blockchain.get_stakers_history().get(&self.previous_hash)
-        };
-        // if let Some(public_key) = staker_public_key {
-        // if public_key != &self.public_key {
-        // return Err("block isn't signed by the staker first in queue".into());
-        // }
-        // }
+        if let Some(public_key) = stakers.get(0) {
+            if public_key != &self.public_key {
+                return Err("block isn't signed by the staker first in queue".into());
+            }
+        }
         let public_key_inputs = self
             .transactions
             .iter()
@@ -213,39 +206,38 @@ impl Block {
         if Block::get(db, &self.hash()).is_ok() {
             return Err("block already in db".into());
         }
-        if staker_public_key.is_none() {
-            if self.stakes.len() != 1 {
-                return Err("only allowed to mint 1 stake".into());
-            }
+        if !self.stakes.is_empty() {
             let stake = self.stakes.get(0).unwrap();
-            if stake.verify().is_err() {
-                return Err("mint stake has invalid signature".into());
-            }
             if stake.amount == 0 {
-                return Err("mint stake has invalid amount".into());
-            }
-            if stake.timestamp > util::timestamp() {
-                return Err(
-                    "mint stake has invalid timestamp (mint stake is from the future)".into(),
-                );
-            }
-            if stake.timestamp < self.timestamp {
-                return Err("mint stake too old".into());
-            }
-            if !stake.deposit {
-                return Err("mint stake must be deposit".into());
-            }
-            if stake.amount != MIN_STAKE {
-                return Err("mint stake invalid amount".into());
-            }
-            if stake.fee != 0 {
-                return Err("mint stake invalid fee".into());
-            }
-        } else {
-            for stake in self.stakes.iter() {
-                let balance = balances.get(&stake.public_key).unwrap();
-                let balance_staked = balances_staked.get(&stake.public_key).unwrap();
-                stake.validate(db, *balance, *balance_staked, self.timestamp)?;
+                if self.stakes.len() != 1 {
+                    return Err("only allowed to mint 1 stake".into());
+                }
+                if stake.verify().is_err() {
+                    return Err("mint stake has invalid signature".into());
+                }
+                if stake.timestamp > util::timestamp() {
+                    return Err(
+                        "mint stake has invalid timestamp (mint stake is from the future)".into(),
+                    );
+                }
+                if stake.timestamp < self.timestamp {
+                    return Err("mint stake too old".into());
+                }
+                if !stake.deposit {
+                    return Err("mint stake must be deposit".into());
+                }
+                if stake.amount != MIN_STAKE {
+                    return Err("mint stake invalid amount".into());
+                }
+                if stake.fee != 0 {
+                    return Err("mint stake invalid fee".into());
+                }
+            } else {
+                for stake in self.stakes.iter() {
+                    let balance = balances.get(&stake.public_key).unwrap();
+                    let balance_staked = balances_staked.get(&stake.public_key).unwrap();
+                    stake.validate(db, *balance, *balance_staked, self.timestamp)?;
+                }
             }
         }
         for transaction in self.transactions.iter() {

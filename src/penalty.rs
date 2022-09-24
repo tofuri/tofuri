@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 #[derive(Serialize, Deserialize)]
 pub struct Penalty {
-    public_key: types::PublicKeyBytes,
-    balance_staked: types::Amount,
+    pub public_key: types::PublicKeyBytes,
+    pub balance_staked: types::Amount,
 }
 impl Penalty {
     pub fn new(public_key: types::PublicKeyBytes, balance_staked: types::Amount) -> Penalty {

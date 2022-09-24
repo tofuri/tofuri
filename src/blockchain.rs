@@ -7,6 +7,8 @@ use crate::{
         PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     db,
+    penalties::Penalties,
+    penalty::Penalty,
     stake::Stake,
     transaction::Transaction,
     tree::Tree,
@@ -33,7 +35,6 @@ pub struct Blockchain {
     sum_stakes_all_time: types::Amount,
     balance: types::Balance,
     balance_staked: types::Balance,
-    stakers_history: types::StakersHistory,
     db: DBWithThreadMode<SingleThreaded>,
     keypair: types::Keypair,
     multiaddrs: Vec<Multiaddr>,
@@ -41,6 +42,7 @@ pub struct Blockchain {
     lag: [f64; 3],
     sync_index: usize,
     tree: Tree,
+    penalties: Penalties,
 }
 impl Blockchain {
     pub fn new(
@@ -61,7 +63,6 @@ impl Blockchain {
             sum_stakes_all_time: 0,
             balance: HashMap::new(),
             balance_staked: HashMap::new(),
-            stakers_history: HashMap::new(),
             db,
             keypair,
             multiaddrs,
@@ -69,6 +70,7 @@ impl Blockchain {
             lag: [0.0; 3],
             sync_index: 0,
             tree: Tree::default(),
+            penalties: Penalties::default(),
         };
         let start = Instant::now();
         blockchain.reload();
@@ -109,10 +111,11 @@ impl Blockchain {
         self.hashes.iter().position(|&x| x == hash)
     }
     fn penalty(&mut self) {
-        let public_key = self.stakers[0].0;
-        self.balance_staked.remove(&public_key);
-        self.stakers.remove(0).unwrap();
-        warn!("{} {}", "Burned".red(), address::encode(&public_key));
+        let (public_key, _) = self.stakers.remove(0).unwrap();
+        let balance_staked = self.balance_staked.remove(&public_key).unwrap();
+        let penalty = Penalty::new(public_key, balance_staked);
+        warn!("{} {:?}", "Penalty".red(), penalty);
+        self.penalties.push(penalty);
     }
     fn penalty_reload(
         &mut self,
@@ -125,7 +128,9 @@ impl Blockchain {
         let diff = timestamp - previous_timestamp - 1;
         for _ in 0..diff / BLOCK_TIME_MAX as u32 {
             if !self.stakers.is_empty() {
-                self.penalty();
+                let public_key = self.stakers[0].0;
+                self.balance_staked.remove(&public_key);
+                self.stakers.remove(0).unwrap();
             }
         }
     }
@@ -262,6 +267,8 @@ impl Blockchain {
             // warn!("block didn't have a staker because network was down");
             // }
             let hash = self.append(&block).unwrap();
+            self.penalties.put(&self.db, &hash).unwrap();
+            self.penalties.clear();
             info!(
                 "{} {} {}",
                 "Accepted".green(),
@@ -297,7 +304,6 @@ impl Blockchain {
         self.hashes.clear();
         self.balance.clear();
         self.balance_staked.clear();
-        self.stakers_history.clear();
         self.tree.reload(&self.db);
         if let Some(main) = self.tree.main() {
             info!(
@@ -348,9 +354,6 @@ impl Blockchain {
     }
     pub fn get_sum_stakes_all_time(&self) -> &types::Amount {
         &self.sum_stakes_all_time
-    }
-    pub fn get_stakers_history(&self) -> &types::StakersHistory {
-        &self.stakers_history
     }
     pub fn get_multiaddrs(&self) -> &Vec<Multiaddr> {
         &self.multiaddrs
@@ -409,6 +412,7 @@ impl Blockchain {
     ) -> (
         HashMap<types::PublicKeyBytes, types::Amount>,
         HashMap<types::PublicKeyBytes, types::Amount>,
+        VecDeque<types::PublicKeyBytes>,
     ) {
         let mut balances = HashMap::new();
         let mut balances_staked = HashMap::new();
@@ -419,11 +423,26 @@ impl Blockchain {
             balances.insert(*public_key, self.get_balance(public_key));
             balances_staked.insert(*public_key, self.get_balance_staked(public_key));
         }
+        let mut stakers = VecDeque::from(
+            self.stakers
+                .iter()
+                .rev()
+                .map(|(public_key, _)| *public_key)
+                .collect::<Vec<types::PublicKeyBytes>>(),
+        );
         if let Some(main) = self.tree.main() {
             let mut hash = main.0;
             loop {
                 if hash == previous_hash || hash == [0; 32] {
                     break;
+                }
+                let penalties = Penalties::get(db, &hash);
+                for penalty in penalties.get_vec() {
+                    println!("{:?}", penalty);
+                    stakers.push_back(penalty.public_key);
+                    let mut balance_staked = *balances_staked.get(&penalty.public_key).unwrap();
+                    balance_staked += penalty.balance_staked;
+                    balances_staked.insert(penalty.public_key, balance_staked);
                 }
                 let block = Block::get(db, &hash).unwrap();
                 let balance_staked = *balances_staked.get(&block.public_key).unwrap();
@@ -472,7 +491,7 @@ impl Blockchain {
                 };
             }
         }
-        (balances, balances_staked)
+        (balances, balances_staked, stakers)
     }
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);
@@ -529,10 +548,8 @@ impl Blockchain {
                     "Burned low balance".red(),
                     address::encode(&stake.public_key)
                 );
+                // block.penalize.push((stake.public_key, balance_staked));
             }
-        }
-        if let Some(staker) = self.stakers.get(0) {
-            self.stakers_history.insert(block.hash(), staker.0);
         }
     }
     pub fn set_cold_start_stake(&mut self, stake: Stake) {

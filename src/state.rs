@@ -160,16 +160,19 @@ impl State {
             warn!("{} {:?}", "Penalty".red(), address::encode(&public_key));
         }
     }
-    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
+    pub fn reload(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        hashes: Vec<types::Hash>,
+        latest: bool,
+    ) {
         self.latest_block = Block::new([0; 32]);
         self.stakers.clear();
         self.balance.clear();
         self.balance_staked.clear();
+        self.latest_block = Block::get(db, hashes.last().unwrap()).unwrap();
         let mut previous_block_timestamp = match hashes.first() {
-            Some(hash) => {
-                self.latest_block = Block::get(db, hash).unwrap();
-                self.latest_block.timestamp - 1
-            }
+            Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
             None => 0,
         };
         for (height, hash) in hashes.iter().enumerate() {
@@ -178,7 +181,9 @@ impl State {
             self.set(&block, height);
             previous_block_timestamp = block.timestamp;
         }
-        self.set_penalty(&util::timestamp(), &self.latest_block.timestamp.clone());
+        if latest {
+            self.set_penalty(&util::timestamp(), &self.latest_block.timestamp.clone());
+        }
         self.hashes = hashes;
     }
     pub fn append(&mut self, block: Block, height: types::Height) {

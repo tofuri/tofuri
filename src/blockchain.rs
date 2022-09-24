@@ -284,11 +284,12 @@ impl Blockchain {
             );
         }
         let mut hashes = self.tree.get_vec();
-        self.state.reload(&self.db, hashes.clone());
+        self.state.reload(&self.db, hashes.clone(), true);
         let len = hashes.len();
         let start = if len < 100 { 0 } else { len - 100 };
         hashes.drain(start..len);
-        self.state100.reload(&self.db, hashes);
+        println!("{:x?}", hashes);
+        self.state100.reload(&self.db, hashes, false);
     }
     // pub fn get_balances_at_hash(
     // &self,

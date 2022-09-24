@@ -11,7 +11,7 @@ use crate::{
     types, util,
 };
 use colored::*;
-use log::{info, warn};
+use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};
 #[derive(Debug)]
@@ -235,7 +235,6 @@ impl Blockchain {
             > self.state.get_latest_block().timestamp + BLOCK_TIME_MAX as types::Timestamp
         {
             self.state.penalty();
-            warn!("staker didn't show up in time");
         }
         for block in self.pending_blocks.clone() {
             let hash = self.append(&block).unwrap();

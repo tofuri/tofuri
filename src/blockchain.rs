@@ -283,6 +283,8 @@ impl Blockchain {
         }
         let hashes = self.tree.get_vec();
         self.state.reload(&self.db, hashes.clone());
+        let len = hashes.len();
+        hashes.drain(len - 100..len);
         self.state100.reload(&self.db, hashes);
     }
     // pub fn get_balances_at_hash(

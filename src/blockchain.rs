@@ -473,7 +473,6 @@ impl Blockchain {
                     "Burned low balance".red(),
                     address::encode(&stake.public_key)
                 );
-                // block.penalize.push((stake.public_key, balance_staked));
             }
         }
     }

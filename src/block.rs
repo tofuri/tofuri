@@ -144,7 +144,7 @@ impl Block {
         self.fees() + util::reward(balance_staked)
     }
     pub fn validate(&self, blockchain: &Blockchain) -> Result<(), Box<dyn Error>> {
-        let db = blockchain.get_db();
+        // let db = blockchain.get_db();
         // let height = if self.previous_hash == [0; 32] {
         // 0
         // } else {
@@ -165,84 +165,84 @@ impl Block {
         for stake in self.stakes.iter() {
             balance_staked_public_keys.push(stake.public_key);
         }
-        let (balances, balances_staked) = blockchain.get_balances_at_hash(
-            db,
-            balance_public_keys,
-            balance_staked_public_keys,
-            self.previous_hash,
-        );
-        if self.previous_hash != [0; 32] {
-            if let Some((public_key, _)) = blockchain.get_state().get_stakers().get(0) {
-                if public_key != &self.public_key {
-                    return Err("block isn't signed by the staker first in queue".into());
-                }
-            }
-        }
-        let public_key_inputs = self
-            .transactions
-            .iter()
-            .map(|t| t.public_key_input)
-            .collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_key_inputs.len())
-            .any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1]))
-        {
-            return Err("block includes multiple transactions from same public_key_input".into());
-        }
-        let public_keys = self
-            .stakes
-            .iter()
-            .map(|s| s.public_key)
-            .collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
-            return Err("block includes multiple stakes from same public_key".into());
-        }
-        if self.verify().is_err() {
-            return Err("block has invalid signature".into());
-        }
-        if self.timestamp > util::timestamp() {
-            return Err("block has invalid timestamp (block is from the future)".into());
-        }
-        if Block::get(db, &self.hash()).is_ok() {
-            return Err("block already in db".into());
-        }
-        if !self.stakes.is_empty() {
-            let stake = self.stakes.get(0).unwrap();
-            if stake.fee == 0 {
-                if self.stakes.len() != 1 {
-                    return Err("only allowed to mint 1 stake".into());
-                }
-                if stake.verify().is_err() {
-                    return Err("mint stake has invalid signature".into());
-                }
-                if stake.timestamp > util::timestamp() {
-                    return Err(
-                        "mint stake has invalid timestamp (mint stake is from the future)".into(),
-                    );
-                }
-                if stake.timestamp < self.timestamp {
-                    return Err("mint stake too old".into());
-                }
-                if !stake.deposit {
-                    return Err("mint stake must be deposit".into());
-                }
-                if stake.amount != MIN_STAKE {
-                    return Err("mint stake invalid amount".into());
-                }
-                if stake.fee != 0 {
-                    return Err("mint stake invalid fee".into());
-                }
-            } else {
-                for stake in self.stakes.iter() {
-                    let balance = balances.get(&stake.public_key).unwrap();
-                    let balance_staked = balances_staked.get(&stake.public_key).unwrap();
-                    stake.validate(db, *balance, *balance_staked, self.timestamp)?;
-                }
-            }
-        }
-        for transaction in self.transactions.iter() {
-            let balance = balances.get(&transaction.public_key_input).unwrap();
-            transaction.validate(db, *balance, self.timestamp)?;
-        }
+        // let (balances, balances_staked) = blockchain.get_balances_at_hash(
+        // db,
+        // balance_public_keys,
+        // balance_staked_public_keys,
+        // self.previous_hash,
+        // );
+        // if self.previous_hash != [0; 32] {
+        // if let Some((public_key, _)) = blockchain.get_state().get_stakers().get(0) {
+        // if public_key != &self.public_key {
+        // return Err("block isn't signed by the staker first in queue".into());
+        // }
+        // }
+        // }
+        // let public_key_inputs = self
+        // .transactions
+        // .iter()
+        // .map(|t| t.public_key_input)
+        // .collect::<Vec<types::PublicKeyBytes>>();
+        // if (1..public_key_inputs.len())
+        // .any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1]))
+        // {
+        // return Err("block includes multiple transactions from same public_key_input".into());
+        // }
+        // let public_keys = self
+        // .stakes
+        // .iter()
+        // .map(|s| s.public_key)
+        // .collect::<Vec<types::PublicKeyBytes>>();
+        // if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
+        // return Err("block includes multiple stakes from same public_key".into());
+        // }
+        // if self.verify().is_err() {
+        // return Err("block has invalid signature".into());
+        // }
+        // if self.timestamp > util::timestamp() {
+        // return Err("block has invalid timestamp (block is from the future)".into());
+        // }
+        // if Block::get(db, &self.hash()).is_ok() {
+        // return Err("block already in db".into());
+        // }
+        // if !self.stakes.is_empty() {
+        // let stake = self.stakes.get(0).unwrap();
+        // if stake.fee == 0 {
+        // if self.stakes.len() != 1 {
+        // return Err("only allowed to mint 1 stake".into());
+        // }
+        // if stake.verify().is_err() {
+        // return Err("mint stake has invalid signature".into());
+        // }
+        // if stake.timestamp > util::timestamp() {
+        // return Err(
+        // "mint stake has invalid timestamp (mint stake is from the future)".into(),
+        // );
+        // }
+        // if stake.timestamp < self.timestamp {
+        // return Err("mint stake too old".into());
+        // }
+        // if !stake.deposit {
+        // return Err("mint stake must be deposit".into());
+        // }
+        // if stake.amount != MIN_STAKE {
+        // return Err("mint stake invalid amount".into());
+        // }
+        // if stake.fee != 0 {
+        // return Err("mint stake invalid fee".into());
+        // }
+        // } else {
+        // for stake in self.stakes.iter() {
+        // let balance = balances.get(&stake.public_key).unwrap();
+        // let balance_staked = balances_staked.get(&stake.public_key).unwrap();
+        // stake.validate(db, *balance, *balance_staked, self.timestamp)?;
+        // }
+        // }
+        // }
+        // for transaction in self.transactions.iter() {
+        // let balance = balances.get(&transaction.public_key_input).unwrap();
+        // transaction.validate(db, *balance, self.timestamp)?;
+        // }
         Ok(())
     }
 }

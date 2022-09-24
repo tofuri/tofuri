@@ -89,7 +89,7 @@ impl Blockchain {
         }
     }
     pub fn get_next_sync_block(&mut self) -> Block {
-        let hashes = self.get_state().get_hashes();
+        let hashes = self.state.get_hashes();
         if self.sync_index >= hashes.len() {
             self.sync_index = 0;
         }
@@ -127,10 +127,7 @@ impl Blockchain {
         }
     }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
-        self.get_state()
-            .get_hashes()
-            .iter()
-            .position(|&x| x == hash)
+        self.state.get_hashes().iter().position(|&x| x == hash)
     }
     pub fn pending_blocks_push(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
         if self
@@ -168,12 +165,8 @@ impl Blockchain {
             }
             self.pending_transactions.remove(index);
         }
-        let balance = self.get_state().get_balance(&transaction.public_key_input);
-        transaction.validate(
-            &self.db,
-            balance,
-            self.get_state().get_latest_block().timestamp,
-        )?;
+        let balance = self.state.get_balance(&transaction.public_key_input);
+        transaction.validate(&self.db, balance, self.state.get_latest_block().timestamp)?;
         self.pending_transactions.push(transaction);
         self.limit_pending_transactions();
         Ok(())
@@ -196,13 +189,13 @@ impl Blockchain {
             }
             self.pending_stakes.remove(index);
         }
-        let balance = self.get_state().get_balance(&stake.public_key);
-        let balance_staked = self.get_state().get_balance_staked(&stake.public_key);
+        let balance = self.state.get_balance(&stake.public_key);
+        let balance_staked = self.state.get_balance_staked(&stake.public_key);
         stake.validate(
             &self.db,
             balance,
             balance_staked,
-            self.get_state().get_latest_block().timestamp,
+            self.state.get_latest_block().timestamp,
         )?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
@@ -239,9 +232,9 @@ impl Blockchain {
     }
     pub fn append_handle(&mut self) {
         if util::timestamp()
-            > self.get_state().get_latest_block().timestamp + BLOCK_TIME_MAX as types::Timestamp
+            > self.state.get_latest_block().timestamp + BLOCK_TIME_MAX as types::Timestamp
         {
-            self.get_state().penalty();
+            self.state.penalty();
             warn!("staker didn't show up in time");
         }
         for block in self.pending_blocks.clone() {
@@ -281,10 +274,11 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
-        let hashes = self.tree.get_vec();
+        let mut hashes = self.tree.get_vec();
         self.state.reload(&self.db, hashes.clone());
         let len = hashes.len();
-        hashes.drain(len - 100..len);
+        let start = if len < 100 { 0 } else { len - 100 };
+        hashes.drain(start..len);
         self.state100.reload(&self.db, hashes);
     }
     // pub fn get_balances_at_hash(

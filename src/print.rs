@@ -62,7 +62,7 @@ pub fn blockchain(blockchain: &Blockchain) {
         "PubKey".cyan(),
         address::encode(blockchain.get_keypair().public.as_bytes())
     );
-    let height = 0;
+    let mut height = 0;
     if let Some(main) = blockchain.get_tree().main() {
         height = main.1;
     }

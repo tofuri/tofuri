@@ -62,7 +62,7 @@ impl Tree {
     pub fn sort_branches(&mut self) {
         self.branches.sort_by(|a, b| b.1.cmp(&a.1));
     }
-    fn height(&self, previous_hash: &types::Hash) -> types::Height {
+    pub fn height(&self, previous_hash: &types::Hash) -> types::Height {
         let mut hash = previous_hash;
         let mut height = 0;
         loop {

@@ -265,7 +265,7 @@ impl Blockchain {
             info!(
                 "{} {} {}",
                 "Accepted".green(),
-                self.get_height().to_string().yellow(),
+                self.tree.height(&block.previous_hash).to_string().yellow(),
                 hex::encode(hash)
             );
         }

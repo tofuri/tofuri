@@ -6,6 +6,7 @@ use crate::{
         PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     stake::Stake,
+    stakers,
     transaction::Transaction,
     tree::Tree,
     types, util,
@@ -222,6 +223,7 @@ impl Blockchain {
     }
     pub fn append(&mut self, block: &Block) -> Result<types::Hash, Box<dyn Error>> {
         block.put(&self.db)?;
+        stakers::put(&self.db, &block.hash(), &self.stakers).unwrap();
         let hash = block.hash();
         if let Some(new_branch) = self.tree.insert(hash, block.previous_hash) {
             let hash = self.tree.main().unwrap().0;

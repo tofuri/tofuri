@@ -20,7 +20,6 @@ pub fn handle(
                 .blockchain
                 .pending_transactions_push(transaction)?;
         }
-        "ip" => {}
         _ => {}
     };
     Ok(())

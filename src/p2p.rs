@@ -132,7 +132,6 @@ pub async fn swarm(blockchain: Blockchain) -> Result<Swarm<MyBehaviour>, Box<dyn
         IdentTopic::new("block"),
         IdentTopic::new("stake"),
         IdentTopic::new("transaction"),
-        IdentTopic::new("ip"),
     ]
     .iter()
     {

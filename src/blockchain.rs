@@ -35,7 +35,6 @@ pub struct Blockchain {
     balance_staked: types::Balance,
     db: DBWithThreadMode<SingleThreaded>,
     keypair: types::Keypair,
-    multiaddrs: Vec<Multiaddr>,
     heartbeats: types::Heartbeats,
     lag: [f64; 3],
     sync_index: usize,
@@ -45,10 +44,7 @@ impl Blockchain {
     pub fn new(
         keypair: types::Keypair,
         db: DBWithThreadMode<SingleThreaded>,
-        known: Vec<Multiaddr>,
     ) -> Self {
-        let mut multiaddrs = known;
-        multiaddrs.append(&mut Self::multiaddrs(&db).unwrap());
         let mut blockchain = Self {
             latest_block: Block::new([0; 32]),
             hashes: vec![],
@@ -62,7 +58,6 @@ impl Blockchain {
             balance_staked: HashMap::new(),
             db,
             keypair,
-            multiaddrs,
             heartbeats: 0,
             lag: [0.0; 3],
             sync_index: 0,
@@ -72,36 +67,6 @@ impl Blockchain {
         blockchain.reload();
         info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
         blockchain
-    }
-    pub fn put_multiaddr(
-        db: &DBWithThreadMode<SingleThreaded>,
-        multiaddr: &Multiaddr,
-        timestamp: types::Timestamp,
-    ) {
-        db.put_cf(db::peers(db), multiaddr, timestamp.to_le_bytes())
-            .unwrap();
-    }
-    pub fn multiaddrs(
-        db: &DBWithThreadMode<SingleThreaded>,
-    ) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
-        let mut multiaddrs = vec![];
-        for i in db.iterator_cf(db::peers(db), IteratorMode::Start) {
-            multiaddrs.push(String::from_utf8(i?.0.to_vec())?.parse()?);
-        }
-        Ok(multiaddrs)
-    }
-    pub fn get_known(args: &ValidatorArgs) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
-        let lines = util::read_lines(&args.known)?;
-        let mut known = vec![];
-        for line in lines {
-            match line.parse() {
-                Ok(multiaddr) => {
-                    known.push(multiaddr);
-                }
-                Err(err) => error!("{}", err),
-            }
-        }
-        Ok(known)
     }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
         self.hashes.iter().position(|&x| x == hash)
@@ -338,9 +303,6 @@ impl Blockchain {
     }
     pub fn get_sum_stakes_all_time(&self) -> &types::Amount {
         &self.sum_stakes_all_time
-    }
-    pub fn get_multiaddrs(&self) -> &Vec<Multiaddr> {
-        &self.multiaddrs
     }
     pub fn get_heartbeats(&self) -> &types::Heartbeats {
         &self.heartbeats

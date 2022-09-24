@@ -17,9 +17,6 @@ pub struct ValidatorArgs {
     /// Use temporary random keypair
     #[clap(long, value_parser, default_value_t = false)]
     pub tempkey: bool,
-    /// Path to list of known peers
-    #[clap(long, value_parser, default_value = "./known.txt")]
-    pub known: String,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,

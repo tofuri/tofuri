@@ -63,7 +63,6 @@ pub fn blockchain(blockchain: &Blockchain) {
         "PubKey".cyan(),
         address::encode(blockchain.get_keypair().public.as_bytes())
     );
-    info!("{} {}", "Peers".cyan(), blockchain.get_multiaddrs().len());
     info!("{} {}", "Height".cyan(), blockchain.get_hashes().len());
     info!(
         "{} {}",
@@ -117,13 +116,4 @@ pub fn heartbeat_lag(heartbeats: &types::Heartbeats, millis: f64) {
         heartbeats,
         millis.to_string().yellow(),
     );
-}
-pub fn known_peers(known: &Vec<Multiaddr>) {
-    if known.is_empty() {
-        warn!("{}", "Known peers list is empty!".yellow());
-        return;
-    }
-    for multiaddr in known.iter() {
-        info!("{} {}", "Known peer".cyan(), multiaddr);
-    }
 }

@@ -1,7 +1,6 @@
 use crate::{
     address,
     block::Block,
-    cli::ValidatorArgs,
     constants::{
         BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TRANSACTIONS_LIMIT, MIN_STAKE,
         PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
@@ -13,9 +12,8 @@ use crate::{
     types, util,
 };
 use colored::*;
-use libp2p::Multiaddr;
-use log::{error, info, warn};
-use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
+use log::{info, warn};
+use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{
     collections::{HashMap, VecDeque},
     error::Error,
@@ -41,10 +39,7 @@ pub struct Blockchain {
     tree: Tree,
 }
 impl Blockchain {
-    pub fn new(
-        keypair: types::Keypair,
-        db: DBWithThreadMode<SingleThreaded>,
-    ) -> Self {
+    pub fn new(keypair: types::Keypair, db: DBWithThreadMode<SingleThreaded>) -> Self {
         let mut blockchain = Self {
             latest_block: Block::new([0; 32]),
             hashes: vec![],

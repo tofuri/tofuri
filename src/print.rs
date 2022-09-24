@@ -8,8 +8,7 @@ use crate::{
 use chrono::Local;
 use colored::*;
 use env_logger::Builder;
-use libp2p::Multiaddr;
-use log::{debug, error, info, warn, Level, LevelFilter};
+use log::{debug, error, info, Level, LevelFilter};
 use std::{error::Error, io::Write};
 use tokio::net::TcpListener;
 pub fn clear() {

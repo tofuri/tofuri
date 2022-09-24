@@ -133,18 +133,18 @@ impl Blockchain {
         let balance_staked = self.get_balance_staked(&block.public_key);
         let mut balance = self.get_balance(&block.public_key);
         balance += block.reward(balance_staked);
+        if let Some(stake) = block.stakes.first() {
+            if stake.fee == 0 {
+                balance += MIN_STAKE;
+                warn!(
+                    "{} {} {}",
+                    "Minted".cyan(),
+                    MIN_STAKE.to_string().yellow(),
+                    address::encode(&block.public_key).green()
+                );
+            }
+        }
         self.set_balance(block.public_key, balance);
-    }
-    fn reward_cold_start(&mut self, block: &Block) {
-        let mut balance = self.get_balance(&block.public_key);
-        balance += MIN_STAKE;
-        self.set_balance(block.public_key, balance);
-        warn!(
-            "{} {} {}",
-            "Minted".cyan(),
-            MIN_STAKE.to_string().yellow(),
-            address::encode(&block.public_key).green()
-        );
     }
     pub fn pending_blocks_push(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
         if self
@@ -280,11 +280,6 @@ impl Blockchain {
                 self.reload();
             } else {
                 self.hashes.push(hash);
-                if let Some(stake) = block.stakes.first() {
-                    if stake.fee == 0 {
-                        self.reward_cold_start(&block);
-                    }
-                }
                 self.reward(&block);
                 self.set_balances(&block);
                 self.set_stakers(self.get_height(), &block);
@@ -321,11 +316,6 @@ impl Blockchain {
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(&self.db, hash).unwrap();
             self.penalty_reload(&block.timestamp, &previous_block_timestamp);
-            if let Some(stake) = block.stakes.first() {
-                if stake.fee == 0 {
-                    self.reward_cold_start(&block);
-                }
-            }
             self.reward(&block);
             self.set_balances(&block);
             self.set_stakers(height, &block);
@@ -436,6 +426,15 @@ impl Blockchain {
                     break;
                 }
                 let block = Block::get(db, &hash).unwrap();
+                let balance_staked = *balances_staked.get(&block.public_key).unwrap();
+                let mut balance = *balances.get(&block.public_key).unwrap();
+                balance -= block.reward(balance_staked);
+                if let Some(stake) = block.stakes.first() {
+                    if stake.fee == 0 {
+                        balance -= MIN_STAKE;
+                    }
+                }
+                balances.insert(block.public_key, balance);
                 for transaction in block.transactions.iter() {
                     for public_key in balance_public_keys.iter() {
                         if public_key == &transaction.public_key_input {

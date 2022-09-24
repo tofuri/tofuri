@@ -16,4 +16,12 @@ impl Penalties {
                 .ok_or("penalties not found")?,
         )?))
     }
+    pub fn put(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        hash: &types::Hash,
+    ) -> Result<(), Box<dyn Error>> {
+        db.put_cf(db::penalties(db), hash, bincode::serialize(&self)?)?;
+        Ok(())
+    }
 }

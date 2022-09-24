@@ -231,7 +231,6 @@ impl Blockchain {
         Ok(block)
     }
     pub fn append_handle(&mut self) {
-        println!("{:?}", self.state.get_latest_block());
         if util::timestamp()
             > self.state.get_latest_block().timestamp + BLOCK_TIME_MAX as types::Timestamp
         {

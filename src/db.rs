@@ -16,6 +16,7 @@ fn get_descriptors() -> Vec<ColumnFamilyDescriptor> {
         ColumnFamilyDescriptor::new("blocks", options.clone()),
         ColumnFamilyDescriptor::new("transactions", options.clone()),
         ColumnFamilyDescriptor::new("stakes", options.clone()),
+        ColumnFamilyDescriptor::new("stakers", options.clone()),
         ColumnFamilyDescriptor::new("peers", options.clone()),
         ColumnFamilyDescriptor::new("penalties", options),
     ]
@@ -34,6 +35,9 @@ pub fn transactions(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
 }
 pub fn stakes(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("stakes").unwrap()
+}
+pub fn stakers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("stakers").unwrap()
 }
 pub fn peers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("peers").unwrap()

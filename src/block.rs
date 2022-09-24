@@ -143,11 +143,8 @@ impl Block {
     pub fn reward(&self, balance_staked: types::Amount) -> types::Amount {
         self.fees() + util::reward(balance_staked)
     }
-    pub fn validate(
-        &self,
-        blockchain: &Blockchain,
-        db: &DBWithThreadMode<SingleThreaded>,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn validate(&self, blockchain: &Blockchain) -> Result<(), Box<dyn Error>> {
+        let db = blockchain.get_db();
         // let height = if self.previous_hash == [0; 32] {
         // 0
         // } else {
@@ -168,15 +165,21 @@ impl Block {
         for stake in self.stakes.iter() {
             balance_staked_public_keys.push(stake.public_key);
         }
-        let (balances, balances_staked, stakers) = blockchain.get_balances_at_hash(
+        let (balances, balances_staked) = blockchain.get_balances_at_hash(
             db,
             balance_public_keys,
             balance_staked_public_keys,
             self.previous_hash,
         );
-        if let Some(public_key) = stakers.get(0) {
-            if public_key != &self.public_key {
-                return Err("block isn't signed by the staker first in queue".into());
+        if self.previous_hash != [0; 32] {
+            let stakers: Vec<(types::PublicKeyBytes, types::Height)> = bincode::deserialize(
+                &db.get_cf(db::stakers(db), self.previous_hash)?
+                    .ok_or("stakers not found")?,
+            )?;
+            if let Some((public_key, _)) = stakers.get(0) {
+                if public_key != &self.public_key {
+                    return Err("block isn't signed by the staker first in queue".into());
+                }
             }
         }
         let public_key_inputs = self
@@ -208,7 +211,7 @@ impl Block {
         }
         if !self.stakes.is_empty() {
             let stake = self.stakes.get(0).unwrap();
-            if stake.amount == 0 {
+            if stake.fee == 0 {
                 if self.stakes.len() != 1 {
                     return Err("only allowed to mint 1 stake".into());
                 }

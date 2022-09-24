@@ -159,7 +159,7 @@ impl Blockchain {
         {
             return Err("block already pending".into());
         }
-        block.validate(self, &self.db)?;
+        block.validate(self)?;
         self.pending_blocks.push(block);
         self.limit_pending_blocks();
         Ok(())
@@ -283,13 +283,13 @@ impl Blockchain {
         if let Some(new_branch) = self.tree.insert(hash, block.previous_hash) {
             let hash = self.tree.main().unwrap().0;
             self.tree.sort_branches();
+            self.reward(&block);
+            self.set_balances(&block);
+            self.set_stakers(self.get_height(), &block);
             if new_branch && hash != self.tree.main().unwrap().0 {
                 self.reload();
             } else {
                 self.hashes.push(hash);
-                self.reward(&block);
-                self.set_balances(&block);
-                self.set_stakers(self.get_height(), &block);
                 self.set_sum_stakes();
                 self.set_latest_block();
                 self.pending_blocks.clear();
@@ -412,7 +412,6 @@ impl Blockchain {
     ) -> (
         HashMap<types::PublicKeyBytes, types::Amount>,
         HashMap<types::PublicKeyBytes, types::Amount>,
-        VecDeque<types::PublicKeyBytes>,
     ) {
         let mut balances = HashMap::new();
         let mut balances_staked = HashMap::new();
@@ -423,37 +422,23 @@ impl Blockchain {
             balances.insert(*public_key, self.get_balance(public_key));
             balances_staked.insert(*public_key, self.get_balance_staked(public_key));
         }
-        let mut stakers = VecDeque::from(
-            self.stakers
-                .iter()
-                .rev()
-                .map(|(public_key, _)| *public_key)
-                .collect::<Vec<types::PublicKeyBytes>>(),
-        );
         if let Some(main) = self.tree.main() {
             let mut hash = main.0;
             loop {
                 if hash == previous_hash || hash == [0; 32] {
                     break;
                 }
-                let penalties = Penalties::get(db, &hash);
-                for penalty in penalties.get_vec() {
-                    println!("{:?}", penalty);
-                    stakers.push_back(penalty.public_key);
-                    let mut balance_staked = *balances_staked.get(&penalty.public_key).unwrap();
-                    balance_staked += penalty.balance_staked;
-                    balances_staked.insert(penalty.public_key, balance_staked);
-                }
                 let block = Block::get(db, &hash).unwrap();
-                let balance_staked = *balances_staked.get(&block.public_key).unwrap();
-                let mut balance = *balances.get(&block.public_key).unwrap();
-                balance -= block.reward(balance_staked);
-                if let Some(stake) = block.stakes.first() {
-                    if stake.fee == 0 {
-                        balance -= MIN_STAKE;
+                if let Some(balance_staked) = balances_staked.get(&block.public_key) {
+                    let mut balance = *balances.get(&block.public_key).unwrap();
+                    balance -= block.reward(*balance_staked);
+                    if let Some(stake) = block.stakes.first() {
+                        if stake.fee == 0 {
+                            balance -= MIN_STAKE;
+                        }
                     }
+                    balances.insert(block.public_key, balance);
                 }
-                balances.insert(block.public_key, balance);
                 for transaction in block.transactions.iter() {
                     for public_key in balance_public_keys.iter() {
                         if public_key == &transaction.public_key_input {
@@ -491,7 +476,7 @@ impl Blockchain {
                 };
             }
         }
-        (balances, balances_staked, stakers)
+        (balances, balances_staked)
     }
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);
@@ -551,6 +536,13 @@ impl Blockchain {
                 // block.penalize.push((stake.public_key, balance_staked));
             }
         }
+        self.db
+            .put_cf(
+                db::penalties(&self.db),
+                block.hash(),
+                bincode::serialize(&self.stakers).unwrap(),
+            )
+            .unwrap();
     }
     pub fn set_cold_start_stake(&mut self, stake: Stake) {
         self.pending_stakes = vec![stake];

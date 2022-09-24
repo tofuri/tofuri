@@ -477,13 +477,6 @@ impl Blockchain {
                 // block.penalize.push((stake.public_key, balance_staked));
             }
         }
-        self.db
-            .put_cf(
-                db::penalties(&self.db),
-                block.hash(),
-                bincode::serialize(&self.stakers).unwrap(),
-            )
-            .unwrap();
     }
     pub fn set_cold_start_stake(&mut self, stake: Stake) {
         self.pending_stakes = vec![stake];

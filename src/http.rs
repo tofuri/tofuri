@@ -124,12 +124,18 @@ HTTP/1.1 200 OK
 
 Validator {} {}/tree/{}
  public_key: {}
- balance: {}
- balance_staked: {}
- sum_stakes_current: {}
- sum_stakes_all_time: {}
  height: {}
  heartbeats: {}
+ state: {}
+  balance: {}
+  balance_staked: {}
+  sum_stakes_current: {}
+  sum_stakes_all_time: {}
+ state100: {}
+  balance: {}
+  balance_staked: {}
+  sum_stakes_current: {}
+  sum_stakes_all_time: {}
  lag: {:?}
  queue: {:?}
  latest_hashes: {:?}
@@ -141,6 +147,9 @@ Validator {} {}/tree/{}
                 env!("CARGO_PKG_REPOSITORY"),
                 env!("GIT_HASH"),
                 address::encode(behaviour.blockchain.get_keypair().public.as_bytes()),
+                behaviour.blockchain.get_height(),
+                behaviour.blockchain.get_heartbeats(),
+                behaviour.blockchain.get_state().get_hashes().len(),
                 behaviour
                     .blockchain
                     .get_state()
@@ -151,8 +160,20 @@ Validator {} {}/tree/{}
                     .get_balance_staked(behaviour.blockchain.get_keypair().public.as_bytes()),
                 behaviour.blockchain.get_state().get_sum_stakes_current(),
                 behaviour.blockchain.get_state().get_sum_stakes_all_time(),
-                behaviour.blockchain.get_height(),
-                behaviour.blockchain.get_heartbeats(),
+                behaviour.blockchain.get_state100().get_hashes().len(),
+                behaviour
+                    .blockchain
+                    .get_state100()
+                    .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
+                behaviour
+                    .blockchain
+                    .get_state100()
+                    .get_balance_staked(behaviour.blockchain.get_keypair().public.as_bytes()),
+                behaviour.blockchain.get_state100().get_sum_stakes_current(),
+                behaviour
+                    .blockchain
+                    .get_state100()
+                    .get_sum_stakes_all_time(),
                 behaviour.blockchain.get_lag(),
                 behaviour
                     .blockchain

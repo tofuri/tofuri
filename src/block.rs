@@ -1,13 +1,8 @@
 use crate::{
-    blockchain::Blockchain,
-    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN, MIN_STAKE},
-    db,
-    stake::Stake,
-    transaction::Transaction,
+    blockchain::Blockchain, constants::MIN_STAKE, db, stake::Stake, transaction::Transaction,
     types, util,
 };
 use ed25519::signature::Signer;
-use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -186,13 +181,11 @@ impl Block {
         } else {
             blockchain.get_stakers_history().get(&self.previous_hash)
         };
-        println!("{:x?}", staker_public_key);
-        println!("{:?}", balances);
-        if let Some(public_key) = staker_public_key {
-            if public_key != &self.public_key {
-                return Err("block isn't signed by the staker first in queue".into());
-            }
-        }
+        // if let Some(public_key) = staker_public_key {
+        // if public_key != &self.public_key {
+        // return Err("block isn't signed by the staker first in queue".into());
+        // }
+        // }
         let public_key_inputs = self
             .transactions
             .iter()
@@ -217,25 +210,8 @@ impl Block {
         if self.timestamp > util::timestamp() {
             return Err("block has invalid timestamp (block is from the future)".into());
         }
-        if self.previous_hash == [0; 32] {
-            info!("previous block was genesis")
-        } else if blockchain.get_hashes().contains(&self.previous_hash) {
-            if Block::get(db, &self.hash()).is_ok() {
-                return Err("block already in db".into());
-            }
-            let previous_block = Block::get(db, &self.previous_hash)?;
-            if self.timestamp < previous_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
-                return Err("block created too early".into());
-            }
-            if staker_public_key.is_some()
-                && self.timestamp > previous_block.timestamp + BLOCK_TIME_MAX as types::Timestamp
-            {
-                return Err("block created too late".into());
-            }
-        } else if Block::get(db, &self.previous_hash).is_ok() {
-            info!("FOUND PREVIOUS BLOCK");
-        } else {
-            return Err("block does not extend chain".into());
+        if Block::get(db, &self.hash()).is_ok() {
+            return Err("block already in db".into());
         }
         if staker_public_key.is_none() {
             if self.stakes.len() != 1 {

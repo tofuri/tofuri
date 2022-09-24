@@ -5,7 +5,6 @@ use crate::{
         BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TRANSACTIONS_LIMIT, MIN_STAKE,
         PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
-    db,
     stake::Stake,
     transaction::Transaction,
     tree::Tree,

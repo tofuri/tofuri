@@ -14,8 +14,6 @@ pub mod http;
 pub mod kdf;
 pub mod key;
 pub mod p2p;
-pub mod penalties;
-pub mod penalty;
 pub mod print;
 pub mod stake;
 pub mod transaction;

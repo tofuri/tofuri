@@ -7,8 +7,6 @@ use crate::{
         PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     db,
-    penalties::Penalties,
-    penalty::Penalty,
     stake::Stake,
     transaction::Transaction,
     tree::Tree,
@@ -42,7 +40,6 @@ pub struct Blockchain {
     lag: [f64; 3],
     sync_index: usize,
     tree: Tree,
-    penalties: Penalties,
 }
 impl Blockchain {
     pub fn new(
@@ -70,7 +67,6 @@ impl Blockchain {
             lag: [0.0; 3],
             sync_index: 0,
             tree: Tree::default(),
-            penalties: Penalties::default(),
         };
         let start = Instant::now();
         blockchain.reload();
@@ -112,10 +108,8 @@ impl Blockchain {
     }
     fn penalty(&mut self) {
         let (public_key, _) = self.stakers.remove(0).unwrap();
-        let balance_staked = self.balance_staked.remove(&public_key).unwrap();
-        let penalty = Penalty::new(public_key, balance_staked);
-        warn!("{} {:?}", "Penalty".red(), penalty);
-        self.penalties.push(penalty);
+        self.balance_staked.remove(&public_key).unwrap();
+        warn!("{} {:?}", "Penalty".red(), address::encode(&public_key));
     }
     fn penalty_reload(
         &mut self,
@@ -267,8 +261,6 @@ impl Blockchain {
             // warn!("block didn't have a staker because network was down");
             // }
             let hash = self.append(&block).unwrap();
-            self.penalties.put(&self.db, &hash).unwrap();
-            self.penalties.clear();
             info!(
                 "{} {} {}",
                 "Accepted".green(),

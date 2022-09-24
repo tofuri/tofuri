@@ -21,42 +21,42 @@ use std::{
 };
 #[derive(Debug)]
 pub struct Blockchain {
-    latest_block: Block,
+    db: DBWithThreadMode<SingleThreaded>,
+    keypair: types::Keypair,
+    tree: Tree,
+    balance: types::Balance,
+    balance_staked: types::Balance,
     hashes: types::Hashes,
     stakers: types::Stakers,
+    latest_block: Block,
     pending_transactions: Vec<Transaction>,
     pending_stakes: Vec<Stake>,
     pending_blocks: Vec<Block>,
+    sync_index: usize,
     sum_stakes_now: types::Amount,
     sum_stakes_all_time: types::Amount,
-    balance: types::Balance,
-    balance_staked: types::Balance,
-    db: DBWithThreadMode<SingleThreaded>,
-    keypair: types::Keypair,
     heartbeats: types::Heartbeats,
     lag: [f64; 3],
-    sync_index: usize,
-    tree: Tree,
 }
 impl Blockchain {
-    pub fn new(keypair: types::Keypair, db: DBWithThreadMode<SingleThreaded>) -> Self {
+    pub fn new(db: DBWithThreadMode<SingleThreaded>, keypair: types::Keypair) -> Self {
         let mut blockchain = Self {
-            latest_block: Block::new([0; 32]),
+            db,
+            keypair,
+            tree: Tree::default(),
+            balance: HashMap::new(),
+            balance_staked: HashMap::new(),
             hashes: vec![],
             stakers: VecDeque::new(),
+            latest_block: Block::new([0; 32]),
             pending_transactions: vec![],
             pending_stakes: vec![],
             pending_blocks: vec![],
+            sync_index: 0,
             sum_stakes_now: 0,
             sum_stakes_all_time: 0,
-            balance: HashMap::new(),
-            balance_staked: HashMap::new(),
-            db,
-            keypair,
             heartbeats: 0,
             lag: [0.0; 3],
-            sync_index: 0,
-            tree: Tree::default(),
         };
         let start = Instant::now();
         blockchain.reload();

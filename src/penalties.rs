@@ -1,4 +1,4 @@
-use crate::{db, penalty::Penalty};
+use crate::{db, penalty::Penalty, types};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use std::error::Error;

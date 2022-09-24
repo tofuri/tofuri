@@ -255,6 +255,14 @@ impl Blockchain {
             let height = self.tree.main().unwrap().1;
             // update state & state100
             self.state.append(block.clone(), height);
+            let hashes = self.state.get_hashes();
+            let len = hashes.len();
+            if len >= 100 {
+                let height = len - 100;
+                let hash = hashes[height];
+                let block = Block::get(&self.db, &hash).unwrap();
+                self.state100.append(block, height);
+            }
             if new_branch && previous_hash != self.tree.main().unwrap().0 {
                 self.reload();
             } else {

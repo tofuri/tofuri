@@ -281,6 +281,9 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
+        let hashes = self.tree.get_vec();
+        self.state.reload(&self.db, hashes.clone());
+        self.state100.reload(&self.db, hashes);
     }
     // pub fn get_balances_at_hash(
     // &self,

@@ -126,7 +126,7 @@ Validator {} {}/tree/{}
  public_key: {}
  balance: {}
  balance_staked: {}
- sum_stakes_now: {}
+ sum_stakes_current: {}
  sum_stakes_all_time: {}
  height: {}
  heartbeats: {}
@@ -143,23 +143,27 @@ Validator {} {}/tree/{}
                 address::encode(behaviour.blockchain.get_keypair().public.as_bytes()),
                 behaviour
                     .blockchain
+                    .get_state()
                     .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
                 behaviour
                     .blockchain
+                    .get_state()
                     .get_balance_staked(behaviour.blockchain.get_keypair().public.as_bytes()),
-                behaviour.blockchain.get_sum_stakes_now(),
-                behaviour.blockchain.get_sum_stakes_all_time(),
+                behaviour.blockchain.get_state().get_sum_stakes_current(),
+                behaviour.blockchain.get_state().get_sum_stakes_all_time(),
                 behaviour.blockchain.get_height(),
                 behaviour.blockchain.get_heartbeats(),
                 behaviour.blockchain.get_lag(),
                 behaviour
                     .blockchain
+                    .get_state()
                     .get_stakers()
                     .iter()
                     .map(|&x| (address::encode(&x.0), x.1))
                     .collect::<Vec<(String, types::Height)>>(),
                 behaviour
                     .blockchain
+                    .get_state()
                     .get_hashes()
                     .iter()
                     .rev()
@@ -184,7 +188,7 @@ Validator {} {}/tree/{}
                     .iter()
                     .map(|x| hex::encode(x.hash()))
                     .collect::<Vec<String>>(),
-                behaviour.blockchain.get_latest_block()
+                behaviour.blockchain.get_state().get_latest_block()
             )
             .as_bytes(),
         )
@@ -200,7 +204,7 @@ async fn handle_get_json(
         public_key: types::PublicKeyBytes,
         balance: types::Amount,
         balance_staked: types::Amount,
-        sum_stakes_now: types::Amount,
+        sum_stakes_current: types::Amount,
         sum_stakes_all_time: types::Amount,
         height: types::Height,
         heartbeats: types::Heartbeats,
@@ -225,18 +229,24 @@ Content-Type: application/json
                     public_key: *behaviour.blockchain.get_keypair().public.as_bytes(),
                     balance: behaviour
                         .blockchain
+                        .get_state()
                         .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
                     balance_staked: behaviour
                         .blockchain
+                        .get_state()
                         .get_balance_staked(behaviour.blockchain.get_keypair().public.as_bytes()),
-                    sum_stakes_now: *behaviour.blockchain.get_sum_stakes_now(),
-                    sum_stakes_all_time: *behaviour.blockchain.get_sum_stakes_all_time(),
+                    sum_stakes_current: *behaviour.blockchain.get_state().get_sum_stakes_current(),
+                    sum_stakes_all_time: *behaviour
+                        .blockchain
+                        .get_state()
+                        .get_sum_stakes_all_time(),
                     height: behaviour.blockchain.get_height(),
                     heartbeats: *behaviour.blockchain.get_heartbeats(),
                     lag: *behaviour.blockchain.get_lag(),
-                    stakers: behaviour.blockchain.get_stakers().clone(),
+                    stakers: behaviour.blockchain.get_state().get_stakers().clone(),
                     latest_hashes: behaviour
                         .blockchain
+                        .get_state()
                         .get_hashes()
                         .iter()
                         .rev()
@@ -246,7 +256,7 @@ Content-Type: application/json
                     pending_transactions: behaviour.blockchain.get_pending_transactions().clone(),
                     pending_stakes: behaviour.blockchain.get_pending_stakes().clone(),
                     pending_blocks: behaviour.blockchain.get_pending_blocks().clone(),
-                    latest_block: behaviour.blockchain.get_latest_block().clone()
+                    latest_block: behaviour.blockchain.get_state().get_latest_block().clone()
                 })?
             )
             .as_bytes(),
@@ -268,7 +278,11 @@ async fn handle_get_json_balance(
             .get(9..)
             .ok_or("GET BALANCE 2")?,
     )?;
-    let balance = swarm.behaviour().blockchain.get_balance(&public_key);
+    let balance = swarm
+        .behaviour()
+        .blockchain
+        .get_state()
+        .get_balance(&public_key);
     stream
         .write_all(
             format!(
@@ -298,7 +312,11 @@ async fn handle_get_json_balance_staked(
             .get(16..)
             .ok_or("GET BALANCE_STAKED 2")?,
     )?;
-    let balance = swarm.behaviour().blockchain.get_balance_staked(&public_key);
+    let balance = swarm
+        .behaviour()
+        .blockchain
+        .get_state()
+        .get_balance_staked(&public_key);
     stream
         .write_all(
             format!(
@@ -350,6 +368,7 @@ async fn handle_get_json_hash_by_height(
     let hash = swarm
         .behaviour()
         .blockchain
+        .get_state()
         .get_hashes()
         .get(height)
         .ok_or("GET HASH_BY_HEIGHT 3")?;
@@ -462,7 +481,11 @@ async fn handle_get_json_stake(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
-    let sum = swarm.behaviour().blockchain.get_sum_stakes_now();
+    let sum = swarm
+        .behaviour()
+        .blockchain
+        .get_state()
+        .get_sum_stakes_current();
     stream
         .write_all(
             format!(

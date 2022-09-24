@@ -1,6 +1,6 @@
 use crate::{
-    blockchain::Blockchain, constants::MIN_STAKE, db, stake::Stake, stakers,
-    transaction::Transaction, types, util,
+    blockchain::Blockchain, constants::MIN_STAKE, db, stake::Stake, transaction::Transaction,
+    types, util,
 };
 use ed25519::signature::Signer;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -172,8 +172,7 @@ impl Block {
             self.previous_hash,
         );
         if self.previous_hash != [0; 32] {
-            let stakers = stakers::get(blockchain.get_db(), &self.previous_hash)?;
-            if let Some((public_key, _)) = stakers.get(0) {
+            if let Some((public_key, _)) = blockchain.get_state().get_stakers().get(0) {
                 if public_key != &self.public_key {
                     return Err("block isn't signed by the staker first in queue".into());
                 }

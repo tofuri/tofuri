@@ -62,7 +62,11 @@ pub fn blockchain(blockchain: &Blockchain) {
         "PubKey".cyan(),
         address::encode(blockchain.get_keypair().public.as_bytes())
     );
-    info!("{} {}", "Height".cyan(), blockchain.get_hashes().len());
+    let height = 0;
+    if let Some(main) = blockchain.get_tree().main() {
+        height = main.1;
+    }
+    info!("{} {}", "Height".cyan(), height);
     info!(
         "{} {}",
         "Pending txns".cyan(),
@@ -73,7 +77,11 @@ pub fn blockchain(blockchain: &Blockchain) {
         "Pending stakes".cyan(),
         blockchain.get_pending_stakes().len()
     );
-    info!("{} {}", "Validators".cyan(), blockchain.get_stakers().len());
+    info!(
+        "{} {}",
+        "Validators".cyan(),
+        blockchain.get_state().get_stakers().len()
+    );
 }
 pub fn validator_args(args: &ValidatorArgs) {
     info!("{} {}", "--debug".cyan(), args.debug);

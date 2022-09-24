@@ -33,11 +33,15 @@ pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
 }
 fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     let mut forge = true;
-    if !behaviour.blockchain.get_stakers().is_empty() {
-        if &behaviour.blockchain.get_stakers()[0].0
+    if !behaviour.blockchain.get_state().get_stakers().is_empty() {
+        if &behaviour.blockchain.get_state().get_stakers()[0].0
             != behaviour.blockchain.get_keypair().public.as_bytes()
             || util::timestamp()
-                < behaviour.blockchain.get_latest_block().timestamp
+                < behaviour
+                    .blockchain
+                    .get_state()
+                    .get_latest_block()
+                    .timestamp
                     + BLOCK_TIME_MIN as types::Timestamp
         {
             forge = false;
@@ -63,7 +67,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    if behaviour.blockchain.get_hashes().is_empty() {
+    if behaviour.blockchain.get_state().get_hashes().is_empty() {
         return Ok(());
     }
     if behaviour.gossipsub.all_peers().count() == 0 {

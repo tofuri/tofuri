@@ -27,7 +27,7 @@ impl States {
     pub fn get_fork_state(&self, blockchain: &Blockchain, previous_hash: &types::Hash) -> State {
         let vec = blockchain
             .get_tree()
-            .get_fork_vec(self.current.get_hashes(), &previous_hash);
+            .get_fork_vec(self.current.get_hashes(), *previous_hash);
         println!("{:x?}", vec);
         let mut fork_state = self.previous.clone();
         // update fork_state to forks current state
@@ -37,12 +37,7 @@ impl States {
         }
         fork_state
     }
-    pub fn append(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        block: &Block,
-        height: types::Height,
-    ) {
+    pub fn append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &Block) {
         self.current.append(block.clone());
         let hashes = self.current.get_hashes();
         let len = hashes.len();

@@ -88,7 +88,14 @@ impl Blockchain {
         if self.sync_index >= hashes.len() {
             self.sync_index = 0;
         }
-        let block = Block::get(&self.db, &hashes[self.sync_index]).unwrap();
+        let hash = hashes[self.sync_index];
+        info!(
+            "{} {} {}",
+            "Sync".cyan(),
+            self.sync_index.to_string().yellow(),
+            hex::encode(&hash)
+        );
+        let block = Block::get(&self.db, &hash).unwrap();
         self.sync_index += 1;
         block
     }

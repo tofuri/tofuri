@@ -157,6 +157,7 @@ impl Block {
         {
             return Err("block doesn't extend chain".into());
         }
+        println!("{}", hex::encode(&self.previous_hash));
         let fork_state = blockchain
             .get_states()
             .get_fork_state(&blockchain, &self.previous_hash);

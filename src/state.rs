@@ -3,7 +3,7 @@ use colored::*;
 use log::warn;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct State {
     hashes: types::Hashes,
     stakers: types::Stakers,
@@ -170,6 +170,9 @@ impl State {
         self.stakers.clear();
         self.balance.clear();
         self.balance_staked.clear();
+        if hashes.is_empty() {
+            return;
+        }
         self.latest_block = Block::get(db, hashes.last().unwrap()).unwrap();
         let mut previous_block_timestamp = match hashes.first() {
             Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
@@ -186,9 +189,9 @@ impl State {
         }
         self.hashes = hashes;
     }
-    pub fn append(&mut self, block: Block, height: types::Height) {
-        self.set(&block, height);
+    pub fn append(&mut self, block: Block) {
         self.hashes.push(block.hash());
+        self.set(&block, self.hashes.len() - 1);
         self.latest_block = block;
     }
 }

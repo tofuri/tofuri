@@ -1,4 +1,4 @@
-use crate::{block::Block, state::State, types};
+use crate::{block::Block, blockchain::Blockchain, state::State, types};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 #[derive(Debug)]
 pub struct States {
@@ -24,20 +24,40 @@ impl States {
     pub fn get_previous_mut(&mut self) -> &mut State {
         &mut self.previous
     }
+    pub fn get_fork_state(
+        &self,
+        blockchain: &Blockchain,
+        previous_hash: &types::Hash,
+        public_keys: &Vec<types::PublicKeyBytes>,
+    ) -> State {
+        let vec = blockchain
+            .get_tree()
+            .get_fork_vec(self.current.get_hashes(), &previous_hash);
+        println!("{:x?}", vec);
+        let mut fork_state = self.previous.clone();
+        // update fork_state to forks current state
+        for hash in vec.iter() {
+            let block = Block::get(blockchain.get_db(), hash).unwrap();
+            fork_state.append(block);
+        }
+        // let vec = tree.get_vec_limit(100);
+        // if vec.contains(&previous_hash) {
+        // } else {
+        // }
+        fork_state
+    }
     pub fn append(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
         block: &Block,
         height: types::Height,
     ) {
-        self.current.append(block.clone(), height);
+        self.current.append(block.clone());
         let hashes = self.current.get_hashes();
         let len = hashes.len();
         if len >= 100 {
-            let height = len - 100;
-            let hash = hashes[height];
-            let block = Block::get(db, &hash).unwrap();
-            self.previous.append(block, height);
+            let block = Block::get(db, &hashes[len - 100]).unwrap();
+            self.previous.append(block);
         }
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, mut hashes: Vec<types::Hash>) {

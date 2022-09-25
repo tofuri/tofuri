@@ -162,6 +162,11 @@ impl Block {
         for stake in self.stakes.iter() {
             balance_staked_public_keys.push(stake.public_key);
         }
+        let fork_state =
+            blockchain
+                .get_states()
+                .get_fork_state(&blockchain, &self.previous_hash, &vec![]);
+        println!("{:x?}", fork_state);
         // let (balances, balances_staked) = blockchain.get_balances_at_hash(
         // db,
         // balance_public_keys,

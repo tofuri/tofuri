@@ -24,12 +24,7 @@ impl States {
     pub fn get_previous_mut(&mut self) -> &mut State {
         &mut self.previous
     }
-    pub fn get_fork_state(
-        &self,
-        blockchain: &Blockchain,
-        previous_hash: &types::Hash,
-        public_keys: &Vec<types::PublicKeyBytes>,
-    ) -> State {
+    pub fn get_fork_state(&self, blockchain: &Blockchain, previous_hash: &types::Hash) -> State {
         let vec = blockchain
             .get_tree()
             .get_fork_vec(self.current.get_hashes(), &previous_hash);
@@ -40,10 +35,6 @@ impl States {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             fork_state.append(block);
         }
-        // let vec = tree.get_vec_limit(100);
-        // if vec.contains(&previous_hash) {
-        // } else {
-        // }
         fork_state
     }
     pub fn append(

@@ -1,6 +1,5 @@
 use crate::{block::Block, state::State, types};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
-use std::error::Error;
 #[derive(Debug)]
 pub struct States {
     current: State,

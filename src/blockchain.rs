@@ -230,7 +230,7 @@ impl Blockchain {
             }
         }
         block.sign(&self.keypair);
-        let hash = self.append(&block).unwrap();
+        let hash = self.append(&block);
         info!(
             "{} {} {}",
             "Forged".green(),
@@ -247,7 +247,7 @@ impl Blockchain {
             self.states.get_current_mut().penalty();
         }
         for block in self.pending_blocks.clone() {
-            let hash = self.append(&block).unwrap();
+            let hash = self.append(&block);
             info!(
                 "{} {} {}",
                 "Accepted".green(),
@@ -256,8 +256,8 @@ impl Blockchain {
             );
         }
     }
-    pub fn append(&mut self, block: &Block) -> Result<types::Hash, Box<dyn Error>> {
-        block.put(&self.db)?;
+    pub fn append(&mut self, block: &Block) -> types::Hash {
+        block.put(&self.db).unwrap();
         let hash = block.hash();
         if let Some(new_branch) = self.tree.insert(hash, block.previous_hash) {
             let previous_hash = self.tree.main().unwrap().0;
@@ -272,7 +272,7 @@ impl Blockchain {
                 self.pending_stakes.clear();
             }
         }
-        Ok(hash)
+        hash
     }
     pub fn reload(&mut self) {
         self.tree.reload(&self.db);

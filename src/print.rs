@@ -79,8 +79,8 @@ pub fn blockchain(blockchain: &Blockchain) {
     );
     info!(
         "{} {}",
-        "Validators".cyan(),
-        blockchain.get_state().get_stakers().len()
+        "Stakers".cyan(),
+        blockchain.get_states().get_current().get_stakers().len()
     );
 }
 pub fn validator_args(args: &ValidatorArgs) {

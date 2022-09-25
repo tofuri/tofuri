@@ -5,7 +5,7 @@ use crate::{
         PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     stake::Stake,
-    state::State,
+    states::States,
     transaction::Transaction,
     tree::Tree,
     types, util,
@@ -19,8 +19,7 @@ pub struct Blockchain {
     db: DBWithThreadMode<SingleThreaded>,
     keypair: types::Keypair,
     tree: Tree,
-    state: State,
-    state100: State,
+    states: States,
     pending_transactions: Vec<Transaction>,
     pending_stakes: Vec<Stake>,
     pending_blocks: Vec<Block>,
@@ -34,8 +33,7 @@ impl Blockchain {
             db,
             keypair,
             tree: Tree::default(),
-            state: State::new(),
-            state100: State::new(),
+            states: States::new(),
             pending_transactions: vec![],
             pending_stakes: vec![],
             pending_blocks: vec![],
@@ -48,11 +46,8 @@ impl Blockchain {
         info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
         blockchain
     }
-    pub fn get_state(&self) -> &State {
-        &self.state
-    }
-    pub fn get_state100(&self) -> &State {
-        &self.state100
+    pub fn get_states(&self) -> &States {
+        &self.states
     }
     pub fn get_pending_transactions(&self) -> &Vec<Transaction> {
         &self.pending_transactions
@@ -89,7 +84,7 @@ impl Blockchain {
         }
     }
     pub fn get_next_sync_block(&mut self) -> Block {
-        let hashes = self.state.get_hashes();
+        let hashes = self.states.get_current().get_hashes();
         if self.sync_index >= hashes.len() {
             self.sync_index = 0;
         }
@@ -127,7 +122,11 @@ impl Blockchain {
         }
     }
     pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
-        self.state.get_hashes().iter().position(|&x| x == hash)
+        self.states
+            .get_current()
+            .get_hashes()
+            .iter()
+            .position(|&x| x == hash)
     }
     pub fn pending_blocks_push(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
         if self
@@ -165,8 +164,15 @@ impl Blockchain {
             }
             self.pending_transactions.remove(index);
         }
-        let balance = self.state.get_balance(&transaction.public_key_input);
-        transaction.validate(&self.db, balance, self.state.get_latest_block().timestamp)?;
+        let balance = self
+            .states
+            .get_current()
+            .get_balance(&transaction.public_key_input);
+        transaction.validate(
+            &self.db,
+            balance,
+            self.states.get_current().get_latest_block().timestamp,
+        )?;
         self.pending_transactions.push(transaction);
         self.limit_pending_transactions();
         Ok(())
@@ -189,13 +195,16 @@ impl Blockchain {
             }
             self.pending_stakes.remove(index);
         }
-        let balance = self.state.get_balance(&stake.public_key);
-        let balance_staked = self.state.get_balance_staked(&stake.public_key);
+        let balance = self.states.get_current().get_balance(&stake.public_key);
+        let balance_staked = self
+            .states
+            .get_current()
+            .get_balance_staked(&stake.public_key);
         stake.validate(
             &self.db,
             balance,
             balance_staked,
-            self.state.get_latest_block().timestamp,
+            self.states.get_current().get_latest_block().timestamp,
         )?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
@@ -232,9 +241,10 @@ impl Blockchain {
     }
     pub fn append_handle(&mut self) {
         if util::timestamp()
-            > self.state.get_latest_block().timestamp + BLOCK_TIME_MAX as types::Timestamp
+            > self.states.get_current().get_latest_block().timestamp
+                + BLOCK_TIME_MAX as types::Timestamp
         {
-            self.state.penalty();
+            self.states.get_current_mut().penalty();
         }
         for block in self.pending_blocks.clone() {
             let hash = self.append(&block).unwrap();
@@ -254,14 +264,14 @@ impl Blockchain {
             self.tree.sort_branches();
             let height = self.tree.main().unwrap().1;
             // update state & state100
-            self.state.append(block.clone(), height);
-            let hashes = self.state.get_hashes();
+            self.states.get_current_mut().append(block.clone(), height);
+            let hashes = self.states.get_current().get_hashes();
             let len = hashes.len();
             if len >= 100 {
                 let height = len - 100;
                 let hash = hashes[height];
                 let block = Block::get(&self.db, &hash).unwrap();
-                self.state100.append(block, height);
+                self.states.get_previous_mut().append(block, height);
             }
             if new_branch && previous_hash != self.tree.main().unwrap().0 {
                 self.reload();
@@ -284,12 +294,16 @@ impl Blockchain {
             );
         }
         let mut hashes = self.tree.get_vec();
-        self.state.reload(&self.db, hashes.clone(), true);
+        self.states
+            .get_current_mut()
+            .reload(&self.db, hashes.clone(), true);
         let len = hashes.len();
         let start = if len < 100 { 0 } else { len - 100 };
         hashes.drain(start..len);
         println!("{:x?}", hashes);
-        self.state100.reload(&self.db, hashes, false);
+        self.states
+            .get_previous_mut()
+            .reload(&self.db, hashes, false);
     }
     // pub fn get_balances_at_hash(
     // &self,

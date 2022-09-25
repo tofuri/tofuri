@@ -17,6 +17,7 @@ pub mod p2p;
 pub mod print;
 pub mod stake;
 pub mod state;
+pub mod states;
 pub mod transaction;
 pub mod tree;
 pub mod types;

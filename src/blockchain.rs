@@ -263,16 +263,7 @@ impl Blockchain {
             let previous_hash = self.tree.main().unwrap().0;
             self.tree.sort_branches();
             let height = self.tree.main().unwrap().1;
-            // update state & state100
-            self.states.get_current_mut().append(block.clone(), height);
-            let hashes = self.states.get_current().get_hashes();
-            let len = hashes.len();
-            if len >= 100 {
-                let height = len - 100;
-                let hash = hashes[height];
-                let block = Block::get(&self.db, &hash).unwrap();
-                self.states.get_previous_mut().append(block, height);
-            }
+            self.states.append(&self.db, block, height);
             if new_branch && previous_hash != self.tree.main().unwrap().0 {
                 self.reload();
             } else {
@@ -293,17 +284,7 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
-        let mut hashes = self.tree.get_vec();
-        self.states
-            .get_current_mut()
-            .reload(&self.db, hashes.clone(), true);
-        let len = hashes.len();
-        let start = if len < 100 { 0 } else { len - 100 };
-        hashes.drain(start..len);
-        println!("{:x?}", hashes);
-        self.states
-            .get_previous_mut()
-            .reload(&self.db, hashes, false);
+        self.states.reload(&self.db, self.tree.get_vec());
     }
     // pub fn get_balances_at_hash(
     // &self,

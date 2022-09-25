@@ -1,4 +1,6 @@
-use crate::state::State;
+use crate::{block::Block, state::State, types};
+use rocksdb::{DBWithThreadMode, SingleThreaded};
+use std::error::Error;
 #[derive(Debug)]
 pub struct States {
     current: State,
@@ -22,5 +24,28 @@ impl States {
     }
     pub fn get_previous_mut(&mut self) -> &mut State {
         &mut self.previous
+    }
+    pub fn append(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        block: &Block,
+        height: types::Height,
+    ) {
+        self.current.append(block.clone(), height);
+        let hashes = self.current.get_hashes();
+        let len = hashes.len();
+        if len >= 100 {
+            let height = len - 100;
+            let hash = hashes[height];
+            let block = Block::get(db, &hash).unwrap();
+            self.previous.append(block, height);
+        }
+    }
+    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, mut hashes: Vec<types::Hash>) {
+        self.current.reload(db, hashes.clone(), true);
+        let len = hashes.len();
+        let start = if len < 100 { 0 } else { len - 100 };
+        hashes.drain(start..len);
+        self.previous.reload(db, hashes, false);
     }
 }

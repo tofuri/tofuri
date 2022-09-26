@@ -17,6 +17,9 @@ impl Tree {
     pub fn main(&self) -> Option<&Branch> {
         self.branches.first()
     }
+    pub fn size(&self) -> usize {
+        self.hashes.len()
+    }
     pub fn get_vec(&self) -> Vec<types::Hash> {
         let mut vec = vec![];
         if let Some(main) = self.main() {

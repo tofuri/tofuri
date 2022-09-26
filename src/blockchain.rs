@@ -48,6 +48,12 @@ impl Blockchain {
         info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
         blockchain
     }
+    pub fn get_sync_index(&self) -> &usize {
+        &self.sync_index
+    }
+    pub fn get_sync_iteration(&self) -> &usize {
+        &self.sync_iteration
+    }
     pub fn get_states(&self) -> &States {
         &self.states
     }

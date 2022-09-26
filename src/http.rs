@@ -264,20 +264,35 @@ async fn handle_get_json(
     #[derive(Serialize)]
     struct Data {
         public_key: String,
+        height: types::Height,
+        tree_size: usize,
+        heartbeats: types::Heartbeats,
+        states: States,
+        lag: [f64; 3],
+        pending_transactions: Vec<String>,
+        pending_stakes: Vec<String>,
+        pending_blocks: Vec<String>,
+        sync_index: usize,
+        sync_iteration: usize,
+    }
+    #[derive(Serialize)]
+    struct States {
+        current: State,
+        previous: State,
+    }
+    #[derive(Serialize)]
+    struct State {
         balance: types::Amount,
         balance_staked: types::Amount,
         sum_stakes_current: types::Amount,
         sum_stakes_all_time: types::Amount,
-        height: types::Height,
-        heartbeats: types::Heartbeats,
-        lag: [f64; 3],
-        stakers: Vec<String>,
         latest_hashes: Vec<String>,
-        pending_transactions: Vec<String>,
-        pending_stakes: Vec<String>,
-        pending_blocks: Vec<String>,
+        stakers: Vec<String>,
     }
     let behaviour = swarm.behaviour();
+    let states = behaviour.blockchain.get_states();
+    let state_current = states.get_current();
+    let state_previous = states.get_previous();
     stream
         .write_all(
             format!(
@@ -290,47 +305,54 @@ Content-Type: application/json
                     public_key: address::encode(
                         behaviour.blockchain.get_keypair().public.as_bytes()
                     ),
-                    balance: behaviour
-                        .blockchain
-                        .get_states()
-                        .get_current()
-                        .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
-                    balance_staked: behaviour
-                        .blockchain
-                        .get_states()
-                        .get_current()
-                        .get_balance_staked(behaviour.blockchain.get_keypair().public.as_bytes()),
-                    sum_stakes_current: *behaviour
-                        .blockchain
-                        .get_states()
-                        .get_current()
-                        .get_sum_stakes_current(),
-                    sum_stakes_all_time: *behaviour
-                        .blockchain
-                        .get_states()
-                        .get_current()
-                        .get_sum_stakes_all_time(),
                     height: behaviour.blockchain.get_height(),
+                    tree_size: behaviour.blockchain.get_tree().size(),
                     heartbeats: *behaviour.blockchain.get_heartbeats(),
+                    states: States {
+                        current: State {
+                            balance: state_current
+                                .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
+                            balance_staked: state_current.get_balance_staked(
+                                behaviour.blockchain.get_keypair().public.as_bytes()
+                            ),
+                            sum_stakes_current: *state_current.get_sum_stakes_current(),
+                            sum_stakes_all_time: *state_current.get_sum_stakes_all_time(),
+                            latest_hashes: state_current
+                                .get_hashes()
+                                .iter()
+                                .rev()
+                                .take(16)
+                                .map(|x| hex::encode(x))
+                                .collect(),
+                            stakers: state_current
+                                .get_stakers()
+                                .iter()
+                                .map(|&x| address::encode(&x.0))
+                                .collect(),
+                        },
+                        previous: State {
+                            balance: state_previous
+                                .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
+                            balance_staked: state_previous.get_balance_staked(
+                                behaviour.blockchain.get_keypair().public.as_bytes()
+                            ),
+                            sum_stakes_current: *state_previous.get_sum_stakes_current(),
+                            sum_stakes_all_time: *state_previous.get_sum_stakes_all_time(),
+                            stakers: state_previous
+                                .get_stakers()
+                                .iter()
+                                .map(|&x| address::encode(&x.0))
+                                .collect(),
+                            latest_hashes: state_previous
+                                .get_hashes()
+                                .iter()
+                                .rev()
+                                .take(16)
+                                .map(|x| hex::encode(x))
+                                .collect(),
+                        },
+                    },
                     lag: *behaviour.blockchain.get_lag(),
-                    stakers: behaviour
-                        .blockchain
-                        .get_states()
-                        .get_current()
-                        .get_stakers()
-                        .iter()
-                        .map(|&x| address::encode(&x.0))
-                        .collect(),
-                    latest_hashes: behaviour
-                        .blockchain
-                        .get_states()
-                        .get_current()
-                        .get_hashes()
-                        .iter()
-                        .rev()
-                        .take(10)
-                        .map(|x| hex::encode(x))
-                        .collect(),
                     pending_transactions: behaviour
                         .blockchain
                         .get_pending_transactions()
@@ -349,6 +371,8 @@ Content-Type: application/json
                         .iter()
                         .map(|x| hex::encode(x.hash()))
                         .collect(),
+                    sync_index: *behaviour.blockchain.get_sync_index(),
+                    sync_iteration: *behaviour.blockchain.get_sync_iteration(),
                 })?
             )
             .as_bytes(),

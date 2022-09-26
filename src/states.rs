@@ -2,6 +2,7 @@ use crate::{
     block::Block, blockchain::Blockchain, constants::TRUST_FORK_AFTER_BLOCKS, state::State, types,
 };
 use rocksdb::{DBWithThreadMode, SingleThreaded};
+use std::error::Error;
 #[derive(Debug)]
 pub struct States {
     current: State,
@@ -26,26 +27,29 @@ impl States {
     pub fn get_previous_mut(&mut self) -> &mut State {
         &mut self.previous
     }
-    pub fn get_fork_state(&self, blockchain: &Blockchain, previous_hash: &types::Hash) -> State {
+    pub fn get_fork_state(
+        &self,
+        blockchain: &Blockchain,
+        previous_hash: &types::Hash,
+    ) -> Result<State, Box<dyn Error>> {
         if previous_hash == &[0; 32] {
-            return State::new();
+            return Ok(State::new());
         }
-        let vec = blockchain
-            .get_tree()
-            .get_fork_vec(self.current.get_hashes(), *previous_hash);
+        let hashes = self.current.get_hashes();
+        let vec = blockchain.get_tree().get_fork_vec(hashes, *previous_hash);
         let mut fork_state = self.previous.clone();
         if let Some(hash) = vec.first() {
-            if self.previous.get_position(hash).unwrap()
+            if hashes.iter().position(|x| x == hash).unwrap()
                 < blockchain.get_height() - TRUST_FORK_AFTER_BLOCKS
             {
-                return State::new();
+                return Err("not allowed to fork trusted chain".into());
             }
         }
         for hash in vec.iter() {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             fork_state.append(block);
         }
-        fork_state
+        Ok(fork_state)
     }
     pub fn append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &Block) {
         self.current.append(block.clone());

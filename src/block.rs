@@ -150,7 +150,7 @@ impl Block {
         }
         let fork_state = blockchain
             .get_states()
-            .get_fork_state(&blockchain, &self.previous_hash);
+            .get_fork_state(&blockchain, &self.previous_hash)?;
         if self.previous_hash != [0; 32] {
             if let Some((public_key, _)) = fork_state.get_stakers().get(0) {
                 if public_key != &self.public_key {

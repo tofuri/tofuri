@@ -25,6 +25,9 @@ impl State {
             latest_block: Block::new([0; 32]),
         }
     }
+    pub fn get_position(&self, hash: &types::Hash) -> Option<types::Height> {
+        self.hashes.iter().position(|x| x == hash)
+    }
     pub fn get_stakers(&self) -> &types::Stakers {
         &self.stakers
     }

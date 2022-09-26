@@ -126,12 +126,12 @@ Validator {} {}/tree/{}
  public_key: {}
  height: {}
  heartbeats: {}
- state: {}
+ current: {}
   balance: {}
   balance_staked: {}
   sum_stakes_current: {}
   sum_stakes_all_time: {}
- state100: {}
+ previous: {}
   balance: {}
   balance_staked: {}
   sum_stakes_current: {}

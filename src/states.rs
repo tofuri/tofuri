@@ -1,4 +1,6 @@
-use crate::{block::Block, blockchain::Blockchain, state::State, types};
+use crate::{
+    block::Block, blockchain::Blockchain, constants::TRUST_FORK_AFTER_BLOCKS, state::State, types,
+};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 #[derive(Debug)]
 pub struct States {
@@ -32,6 +34,13 @@ impl States {
             .get_tree()
             .get_fork_vec(self.current.get_hashes(), *previous_hash);
         let mut fork_state = self.previous.clone();
+        if let Some(hash) = vec.first() {
+            if self.previous.get_position(hash).unwrap()
+                < blockchain.get_height() - TRUST_FORK_AFTER_BLOCKS
+            {
+                return State::new();
+            }
+        }
         for hash in vec.iter() {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             fork_state.append(block);
@@ -42,15 +51,19 @@ impl States {
         self.current.append(block.clone());
         let hashes = self.current.get_hashes();
         let len = hashes.len();
-        if len >= 100 {
-            let block = Block::get(db, &hashes[len - 100]).unwrap();
+        if len >= TRUST_FORK_AFTER_BLOCKS {
+            let block = Block::get(db, &hashes[len - TRUST_FORK_AFTER_BLOCKS]).unwrap();
             self.previous.append(block);
         }
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, mut hashes: Vec<types::Hash>) {
         self.current.reload(db, hashes.clone(), true);
         let len = hashes.len();
-        let start = if len < 100 { 0 } else { len - 100 };
+        let start = if len < TRUST_FORK_AFTER_BLOCKS {
+            0
+        } else {
+            len - TRUST_FORK_AFTER_BLOCKS
+        };
         hashes.drain(start..len);
         self.previous.reload(db, hashes, false);
     }

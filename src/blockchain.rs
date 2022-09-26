@@ -131,13 +131,6 @@ impl Blockchain {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
     }
-    pub fn height(&self, hash: types::Hash) -> Option<types::Height> {
-        self.states
-            .get_current()
-            .get_hashes()
-            .iter()
-            .position(|&x| x == hash)
-    }
     pub fn pending_blocks_push(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
         if self
             .pending_blocks

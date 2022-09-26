@@ -6,13 +6,12 @@ use crate::{
     stake::{CompressedStake, Stake},
     transaction::{CompressedTransaction, Transaction},
     types,
-    types::Stakers,
 };
 use lazy_static::lazy_static;
 use libp2p::Swarm;
 use log::error;
 use regex::Regex;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::{error::Error, io::BufRead};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 lazy_static! {
@@ -262,9 +261,9 @@ async fn handle_get_json(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize)]
     struct Data {
-        public_key: types::PublicKeyBytes,
+        public_key: String,
         balance: types::Amount,
         balance_staked: types::Amount,
         sum_stakes_current: types::Amount,
@@ -272,12 +271,11 @@ async fn handle_get_json(
         height: types::Height,
         heartbeats: types::Heartbeats,
         lag: [f64; 3],
-        stakers: Stakers,
-        latest_hashes: types::Hashes,
-        pending_transactions: Vec<Transaction>,
-        pending_stakes: Vec<Stake>,
-        pending_blocks: Vec<Block>,
-        latest_block: Block,
+        stakers: Vec<String>,
+        latest_hashes: Vec<String>,
+        pending_transactions: Vec<String>,
+        pending_stakes: Vec<String>,
+        pending_blocks: Vec<String>,
     }
     let behaviour = swarm.behaviour();
     stream
@@ -289,7 +287,9 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&Data {
-                    public_key: *behaviour.blockchain.get_keypair().public.as_bytes(),
+                    public_key: address::encode(
+                        behaviour.blockchain.get_keypair().public.as_bytes()
+                    ),
                     balance: behaviour
                         .blockchain
                         .get_states()
@@ -318,7 +318,9 @@ Content-Type: application/json
                         .get_states()
                         .get_current()
                         .get_stakers()
-                        .clone(),
+                        .iter()
+                        .map(|&x| address::encode(&x.0))
+                        .collect(),
                     latest_hashes: behaviour
                         .blockchain
                         .get_states()
@@ -327,17 +329,26 @@ Content-Type: application/json
                         .iter()
                         .rev()
                         .take(10)
-                        .cloned()
+                        .map(|x| hex::encode(x))
                         .collect(),
-                    pending_transactions: behaviour.blockchain.get_pending_transactions().clone(),
-                    pending_stakes: behaviour.blockchain.get_pending_stakes().clone(),
-                    pending_blocks: behaviour.blockchain.get_pending_blocks().clone(),
-                    latest_block: behaviour
+                    pending_transactions: behaviour
                         .blockchain
-                        .get_states()
-                        .get_current()
-                        .get_latest_block()
-                        .clone()
+                        .get_pending_transactions()
+                        .iter()
+                        .map(|x| hex::encode(x.hash()))
+                        .collect(),
+                    pending_stakes: behaviour
+                        .blockchain
+                        .get_pending_stakes()
+                        .iter()
+                        .map(|x| hex::encode(x.hash()))
+                        .collect(),
+                    pending_blocks: behaviour
+                        .blockchain
+                        .get_pending_blocks()
+                        .iter()
+                        .map(|x| hex::encode(x.hash()))
+                        .collect(),
                 })?
             )
             .as_bytes(),

@@ -144,24 +144,13 @@ impl Block {
         self.fees() + util::reward(balance_staked)
     }
     pub fn validate(&self, blockchain: &Blockchain) -> Result<(), Box<dyn Error>> {
-        // let db = blockchain.get_db();
-        // let height = if self.previous_hash == [0; 32] {
-        // 0
-        // } else {
-        // blockchain.get_tree().height(&self.previous_hash)?
-        // };
-        // if height + TRUST_FORK_AFTER_BLOCKS < blockchain.get_height() {
-        // return Err("block doesn't extend untrusted fork".into());
-        // }
         if self.previous_hash != [0; 32] && blockchain.get_tree().get(&self.previous_hash).is_none()
         {
             return Err("block doesn't extend chain".into());
         }
-        println!("{}", hex::encode(&self.previous_hash));
         let fork_state = blockchain
             .get_states()
             .get_fork_state(&blockchain, &self.previous_hash);
-        println!("{:x?}", fork_state);
         if self.previous_hash != [0; 32] {
             if let Some((public_key, _)) = fork_state.get_stakers().get(0) {
                 if public_key != &self.public_key {

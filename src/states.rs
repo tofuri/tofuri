@@ -32,8 +32,6 @@ impl States {
             .get_tree()
             .get_fork_vec(self.current.get_hashes(), *previous_hash);
         let mut fork_state = self.previous.clone();
-        // update fork_state to forks current state
-        println!("{:x?}", vec);
         for hash in vec.iter() {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             fork_state.append(block);

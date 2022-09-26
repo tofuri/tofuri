@@ -71,7 +71,7 @@ async fn handle_get(
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
     if INDEX.is_match(first) {
-        handle_get_index(stream, swarm).await?;
+        handle_get_index(stream).await?;
     } else if JSON.is_match(first) {
         handle_get_json(stream, swarm).await?;
     } else if BALANCE.is_match(first) {
@@ -110,147 +110,19 @@ async fn handle_post(
     };
     Ok(())
 }
-async fn handle_get_index(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-) -> Result<(), Box<dyn Error>> {
-    let behaviour = swarm.behaviour();
+async fn handle_get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
     stream
         .write_all(
             format!(
                 "\
 HTTP/1.1 200 OK
 
-Validator {} {}/tree/{}
- public_key: {}
- height: {}
- heartbeats: {}
- current: {}
-  balance: {}
-  balance_staked: {}
-  sum_stakes_current: {}
-  sum_stakes_all_time: {}
-  stakers: {:?}
- previous: {}
-  balance: {}
-  balance_staked: {}
-  sum_stakes_current: {}
-  sum_stakes_all_time: {}
-  stakers: {:?}
- lag: {:?}
- latest_hashes: {:?}
- pending_transactions: {:?}
- pending_stakes: {:?}
- pending_blocks: {:?}
- latest_block: {:?}",
+{} {}
+{}/tree/{}",
+                env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),
                 env!("CARGO_PKG_REPOSITORY"),
                 env!("GIT_HASH"),
-                address::encode(behaviour.blockchain.get_keypair().public.as_bytes()),
-                behaviour.blockchain.get_height(),
-                behaviour.blockchain.get_heartbeats(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_current()
-                    .get_hashes()
-                    .len(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_current()
-                    .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_current()
-                    .get_balance_staked(behaviour.blockchain.get_keypair().public.as_bytes()),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_current()
-                    .get_sum_stakes_current(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_current()
-                    .get_sum_stakes_all_time(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_current()
-                    .get_stakers()
-                    .iter()
-                    .map(|&x| (address::encode(&x.0), x.1))
-                    .collect::<Vec<(String, types::Height)>>(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_previous()
-                    .get_hashes()
-                    .len(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_previous()
-                    .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_previous()
-                    .get_balance_staked(behaviour.blockchain.get_keypair().public.as_bytes()),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_previous()
-                    .get_sum_stakes_current(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_previous()
-                    .get_sum_stakes_all_time(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_previous()
-                    .get_stakers()
-                    .iter()
-                    .map(|&x| (address::encode(&x.0), x.1))
-                    .collect::<Vec<(String, types::Height)>>(),
-                behaviour.blockchain.get_lag(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_current()
-                    .get_hashes()
-                    .iter()
-                    .rev()
-                    .take(3)
-                    .map(|&x| hex::encode(x))
-                    .collect::<Vec<String>>(),
-                behaviour
-                    .blockchain
-                    .get_pending_transactions()
-                    .iter()
-                    .map(|x| hex::encode(x.hash()))
-                    .collect::<Vec<String>>(),
-                behaviour
-                    .blockchain
-                    .get_pending_stakes()
-                    .iter()
-                    .map(|x| hex::encode(x.hash()))
-                    .collect::<Vec<String>>(),
-                behaviour
-                    .blockchain
-                    .get_pending_blocks()
-                    .iter()
-                    .map(|x| hex::encode(x.hash()))
-                    .collect::<Vec<String>>(),
-                behaviour
-                    .blockchain
-                    .get_states()
-                    .get_current()
-                    .get_latest_block()
             )
             .as_bytes(),
         )

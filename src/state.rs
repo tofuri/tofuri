@@ -149,9 +149,9 @@ impl State {
         }
     }
     fn set(&mut self, block: &Block, height: types::Height) {
-        self.set_reward(&block);
-        self.set_balances(&block);
-        self.set_stakers(&block, height);
+        self.set_reward(block);
+        self.set_balances(block);
+        self.set_stakers(block, height);
         self.set_sum_stakes();
     }
     pub fn penalty(&mut self) {
@@ -193,5 +193,10 @@ impl State {
         self.hashes.push(block.hash());
         self.set(&block, self.hashes.len() - 1);
         self.latest_block = block;
+    }
+}
+impl Default for State {
+    fn default() -> Self {
+        Self::new()
     }
 }

@@ -11,8 +11,8 @@ pub struct States {
 impl States {
     pub fn new() -> States {
         States {
-            current: State::new(),
-            previous: State::new(),
+            current: State::default(),
+            previous: State::default(),
         }
     }
     pub fn get_current(&self) -> &State {
@@ -33,7 +33,7 @@ impl States {
         previous_hash: &types::Hash,
     ) -> Result<State, Box<dyn Error>> {
         if previous_hash == &[0; 32] {
-            return Ok(State::new());
+            return Ok(State::default());
         }
         let hashes = self.current.get_hashes();
         let vec = blockchain.get_tree().get_fork_vec(hashes, *previous_hash);
@@ -70,5 +70,10 @@ impl States {
         };
         hashes.drain(start..len);
         self.previous.reload(db, hashes, false);
+    }
+}
+impl Default for States {
+    fn default() -> Self {
+        Self::new()
     }
 }

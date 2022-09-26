@@ -41,11 +41,7 @@ impl Tree {
         vec.reverse();
         vec
     }
-    pub fn get_fork_vec(
-        &self,
-        hashes: &Vec<types::Hash>,
-        mut hash: types::Hash,
-    ) -> Vec<types::Hash> {
+    pub fn get_fork_vec(&self, hashes: &[types::Hash], mut hash: types::Hash) -> Vec<types::Hash> {
         let mut vec = vec![];
         loop {
             if hashes.contains(&hash) {

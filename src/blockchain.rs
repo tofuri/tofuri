@@ -34,7 +34,7 @@ impl Blockchain {
             db,
             keypair,
             tree: Tree::default(),
-            states: States::new(),
+            states: States::default(),
             pending_transactions: vec![],
             pending_stakes: vec![],
             pending_blocks: vec![],

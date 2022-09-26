@@ -322,7 +322,7 @@ Content-Type: application/json
                                 .iter()
                                 .rev()
                                 .take(16)
-                                .map(|x| hex::encode(x))
+                                .map(hex::encode)
                                 .collect(),
                             stakers: state_current
                                 .get_stakers()
@@ -348,7 +348,7 @@ Content-Type: application/json
                                 .iter()
                                 .rev()
                                 .take(16)
-                                .map(|x| hex::encode(x))
+                                .map(hex::encode)
                                 .collect(),
                         },
                     },

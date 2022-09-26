@@ -37,7 +37,6 @@ impl States {
         }
         let hashes = self.current.get_hashes();
         let vec = blockchain.get_tree().get_fork_vec(hashes, *previous_hash);
-        let mut fork_state = self.previous.clone();
         if let Some(hash) = vec.first() {
             if hashes.iter().position(|x| x == hash).unwrap()
                 < blockchain.get_height() - TRUST_FORK_AFTER_BLOCKS
@@ -45,6 +44,7 @@ impl States {
                 return Err("not allowed to fork trusted chain".into());
             }
         }
+        let mut fork_state = self.previous.clone();
         for hash in vec.iter() {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             fork_state.append(block);

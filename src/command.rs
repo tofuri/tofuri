@@ -113,7 +113,7 @@ pub async fn validator(api: &str) -> Result<(), Box<dyn Error>> {
     }
     .text()
     .await?;
-    println!("\n{}\n", info.green());
+    println!("{}", info.green());
     Ok(())
 }
 fn reqwest_err(err: reqwest::Error) -> Result<(), Box<dyn Error>> {

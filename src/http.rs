@@ -131,13 +131,14 @@ Validator {} {}/tree/{}
   balance_staked: {}
   sum_stakes_current: {}
   sum_stakes_all_time: {}
+  stakers: {:?}
  previous: {}
   balance: {}
   balance_staked: {}
   sum_stakes_current: {}
   sum_stakes_all_time: {}
+  stakers: {:?}
  lag: {:?}
- queue: {:?}
  latest_hashes: {:?}
  pending_transactions: {:?}
  pending_stakes: {:?}
@@ -178,6 +179,14 @@ Validator {} {}/tree/{}
                 behaviour
                     .blockchain
                     .get_states()
+                    .get_current()
+                    .get_stakers()
+                    .iter()
+                    .map(|&x| (address::encode(&x.0), x.1))
+                    .collect::<Vec<(String, types::Height)>>(),
+                behaviour
+                    .blockchain
+                    .get_states()
                     .get_previous()
                     .get_hashes()
                     .len(),
@@ -201,15 +210,15 @@ Validator {} {}/tree/{}
                     .get_states()
                     .get_previous()
                     .get_sum_stakes_all_time(),
-                behaviour.blockchain.get_lag(),
                 behaviour
                     .blockchain
                     .get_states()
-                    .get_current()
+                    .get_previous()
                     .get_stakers()
                     .iter()
                     .map(|&x| (address::encode(&x.0), x.1))
                     .collect::<Vec<(String, types::Height)>>(),
+                behaviour.blockchain.get_lag(),
                 behaviour
                     .blockchain
                     .get_states()

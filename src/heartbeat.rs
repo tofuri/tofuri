@@ -1,6 +1,6 @@
 use crate::{
     constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS},
-    p2p::MyBehaviour,
+    p2p::{self, MyBehaviour},
     print,
     stake::Stake,
     types, util,
@@ -24,6 +24,7 @@ pub async fn next() {
 pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let behaviour = swarm.behaviour_mut();
     *behaviour.blockchain.get_heartbeats_mut() += 1;
+    behaviour.hashes.clear();
     handle_block(behaviour)?;
     handle_sync(behaviour)?;
     let millis = lag();
@@ -66,10 +67,11 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     if forge {
         match behaviour.blockchain.forge_block() {
             Ok(block) => {
-                if behaviour.gossipsub.all_peers().count() > 0 {
+                let data = bincode::serialize(&block)?;
+                if !p2p::filter(behaviour, &data) && behaviour.gossipsub.all_peers().count() > 0 {
                     behaviour
                         .gossipsub
-                        .publish(IdentTopic::new("block"), bincode::serialize(&block)?)?;
+                        .publish(IdentTopic::new("block"), data)?;
                 }
             }
             Err(err) => error!("{}", err),
@@ -93,9 +95,13 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     }
     for _ in 0..SYNC_BLOCKS {
         let block = behaviour.blockchain.get_next_sync_block();
+        let data = bincode::serialize(&block)?;
+        if p2p::filter(behaviour, &data) {
+            continue;
+        }
         behaviour
             .gossipsub
-            .publish(IdentTopic::new("block"), bincode::serialize(&block)?)?;
+            .publish(IdentTopic::new("block"), data)?;
     }
     Ok(())
 }

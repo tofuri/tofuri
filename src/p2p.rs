@@ -1,5 +1,6 @@
 use crate::{
-    blockchain::Blockchain, constants::PROTOCOL_VERSION, gossipsub, heartbeat, http, print,
+    blockchain::Blockchain, constants::PROTOCOL_VERSION, gossipsub, heartbeat, http, print, types,
+    util,
 };
 use colored::*;
 use libp2p::{
@@ -17,7 +18,7 @@ use libp2p::{
     swarm::NetworkBehaviourEventProcess,
     NetworkBehaviour, PeerId, Swarm,
 };
-use log::error;
+use log::{error, info};
 use std::{error::Error, time::Duration};
 use tokio::net::TcpListener;
 #[derive(NetworkBehaviour)]
@@ -32,6 +33,8 @@ pub struct MyBehaviour {
     pub relay: Relay,
     #[behaviour(ignore)]
     pub blockchain: Blockchain,
+    #[behaviour(ignore)]
+    pub hashes: Vec<types::Hash>,
 }
 impl MyBehaviour {
     async fn new(
@@ -60,6 +63,7 @@ impl MyBehaviour {
             ),
             relay: Relay::new(local_peer_id, Default::default()),
             blockchain,
+            hashes: vec![],
         })
     }
 }
@@ -107,6 +111,9 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
     fn inject_event(&mut self, event: GossipsubEvent) {
         // print::p2p_event("GossipsubEvent", format!("{:?}", event));
         if let GossipsubEvent::Message { message, .. } = event {
+            if filter(self, &message.data) {
+                return;
+            }
             if let Err(err) = gossipsub::handle(self, message) {
                 error!("{}", err)
             }
@@ -154,4 +161,12 @@ pub async fn listen(
             event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
         }
     }
+}
+pub fn filter(behaviour: &mut MyBehaviour, data: &[u8]) -> bool {
+    let hash = util::hash(data);
+    if behaviour.hashes.contains(&hash) {
+        return true;
+    }
+    behaviour.hashes.push(hash);
+    false
 }

@@ -26,7 +26,7 @@ pub struct Blockchain {
     sync_index: usize,
     sync_iteration: usize,
     heartbeats: types::Heartbeats,
-    lag: [f64; 3],
+    lag: f64,
 }
 impl Blockchain {
     pub fn new(db: DBWithThreadMode<SingleThreaded>, keypair: types::Keypair) -> Self {
@@ -41,7 +41,7 @@ impl Blockchain {
             sync_index: 0,
             sync_iteration: 0,
             heartbeats: 0,
-            lag: [0.0; 3],
+            lag: 0.0,
         };
         let start = Instant::now();
         blockchain.reload();
@@ -78,7 +78,7 @@ impl Blockchain {
     pub fn get_db(&self) -> &DBWithThreadMode<SingleThreaded> {
         &self.db
     }
-    pub fn get_lag(&self) -> &[f64; 3] {
+    pub fn get_lag(&self) -> &f64 {
         &self.lag
     }
     pub fn get_tree(&self) -> &Tree {
@@ -112,8 +112,7 @@ impl Blockchain {
         self.pending_stakes = vec![stake];
     }
     pub fn set_lag(&mut self, millis: f64) {
-        self.lag.rotate_right(1);
-        self.lag[0] = millis;
+        self.lag = millis;
     }
     fn sort_pending_transactions(&mut self) {
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));

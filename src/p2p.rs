@@ -18,7 +18,7 @@ use libp2p::{
     swarm::NetworkBehaviourEventProcess,
     NetworkBehaviour, PeerId, Swarm,
 };
-use log::{error, info};
+use log::error;
 use std::{error::Error, time::Duration};
 use tokio::net::TcpListener;
 #[derive(NetworkBehaviour)]

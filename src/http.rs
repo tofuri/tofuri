@@ -383,6 +383,15 @@ async fn handle_get_json_block_by_hash(
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
+    #[derive(Serialize)]
+    struct Data {
+        previous_hash: String,
+        timestamp: types::Timestamp,
+        public_key: String,
+        signature: String,
+        transactions: Vec<String>,
+        stakes: Vec<String>,
+    }
     let hash = hex::decode(
         BLOCK_BY_HASH
             .find(first)
@@ -401,7 +410,22 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&block)?
+                serde_json::to_string(&Data {
+                    previous_hash: hex::encode(&block.previous_hash),
+                    timestamp: block.timestamp,
+                    public_key: address::encode(&block.public_key),
+                    signature: hex::encode(&block.signature),
+                    transactions: block
+                        .transactions
+                        .iter()
+                        .map(|x| hex::encode(&x.hash()))
+                        .collect(),
+                    stakes: block
+                        .stakes
+                        .iter()
+                        .map(|x| hex::encode(&x.hash()))
+                        .collect(),
+                })?
             )
             .as_bytes(),
         )

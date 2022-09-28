@@ -184,6 +184,9 @@ impl Block {
         if self.timestamp > util::timestamp() {
             return Err("block has invalid timestamp (block is from the future)".into());
         }
+        if blockchain.get_tree().get(&self.hash()).is_some() {
+            return Err("block hash already in tree".into());
+        }
         if Block::get(blockchain.get_db(), &self.hash()).is_ok() {
             return Err("block already in db".into());
         }

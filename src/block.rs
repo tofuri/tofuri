@@ -1,6 +1,6 @@
 use crate::{
     blockchain::Blockchain,
-    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN, MIN_STAKE},
+    constants::{BLOCK_TIME_MIN, MIN_STAKE},
     db,
     stake::Stake,
     transaction::Transaction,
@@ -171,13 +171,8 @@ impl Block {
                 }
             }
         }
-        if latest_block.timestamp != 0 {
-            if self.timestamp > latest_block.timestamp + BLOCK_TIME_MAX as u32 {
-                return Err("block created too late".into());
-            }
-            if self.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
-                return Err("block created too early".into());
-            }
+        if self.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+            return Err("block created too early".into());
         }
         let public_key_inputs = self
             .transactions

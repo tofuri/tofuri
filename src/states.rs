@@ -39,8 +39,8 @@ impl States {
         let hashes = self.current.get_hashes();
         let vec = blockchain.get_tree().get_fork_vec(hashes, *previous_hash);
         if let Some(hash) = vec.first() {
-            if hashes.iter().position(|x| x == hash).unwrap()
-                < blockchain.get_height() - TRUST_FORK_AFTER_BLOCKS
+            if hashes.iter().position(|x| x == hash).unwrap() + TRUST_FORK_AFTER_BLOCKS
+                < blockchain.get_height()
             {
                 return Err("not allowed to fork trusted chain".into());
             }

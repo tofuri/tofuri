@@ -437,6 +437,15 @@ async fn handle_get_json_transaction_by_hash(
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
+    #[derive(Serialize)]
+    struct Data {
+        public_key_input: String,
+        public_key_output: String,
+        amount: types::Amount,
+        fee: types::Amount,
+        timestamp: types::Timestamp,
+        signature: String,
+    }
     let hash = hex::decode(
         TRANSACTION_BY_HASH
             .find(first)
@@ -455,7 +464,14 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&transaction)?
+                serde_json::to_string(&Data {
+                    public_key_input: address::encode(&transaction.public_key_input),
+                    public_key_output: address::encode(&transaction.public_key_output),
+                    amount: transaction.amount,
+                    fee: transaction.fee,
+                    timestamp: transaction.timestamp,
+                    signature: hex::encode(&transaction.signature)
+                })?
             )
             .as_bytes(),
         )

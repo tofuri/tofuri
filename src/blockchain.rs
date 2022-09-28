@@ -30,7 +30,7 @@ pub struct Blockchain {
 }
 impl Blockchain {
     pub fn new(db: DBWithThreadMode<SingleThreaded>, keypair: types::Keypair) -> Self {
-        let mut blockchain = Self {
+        Self {
             db,
             keypair,
             tree: Tree::default(),
@@ -42,11 +42,7 @@ impl Blockchain {
             sync_iteration: 0,
             heartbeats: 0,
             lag: 0.0,
-        };
-        let start = Instant::now();
-        blockchain.reload();
-        info!("{} {:?}", "Reload blockchain".cyan(), start.elapsed());
-        blockchain
+        }
     }
     pub fn get_sync_index(&self) -> &usize {
         &self.sync_index
@@ -290,6 +286,7 @@ impl Blockchain {
         hash
     }
     pub fn reload(&mut self) {
+        let start = Instant::now();
         self.tree.reload(&self.db);
         if let Some(main) = self.tree.main() {
             info!(
@@ -299,6 +296,8 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
+        info!("{} {:?}", "Reload tree".cyan(), start.elapsed());
         self.states.reload(&self.db, self.tree.get_vec());
+        info!("{} {:?}", "Reload states".cyan(), start.elapsed());
     }
 }

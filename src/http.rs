@@ -483,6 +483,15 @@ async fn handle_get_json_stake_by_hash(
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
+    #[derive(Serialize)]
+    struct Data {
+        public_key: String,
+        amount: types::Amount,
+        deposit: bool,
+        fee: types::Amount,
+        timestamp: types::Timestamp,
+        signature: String,
+    }
     let hash = hex::decode(
         STAKE_BY_HASH
             .find(first)
@@ -501,7 +510,14 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&stake)?
+                serde_json::to_string(&Data {
+                    public_key: address::encode(&stake.public_key),
+                    amount: stake.amount,
+                    deposit: stake.deposit,
+                    fee: stake.fee,
+                    timestamp: stake.timestamp,
+                    signature: hex::encode(&stake.signature)
+                })?
             )
             .as_bytes(),
         )

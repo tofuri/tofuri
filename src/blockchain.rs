@@ -51,8 +51,14 @@ impl Blockchain {
     pub fn get_sync_index(&self) -> &usize {
         &self.sync_index
     }
+    pub fn get_sync_index_mut(&mut self) -> &mut usize {
+        &mut self.sync_index
+    }
     pub fn get_sync_iteration(&self) -> &usize {
         &self.sync_iteration
+    }
+    pub fn get_sync_iteration_mut(&mut self) -> &mut usize {
+        &mut self.sync_iteration
     }
     pub fn get_states(&self) -> &States {
         &self.states

@@ -31,6 +31,7 @@ impl States {
         &self,
         blockchain: &Blockchain,
         previous_hash: &types::Hash,
+        timestamp: &types::Timestamp,
     ) -> Result<State, Box<dyn Error>> {
         if previous_hash == &[0; 32] {
             return Ok(State::default());
@@ -48,6 +49,10 @@ impl States {
         for hash in vec.iter() {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             fork_state.append(block);
+        }
+        let previous_timestamp = fork_state.get_latest_block().timestamp;
+        if timestamp > &previous_timestamp {
+            fork_state.set_penalty(timestamp, &previous_timestamp);
         }
         Ok(fork_state)
     }

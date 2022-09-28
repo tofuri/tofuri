@@ -148,9 +148,11 @@ impl Block {
         {
             return Err("block doesn't extend chain".into());
         }
-        let fork_state = blockchain
-            .get_states()
-            .get_fork_state(blockchain, &self.previous_hash)?;
+        let fork_state = blockchain.get_states().get_fork_state(
+            blockchain,
+            &self.previous_hash,
+            &self.timestamp,
+        )?;
         if self.previous_hash != [0; 32] {
             if let Some((public_key, _)) = fork_state.get_stakers().get(0) {
                 if public_key != &self.public_key {

@@ -135,7 +135,11 @@ impl State {
         }
         self.set_balance(block.public_key, balance);
     }
-    fn set_penalty(&mut self, timestamp: &types::Timestamp, previous_timestamp: &types::Timestamp) {
+    pub fn set_penalty(
+        &mut self,
+        timestamp: &types::Timestamp,
+        previous_timestamp: &types::Timestamp,
+    ) {
         if timestamp == previous_timestamp {
             return;
         }

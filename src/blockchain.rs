@@ -122,7 +122,7 @@ impl Blockchain {
     }
     fn limit_pending_blocks(&mut self) {
         while self.pending_blocks.len() > PENDING_BLOCKS_LIMIT {
-            self.pending_blocks.remove(self.pending_blocks.len() - 1);
+            self.pending_blocks.remove(0);
         }
     }
     fn limit_pending_transactions(&mut self) {
@@ -274,7 +274,9 @@ impl Blockchain {
             if new_branch && previous_hash != self.tree.main().unwrap().0 {
                 self.reload();
             } else {
-                self.pending_blocks.clear();
+                if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
+                    self.pending_blocks.remove(index);
+                }
                 self.pending_transactions.clear();
                 self.pending_stakes.clear();
             }

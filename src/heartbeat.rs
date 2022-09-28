@@ -1,5 +1,5 @@
 use crate::{
-    constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS},
+    constants::{BLOCK_TIME_MIN, MICROS, MIN_STAKE, NANOS, SYNC_BLOCKS_PER_TICK, TPS},
     p2p::{self, MyBehaviour},
     print,
     stake::Stake,
@@ -16,17 +16,20 @@ pub async fn next() {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let secs = nanos / 1_000_000_000;
-    nanos -= secs * 1_000_000_000;
-    nanos = 1_000_000_000 - nanos;
+    let secs = nanos / NANOS;
+    nanos -= secs * NANOS;
+    nanos = NANOS - nanos;
     tokio::time::sleep(Duration::from_nanos(nanos as u64)).await
 }
 pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let behaviour = swarm.behaviour_mut();
     *behaviour.blockchain.get_heartbeats_mut() += 1;
+    handle_sync(behaviour)?;
+    if behaviour.blockchain.get_heartbeats() % TPS != 0 {
+        return Ok(());
+    }
     behaviour.hashes.clear();
     handle_block(behaviour)?;
-    handle_sync(behaviour)?;
     let millis = lag();
     print::heartbeat_lag(behaviour.blockchain.get_heartbeats(), millis);
     behaviour.blockchain.set_lag(millis);
@@ -93,7 +96,7 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     if behaviour.gossipsub.all_peers().count() == 0 {
         return Ok(());
     }
-    for _ in 0..SYNC_BLOCKS {
+    for _ in 0..SYNC_BLOCKS_PER_TICK {
         let block = behaviour.blockchain.get_next_sync_block();
         let data = bincode::serialize(&block)?;
         if p2p::filter(behaviour, &data) {
@@ -110,7 +113,7 @@ fn lag() -> f64 {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_micros();
-    let secs = micros / 1_000_000;
-    micros -= secs * 1_000_000;
+    let secs = micros / MICROS;
+    micros -= secs * MICROS;
     micros as f64 / 1_000_f64
 }

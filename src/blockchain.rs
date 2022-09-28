@@ -288,6 +288,7 @@ impl Blockchain {
     pub fn reload(&mut self) {
         let start = Instant::now();
         self.tree.reload(&self.db);
+        info!("{} {:?}", "Tree reload".cyan(), start.elapsed());
         if let Some(main) = self.tree.main() {
             info!(
                 "{} {} {}",
@@ -296,8 +297,8 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
-        info!("{} {:?}", "Reload tree".cyan(), start.elapsed());
+        let start = Instant::now();
         self.states.reload(&self.db, self.tree.get_vec());
-        info!("{} {:?}", "Reload states".cyan(), start.elapsed());
+        info!("{} {:?}", "States reload".cyan(), start.elapsed());
     }
 }

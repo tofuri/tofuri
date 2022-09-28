@@ -152,8 +152,6 @@ impl State {
         timestamp: &types::Timestamp,
         previous_timestamp: &types::Timestamp,
     ) {
-        println!("{}", timestamp);
-        println!("{}", previous_timestamp);
         let mut diff = timestamp - previous_timestamp;
         if diff > 0 {
             diff -= 1;
@@ -205,8 +203,6 @@ impl State {
     }
     pub fn append(&mut self, block: Block) {
         self.hashes.push(block.hash());
-        println!("1 {}", block.timestamp);
-        println!("1 {}", self.latest_block.timestamp);
         self.set(&block, self.hashes.len() - 1, self.latest_block.timestamp);
         self.latest_block = block;
     }

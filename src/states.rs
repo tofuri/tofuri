@@ -47,19 +47,16 @@ impl States {
         let mut fork_state = self.previous.clone();
         for hash in vec.iter() {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
-            println!("2");
             fork_state.append(block);
         }
         Ok(fork_state)
     }
     pub fn append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &Block) {
-        println!("4");
         self.current.append(block.clone());
         let hashes = self.current.get_hashes();
         let len = hashes.len();
         if len >= TRUST_FORK_AFTER_BLOCKS {
             let block = Block::get(db, &hashes[len - TRUST_FORK_AFTER_BLOCKS]).unwrap();
-            println!("3");
             self.previous.append(block);
         }
     }

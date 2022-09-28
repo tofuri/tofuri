@@ -240,7 +240,6 @@ impl Blockchain {
             }
         }
         block.sign(&self.keypair);
-        println!("8");
         let hash = self.append(&block);
         info!(
             "{} {} {}",
@@ -258,7 +257,6 @@ impl Blockchain {
         // self.states.get_current_mut().penalty();
         // }
         for block in self.pending_blocks.clone() {
-            println!("9");
             let hash = self.append(&block);
             info!(
                 "{} {} {}",

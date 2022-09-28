@@ -171,8 +171,6 @@ impl Block {
                 }
             }
         }
-        println!("5 {}", self.timestamp);
-        println!("5 {}", latest_block.timestamp);
         if latest_block.timestamp != 0 {
             if self.timestamp > latest_block.timestamp + BLOCK_TIME_MAX as u32 {
                 return Err("block created too late".into());

@@ -1,14 +1,14 @@
 use crate::{
     block::Block,
     constants::{
-        BLOCK_STAKES_LIMIT, BLOCK_TIME_MAX, BLOCK_TRANSACTIONS_LIMIT, PENDING_BLOCKS_LIMIT,
-        PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
+        BLOCK_STAKES_LIMIT, BLOCK_TRANSACTIONS_LIMIT, PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT,
+        PENDING_TRANSACTIONS_LIMIT,
     },
     stake::Stake,
     states::States,
     transaction::Transaction,
     tree::Tree,
-    types, util,
+    types,
 };
 use colored::*;
 use log::info;
@@ -240,6 +240,7 @@ impl Blockchain {
             }
         }
         block.sign(&self.keypair);
+        println!("8");
         let hash = self.append(&block);
         info!(
             "{} {} {}",
@@ -250,13 +251,14 @@ impl Blockchain {
         Ok(block)
     }
     pub fn append_handle(&mut self) {
-        if util::timestamp()
-            > self.states.get_current().get_latest_block().timestamp
-                + BLOCK_TIME_MAX as types::Timestamp
-        {
-            self.states.get_current_mut().penalty();
-        }
+        // if util::timestamp()
+        // > self.states.get_current().get_latest_block().timestamp
+        // + BLOCK_TIME_MAX as types::Timestamp
+        // {
+        // self.states.get_current_mut().penalty();
+        // }
         for block in self.pending_blocks.clone() {
+            println!("9");
             let hash = self.append(&block);
             info!(
                 "{} {} {}",

@@ -17,6 +17,6 @@ pub const EXTENSION: &str = "pea";
 pub const AMOUNT_BYTES: usize = 4;
 pub const PENDING_BLOCKS_LIMIT: usize = 10;
 pub const TRUST_FORK_AFTER_BLOCKS: usize = 100;
-pub const TPS: usize = 20;
+pub const TPS: usize = 2;
 pub const NANOS: u128 = 1_000_000_000 / TPS as u128;
 pub const MICROS: u128 = 1_000_000 / TPS as u128;

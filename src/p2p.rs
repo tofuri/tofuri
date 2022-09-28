@@ -111,7 +111,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
     fn inject_event(&mut self, event: GossipsubEvent) {
         // print::p2p_event("GossipsubEvent", format!("{:?}", event));
         if let GossipsubEvent::Message { message, .. } = event {
-            if filter(self, &message.data) {
+            if filter(&mut self.hashes, &message.data) {
                 return;
             }
             if let Err(err) = gossipsub::handle(self, message) {
@@ -162,11 +162,11 @@ pub async fn listen(
         }
     }
 }
-pub fn filter(behaviour: &mut MyBehaviour, data: &[u8]) -> bool {
+pub fn filter(hashes: &mut Vec<types::Hash>, data: &[u8]) -> bool {
     let hash = util::hash(data);
-    if behaviour.hashes.contains(&hash) {
+    if hashes.contains(&hash) {
         return true;
     }
-    behaviour.hashes.push(hash);
+    hashes.push(hash);
     false
 }

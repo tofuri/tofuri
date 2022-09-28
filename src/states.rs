@@ -31,7 +31,6 @@ impl States {
         &self,
         blockchain: &Blockchain,
         previous_hash: &types::Hash,
-        timestamp: &types::Timestamp,
     ) -> Result<State, Box<dyn Error>> {
         if previous_hash == &[0; 32] {
             return Ok(State::default());
@@ -48,25 +47,24 @@ impl States {
         let mut fork_state = self.previous.clone();
         for hash in vec.iter() {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
+            println!("2");
             fork_state.append(block);
-        }
-        let previous_timestamp = fork_state.get_latest_block().timestamp;
-        if timestamp > &previous_timestamp {
-            fork_state.set_penalty(timestamp, &previous_timestamp);
         }
         Ok(fork_state)
     }
     pub fn append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &Block) {
+        println!("4");
         self.current.append(block.clone());
         let hashes = self.current.get_hashes();
         let len = hashes.len();
         if len >= TRUST_FORK_AFTER_BLOCKS {
             let block = Block::get(db, &hashes[len - TRUST_FORK_AFTER_BLOCKS]).unwrap();
+            println!("3");
             self.previous.append(block);
         }
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, mut hashes: Vec<types::Hash>) {
-        self.current.reload(db, hashes.clone(), true);
+        self.current.reload(db, hashes.clone());
         let len = hashes.len();
         let start = if len < TRUST_FORK_AFTER_BLOCKS {
             0
@@ -74,7 +72,7 @@ impl States {
             len - TRUST_FORK_AFTER_BLOCKS
         };
         hashes.drain(start..len);
-        self.previous.reload(db, hashes, false);
+        self.previous.reload(db, hashes);
     }
 }
 impl Default for States {

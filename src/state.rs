@@ -1,4 +1,4 @@
-use crate::{address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types, util};
+use crate::{address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
 use colored::*;
 use log::warn;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -22,7 +22,7 @@ impl State {
             balance_staked: HashMap::new(),
             sum_stakes_current: 0,
             sum_stakes_all_time: 0,
-            latest_block: Block::new([0; 32]),
+            latest_block: Block::new_timestamp_0([0; 32]),
         }
     }
     pub fn get_stakers(&self) -> &types::Stakers {
@@ -51,6 +51,18 @@ impl State {
             Some(b) => *b,
             None => 0,
         }
+    }
+    pub fn get_staker(
+        &self,
+        timestamp: types::Timestamp,
+        previous_timestamp: types::Timestamp,
+    ) -> Option<&types::Staker> {
+        let mut diff = timestamp - previous_timestamp;
+        if diff > 0 {
+            diff -= 1;
+        }
+        let index = diff / BLOCK_TIME_MAX as u32;
+        self.get_stakers().get(index as usize)
     }
     fn set_sum_stakes(&mut self) {
         let mut sum = 0;
@@ -140,19 +152,23 @@ impl State {
         timestamp: &types::Timestamp,
         previous_timestamp: &types::Timestamp,
     ) {
-        if timestamp == previous_timestamp {
-            return;
+        println!("{}", timestamp);
+        println!("{}", previous_timestamp);
+        let mut diff = timestamp - previous_timestamp;
+        if diff > 0 {
+            diff -= 1;
         }
-        let diff = timestamp - previous_timestamp - 1;
         for _ in 0..diff / BLOCK_TIME_MAX as u32 {
-            if !self.stakers.is_empty() {
-                let public_key = self.stakers[0].0;
-                self.balance_staked.remove(&public_key);
-                self.stakers.remove(0).unwrap();
+            if self.stakers.is_empty() {
+                break;
             }
+            let public_key = self.stakers[0].0;
+            self.balance_staked.remove(&public_key);
+            self.stakers.remove(0).unwrap();
         }
     }
-    fn set(&mut self, block: &Block, height: types::Height) {
+    fn set(&mut self, block: &Block, height: types::Height, previous_timestamp: types::Timestamp) {
+        self.set_penalty(&block.timestamp, &previous_timestamp);
         self.set_reward(block);
         self.set_balances(block);
         self.set_stakers(block, height);
@@ -164,13 +180,8 @@ impl State {
             warn!("{} {:?}", "Penalty".red(), address::encode(&public_key));
         }
     }
-    pub fn reload(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes: Vec<types::Hash>,
-        latest: bool,
-    ) {
-        self.latest_block = Block::new([0; 32]);
+    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
+        self.latest_block = Block::new_timestamp_0([0; 32]);
         self.stakers.clear();
         self.balance.clear();
         self.balance_staked.clear();
@@ -178,24 +189,25 @@ impl State {
             return;
         }
         self.latest_block = Block::get(db, hashes.last().unwrap()).unwrap();
-        let mut previous_block_timestamp = match hashes.first() {
+        let mut previous_timestamp = match hashes.first() {
             Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
             None => 0,
         };
         for (height, hash) in hashes.iter().enumerate() {
             let block = Block::get(db, hash).unwrap();
-            self.set_penalty(&block.timestamp, &previous_block_timestamp);
-            self.set(&block, height);
-            previous_block_timestamp = block.timestamp;
+            self.set(&block, height, previous_timestamp);
+            previous_timestamp = block.timestamp;
         }
-        if latest {
-            self.set_penalty(&util::timestamp(), &self.latest_block.timestamp.clone());
-        }
+        // if latest {
+        // self.set_penalty(&util::timestamp(), &self.latest_block.timestamp.clone());
+        // }
         self.hashes = hashes;
     }
     pub fn append(&mut self, block: Block) {
         self.hashes.push(block.hash());
-        self.set(&block, self.hashes.len() - 1);
+        println!("1 {}", block.timestamp);
+        println!("1 {}", self.latest_block.timestamp);
+        self.set(&block, self.hashes.len() - 1, self.latest_block.timestamp);
         self.latest_block = block;
     }
 }

@@ -1,5 +1,9 @@
 use crate::{
-    blockchain::Blockchain, constants::MIN_STAKE, db, stake::Stake, transaction::Transaction,
+    blockchain::Blockchain,
+    constants::{BLOCK_TIME_MAX, BLOCK_TIME_MIN, MIN_STAKE},
+    db,
+    stake::Stake,
+    transaction::Transaction,
     types, util,
 };
 use ed25519::signature::Signer;
@@ -77,6 +81,9 @@ impl Block {
             vec![],
         )
     }
+    pub fn new_timestamp_0(previous_hash: types::Hash) -> Block {
+        Block::from(previous_hash, 0, [0; 32], [0; 64], vec![], vec![])
+    }
     pub fn sign(&mut self, keypair: &types::Keypair) {
         self.public_key = keypair.public.to_bytes();
         self.signature = keypair.sign(&self.hash()).to_bytes();
@@ -148,16 +155,30 @@ impl Block {
         {
             return Err("block doesn't extend chain".into());
         }
-        let fork_state = blockchain.get_states().get_fork_state(
-            blockchain,
-            &self.previous_hash,
-            &self.timestamp,
-        )?;
+        let fork_state = blockchain
+            .get_states()
+            .get_fork_state(blockchain, &self.previous_hash)?;
+        let latest_block = fork_state.get_latest_block();
         if self.previous_hash != [0; 32] {
-            if let Some((public_key, _)) = fork_state.get_stakers().get(0) {
+            if latest_block.hash() != self.previous_hash {
+                return Err("fork_state latest_block hash".into());
+            }
+            if let Some((public_key, _)) =
+                fork_state.get_staker(self.timestamp, fork_state.get_latest_block().timestamp)
+            {
                 if public_key != &self.public_key {
                     return Err("block isn't signed by the staker first in queue".into());
                 }
+            }
+        }
+        println!("5 {}", self.timestamp);
+        println!("5 {}", latest_block.timestamp);
+        if latest_block.timestamp != 0 {
+            if self.timestamp > latest_block.timestamp + BLOCK_TIME_MAX as u32 {
+                return Err("block created too late".into());
+            }
+            if self.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+                return Err("block created too early".into());
             }
         }
         let public_key_inputs = self

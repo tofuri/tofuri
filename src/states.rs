@@ -35,9 +35,10 @@ impl States {
         if previous_hash == &[0; 32] {
             return Ok(State::default());
         }
-        let hashes = self.current.get_hashes();
-        let vec = blockchain.get_tree().get_fork_vec(hashes, *previous_hash);
-        if let Some(hash) = vec.first() {
+        let hashes = blockchain
+            .get_tree()
+            .get_fork_vec(self.current.get_hashes(), *previous_hash);
+        if let Some(hash) = hashes.first() {
             if hashes.iter().position(|x| x == hash).unwrap() + TRUST_FORK_AFTER_BLOCKS
                 < blockchain.get_height()
             {
@@ -45,19 +46,39 @@ impl States {
             }
         }
         let mut fork_state = self.previous.clone();
-        for hash in vec.iter() {
+        let mut previous_timestamp = match hashes.first() {
+            Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
+            None => 0,
+        };
+        for hash in hashes.iter() {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
-            fork_state.append(block);
+            let t = block.timestamp;
+            fork_state.append(block, previous_timestamp);
+            previous_timestamp = t;
         }
         Ok(fork_state)
     }
+    fn get_previous_timestamp(
+        db: &DBWithThreadMode<SingleThreaded>,
+        previous_hash: &types::Hash,
+    ) -> types::Timestamp {
+        match Block::get(db, previous_hash) {
+            Ok(block) => block.timestamp,
+            Err(_) => 0,
+        }
+    }
     pub fn append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &Block) {
-        self.current.append(block.clone());
+        self.current.append(
+            block.clone(),
+            Self::get_previous_timestamp(db, &block.previous_hash),
+        );
         let hashes = self.current.get_hashes();
         let len = hashes.len();
         if len >= TRUST_FORK_AFTER_BLOCKS {
             let block = Block::get(db, &hashes[len - TRUST_FORK_AFTER_BLOCKS]).unwrap();
-            self.previous.append(block);
+            let previous_hash = block.previous_hash;
+            self.previous
+                .append(block, Self::get_previous_timestamp(db, &previous_hash));
         }
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, mut hashes: Vec<types::Hash>) {

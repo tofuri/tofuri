@@ -172,12 +172,6 @@ impl State {
         self.set_stakers(block, height);
         self.set_sum_stakes();
     }
-    pub fn penalty(&mut self) {
-        if let Some((public_key, _)) = self.stakers.remove(0) {
-            self.balance_staked.remove(&public_key).unwrap();
-            warn!("{} {:?}", "Penalty".red(), address::encode(&public_key));
-        }
-    }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
         self.latest_block = Block::new_timestamp_0([0; 32]);
         self.stakers.clear();
@@ -191,19 +185,16 @@ impl State {
             Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
             None => 0,
         };
-        for (height, hash) in hashes.iter().enumerate() {
+        for hash in hashes.iter() {
             let block = Block::get(db, hash).unwrap();
-            self.set(&block, height, previous_timestamp);
-            previous_timestamp = block.timestamp;
+            let t = block.timestamp;
+            self.append(block, previous_timestamp);
+            previous_timestamp = t;
         }
-        // if latest {
-        // self.set_penalty(&util::timestamp(), &self.latest_block.timestamp.clone());
-        // }
-        self.hashes = hashes;
     }
-    pub fn append(&mut self, block: Block) {
+    pub fn append(&mut self, block: Block, previous_timestamp: types::Timestamp) {
         self.hashes.push(block.hash());
-        self.set(&block, self.hashes.len() - 1, self.latest_block.timestamp);
+        self.set(&block, self.hashes.len() - 1, previous_timestamp);
         self.latest_block = block;
     }
 }

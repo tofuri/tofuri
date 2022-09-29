@@ -158,6 +158,7 @@ async fn handle_get_json(
         balance_staked: types::Amount,
         sum_stakes_current: types::Amount,
         sum_stakes_all_time: types::Amount,
+        hashes: usize,
         latest_hashes: Vec<String>,
         stakers: Vec<String>,
     }
@@ -189,6 +190,7 @@ Content-Type: application/json
                             ),
                             sum_stakes_current: *state_current.get_sum_stakes_current(),
                             sum_stakes_all_time: *state_current.get_sum_stakes_all_time(),
+                            hashes: state_current.get_hashes().len(),
                             latest_hashes: state_current
                                 .get_hashes()
                                 .iter()
@@ -215,6 +217,7 @@ Content-Type: application/json
                                 .iter()
                                 .map(|&x| address::encode(&x.0))
                                 .collect(),
+                            hashes: state_previous.get_hashes().len(),
                             latest_hashes: state_previous
                                 .get_hashes()
                                 .iter()

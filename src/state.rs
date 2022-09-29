@@ -175,6 +175,7 @@ impl State {
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
         self.latest_block = Block::new_timestamp_0([0; 32]);
+        self.hashes.clear();
         self.stakers.clear();
         self.balance.clear();
         self.balance_staked.clear();

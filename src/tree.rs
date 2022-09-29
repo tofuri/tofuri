@@ -1,8 +1,9 @@
 use crate::{block::BlockMetadataLean, db, types};
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt;
-type Branch = (types::Hash, types::Height);
+type Branch = (types::Hash, types::Height, types::Timestamp);
 pub struct Tree {
     branches: Vec<Branch>,
     hashes: HashMap<types::Hash, types::Hash>,
@@ -64,26 +65,38 @@ impl Tree {
     pub fn get(&self, hash: &types::Hash) -> Option<&types::Hash> {
         self.hashes.get(hash)
     }
-    pub fn insert(&mut self, hash: types::Hash, previous_hash: types::Hash) -> Option<bool> {
+    pub fn insert(
+        &mut self,
+        hash: types::Hash,
+        previous_hash: types::Hash,
+        timestamp: types::Timestamp,
+    ) -> Option<bool> {
         if self.hashes.insert(hash, previous_hash).is_some() {
             return None;
         }
         if let Some(index) = self
             .branches
             .iter()
-            .position(|(hash, _)| hash == &previous_hash)
+            .position(|(hash, _, _)| hash == &previous_hash)
         {
             // extend branch
-            self.branches[index] = (hash, self.branches[index].1 + 1);
+            self.branches[index] = (hash, self.branches[index].1 + 1, timestamp);
             Some(false)
         } else {
             // new branch
-            self.branches.push((hash, self.height(&previous_hash)));
+            self.branches
+                .push((hash, self.height(&previous_hash), timestamp));
             Some(true)
         }
     }
     pub fn sort_branches(&mut self) {
-        self.branches.sort_by(|a, b| b.1.cmp(&a.1));
+        self.branches.sort_by(|a, b| match b.1.cmp(&a.1) {
+            Ordering::Equal => {
+                // let a_block = Block::get()
+                a.2.cmp(&b.2)
+            }
+            x => x,
+        });
     }
     pub fn height(&self, previous_hash: &types::Hash) -> types::Height {
         let mut hash = previous_hash;
@@ -106,19 +119,19 @@ impl Tree {
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         self.clear();
-        let mut hashes: HashMap<types::Hash, Vec<types::Hash>> = HashMap::new();
+        let mut hashes: HashMap<types::Hash, (Vec<types::Hash>, types::Timestamp)> = HashMap::new();
         for res in db.iterator_cf(db::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
             let block: BlockMetadataLean = bincode::deserialize(&bytes).unwrap();
             match hashes.get(&block.previous_hash) {
-                Some(vec) => {
+                Some((vec, _)) => {
                     let mut vec = vec.clone();
                     vec.push(hash);
-                    hashes.insert(block.previous_hash, vec);
+                    hashes.insert(block.previous_hash, (vec, block.timestamp));
                 }
                 None => {
-                    hashes.insert(block.previous_hash, vec![hash]);
+                    hashes.insert(block.previous_hash, (vec![hash], block.timestamp));
                 }
             };
         }
@@ -126,21 +139,22 @@ impl Tree {
             return;
         }
         let previous_hash = [0; 32];
-        let (_, vec) = hashes.iter().find(|(&x, _)| x == previous_hash).unwrap();
+        let (_, (vec, timestamp)) = hashes.iter().find(|(&x, _)| x == previous_hash).unwrap();
         fn recurse(
             tree: &mut Tree,
-            hashes: &HashMap<types::Hash, Vec<types::Hash>>,
+            hashes: &HashMap<types::Hash, (Vec<types::Hash>, types::Timestamp)>,
             previous_hash: types::Hash,
             vec: &Vec<types::Hash>,
+            timestamp: types::Timestamp,
         ) {
             for hash in vec {
-                tree.insert(*hash, previous_hash);
-                if let Some(vec) = hashes.get(hash) {
-                    recurse(tree, hashes, *hash, vec);
+                tree.insert(*hash, previous_hash, timestamp);
+                if let Some((vec, timestamp)) = hashes.get(hash) {
+                    recurse(tree, hashes, *hash, vec, *timestamp);
                 };
             }
         }
-        recurse(self, &hashes, previous_hash, vec);
+        recurse(self, &hashes, previous_hash, vec, *timestamp);
         self.sort_branches();
     }
     pub fn clear(&mut self) {
@@ -153,7 +167,7 @@ impl fmt::Debug for Tree {
         #![allow(dead_code)]
         #[derive(Debug)]
         struct Tree {
-            branches: Vec<(String, types::Height)>,
+            branches: Vec<(String, types::Height, types::Timestamp)>,
             hashes: HashMap<String, String>,
         }
         write!(
@@ -163,7 +177,7 @@ impl fmt::Debug for Tree {
                 branches: self
                     .branches
                     .iter()
-                    .map(|(hash, height)| (hex::encode(hash), *height))
+                    .map(|(hash, height, timestamp)| (hex::encode(hash), *height, *timestamp))
                     .collect(),
                 hashes: self
                     .hashes

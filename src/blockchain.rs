@@ -272,7 +272,10 @@ impl Blockchain {
         if block.previous_hash == [0; 32] || self.tree.main().unwrap().0 == block.previous_hash {
             self.states.append(&self.db, block);
         }
-        let new_branch = self.tree.insert(hash, block.previous_hash).unwrap();
+        let new_branch = self
+            .tree
+            .insert(hash, block.previous_hash, block.timestamp)
+            .unwrap();
         let m_1 = self.tree.main().unwrap().0;
         self.tree.sort_branches();
         let m_2 = self.tree.main().unwrap().0;

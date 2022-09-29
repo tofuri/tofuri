@@ -35,22 +35,21 @@ impl States {
         if previous_hash == &[0; 32] {
             return Ok(State::default());
         }
-        let hashes = blockchain
-            .get_tree()
-            .get_fork_vec(self.current.get_hashes(), *previous_hash);
-        if let Some(hash) = hashes.first() {
+        let hashes = self.current.get_hashes();
+        let fork_vec = blockchain.get_tree().get_fork_vec(hashes, *previous_hash);
+        if let Some(hash) = fork_vec.first() {
             if hashes.iter().position(|x| x == hash).unwrap() + TRUST_FORK_AFTER_BLOCKS
-                < blockchain.get_height()
+                <= blockchain.get_height()
             {
                 return Err("not allowed to fork trusted chain".into());
             }
         }
         let mut fork_state = self.previous.clone();
-        let mut previous_timestamp = match hashes.first() {
+        let mut previous_timestamp = match fork_vec.first() {
             Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
             None => 0,
         };
-        for hash in hashes.iter() {
+        for hash in fork_vec.iter() {
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             let t = block.timestamp;
             fork_state.append(block, previous_timestamp);

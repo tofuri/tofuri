@@ -74,7 +74,7 @@ impl Tree {
             .position(|(hash, _)| hash == &previous_hash)
         {
             // extend branch
-            self.branches[index] = (hash, self.height(&previous_hash));
+            self.branches[index] = (hash, self.branches[index].1 + 1);
             Some(false)
         } else {
             // new branch

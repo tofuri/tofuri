@@ -11,7 +11,7 @@ use crate::{
     types,
 };
 use colored::*;
-use log::info;
+use log::{info, trace};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};
 #[derive(Debug)]
@@ -100,7 +100,7 @@ impl Blockchain {
             self.sync_iteration += 1;
         }
         let hash = hashes[self.sync_index];
-        info!(
+        trace!(
             "{} {} {}",
             "Sync".cyan(),
             self.sync_index.to_string().yellow(),

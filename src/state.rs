@@ -1,6 +1,6 @@
 use crate::{address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
 use colored::*;
-use log::warn;
+use log::debug;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
 #[derive(Debug, Clone)]
@@ -122,10 +122,10 @@ impl State {
                     .position(|staker| staker.0 == stake.public_key)
                     .unwrap();
                 self.stakers.remove(index).unwrap();
-                warn!(
+                debug!(
                     "{} {}",
                     "Burned low balance".red(),
-                    address::encode(&stake.public_key)
+                    address::encode(&stake.public_key),
                 );
             }
         }
@@ -137,11 +137,12 @@ impl State {
         if let Some(stake) = block.stakes.first() {
             if stake.fee == 0 {
                 balance += MIN_STAKE;
-                warn!(
-                    "{} {} {}",
+                debug!(
+                    "{} {} {} {}",
                     "Minted".cyan(),
                     MIN_STAKE.to_string().yellow(),
-                    address::encode(&block.public_key).green()
+                    address::encode(&block.public_key).green(),
+                    hex::encode(block.hash())
                 );
             }
         }

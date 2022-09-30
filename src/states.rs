@@ -33,33 +33,31 @@ impl States {
         if previous_hash == &[0; 32] {
             return Ok(Dynamic::default());
         }
-        if let Some(hash) = blockchain
-            .get_tree()
-            .get_fork_vec(self.dynamic.get_hashes(), *previous_hash)
-            .first()
-        {
-            if self.trusted.get_hashes().len()
-                + self
-                    .dynamic
-                    .get_hashes()
-                    .iter()
-                    .position(|x| x == hash)
-                    .unwrap()
-                + TRUST_FORK_AFTER_BLOCKS
-                <= blockchain.get_height()
-            {
+        let mut fork_vec = vec![];
+        if let Some(first) = self.dynamic.get_hashes().first() {
+            let mut hash = *previous_hash;
+            for _ in 0..TRUST_FORK_AFTER_BLOCKS {
+                fork_vec.push(hash);
+                if first == &hash {
+                    break;
+                }
+                match blockchain.get_tree().get(&hash) {
+                    Some(previous_hash) => hash = *previous_hash,
+                    None => break,
+                };
+            }
+            if first != &hash {
                 return Err("not allowed to fork trusted chain".into());
             }
         }
-        let fork_vec = blockchain
-            .get_tree()
-            .get_fork_vec(self.trusted.get_hashes(), *previous_hash);
+        fork_vec.reverse();
         let mut fork_state = Dynamic::from(&self.trusted);
         let mut previous_timestamp = match fork_vec.first() {
             Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
             None => 0,
         };
         for hash in fork_vec.iter() {
+            println!("{}", hex::encode(hash));
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             let t = block.timestamp;
             fork_state.append(block, previous_timestamp);

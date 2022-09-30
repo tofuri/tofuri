@@ -33,11 +33,11 @@ impl States {
         if previous_hash == &[0; 32] {
             return Ok(Dynamic::default());
         }
-        let mut fork_vec = vec![];
+        let mut hashes = vec![];
         if let Some(first) = self.dynamic.get_hashes().first() {
             let mut hash = *previous_hash;
             for _ in 0..TRUST_FORK_AFTER_BLOCKS {
-                fork_vec.push(hash);
+                hashes.push(hash);
                 if first == &hash {
                     break;
                 }
@@ -49,14 +49,14 @@ impl States {
             if first != &hash {
                 return Err("not allowed to fork trusted chain".into());
             }
+            hashes.reverse();
         }
-        fork_vec.reverse();
         let mut fork_state = Dynamic::from(&self.trusted);
-        let mut previous_timestamp = match fork_vec.first() {
+        let mut previous_timestamp = match hashes.first() {
             Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
             None => 0,
         };
-        for hash in fork_vec.iter() {
+        for hash in hashes.iter() {
             println!("{}", hex::encode(hash));
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             let t = block.timestamp;

@@ -311,18 +311,18 @@ impl Blockchain {
     }
     pub fn reload(&mut self) {
         let start = Instant::now();
-        if let Some(main) = self.tree.main() {
-            if let Some(previous_hash) = self.tree.get(&main.0) {
-                if let Ok(hashes) = self
-                    .tree
-                    .get_hashes_dynamic(&self.states.dynamic, previous_hash)
-                {
-                    self.states
-                        .dynamic
-                        .reload(&self.db, &hashes, &self.states.trusted);
-                }
-            }
-        }
+        // if let Some(main) = self.tree.main() {
+        // if let Some(previous_hash) = self.tree.get(&main.0) {
+        // if let Ok(hashes) = self
+        // .tree
+        // .get_hashes_dynamic(&self.states.dynamic, previous_hash)
+        // {
+        // self.states
+        // .dynamic
+        // .reload(&self.db, &hashes, &self.states.trusted);
+        // }
+        // }
+        // }
         info!("{} {:?}", "States reload".cyan(), start.elapsed());
     }
 }

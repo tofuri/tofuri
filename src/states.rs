@@ -1,7 +1,6 @@
 use crate::{
     block::Block,
     blockchain::Blockchain,
-    constants::TRUST_FORK_AFTER_BLOCKS,
     state::{Dynamic, Trusted},
     types,
 };
@@ -36,7 +35,6 @@ impl States {
             None => 0,
         };
         for hash in hashes.iter() {
-            println!("{}", hex::encode(hash));
             let block = Block::get(blockchain.get_db(), hash).unwrap();
             let t = block.timestamp;
             fork_state.append(block, previous_timestamp);

@@ -182,7 +182,6 @@ impl Dynamic {
         if hashes.is_empty() {
             return;
         }
-        self.latest_block = Block::get(db, hashes.last().unwrap()).unwrap();
         let mut previous_timestamp = match hashes.first() {
             Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
             None => 0,
@@ -193,6 +192,7 @@ impl Dynamic {
             self.append(block, previous_timestamp);
             previous_timestamp = t;
         }
+        self.latest_block = Block::get(db, self.hashes.last().unwrap()).unwrap();
     }
     pub fn append(
         &mut self,

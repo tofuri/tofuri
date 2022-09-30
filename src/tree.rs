@@ -1,7 +1,5 @@
 use crate::state::Dynamic;
-use crate::{
-    block::BlockMetadataLean, blockchain::Blockchain, constants::TRUST_FORK_AFTER_BLOCKS, db, types,
-};
+use crate::{block::BlockMetadataLean, constants::TRUST_FORK_AFTER_BLOCKS, db, types};
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::cmp::Ordering;
 use std::collections::HashMap;

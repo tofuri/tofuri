@@ -170,9 +170,9 @@ impl Block {
                 }
             }
         }
-        if self.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
-            return Err("block created too early".into());
-        }
+        // if self.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+        // return Err("block created too early".into());
+        // }
         let public_key_inputs = self
             .transactions
             .iter()

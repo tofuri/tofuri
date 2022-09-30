@@ -277,11 +277,12 @@ impl Blockchain {
         let m_1 = self.tree.main().unwrap().0;
         self.tree.sort_branches();
         let m_2 = self.tree.main().unwrap().0;
-        if m_0 == block.previous_hash {
-            if m_1 == m_2 {
-                self.states.append(&self.db, block);
-            }
-        }
+        // if m_0 == block.previous_hash {
+            // if m_1 == m_2 {
+                // self.states.append(&self.db, block);
+            // }
+        // }
+        self.states.append(&self.db, block);
         if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
             self.pending_blocks.remove(index);
         }
@@ -303,15 +304,17 @@ impl Blockchain {
             );
         }
         let start = Instant::now();
+        let (trusted, dynamic) = self.tree.get_vec();
+        self.states.trusted.load(&self.db, &trusted);
         self.states
-            .trusted
-            .load(&self.db, &self.tree.get_hashes_trusted());
+            .dynamic
+            .reload(&self.db, &dynamic, &self.states.trusted);
         info!("{} {:?}", "States load".cyan(), start.elapsed());
     }
     pub fn reload(&mut self) {
         let start = Instant::now();
         if let Some(main) = self.tree.main() {
-            if let Ok(hashes) = self.tree.get_hashes_dynamic(&self.states.dynamic, &main.0) {
+            if let Ok(hashes) = self.tree.get_vec_dynamic(&self.states.dynamic, &main.0) {
                 self.states
                     .dynamic
                     .reload(&self.db, &hashes, &self.states.trusted);

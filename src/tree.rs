@@ -23,35 +23,35 @@ impl Tree {
     pub fn size(&self) -> usize {
         self.hashes.len()
     }
-    pub fn get_hashes_trusted(&self) -> Vec<types::Hash> {
-        let mut hashes = vec![];
+    pub fn get_vec(&self) -> (Vec<types::Hash>, Vec<types::Hash>) {
+        let mut trusted = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;
             loop {
-                hashes.push(hash);
+                trusted.push(hash);
                 match self.get(&hash) {
                     Some(previous_hash) => hash = *previous_hash,
                     None => break,
                 };
             }
         }
-        if let Some(hash) = hashes.last() {
+        if let Some(hash) = trusted.last() {
             if hash != &[0; 32] {
                 panic!("broken chain")
             }
-            hashes.pop();
+            trusted.pop();
         }
-        hashes.reverse();
-        let len = hashes.len();
+        trusted.reverse();
+        let len = trusted.len();
         let start = if len < TRUST_FORK_AFTER_BLOCKS {
             0
         } else {
             len - TRUST_FORK_AFTER_BLOCKS
         };
-        hashes.drain(start..len);
-        hashes
+        let dynamic = trusted.drain(start..len).collect();
+        (trusted, dynamic)
     }
-    pub fn get_hashes_dynamic(
+    pub fn get_vec_dynamic(
         &self,
         dynamic: &Dynamic,
         previous_hash: &types::Hash,

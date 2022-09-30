@@ -28,7 +28,7 @@ impl States {
         }
         let hashes = blockchain
             .get_tree()
-            .get_hashes_dynamic(&blockchain.get_states().dynamic, previous_hash)?;
+            .get_vec_dynamic(&blockchain.get_states().dynamic, previous_hash)?;
         let mut fork_state = Dynamic::from(&self.trusted);
         let mut previous_timestamp = match hashes.first() {
             Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),

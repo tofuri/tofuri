@@ -168,7 +168,7 @@ impl Dynamic {
         self.set_balances(block);
         self.set_stakers(block);
     }
-    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
+    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
         self.latest_block = Block::new_timestamp_0([0; 32]);
         self.hashes.clear();
         self.stakers.clear();
@@ -354,11 +354,7 @@ impl Trusted {
         self.set_balances(block);
         self.set_stakers(block);
     }
-    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
-        self.hashes.clear();
-        self.stakers.clear();
-        self.balance.clear();
-        self.balance_staked.clear();
+    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
         if hashes.is_empty() {
             return;
         }

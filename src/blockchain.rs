@@ -305,11 +305,13 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
-        self.reload();
+        let start = Instant::now();
+        self.states.load(&self.db, self.tree.get_vec());
+        info!("{} {:?}", "States load".cyan(), start.elapsed());
     }
     pub fn reload(&mut self) {
         let start = Instant::now();
-        self.states.reload(&self.db, self.tree.get_vec());
+        self.states.reload(&self.db, &self.tree.get_vec_fork());
         info!("{} {:?}", "States reload".cyan(), start.elapsed());
     }
 }

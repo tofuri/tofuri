@@ -85,8 +85,7 @@ impl States {
                 .append(block, Self::get_previous_timestamp(db, &previous_hash));
         }
     }
-    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, mut hashes: Vec<types::Hash>) {
-        self.dynamic.reload(db, hashes.clone());
+    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, mut hashes: Vec<types::Hash>) {
         let len = hashes.len();
         let start = if len < TRUST_FORK_AFTER_BLOCKS {
             0
@@ -94,7 +93,11 @@ impl States {
             len - TRUST_FORK_AFTER_BLOCKS
         };
         hashes.drain(start..len);
-        self.trusted.reload(db, hashes);
+        self.trusted.load(db, &hashes);
+        self.reload(db, &hashes);
+    }
+    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
+        self.dynamic.reload(db, hashes);
     }
 }
 impl Default for States {

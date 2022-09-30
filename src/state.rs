@@ -1,4 +1,10 @@
-use crate::{address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
+use crate::{
+    address,
+    block::Block,
+    constants::MIN_STAKE,
+    constants::{BLOCK_TIME_MAX, TRUST_FORK_AFTER_BLOCKS},
+    types,
+};
 use colored::*;
 use log::debug;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -23,7 +29,7 @@ impl Dynamic {
     }
     pub fn from(trusted: &Trusted) -> Self {
         Self {
-            hashes: trusted.hashes.clone(),
+            hashes: vec![],
             stakers: trusted.stakers.clone(),
             balance: trusted.balance.clone(),
             balance_staked: trusted.balance_staked.clone(),
@@ -183,10 +189,19 @@ impl Dynamic {
             previous_timestamp = t;
         }
     }
-    pub fn append(&mut self, block: Block, previous_timestamp: types::Timestamp) {
+    pub fn append(
+        &mut self,
+        block: Block,
+        previous_timestamp: types::Timestamp,
+    ) -> Option<types::Hash> {
         self.hashes.push(block.hash());
         self.set(&block, previous_timestamp);
         self.latest_block = block;
+        if self.hashes.len() > TRUST_FORK_AFTER_BLOCKS {
+            Some(self.hashes.remove(0))
+        } else {
+            None
+        }
     }
 }
 impl Default for Dynamic {

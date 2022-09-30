@@ -76,14 +76,11 @@ impl States {
         }
     }
     pub fn append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &Block) {
-        self.dynamic.append(
+        if let Some(hash) = self.dynamic.append(
             block.clone(),
             Self::get_previous_timestamp(db, &block.previous_hash),
-        );
-        let hashes = self.dynamic.get_hashes();
-        let len = hashes.len();
-        if len > TRUST_FORK_AFTER_BLOCKS {
-            let block = Block::get(db, &hashes[len - 1 - TRUST_FORK_AFTER_BLOCKS]).unwrap();
+        ) {
+            let block = Block::get(db, &hash).unwrap();
             let previous_hash = block.previous_hash;
             self.trusted
                 .append(block, Self::get_previous_timestamp(db, &previous_hash));

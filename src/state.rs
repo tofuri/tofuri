@@ -248,18 +248,6 @@ impl Trusted {
             None => 0,
         }
     }
-    pub fn get_staker(
-        &self,
-        timestamp: types::Timestamp,
-        previous_timestamp: types::Timestamp,
-    ) -> Option<&types::PublicKeyBytes> {
-        let mut diff = timestamp - previous_timestamp;
-        if diff > 0 {
-            diff -= 1;
-        }
-        let index = diff / BLOCK_TIME_MAX as u32;
-        self.get_stakers().get(index as usize)
-    }
     fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
         self.balance.insert(public_key, balance);
     }

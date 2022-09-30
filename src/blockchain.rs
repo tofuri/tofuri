@@ -280,10 +280,12 @@ impl Blockchain {
         if m_0 == block.previous_hash {
             if m_1 == m_2 {
                 self.states.append(&self.db, block);
-            } else if new_branch {
-                self.reload();
             }
+            // else if new_branch {
+            // self.reload();
+            // }
         }
+        self.reload();
         if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
             self.pending_blocks.remove(index);
         }
@@ -291,10 +293,10 @@ impl Blockchain {
         self.pending_stakes.clear();
         hash
     }
-    pub fn reload(&mut self) {
+    pub fn load(&mut self) {
         let start = Instant::now();
         self.tree.reload(&self.db);
-        info!("{} {:?}", "Tree reload".cyan(), start.elapsed());
+        info!("{} {:?}", "Tree load".cyan(), start.elapsed());
         if let Some(main) = self.tree.main() {
             info!(
                 "{} {} {}",
@@ -303,6 +305,9 @@ impl Blockchain {
                 hex::encode(main.0)
             );
         }
+        self.reload();
+    }
+    pub fn reload(&mut self) {
         let start = Instant::now();
         self.states.reload(&self.db, self.tree.get_vec());
         info!("{} {:?}", "States reload".cyan(), start.elapsed());

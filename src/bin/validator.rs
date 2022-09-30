@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         false => Wallet::import(&args.wallet, &args.passphrase)?,
     };
     let mut blockchain = Blockchain::new(db, wallet.keypair);
-    blockchain.reload();
+    blockchain.load();
     print::blockchain(&blockchain);
     let mut swarm = p2p::swarm(blockchain).await?;
     swarm.listen_on(args.multiaddr.parse()?)?;

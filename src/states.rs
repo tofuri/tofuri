@@ -1,47 +1,51 @@
 use crate::{
-    block::Block, blockchain::Blockchain, constants::TRUST_FORK_AFTER_BLOCKS, state::State, types,
+    block::Block,
+    blockchain::Blockchain,
+    constants::TRUST_FORK_AFTER_BLOCKS,
+    state::{Dynamic, Trusted},
+    types,
 };
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::error::Error;
 #[derive(Debug)]
 pub struct States {
-    current: State,
-    previous: State,
+    dynamic: Dynamic,
+    trusted: Trusted,
 }
 impl States {
     pub fn new() -> States {
         States {
-            current: State::default(),
-            previous: State::default(),
+            dynamic: Dynamic::default(),
+            trusted: Trusted::default(),
         }
     }
-    pub fn get_current(&self) -> &State {
-        &self.current
+    pub fn get_current(&self) -> &Dynamic {
+        &self.dynamic
     }
-    pub fn get_current_mut(&mut self) -> &mut State {
-        &mut self.current
+    pub fn get_current_mut(&mut self) -> &mut Dynamic {
+        &mut self.dynamic
     }
-    pub fn get_previous(&self) -> &State {
-        &self.previous
+    pub fn get_previous(&self) -> &Trusted {
+        &self.trusted
     }
-    pub fn get_previous_mut(&mut self) -> &mut State {
-        &mut self.previous
+    pub fn get_previous_mut(&mut self) -> &mut Trusted {
+        &mut self.trusted
     }
     pub fn get_fork_state(
         &self,
         blockchain: &Blockchain,
         previous_hash: &types::Hash,
-    ) -> Result<State, Box<dyn Error>> {
+    ) -> Result<Dynamic, Box<dyn Error>> {
         if previous_hash == &[0; 32] {
-            return Ok(State::default());
+            return Ok(Dynamic::default());
         }
         if let Some(hash) = blockchain
             .get_tree()
-            .get_fork_vec(self.current.get_hashes(), *previous_hash)
+            .get_fork_vec(self.dynamic.get_hashes(), *previous_hash)
             .first()
         {
             if self
-                .current
+                .dynamic
                 .get_hashes()
                 .iter()
                 .position(|x| x == hash)
@@ -54,8 +58,8 @@ impl States {
         }
         let fork_vec = blockchain
             .get_tree()
-            .get_fork_vec(self.previous.get_hashes(), *previous_hash);
-        let mut fork_state = self.previous.clone();
+            .get_fork_vec(self.trusted.get_hashes(), *previous_hash);
+        let mut fork_state = Dynamic::from(&self.trusted);
         let mut previous_timestamp = match fork_vec.first() {
             Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
             None => 0,
@@ -78,21 +82,21 @@ impl States {
         }
     }
     pub fn append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &Block) {
-        self.current.append(
+        self.dynamic.append(
             block.clone(),
             Self::get_previous_timestamp(db, &block.previous_hash),
         );
-        let hashes = self.current.get_hashes();
+        let hashes = self.dynamic.get_hashes();
         let len = hashes.len();
         if len > TRUST_FORK_AFTER_BLOCKS {
             let block = Block::get(db, &hashes[len - 1 - TRUST_FORK_AFTER_BLOCKS]).unwrap();
             let previous_hash = block.previous_hash;
-            self.previous
+            self.trusted
                 .append(block, Self::get_previous_timestamp(db, &previous_hash));
         }
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, mut hashes: Vec<types::Hash>) {
-        self.current.reload(db, hashes.clone());
+        self.dynamic.reload(db, hashes.clone());
         let len = hashes.len();
         let start = if len < TRUST_FORK_AFTER_BLOCKS {
             0
@@ -100,7 +104,7 @@ impl States {
             len - TRUST_FORK_AFTER_BLOCKS
         };
         hashes.drain(start..len);
-        self.previous.reload(db, hashes);
+        self.trusted.reload(db, hashes);
     }
 }
 impl Default for States {

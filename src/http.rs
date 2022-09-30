@@ -88,8 +88,6 @@ async fn handle_get(
         handle_get_json_transaction_by_hash(stream, swarm, first).await?;
     } else if STAKE_BY_HASH.is_match(first) {
         handle_get_json_stake_by_hash(stream, swarm, first).await?;
-    } else if STAKE.is_match(first) {
-        handle_get_json_stake(stream, swarm).await?;
     } else {
         handle_404(stream).await?;
     };
@@ -156,8 +154,6 @@ async fn handle_get_json(
     struct State {
         balance: types::Amount,
         balance_staked: types::Amount,
-        sum_stakes_current: types::Amount,
-        sum_stakes_all_time: types::Amount,
         hashes: usize,
         latest_hashes: Vec<String>,
         stakers: Vec<String>,
@@ -188,8 +184,6 @@ Content-Type: application/json
                             balance_staked: state_current.get_balance_staked(
                                 behaviour.blockchain.get_keypair().public.as_bytes()
                             ),
-                            sum_stakes_current: *state_current.get_sum_stakes_current(),
-                            sum_stakes_all_time: *state_current.get_sum_stakes_all_time(),
                             hashes: state_current.get_hashes().len(),
                             latest_hashes: state_current
                                 .get_hashes()
@@ -210,8 +204,6 @@ Content-Type: application/json
                             balance_staked: state_previous.get_balance_staked(
                                 behaviour.blockchain.get_keypair().public.as_bytes()
                             ),
-                            sum_stakes_current: *state_previous.get_sum_stakes_current(),
-                            sum_stakes_all_time: *state_previous.get_sum_stakes_all_time(),
                             stakers: state_previous
                                 .get_stakers()
                                 .iter()
@@ -521,31 +513,6 @@ Content-Type: application/json
                     timestamp: stake.timestamp,
                     signature: hex::encode(&stake.signature)
                 })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
-}
-async fn handle_get_json_stake(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-) -> Result<(), Box<dyn Error>> {
-    let sum = swarm
-        .behaviour()
-        .blockchain
-        .get_states()
-        .get_current()
-        .get_sum_stakes_current();
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&sum)?
             )
             .as_bytes(),
         )

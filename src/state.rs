@@ -56,7 +56,7 @@ impl State {
         &self,
         timestamp: types::Timestamp,
         previous_timestamp: types::Timestamp,
-    ) -> Option<&types::Staker> {
+    ) -> Option<&types::PublicKeyBytes> {
         let mut diff = timestamp - previous_timestamp;
         if diff > 0 {
             diff -= 1;
@@ -66,8 +66,8 @@ impl State {
     }
     fn set_sum_stakes(&mut self) {
         let mut sum = 0;
-        for staker in self.stakers.iter() {
-            sum += self.get_balance_staked(&staker.0);
+        for public_key in self.stakers.iter() {
+            sum += self.get_balance_staked(public_key);
         }
         self.sum_stakes_current = sum;
         self.sum_stakes_all_time += sum;
@@ -105,21 +105,21 @@ impl State {
             self.set_balance_staked(stake.public_key, balance_staked);
         }
     }
-    fn set_stakers(&mut self, block: &Block, height: usize) {
+    fn set_stakers(&mut self, block: &Block) {
         if self.stakers.len() > 1 {
             self.stakers.rotate_left(1);
         }
         for stake in block.stakes.iter() {
             let balance_staked = self.get_balance_staked(&stake.public_key);
-            let any = self.stakers.iter().any(|&e| e.0 == stake.public_key);
+            let any = self.stakers.iter().any(|x| x == &stake.public_key);
             if !any && balance_staked >= MIN_STAKE {
-                self.stakers.push_back((stake.public_key, height));
+                self.stakers.push_back(stake.public_key);
             } else if any && balance_staked < MIN_STAKE {
                 self.balance_staked.remove(&stake.public_key);
                 let index = self
                     .stakers
                     .iter()
-                    .position(|staker| staker.0 == stake.public_key)
+                    .position(|x| x == &stake.public_key)
                     .unwrap();
                 self.stakers.remove(index).unwrap();
                 debug!(
@@ -161,16 +161,15 @@ impl State {
             if self.stakers.is_empty() {
                 break;
             }
-            let public_key = self.stakers[0].0;
-            self.balance_staked.remove(&public_key);
+            self.balance_staked.remove(self.stakers.get(0).unwrap());
             self.stakers.remove(0).unwrap();
         }
     }
-    fn set(&mut self, block: &Block, height: types::Height, previous_timestamp: types::Timestamp) {
+    fn set(&mut self, block: &Block, previous_timestamp: types::Timestamp) {
         self.set_penalty(&block.timestamp, &previous_timestamp);
         self.set_reward(block);
         self.set_balances(block);
-        self.set_stakers(block, height);
+        self.set_stakers(block);
         self.set_sum_stakes();
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
@@ -196,7 +195,7 @@ impl State {
     }
     pub fn append(&mut self, block: Block, previous_timestamp: types::Timestamp) {
         self.hashes.push(block.hash());
-        self.set(&block, self.hashes.len() - 1, previous_timestamp);
+        self.set(&block, previous_timestamp);
         self.latest_block = block;
     }
 }

@@ -13,8 +13,7 @@ pub type PublicKeyBytes = [u8; 32];
 pub type SecretKeyBytes = [u8; 32];
 pub type SignatureBytes = [u8; 64];
 pub type Hashes = Vec<Hash>;
-pub type Staker = (PublicKeyBytes, Height);
-pub type Stakers = VecDeque<Staker>;
+pub type Stakers = VecDeque<PublicKeyBytes>;
 use merkle_cbt::{merkle_tree::Merge, CBMT as ExCBMT};
 pub struct Hasher;
 impl Merge for Hasher {

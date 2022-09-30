@@ -201,7 +201,7 @@ Content-Type: application/json
                             stakers: state_current
                                 .get_stakers()
                                 .iter()
-                                .map(|&x| address::encode(&x.0))
+                                .map(address::encode)
                                 .collect(),
                         },
                         previous: State {
@@ -215,7 +215,7 @@ Content-Type: application/json
                             stakers: state_previous
                                 .get_stakers()
                                 .iter()
-                                .map(|&x| address::encode(&x.0))
+                                .map(address::encode)
                                 .collect(),
                             hashes: state_previous.get_hashes().len(),
                             latest_hashes: state_previous

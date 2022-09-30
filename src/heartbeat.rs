@@ -41,8 +41,8 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     let current = blockchain.get_states().get_current();
     let mut forge = true;
     let timestamp = util::timestamp();
-    if let Some(staker) = current.get_staker(timestamp, current.get_latest_block().timestamp) {
-        if &staker.0 != blockchain.get_keypair().public.as_bytes()
+    if let Some(public_key) = current.get_staker(timestamp, current.get_latest_block().timestamp) {
+        if public_key != blockchain.get_keypair().public.as_bytes()
             || timestamp < current.get_latest_block().timestamp + BLOCK_TIME_MIN as types::Timestamp
         {
             forge = false;

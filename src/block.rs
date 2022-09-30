@@ -163,8 +163,7 @@ impl Block {
             if self.previous_hash != latest_block.hash() {
                 return Err("fork_state latest_block hash".into());
             }
-            if let Some((public_key, _)) =
-                fork_state.get_staker(self.timestamp, latest_block.timestamp)
+            if let Some(public_key) = fork_state.get_staker(self.timestamp, latest_block.timestamp)
             {
                 if public_key != &self.public_key {
                     return Err("block isn't signed by the staker first in queue".into());

@@ -74,7 +74,6 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     }
     if behaviour.gossipsub.all_peers().count() == 0 {
         *behaviour.blockchain.get_sync_index_mut() = 0;
-        *behaviour.blockchain.get_sync_iteration_mut() += 1;
         return Ok(());
     }
     for _ in 0..SYNC_BLOCKS_PER_TICK {

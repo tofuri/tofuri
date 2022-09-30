@@ -24,7 +24,6 @@ pub struct Blockchain {
     pending_stakes: Vec<Stake>,
     pending_blocks: Vec<Block>,
     sync_index: usize,
-    sync_iteration: usize,
     heartbeats: types::Heartbeats,
     lag: f64,
 }
@@ -39,7 +38,6 @@ impl Blockchain {
             pending_stakes: vec![],
             pending_blocks: vec![],
             sync_index: 0,
-            sync_iteration: 0,
             heartbeats: 0,
             lag: 0.0,
         }
@@ -49,12 +47,6 @@ impl Blockchain {
     }
     pub fn get_sync_index_mut(&mut self) -> &mut usize {
         &mut self.sync_index
-    }
-    pub fn get_sync_iteration(&self) -> &usize {
-        &self.sync_iteration
-    }
-    pub fn get_sync_iteration_mut(&mut self) -> &mut usize {
-        &mut self.sync_iteration
     }
     pub fn get_states(&self) -> &States {
         &self.states
@@ -97,7 +89,6 @@ impl Blockchain {
         let hashes = self.states.get_dynamic().get_hashes();
         if self.sync_index >= hashes.len() {
             self.sync_index = 0;
-            self.sync_iteration += 1;
         }
         let hash = hashes[self.sync_index];
         trace!(

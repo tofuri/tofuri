@@ -143,7 +143,6 @@ async fn handle_get_json(
         pending_stakes: Vec<String>,
         pending_blocks: Vec<String>,
         sync_index: usize,
-        sync_iteration: usize,
     }
     #[derive(Serialize)]
     struct States {
@@ -239,7 +238,6 @@ Content-Type: application/json
                         .map(|x| hex::encode(x.hash()))
                         .collect(),
                     sync_index: *behaviour.blockchain.get_sync_index(),
-                    sync_iteration: *behaviour.blockchain.get_sync_iteration(),
                 })?
             )
             .as_bytes(),

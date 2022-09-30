@@ -38,12 +38,13 @@ impl States {
             .get_fork_vec(self.dynamic.get_hashes(), *previous_hash)
             .first()
         {
-            if self
-                .dynamic
-                .get_hashes()
-                .iter()
-                .position(|x| x == hash)
-                .unwrap()
+            if self.trusted.get_hashes().len()
+                + self
+                    .dynamic
+                    .get_hashes()
+                    .iter()
+                    .position(|x| x == hash)
+                    .unwrap()
                 + TRUST_FORK_AFTER_BLOCKS
                 <= blockchain.get_height()
             {

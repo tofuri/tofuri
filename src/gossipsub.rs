@@ -14,7 +14,7 @@ pub fn handle(
             let hash = behaviour.blockchain.append(&block);
             info!(
                 "{} {} {}",
-                "Quick Accepted".green(),
+                "Accept".green(),
                 behaviour
                     .blockchain
                     .get_tree()

@@ -240,12 +240,12 @@ impl Blockchain {
             }
         }
         block.sign(&self.keypair);
-        let hash = self.append(&block);
+        self.pending_blocks_push(block.clone())?;
         info!(
             "{} {} {}",
-            "Forged".green(),
+            "Forged".magenta(),
             self.tree.height(&block.previous_hash).to_string().yellow(),
-            hex::encode(hash)
+            hex::encode(block.hash())
         );
         Ok(block)
     }
@@ -260,7 +260,7 @@ impl Blockchain {
             let hash = self.append(&block);
             info!(
                 "{} {} {}",
-                "Accepted".green(),
+                "Accept".green(),
                 self.tree.height(&block.previous_hash).to_string().yellow(),
                 hex::encode(hash)
             );

@@ -94,7 +94,7 @@ impl Blockchain {
         }
     }
     pub fn get_next_sync_block(&mut self) -> Block {
-        let hashes = self.states.get_current().get_hashes();
+        let hashes = self.states.get_dynamic().get_hashes();
         if self.sync_index >= hashes.len() {
             self.sync_index = 0;
             self.sync_iteration += 1;
@@ -176,12 +176,12 @@ impl Blockchain {
         }
         let balance = self
             .states
-            .get_current()
+            .get_dynamic()
             .get_balance(&transaction.public_key_input);
         transaction.validate(
             &self.db,
             balance,
-            self.states.get_current().get_latest_block().timestamp,
+            self.states.get_dynamic().get_latest_block().timestamp,
         )?;
         self.pending_transactions.push(transaction);
         self.limit_pending_transactions();
@@ -205,16 +205,16 @@ impl Blockchain {
             }
             self.pending_stakes.remove(index);
         }
-        let balance = self.states.get_current().get_balance(&stake.public_key);
+        let balance = self.states.get_dynamic().get_balance(&stake.public_key);
         let balance_staked = self
             .states
-            .get_current()
+            .get_dynamic()
             .get_balance_staked(&stake.public_key);
         stake.validate(
             &self.db,
             balance,
             balance_staked,
-            self.states.get_current().get_latest_block().timestamp,
+            self.states.get_dynamic().get_latest_block().timestamp,
         )?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();

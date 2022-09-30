@@ -19,17 +19,11 @@ impl States {
             trusted: Trusted::default(),
         }
     }
-    pub fn get_current(&self) -> &Dynamic {
+    pub fn get_dynamic(&self) -> &Dynamic {
         &self.dynamic
     }
-    pub fn get_current_mut(&mut self) -> &mut Dynamic {
-        &mut self.dynamic
-    }
-    pub fn get_previous(&self) -> &Trusted {
+    pub fn get_trusted(&self) -> &Trusted {
         &self.trusted
-    }
-    pub fn get_previous_mut(&mut self) -> &mut Trusted {
-        &mut self.trusted
     }
     pub fn get_fork_state(
         &self,

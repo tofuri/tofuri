@@ -11,7 +11,7 @@ use crate::{
     types,
 };
 use colored::*;
-use log::info;
+use log::{debug, info};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};
 #[derive(Debug)]
@@ -311,15 +311,12 @@ impl Blockchain {
     pub fn reload(&mut self) {
         let start = Instant::now();
         if let Some(main) = self.tree.main() {
-            if let Ok(hashes) = self
-                .tree
-                .get_hashes_dynamic(&self.states.dynamic, &main.0)
-            {
+            if let Ok(hashes) = self.tree.get_hashes_dynamic(&self.states.dynamic, &main.0) {
                 self.states
                     .dynamic
                     .reload(&self.db, &hashes, &self.states.trusted);
             }
         }
-        info!("{} {:?}", "States reload".cyan(), start.elapsed());
+        debug!("{} {:?}", "States reload".cyan(), start.elapsed());
     }
 }

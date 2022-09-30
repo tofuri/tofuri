@@ -1,6 +1,7 @@
 use crate::{
     block::Block,
     blockchain::Blockchain,
+    constants::TRUST_FORK_AFTER_BLOCKS,
     state::{Dynamic, Trusted},
     types,
 };
@@ -26,9 +27,24 @@ impl States {
         if previous_hash == &[0; 32] {
             return Ok(Dynamic::default());
         }
-        let hashes = blockchain
-            .get_tree()
-            .get_vec_dynamic(&blockchain.get_states().dynamic, previous_hash)?;
+        let mut hashes = vec![];
+        if let Some(first) = blockchain.get_states().dynamic.get_hashes().first() {
+            let mut hash = *previous_hash;
+            for _ in 0..TRUST_FORK_AFTER_BLOCKS {
+                hashes.push(hash);
+                if first == &hash {
+                    break;
+                }
+                match blockchain.get_tree().get(&hash) {
+                    Some(previous_hash) => hash = *previous_hash,
+                    None => break,
+                };
+            }
+            if first != &hash {
+                return Err("not allowed to fork trusted chain".into());
+            }
+            hashes.reverse();
+        }
         let mut fork_state = Dynamic::from(&self.trusted);
         let mut previous_timestamp = match hashes.first() {
             Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),

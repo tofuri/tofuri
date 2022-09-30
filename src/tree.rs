@@ -1,9 +1,7 @@
-use crate::state::Dynamic;
 use crate::{block::BlockMetadataLean, constants::TRUST_FORK_AFTER_BLOCKS, db, types};
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::error::Error;
 use std::fmt;
 type Branch = (types::Hash, types::Height, types::Timestamp);
 pub struct Tree {
@@ -51,30 +49,25 @@ impl Tree {
         let dynamic = trusted.drain(start..len).collect();
         (trusted, dynamic)
     }
-    pub fn get_vec_dynamic(
-        &self,
-        dynamic: &Dynamic,
-        previous_hash: &types::Hash,
-    ) -> Result<Vec<types::Hash>, Box<dyn Error>> {
-        let mut hashes = vec![];
-        if let Some(first) = dynamic.get_hashes().first() {
-            let mut hash = *previous_hash;
+    pub fn get_vec_dynamic(&self) -> Vec<types::Hash> {
+        let mut vec = vec![];
+        if let Some(main) = self.main() {
+            let mut hash = main.0;
             for _ in 0..TRUST_FORK_AFTER_BLOCKS {
-                hashes.push(hash);
-                if first == &hash {
-                    break;
-                }
+                vec.push(hash);
                 match self.get(&hash) {
                     Some(previous_hash) => hash = *previous_hash,
                     None => break,
                 };
             }
-            if first != &hash {
-                return Err("not allowed to fork trusted chain".into());
-            }
-            hashes.reverse();
         }
-        Ok(hashes)
+        if let Some(hash) = vec.last() {
+            if hash == &[0; 32] {
+                vec.pop();
+            }
+        }
+        vec.reverse();
+        vec
     }
     pub fn get(&self, hash: &types::Hash) -> Option<&types::Hash> {
         self.hashes.get(hash)

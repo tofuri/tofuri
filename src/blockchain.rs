@@ -300,13 +300,9 @@ impl Blockchain {
     }
     pub fn reload(&mut self) {
         let start = Instant::now();
-        if let Some(main) = self.tree.main() {
-            if let Ok(hashes) = self.tree.get_vec_dynamic(&self.states.dynamic, &main.0) {
-                self.states
-                    .dynamic
-                    .reload(&self.db, &hashes, &self.states.trusted);
-            }
-        }
+        self.states
+            .dynamic
+            .reload(&self.db, &self.tree.get_vec_dynamic(), &self.states.trusted);
         debug!("{} {:?}", "States reload".cyan(), start.elapsed());
     }
 }

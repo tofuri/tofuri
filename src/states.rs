@@ -9,8 +9,8 @@ use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::error::Error;
 #[derive(Debug)]
 pub struct States {
-    dynamic: Dynamic,
-    trusted: Trusted,
+    pub dynamic: Dynamic,
+    pub trusted: Trusted,
 }
 impl States {
     pub fn new() -> States {
@@ -18,12 +18,6 @@ impl States {
             dynamic: Dynamic::default(),
             trusted: Trusted::default(),
         }
-    }
-    pub fn get_dynamic(&self) -> &Dynamic {
-        &self.dynamic
-    }
-    pub fn get_trusted(&self) -> &Trusted {
-        &self.trusted
     }
     pub fn get_fork_state(
         &self,
@@ -94,10 +88,7 @@ impl States {
         };
         hashes.drain(start..len);
         self.trusted.load(db, &hashes);
-        self.reload(db, &hashes);
-    }
-    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
-        self.dynamic.reload(db, hashes);
+        self.dynamic.reload(db, &hashes, &self.trusted);
     }
 }
 impl Default for States {

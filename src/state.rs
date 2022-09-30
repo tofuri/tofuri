@@ -168,12 +168,22 @@ impl Dynamic {
         self.set_balances(block);
         self.set_stakers(block);
     }
-    pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
+    pub fn reload(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        hashes: &Vec<types::Hash>,
+        trusted: &Trusted,
+    ) {
+        // self.latest_block = Block::new_timestamp_0([0; 32]);
+        // self.hashes.clear();
+        // self.stakers.clear();
+        // self.balance.clear();
+        // self.balance_staked.clear();
+        self.hashes = vec![];
+        self.stakers = trusted.stakers.clone();
+        self.balance = trusted.balance.clone();
+        self.balance_staked = trusted.balance_staked.clone();
         self.latest_block = Block::new_timestamp_0([0; 32]);
-        self.hashes.clear();
-        self.stakers.clear();
-        self.balance.clear();
-        self.balance_staked.clear();
         if hashes.is_empty() {
             return;
         }

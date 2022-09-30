@@ -38,12 +38,16 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     let blockchain = &mut behaviour.blockchain;
     let gossipsub = &mut behaviour.gossipsub;
     let mut hashes = &mut behaviour.hashes;
-    let current = blockchain.get_states().get_dynamic();
+    let states = blockchain.get_states();
     let mut forge = true;
     let timestamp = util::timestamp();
-    if let Some(public_key) = current.get_staker(timestamp, current.get_latest_block().timestamp) {
+    if let Some(public_key) = states
+        .dynamic
+        .get_staker(timestamp, states.dynamic.get_latest_block().timestamp)
+    {
         if public_key != blockchain.get_keypair().public.as_bytes()
-            || timestamp < current.get_latest_block().timestamp + BLOCK_TIME_MIN as types::Timestamp
+            || timestamp
+                < states.dynamic.get_latest_block().timestamp + BLOCK_TIME_MIN as types::Timestamp
         {
             forge = false;
         }
@@ -66,7 +70,7 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     if behaviour
         .blockchain
         .get_states()
-        .get_dynamic()
+        .dynamic
         .get_hashes()
         .is_empty()
     {

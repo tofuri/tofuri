@@ -86,8 +86,8 @@ impl Blockchain {
         }
     }
     pub fn get_next_sync_block(&mut self) -> Block {
-        let hashes_trusted = self.states.get_trusted().get_hashes();
-        let hashes_dynamic = self.states.get_dynamic().get_hashes();
+        let hashes_trusted = self.states.trusted.get_hashes();
+        let hashes_dynamic = self.states.dynamic.get_hashes();
         if self.sync_index >= hashes_trusted.len() + hashes_dynamic.len() {
             self.sync_index = 0;
         }
@@ -172,12 +172,12 @@ impl Blockchain {
         }
         let balance = self
             .states
-            .get_dynamic()
+            .dynamic
             .get_balance(&transaction.public_key_input);
         transaction.validate(
             &self.db,
             balance,
-            self.states.get_dynamic().get_latest_block().timestamp,
+            self.states.dynamic.get_latest_block().timestamp,
         )?;
         self.pending_transactions.push(transaction);
         self.limit_pending_transactions();
@@ -201,16 +201,13 @@ impl Blockchain {
             }
             self.pending_stakes.remove(index);
         }
-        let balance = self.states.get_dynamic().get_balance(&stake.public_key);
-        let balance_staked = self
-            .states
-            .get_dynamic()
-            .get_balance_staked(&stake.public_key);
+        let balance = self.states.dynamic.get_balance(&stake.public_key);
+        let balance_staked = self.states.dynamic.get_balance_staked(&stake.public_key);
         stake.validate(
             &self.db,
             balance,
             balance_staked,
-            self.states.get_dynamic().get_latest_block().timestamp,
+            self.states.dynamic.get_latest_block().timestamp,
         )?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
@@ -311,7 +308,9 @@ impl Blockchain {
     }
     pub fn reload(&mut self) {
         let start = Instant::now();
-        self.states.reload(&self.db, &self.tree.get_vec_fork());
+        self.states
+            .dynamic
+            .reload(&self.db, &self.tree.get_vec_fork(), &self.states.trusted);
         info!("{} {:?}", "States reload".cyan(), start.elapsed());
     }
 }

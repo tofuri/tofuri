@@ -183,7 +183,7 @@ impl Dynamic {
             return;
         }
         let mut previous_timestamp = match hashes.first() {
-            Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
+            Some(hash) => Block::get(db, hash).unwrap().timestamp,
             None => 0,
         };
         for hash in hashes.iter() {
@@ -352,7 +352,7 @@ impl Trusted {
             return;
         }
         let mut previous_timestamp = match hashes.first() {
-            Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
+            Some(hash) => Block::get(db, hash).unwrap().timestamp,
             None => 0,
         };
         for hash in hashes.iter() {

@@ -19,7 +19,7 @@ impl States {
             trusted: Trusted::default(),
         }
     }
-    pub fn get_fork_state(
+    pub fn get_dynamic(
         &self,
         blockchain: &Blockchain,
         previous_hash: &types::Hash,

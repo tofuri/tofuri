@@ -155,16 +155,15 @@ impl Block {
         {
             return Err("block doesn't extend chain".into());
         }
-        let fork_state = blockchain
+        let dynamic = blockchain
             .get_states()
-            .get_fork_state(blockchain, &self.previous_hash)?;
-        let latest_block = fork_state.get_latest_block();
+            .get_dynamic(blockchain, &self.previous_hash)?;
+        let latest_block = dynamic.get_latest_block();
         if self.previous_hash != [0; 32] {
             if self.previous_hash != latest_block.hash() {
                 return Err("fork_state latest_block hash".into());
             }
-            if let Some(public_key) = fork_state.get_staker(self.timestamp, latest_block.timestamp)
-            {
+            if let Some(public_key) = dynamic.get_staker(self.timestamp, latest_block.timestamp) {
                 if public_key != &self.public_key {
                     return Err("block isn't signed by the staker first in queue".into());
                 }
@@ -231,14 +230,14 @@ impl Block {
                 }
             } else {
                 for stake in self.stakes.iter() {
-                    let balance = fork_state.get_balance(&stake.public_key);
-                    let balance_staked = fork_state.get_balance_staked(&stake.public_key);
+                    let balance = dynamic.get_balance(&stake.public_key);
+                    let balance_staked = dynamic.get_balance_staked(&stake.public_key);
                     stake.validate(blockchain.get_db(), balance, balance_staked, self.timestamp)?;
                 }
             }
         }
         for transaction in self.transactions.iter() {
-            let balance = fork_state.get_balance(&transaction.public_key_input);
+            let balance = dynamic.get_balance(&transaction.public_key_input);
             transaction.validate(blockchain.get_db(), balance, self.timestamp)?;
         }
         Ok(())

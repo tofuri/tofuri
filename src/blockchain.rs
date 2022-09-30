@@ -313,10 +313,9 @@ impl Blockchain {
         let start = Instant::now();
         if let Some(main) = self.tree.main() {
             if let Some(previous_hash) = self.tree.get(&main.0) {
-                println!("{:x?}", previous_hash);
                 if let Ok(hashes) = self
                     .tree
-                    .get_hashes_dynamic(&self.states.dynamic.get_hashes(), previous_hash)
+                    .get_hashes_dynamic(&self.states.dynamic, previous_hash)
                 {
                     self.states
                         .dynamic

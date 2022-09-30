@@ -1,4 +1,7 @@
-use crate::{block::BlockMetadataLean, constants::TRUST_FORK_AFTER_BLOCKS, db, types};
+use crate::state::Dynamic;
+use crate::{
+    block::BlockMetadataLean, blockchain::Blockchain, constants::TRUST_FORK_AFTER_BLOCKS, db, types,
+};
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -52,11 +55,11 @@ impl Tree {
     }
     pub fn get_hashes_dynamic(
         &self,
-        dynamic_hashes: &[types::Hash],
+        dynamic: &Dynamic,
         previous_hash: &types::Hash,
     ) -> Result<Vec<types::Hash>, Box<dyn Error>> {
         let mut hashes = vec![];
-        if let Some(first) = dynamic_hashes.first() {
+        if let Some(first) = dynamic.get_hashes().first() {
             let mut hash = *previous_hash;
             for _ in 0..TRUST_FORK_AFTER_BLOCKS {
                 hashes.push(hash);

@@ -1,7 +1,8 @@
-use crate::{block::BlockMetadataLean, db, types};
+use crate::{block::BlockMetadataLean, constants::TRUST_FORK_AFTER_BLOCKS, db, types};
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::error::Error;
 use std::fmt;
 type Branch = (types::Hash, types::Height, types::Timestamp);
 pub struct Tree {
@@ -21,47 +22,58 @@ impl Tree {
     pub fn size(&self) -> usize {
         self.hashes.len()
     }
-    pub fn get_vec(&self) -> Vec<types::Hash> {
-        let mut vec = vec![];
+    pub fn get_hashes_trusted(&self) -> Vec<types::Hash> {
+        let mut hashes = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;
             loop {
-                vec.push(hash);
+                hashes.push(hash);
                 match self.get(&hash) {
                     Some(previous_hash) => hash = *previous_hash,
                     None => break,
                 };
             }
         }
-        if let Some(hash) = vec.last() {
+        if let Some(hash) = hashes.last() {
             if hash != &[0; 32] {
                 panic!("broken chain")
             }
-            vec.pop();
+            hashes.pop();
         }
-        vec.reverse();
-        vec
+        hashes.reverse();
+        let len = hashes.len();
+        let start = if len < TRUST_FORK_AFTER_BLOCKS {
+            0
+        } else {
+            len - TRUST_FORK_AFTER_BLOCKS
+        };
+        hashes.drain(start..len);
+        hashes
     }
-    pub fn get_vec_fork(&self) -> Vec<types::Hash> {
-        let mut vec = vec![];
-        if let Some(main) = self.main() {
-            let mut hash = main.0;
-            loop {
-                vec.push(hash);
+    pub fn get_hashes_dynamic(
+        &self,
+        dynamic_hashes: &[types::Hash],
+        previous_hash: &types::Hash,
+    ) -> Result<Vec<types::Hash>, Box<dyn Error>> {
+        let mut hashes = vec![];
+        if let Some(first) = dynamic_hashes.first() {
+            let mut hash = *previous_hash;
+            for _ in 0..TRUST_FORK_AFTER_BLOCKS {
+                hashes.push(hash);
+                if first == &hash {
+                    break;
+                }
                 match self.get(&hash) {
                     Some(previous_hash) => hash = *previous_hash,
                     None => break,
                 };
             }
-        }
-        if let Some(hash) = vec.last() {
-            if hash != &[0; 32] {
-                panic!("broken chain")
+            if first != &hash {
+                return Err("not allowed to fork trusted chain".into());
             }
-            vec.pop();
+            hashes.reverse();
         }
-        vec.reverse();
-        vec
+        Ok(hashes)
     }
     pub fn get(&self, hash: &types::Hash) -> Option<&types::Hash> {
         self.hashes.get(hash)

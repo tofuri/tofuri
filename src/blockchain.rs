@@ -303,14 +303,27 @@ impl Blockchain {
             );
         }
         let start = Instant::now();
-        self.states.load(&self.db, self.tree.get_vec());
+        self.states
+            .trusted
+            .load(&self.db, &self.tree.get_hashes_trusted());
         info!("{} {:?}", "States load".cyan(), start.elapsed());
+        self.reload();
     }
     pub fn reload(&mut self) {
         let start = Instant::now();
-        self.states
-            .dynamic
-            .reload(&self.db, &self.tree.get_vec_fork(), &self.states.trusted);
+        if let Some(main) = self.tree.main() {
+            if let Some(previous_hash) = self.tree.get(&main.0) {
+                println!("{:x?}", previous_hash);
+                if let Ok(hashes) = self
+                    .tree
+                    .get_hashes_dynamic(&self.states.dynamic.get_hashes(), previous_hash)
+                {
+                    self.states
+                        .dynamic
+                        .reload(&self.db, &hashes, &self.states.trusted);
+                }
+            }
+        }
         info!("{} {:?}", "States reload".cyan(), start.elapsed());
     }
 }

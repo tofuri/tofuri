@@ -174,11 +174,6 @@ impl Dynamic {
         hashes: &Vec<types::Hash>,
         trusted: &Trusted,
     ) {
-        // self.latest_block = Block::new_timestamp_0([0; 32]);
-        // self.hashes.clear();
-        // self.stakers.clear();
-        // self.balance.clear();
-        // self.balance_staked.clear();
         self.hashes = vec![];
         self.stakers = trusted.stakers.clone();
         self.balance = trusted.balance.clone();

@@ -27,24 +27,26 @@ impl States {
         if previous_hash == &[0; 32] {
             return Ok(Dynamic::default());
         }
-        let mut hashes = vec![];
-        if let Some(first) = self.dynamic.get_hashes().first() {
-            let mut hash = *previous_hash;
-            for _ in 0..TRUST_FORK_AFTER_BLOCKS {
-                hashes.push(hash);
-                if first == &hash {
-                    break;
-                }
-                match blockchain.get_tree().get(&hash) {
-                    Some(previous_hash) => hash = *previous_hash,
-                    None => break,
-                };
-            }
-            if first != &hash {
-                return Err("not allowed to fork trusted chain".into());
-            }
-            hashes.reverse();
-        }
+        let hashes = blockchain
+            .get_tree()
+            .get_hashes_dynamic(self.dynamic.get_hashes(), previous_hash)?;
+        // if let Some(first) = self.dynamic.get_hashes().first() {
+        // let mut hash = *previous_hash;
+        // for _ in 0..TRUST_FORK_AFTER_BLOCKS {
+        // hashes.push(hash);
+        // if first == &hash {
+        // break;
+        // }
+        // match blockchain.get_tree().get(&hash) {
+        // Some(previous_hash) => hash = *previous_hash,
+        // None => break,
+        // };
+        // }
+        // if first != &hash {
+        // return Err("not allowed to fork trusted chain".into());
+        // }
+        // hashes.reverse();
+        // }
         let mut fork_state = Dynamic::from(&self.trusted);
         let mut previous_timestamp = match hashes.first() {
             Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
@@ -78,17 +80,6 @@ impl States {
             self.trusted
                 .append(block, Self::get_previous_timestamp(db, &previous_hash));
         }
-    }
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, mut hashes: Vec<types::Hash>) {
-        let len = hashes.len();
-        let start = if len < TRUST_FORK_AFTER_BLOCKS {
-            0
-        } else {
-            len - TRUST_FORK_AFTER_BLOCKS
-        };
-        hashes.drain(start..len);
-        self.trusted.load(db, &hashes);
-        self.dynamic.reload(db, &hashes, &self.trusted);
     }
 }
 impl Default for States {

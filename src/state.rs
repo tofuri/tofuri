@@ -27,7 +27,7 @@ impl Dynamic {
             stakers: trusted.stakers.clone(),
             balance: trusted.balance.clone(),
             balance_staked: trusted.balance_staked.clone(),
-            latest_block: trusted.latest_block.clone(),
+            latest_block: Block::new_timestamp_0([0; 32]),
         }
     }
     pub fn get_stakers(&self) -> &types::Stakers {
@@ -200,7 +200,6 @@ pub struct Trusted {
     stakers: types::Stakers,
     balance: types::Balance,
     balance_staked: types::Balance,
-    latest_block: Block,
 }
 impl Trusted {
     pub fn new() -> Self {
@@ -209,7 +208,6 @@ impl Trusted {
             stakers: VecDeque::new(),
             balance: HashMap::new(),
             balance_staked: HashMap::new(),
-            latest_block: Block::new_timestamp_0([0; 32]),
         }
     }
     pub fn get_stakers(&self) -> &types::Stakers {
@@ -217,9 +215,6 @@ impl Trusted {
     }
     pub fn get_hashes(&self) -> &types::Hashes {
         &self.hashes
-    }
-    pub fn get_latest_block(&self) -> &Block {
-        &self.latest_block
     }
     pub fn get_balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
         match self.balance.get(public_key) {
@@ -345,7 +340,6 @@ impl Trusted {
         self.set_stakers(block);
     }
     pub fn reload(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: Vec<types::Hash>) {
-        self.latest_block = Block::new_timestamp_0([0; 32]);
         self.hashes.clear();
         self.stakers.clear();
         self.balance.clear();
@@ -353,7 +347,6 @@ impl Trusted {
         if hashes.is_empty() {
             return;
         }
-        self.latest_block = Block::get(db, hashes.last().unwrap()).unwrap();
         let mut previous_timestamp = match hashes.first() {
             Some(hash) => Block::get(db, hash).unwrap().timestamp - 1,
             None => 0,
@@ -368,7 +361,6 @@ impl Trusted {
     pub fn append(&mut self, block: Block, previous_timestamp: types::Timestamp) {
         self.hashes.push(block.hash());
         self.set(&block, previous_timestamp);
-        self.latest_block = block;
     }
 }
 impl Default for Trusted {

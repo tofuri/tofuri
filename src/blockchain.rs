@@ -11,7 +11,7 @@ use crate::{
     types,
 };
 use colored::*;
-use log::{info, trace};
+use log::info;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};
 #[derive(Debug)]

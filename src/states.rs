@@ -35,15 +35,26 @@ impl States {
         if previous_hash == &[0; 32] {
             return Ok(State::default());
         }
-        let hashes = self.current.get_hashes();
-        let fork_vec = blockchain.get_tree().get_fork_vec(hashes, *previous_hash);
-        if let Some(hash) = fork_vec.first() {
-            if hashes.iter().position(|x| x == hash).unwrap() + TRUST_FORK_AFTER_BLOCKS
+        if let Some(hash) = blockchain
+            .get_tree()
+            .get_fork_vec(self.current.get_hashes(), *previous_hash)
+            .first()
+        {
+            if self
+                .current
+                .get_hashes()
+                .iter()
+                .position(|x| x == hash)
+                .unwrap()
+                + TRUST_FORK_AFTER_BLOCKS
                 <= blockchain.get_height()
             {
                 return Err("not allowed to fork trusted chain".into());
             }
         }
+        let fork_vec = blockchain
+            .get_tree()
+            .get_fork_vec(self.previous.get_hashes(), *previous_hash);
         let mut fork_state = self.previous.clone();
         let mut previous_timestamp = match fork_vec.first() {
             Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
@@ -73,8 +84,8 @@ impl States {
         );
         let hashes = self.current.get_hashes();
         let len = hashes.len();
-        if len >= TRUST_FORK_AFTER_BLOCKS {
-            let block = Block::get(db, &hashes[len - TRUST_FORK_AFTER_BLOCKS]).unwrap();
+        if len > TRUST_FORK_AFTER_BLOCKS {
+            let block = Block::get(db, &hashes[len - 1 - TRUST_FORK_AFTER_BLOCKS]).unwrap();
             let previous_hash = block.previous_hash;
             self.previous
                 .append(block, Self::get_previous_timestamp(db, &previous_hash));

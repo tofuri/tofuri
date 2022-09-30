@@ -160,7 +160,7 @@ impl Block {
             .get_fork_state(blockchain, &self.previous_hash)?;
         let latest_block = fork_state.get_latest_block();
         if self.previous_hash != [0; 32] {
-            if latest_block.hash() != self.previous_hash {
+            if self.previous_hash != latest_block.hash() {
                 return Err("fork_state latest_block hash".into());
             }
             if let Some((public_key, _)) =

@@ -267,10 +267,13 @@ impl Blockchain {
         } else {
             self.tree.main().unwrap().0
         };
-        let new_branch = self
+        if self
             .tree
             .insert(hash, block.previous_hash, block.timestamp)
-            .unwrap();
+            .unwrap()
+        {
+            info!("{}", "New branch".cyan());
+        }
         let m_1 = self.tree.main().unwrap().0;
         self.tree.sort_branches();
         let m_2 = self.tree.main().unwrap().0;
@@ -278,16 +281,13 @@ impl Blockchain {
             if m_1 == m_2 {
                 self.states.append(&self.db, block);
             }
-            // else if new_branch {
-            // self.reload();
-            // }
         }
-        self.reload();
         if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
             self.pending_blocks.remove(index);
         }
         self.pending_transactions.clear();
         self.pending_stakes.clear();
+        self.reload();
         hash
     }
     pub fn load(&mut self) {
@@ -307,22 +307,19 @@ impl Blockchain {
             .trusted
             .load(&self.db, &self.tree.get_hashes_trusted());
         info!("{} {:?}", "States load".cyan(), start.elapsed());
-        self.reload();
     }
     pub fn reload(&mut self) {
         let start = Instant::now();
-        // if let Some(main) = self.tree.main() {
-        // if let Some(previous_hash) = self.tree.get(&main.0) {
-        // if let Ok(hashes) = self
-        // .tree
-        // .get_hashes_dynamic(&self.states.dynamic, previous_hash)
-        // {
-        // self.states
-        // .dynamic
-        // .reload(&self.db, &hashes, &self.states.trusted);
-        // }
-        // }
-        // }
+        if let Some(main) = self.tree.main() {
+            if let Ok(hashes) = self
+                .tree
+                .get_hashes_dynamic(&self.states.dynamic, &main.0)
+            {
+                self.states
+                    .dynamic
+                    .reload(&self.db, &hashes, &self.states.trusted);
+            }
+        }
         info!("{} {:?}", "States reload".cyan(), start.elapsed());
     }
 }

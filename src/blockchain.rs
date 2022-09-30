@@ -96,7 +96,7 @@ impl Blockchain {
         } else {
             hashes_dynamic[self.sync_index - hashes_trusted.len()]
         };
-        info!(
+        debug!(
             "{} {} {}",
             "Sync".cyan(),
             self.sync_index.to_string().yellow(),

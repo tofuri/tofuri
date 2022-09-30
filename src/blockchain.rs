@@ -262,11 +262,6 @@ impl Blockchain {
     pub fn append(&mut self, block: &Block) -> types::Hash {
         block.put(&self.db).unwrap();
         let hash = block.hash();
-        let m_0 = if block.previous_hash == [0; 32] {
-            [0; 32]
-        } else {
-            self.tree.main().unwrap().0
-        };
         if self
             .tree
             .insert(hash, block.previous_hash, block.timestamp)
@@ -274,14 +269,7 @@ impl Blockchain {
         {
             info!("{}", "New branch".cyan());
         }
-        let m_1 = self.tree.main().unwrap().0;
         self.tree.sort_branches();
-        let m_2 = self.tree.main().unwrap().0;
-        // if m_0 == block.previous_hash {
-            // if m_1 == m_2 {
-                // self.states.append(&self.db, block);
-            // }
-        // }
         self.states.append(&self.db, block);
         if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
             self.pending_blocks.remove(index);

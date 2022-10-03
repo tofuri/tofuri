@@ -352,14 +352,17 @@ async fn handle_get_json_hash_by_height(
         .get(6..)
         .ok_or("GET HASH_BY_HEIGHT 2")?
         .parse::<types::Height>()?;
-    let hash = swarm
-        .behaviour()
-        .blockchain
-        .get_states()
-        .dynamic
-        .get_hashes()
-        .get(height)
-        .ok_or("GET HASH_BY_HEIGHT 3")?;
+    let states = swarm.behaviour().blockchain.get_states();
+    let hashes_trusted = states.trusted.get_hashes();
+    let hashes_dynamic = states.dynamic.get_hashes();
+    if height >= hashes_trusted.len() + hashes_dynamic.len() {
+        return Err("GET HASH_BY_HEIGHT 3".into());
+    }
+    let hash = if height < hashes_trusted.len() {
+        hashes_trusted[height]
+    } else {
+        hashes_dynamic[height - hashes_trusted.len()]
+    };
     stream
         .write_all(
             format!(

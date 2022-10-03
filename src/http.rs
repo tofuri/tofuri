@@ -138,6 +138,7 @@ async fn handle_get_json(
         tree_size: usize,
         heartbeats: types::Heartbeats,
         lag: f64,
+        gossipsub_peers: usize,
         states: States,
         pending_transactions: Vec<String>,
         pending_stakes: Vec<String>,
@@ -174,6 +175,7 @@ Content-Type: application/json
                     height: behaviour.blockchain.get_height(),
                     tree_size: behaviour.blockchain.get_tree().size(),
                     heartbeats: *behaviour.blockchain.get_heartbeats(),
+                    gossipsub_peers: behaviour.gossipsub.all_peers().count(),
                     states: States {
                         dynamic: State {
                             balance: states

@@ -1,8 +1,8 @@
 use crate::{
     block::Block,
     constants::{
-        BLOCK_STAKES_LIMIT, BLOCK_TRANSACTIONS_LIMIT, PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT,
-        PENDING_TRANSACTIONS_LIMIT,
+        BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, PENDING_BLOCKS_LIMIT,
+        PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     stake::Stake,
     states::States,
@@ -24,6 +24,9 @@ pub struct Blockchain {
     pending_stakes: Vec<Stake>,
     pending_blocks: Vec<Block>,
     sync_index: usize,
+    sync_new: usize,
+    sync_history: [usize; BLOCK_TIME_MIN],
+    syncing: bool,
     heartbeats: types::Heartbeats,
     lag: f64,
 }
@@ -38,12 +41,34 @@ impl Blockchain {
             pending_stakes: vec![],
             pending_blocks: vec![],
             sync_index: 0,
+            sync_new: 0,
+            sync_history: [0; BLOCK_TIME_MIN],
+            syncing: true,
             heartbeats: 0,
             lag: 0.0,
         }
     }
+    pub fn heartbeat_handle(&mut self) {
+        self.sync_history.rotate_right(1);
+        self.sync_history[0] = self.sync_new;
+        self.sync_new = 0;
+        let mut sum = 0;
+        for x in self.sync_history {
+            sum += x;
+        }
+        self.syncing = sum > 1;
+    }
     pub fn get_sync_index(&self) -> &usize {
         &self.sync_index
+    }
+    pub fn get_sync_new(&self) -> &usize {
+        &self.sync_new
+    }
+    pub fn get_sync_history(&self) -> &[usize; BLOCK_TIME_MIN] {
+        &self.sync_history
+    }
+    pub fn get_syncing(&self) -> &bool {
+        &self.syncing
     }
     pub fn get_sync_index_mut(&mut self) -> &mut usize {
         &mut self.sync_index
@@ -275,6 +300,9 @@ impl Blockchain {
         self.pending_stakes.clear();
         if new_branch {
             self.reload();
+        }
+        if block.hash() == self.states.dynamic.get_latest_block().hash() {
+            self.sync_new += 1;
         }
         hash
     }

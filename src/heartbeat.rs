@@ -29,6 +29,7 @@ pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     }
     behaviour.hashes.clear();
     handle_block(behaviour)?;
+    behaviour.blockchain.heartbeat_handle();
     let millis = lag();
     print::heartbeat_lag(behaviour.blockchain.get_heartbeats(), millis);
     behaviour.blockchain.set_lag(millis);
@@ -40,21 +41,27 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     let mut hashes = &mut behaviour.hashes;
     let states = blockchain.get_states();
     let mut forge = true;
-    let timestamp = util::timestamp();
-    if let Some(public_key) = states
-        .dynamic
-        .get_staker(timestamp, states.dynamic.get_latest_block().timestamp)
-    {
-        if public_key != blockchain.get_keypair().public.as_bytes()
-            || timestamp
-                < states.dynamic.get_latest_block().timestamp + BLOCK_TIME_MIN as types::Timestamp
+    if *blockchain.get_syncing() {
+        forge = false;
+    }
+    if forge {
+        let timestamp = util::timestamp();
+        if let Some(public_key) = states
+            .dynamic
+            .get_staker(timestamp, states.dynamic.get_latest_block().timestamp)
         {
-            forge = false;
+            if public_key != blockchain.get_keypair().public.as_bytes()
+                || timestamp
+                    < states.dynamic.get_latest_block().timestamp
+                        + BLOCK_TIME_MIN as types::Timestamp
+            {
+                forge = false;
+            }
+        } else {
+            let mut stake = Stake::new(true, MIN_STAKE, 0);
+            stake.sign(blockchain.get_keypair());
+            blockchain.set_cold_start_stake(stake);
         }
-    } else {
-        let mut stake = Stake::new(true, MIN_STAKE, 0);
-        stake.sign(blockchain.get_keypair());
-        blockchain.set_cold_start_stake(stake);
     }
     if forge {
         let block = blockchain.forge_block()?;

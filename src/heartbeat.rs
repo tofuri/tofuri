@@ -1,6 +1,6 @@
 use crate::{
     constants::{BLOCK_TIME_MIN, MICROS, MIN_STAKE, NANOS, SYNC_BLOCKS_PER_TICK, TPS},
-    p2p::{self, MyBehaviour},
+    p2p::MyBehaviour,
     print,
     stake::Stake,
     types, util,
@@ -27,7 +27,7 @@ pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     if behaviour.blockchain.get_heartbeats() % TPS != 0 {
         return Ok(());
     }
-    behaviour.hashes.clear();
+    behaviour.message_data_hashes.clear();
     handle_block(behaviour)?;
     behaviour.blockchain.heartbeat_handle();
     let millis = lag();
@@ -36,12 +36,9 @@ pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    let blockchain = &mut behaviour.blockchain;
-    let gossipsub = &mut behaviour.gossipsub;
-    let mut hashes = &mut behaviour.hashes;
-    let states = blockchain.get_states();
+    let states = behaviour.blockchain.get_states();
     let mut forge = true;
-    if *blockchain.get_syncing() {
+    if *behaviour.blockchain.get_syncing() {
         forge = false;
     }
     if forge {
@@ -50,7 +47,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
             .dynamic
             .get_staker(timestamp, states.dynamic.get_latest_block().timestamp)
         {
-            if public_key != blockchain.get_keypair().public.as_bytes()
+            if public_key != behaviour.blockchain.get_keypair().public.as_bytes()
                 || timestamp
                     < states.dynamic.get_latest_block().timestamp
                         + BLOCK_TIME_MIN as types::Timestamp
@@ -59,18 +56,20 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
             }
         } else {
             let mut stake = Stake::new(true, MIN_STAKE, 0);
-            stake.sign(blockchain.get_keypair());
-            blockchain.set_cold_start_stake(stake);
+            stake.sign(behaviour.blockchain.get_keypair());
+            behaviour.blockchain.set_cold_start_stake(stake);
         }
     }
     if forge {
-        let block = blockchain.forge_block()?;
+        let block = behaviour.blockchain.forge_block()?;
         let data = bincode::serialize(&block)?;
-        if !p2p::filter(&mut hashes, &data) && gossipsub.all_peers().count() > 0 {
-            gossipsub.publish(IdentTopic::new("block"), data)?;
+        if !behaviour.filter(&data, true) && behaviour.gossipsub.all_peers().count() > 0 {
+            behaviour
+                .gossipsub
+                .publish(IdentTopic::new("block"), data)?;
         }
     }
-    blockchain.append_handle();
+    behaviour.blockchain.append_handle();
     Ok(())
 }
 fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
@@ -90,9 +89,6 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     for _ in 0..SYNC_BLOCKS_PER_TICK {
         let block = behaviour.blockchain.get_next_sync_block();
         let data = bincode::serialize(&block)?;
-        if p2p::filter(&mut behaviour.hashes, &data) {
-            continue;
-        }
         behaviour
             .gossipsub
             .publish(IdentTopic::new("block"), data)?;

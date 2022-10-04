@@ -34,7 +34,7 @@ pub struct MyBehaviour {
     #[behaviour(ignore)]
     pub blockchain: Blockchain,
     #[behaviour(ignore)]
-    pub hashes: Vec<types::Hash>,
+    pub message_data_hashes: Vec<types::Hash>,
 }
 impl MyBehaviour {
     async fn new(
@@ -63,8 +63,18 @@ impl MyBehaviour {
             ),
             relay: Relay::new(local_peer_id, Default::default()),
             blockchain,
-            hashes: vec![],
+            message_data_hashes: vec![],
         })
+    }
+    pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
+        let hash = util::hash(data);
+        if self.message_data_hashes.contains(&hash) {
+            return true;
+        }
+        if save {
+            self.message_data_hashes.push(hash);
+        }
+        false
     }
 }
 impl NetworkBehaviourEventProcess<FloodsubEvent> for MyBehaviour {
@@ -111,7 +121,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
     fn inject_event(&mut self, event: GossipsubEvent) {
         // print::p2p_event("GossipsubEvent", format!("{:?}", event));
         if let GossipsubEvent::Message { message, .. } = event {
-            if filter(&mut self.hashes, &message.data) {
+            if self.filter(&message.data, false) {
                 return;
             }
             if let Err(err) = gossipsub::handle(self, message) {
@@ -161,13 +171,4 @@ pub async fn listen(
             event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
         }
     }
-}
-pub fn filter(hashes: &mut Vec<types::Hash>, data: &[u8]) -> bool {
-    return false; // bypass
-    let hash = util::hash(data);
-    if hashes.contains(&hash) {
-        return true;
-    }
-    hashes.push(hash);
-    false
 }

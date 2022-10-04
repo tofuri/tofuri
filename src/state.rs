@@ -156,11 +156,13 @@ impl Dynamic {
             self.stakers.remove(0).unwrap();
         }
     }
-    fn set(&mut self, block: &Block, previous_timestamp: types::Timestamp) {
+    fn update(&mut self, block: Block, previous_timestamp: types::Timestamp) {
+        self.hashes.push(block.hash());
         self.set_penalty(&block.timestamp, &previous_timestamp);
-        self.set_reward(block);
-        self.set_balances(block);
-        self.set_stakers(block);
+        self.set_reward(&block);
+        self.set_balances(&block);
+        self.set_stakers(&block);
+        self.latest_block = block;
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
         let mut previous_timestamp = match hashes.first() {
@@ -170,7 +172,7 @@ impl Dynamic {
         for hash in hashes.iter() {
             let block = Block::get(db, hash).unwrap();
             let t = block.timestamp;
-            self.append(block, previous_timestamp);
+            self.update(block, previous_timestamp);
             previous_timestamp = t;
         }
     }
@@ -180,17 +182,8 @@ impl Dynamic {
         hashes: &Vec<types::Hash>,
         trusted: &Trusted,
     ) {
-        self.hashes = vec![];
-        self.stakers = trusted.stakers.clone();
-        self.balance = trusted.balance.clone();
-        self.balance_staked = trusted.balance_staked.clone();
-        self.latest_block = Block::new_timestamp_0([0; 32]);
+        *self = Dynamic::from(&trusted);
         self.load(db, hashes);
-    }
-    pub fn append(&mut self, block: Block, previous_timestamp: types::Timestamp) {
-        self.hashes.push(block.hash());
-        self.set(&block, previous_timestamp);
-        self.latest_block = block;
     }
 }
 impl Default for Dynamic {
@@ -325,30 +318,23 @@ impl Trusted {
             self.stakers.remove(0).unwrap();
         }
     }
-    fn set(&mut self, block: &Block, previous_timestamp: types::Timestamp) {
+    pub fn update(&mut self, block: &Block, previous_timestamp: types::Timestamp) {
+        self.hashes.push(block.hash());
         self.set_penalty(&block.timestamp, &previous_timestamp);
         self.set_reward(block);
         self.set_balances(block);
         self.set_stakers(block);
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
-        if hashes.is_empty() {
-            return;
-        }
         let mut previous_timestamp = match hashes.first() {
             Some(hash) => Block::get(db, hash).unwrap().timestamp,
             None => 0,
         };
         for hash in hashes.iter() {
             let block = Block::get(db, hash).unwrap();
-            let t = block.timestamp;
-            self.append(block, previous_timestamp);
-            previous_timestamp = t;
+            self.update(&block, previous_timestamp);
+            previous_timestamp = block.timestamp;
         }
-    }
-    pub fn append(&mut self, block: Block, previous_timestamp: types::Timestamp) {
-        self.hashes.push(block.hash());
-        self.set(&block, previous_timestamp);
     }
 }
 impl Default for Trusted {

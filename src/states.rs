@@ -51,23 +51,18 @@ impl States {
         fork_state.load(blockchain.get_db(), &hashes);
         Ok(fork_state)
     }
-    fn get_previous_timestamp(
-        db: &DBWithThreadMode<SingleThreaded>,
-        previous_hash: &types::Hash,
-    ) -> types::Timestamp {
-        match Block::get(db, previous_hash) {
-            Ok(block) => block.timestamp,
-            Err(_) => 0,
-        }
-    }
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &Vec<types::Hash>) {
         let start = Instant::now();
         let hashes_0 = self.dynamic.get_hashes();
         if hashes_0.len() == TRUST_FORK_AFTER_BLOCKS {
             let block = Block::get(db, hashes_0.first().unwrap()).unwrap();
-            let previous_hash = block.previous_hash;
-            self.trusted
-                .append(block, Self::get_previous_timestamp(db, &previous_hash));
+            self.trusted.update(
+                &block,
+                match Block::get(db, &block.previous_hash) {
+                    Ok(block) => block.timestamp,
+                    Err(_) => 0,
+                },
+            );
         }
         self.dynamic.reload(db, hashes_1, &self.trusted);
         debug!("{} {:?}", "States update".cyan(), start.elapsed());

@@ -186,7 +186,6 @@ impl Dynamic {
         self.balance_staked = trusted.balance_staked.clone();
         self.latest_block = Block::new_timestamp_0([0; 32]);
         self.load(db, hashes);
-        // self.latest_block = Block::get(db, self.hashes.last().unwrap()).unwrap();
     }
     pub fn append(&mut self, block: Block, previous_timestamp: types::Timestamp) {
         self.hashes.push(block.hash());

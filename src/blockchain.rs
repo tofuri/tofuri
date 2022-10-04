@@ -268,12 +268,6 @@ impl Blockchain {
         Ok(block)
     }
     pub fn append_handle(&mut self) {
-        // if util::timestamp()
-        // > self.states.get_current().get_latest_block().timestamp
-        // + BLOCK_TIME_MAX as types::Timestamp
-        // {
-        // self.states.get_current_mut().penalty();
-        // }
         for block in self.pending_blocks.clone() {
             let hash = self.append(&block);
             info!(

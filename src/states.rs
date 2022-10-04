@@ -42,14 +42,19 @@ impl States {
                     None => break,
                 };
             }
-            if first != &hash {
+            if first != &hash && hash != [0; 32] {
                 return Err("not allowed to fork trusted chain".into());
+            }
+            if let Some(hash) = hashes.last() {
+                if hash == &[0; 32] {
+                    hashes.pop();
+                }
             }
             hashes.reverse();
         }
-        let mut fork_state = Dynamic::from(&self.trusted);
-        fork_state.load(blockchain.get_db(), &hashes);
-        Ok(fork_state)
+        let mut fork = Dynamic::from(&self.trusted);
+        fork.load(blockchain.get_db(), &hashes);
+        Ok(fork)
     }
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &Vec<types::Hash>) {
         let start = Instant::now();

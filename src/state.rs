@@ -185,9 +185,6 @@ impl Dynamic {
         self.balance = trusted.balance.clone();
         self.balance_staked = trusted.balance_staked.clone();
         self.latest_block = Block::new_timestamp_0([0; 32]);
-        // if hashes.is_empty() {
-        // return;
-        // }
         self.load(db, hashes);
         // self.latest_block = Block::get(db, self.hashes.last().unwrap()).unwrap();
     }

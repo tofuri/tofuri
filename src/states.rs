@@ -49,16 +49,6 @@ impl States {
         }
         let mut fork_state = Dynamic::from(&self.trusted);
         fork_state.load(blockchain.get_db(), &hashes);
-        // let mut previous_timestamp = match hashes.first() {
-        // Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
-        // None => 0,
-        // };
-        // for hash in hashes.iter() {
-        // let block = Block::get(blockchain.get_db(), hash).unwrap();
-        // let t = block.timestamp;
-        // fork_state.append(block, previous_timestamp);
-        // previous_timestamp = t;
-        // }
         Ok(fork_state)
     }
     fn get_previous_timestamp(

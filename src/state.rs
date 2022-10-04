@@ -124,6 +124,17 @@ macro_rules! impl_State {
                 self.set_balances(block);
                 self.set_stakers(block);
             }
+            pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
+                let mut previous_timestamp = match hashes.first() {
+                    Some(hash) => Block::get(db, hash).unwrap().timestamp,
+                    None => 0,
+                };
+                for hash in hashes.iter() {
+                    let block = Block::get(db, hash).unwrap();
+                    self.update(&block, previous_timestamp);
+                    previous_timestamp = block.timestamp;
+                }
+            }
         })*
     }
 }
@@ -137,14 +148,24 @@ pub struct Dynamic {
     latest_block: Block,
 }
 impl Dynamic {
-    pub fn from(trusted: &Trusted) -> Self {
-        Self {
+    pub fn from(
+        db: &DBWithThreadMode<SingleThreaded>,
+        hashes: &Vec<types::Hash>,
+        trusted: &Trusted,
+    ) -> Dynamic {
+        let mut dynamic = Self {
             hashes: vec![],
             stakers: trusted.stakers.clone(),
             balance: trusted.balance.clone(),
             balance_staked: trusted.balance_staked.clone(),
             latest_block: Block::new_timestamp_0([0; 32]),
-        }
+        };
+        dynamic.load(db, hashes);
+        match hashes.last() {
+            Some(hash) => dynamic.latest_block = Block::get(db, hash).unwrap(),
+            None => {}
+        };
+        dynamic
     }
     pub fn get_latest_block(&self) -> &Block {
         &self.latest_block
@@ -160,27 +181,6 @@ impl Dynamic {
         }
         let index = diff / BLOCK_TIME_MAX as u32;
         self.get_stakers().get(index as usize)
-    }
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
-        let mut previous_timestamp = match hashes.first() {
-            Some(hash) => Block::get(db, hash).unwrap().timestamp,
-            None => 0,
-        };
-        for hash in hashes.iter() {
-            let block = Block::get(db, hash).unwrap();
-            self.update(&block, previous_timestamp);
-            previous_timestamp = block.timestamp;
-            self.latest_block = block;
-        }
-    }
-    pub fn reload(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &Vec<types::Hash>,
-        trusted: &Trusted,
-    ) {
-        *self = Dynamic::from(&trusted);
-        self.load(db, hashes);
     }
 }
 impl Default for Dynamic {
@@ -200,19 +200,6 @@ pub struct Trusted {
     stakers: types::Stakers,
     balance: types::Balance,
     balance_staked: types::Balance,
-}
-impl Trusted {
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
-        let mut previous_timestamp = match hashes.first() {
-            Some(hash) => Block::get(db, hash).unwrap().timestamp,
-            None => 0,
-        };
-        for hash in hashes.iter() {
-            let block = Block::get(db, hash).unwrap();
-            self.update(&block, previous_timestamp);
-            previous_timestamp = block.timestamp;
-        }
-    }
 }
 impl Default for Trusted {
     fn default() -> Self {

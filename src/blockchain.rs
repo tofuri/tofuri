@@ -5,6 +5,7 @@ use crate::{
         PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
     stake::Stake,
+    state::Dynamic,
     states::States,
     transaction::Transaction,
     tree::Tree,
@@ -313,11 +314,9 @@ impl Blockchain {
             );
         }
         let start = Instant::now();
-        let (trusted, dynamic) = self.tree.get_vec();
-        self.states.trusted.load(&self.db, &trusted);
-        self.states
-            .dynamic
-            .reload(&self.db, &dynamic, &self.states.trusted);
+        let (hashes_trusted, hashes_dynamic) = self.tree.get_vec();
+        self.states.trusted.load(&self.db, &hashes_trusted);
+        self.states.dynamic = Dynamic::from(&self.db, &hashes_dynamic, &self.states.trusted);
         info!("{} {:?}", "States load".cyan(), start.elapsed());
     }
 }

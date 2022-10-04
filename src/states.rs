@@ -52,9 +52,7 @@ impl States {
             }
             hashes.reverse();
         }
-        let mut fork = Dynamic::from(&self.trusted);
-        fork.load(blockchain.get_db(), &hashes);
-        Ok(fork)
+        Ok(Dynamic::from(blockchain.get_db(), &hashes, &self.trusted))
     }
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &Vec<types::Hash>) {
         let start = Instant::now();
@@ -69,7 +67,7 @@ impl States {
                 },
             );
         }
-        self.dynamic.reload(db, hashes_1, &self.trusted);
+        self.dynamic = Dynamic::from(db, hashes_1, &self.trusted);
         debug!("{} {:?}", "States update".cyan(), start.elapsed());
     }
 }

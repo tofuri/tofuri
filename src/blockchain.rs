@@ -287,20 +287,20 @@ impl Blockchain {
     pub fn append(&mut self, block: &Block) -> types::Hash {
         block.put(&self.db).unwrap();
         let hash = block.hash();
-        let new_branch = self
+        if self
             .tree
             .insert(hash, block.previous_hash, block.timestamp)
-            .unwrap();
+            .unwrap()
+        {
+            info!("{}", "Fork".cyan());
+        }
         self.tree.sort_branches();
-        self.states.append(&self.db, block);
+        self.states.update(&self.db, &self.tree.get_vec_dynamic());
         if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
             self.pending_blocks.remove(index);
         }
         self.pending_transactions.clear();
         self.pending_stakes.clear();
-        if new_branch {
-            self.reload();
-        }
         if block.hash() == self.states.dynamic.get_latest_block().hash() {
             self.sync_new += 1;
         }
@@ -325,12 +325,5 @@ impl Blockchain {
             .dynamic
             .reload(&self.db, &dynamic, &self.states.trusted);
         info!("{} {:?}", "States load".cyan(), start.elapsed());
-    }
-    pub fn reload(&mut self) {
-        let start = Instant::now();
-        self.states
-            .dynamic
-            .reload(&self.db, &self.tree.get_vec_dynamic(), &self.states.trusted);
-        debug!("{} {:?}", "States reload".cyan(), start.elapsed());
     }
 }

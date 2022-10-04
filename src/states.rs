@@ -5,8 +5,10 @@ use crate::{
     state::{Dynamic, Trusted},
     types,
 };
+use colored::*;
+use log::debug;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
-use std::error::Error;
+use std::{error::Error, time::Instant};
 #[derive(Debug)]
 pub struct States {
     pub dynamic: Dynamic,
@@ -46,16 +48,17 @@ impl States {
             hashes.reverse();
         }
         let mut fork_state = Dynamic::from(&self.trusted);
-        let mut previous_timestamp = match hashes.first() {
-            Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
-            None => 0,
-        };
-        for hash in hashes.iter() {
-            let block = Block::get(blockchain.get_db(), hash).unwrap();
-            let t = block.timestamp;
-            fork_state.append(block, previous_timestamp);
-            previous_timestamp = t;
-        }
+        fork_state.load(blockchain.get_db(), &hashes);
+        // let mut previous_timestamp = match hashes.first() {
+        // Some(hash) => Self::get_previous_timestamp(blockchain.get_db(), hash),
+        // None => 0,
+        // };
+        // for hash in hashes.iter() {
+        // let block = Block::get(blockchain.get_db(), hash).unwrap();
+        // let t = block.timestamp;
+        // fork_state.append(block, previous_timestamp);
+        // previous_timestamp = t;
+        // }
         Ok(fork_state)
     }
     fn get_previous_timestamp(
@@ -67,16 +70,17 @@ impl States {
             Err(_) => 0,
         }
     }
-    pub fn append(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &Block) {
-        if let Some(hash) = self.dynamic.append(
-            block.clone(),
-            Self::get_previous_timestamp(db, &block.previous_hash),
-        ) {
-            let block = Block::get(db, &hash).unwrap();
+    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &Vec<types::Hash>) {
+        let start = Instant::now();
+        let hashes_0 = self.dynamic.get_hashes();
+        if hashes_0.len() == TRUST_FORK_AFTER_BLOCKS {
+            let block = Block::get(db, hashes_0.first().unwrap()).unwrap();
             let previous_hash = block.previous_hash;
             self.trusted
                 .append(block, Self::get_previous_timestamp(db, &previous_hash));
         }
+        self.dynamic.reload(db, hashes_1, &self.trusted);
+        debug!("{} {:?}", "States update".cyan(), start.elapsed());
     }
 }
 impl Default for States {

@@ -163,6 +163,7 @@ pub async fn listen(
     }
 }
 pub fn filter(hashes: &mut Vec<types::Hash>, data: &[u8]) -> bool {
+    return false; // bypass
     let hash = util::hash(data);
     if hashes.contains(&hash) {
         return true;

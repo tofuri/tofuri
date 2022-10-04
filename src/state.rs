@@ -1,10 +1,4 @@
-use crate::{
-    address,
-    block::Block,
-    constants::MIN_STAKE,
-    constants::{BLOCK_TIME_MAX, TRUST_FORK_AFTER_BLOCKS},
-    types,
-};
+use crate::{address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
 use colored::*;
 use log::debug;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -168,6 +162,18 @@ impl Dynamic {
         self.set_balances(block);
         self.set_stakers(block);
     }
+    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
+        let mut previous_timestamp = match hashes.first() {
+            Some(hash) => Block::get(db, hash).unwrap().timestamp,
+            None => 0,
+        };
+        for hash in hashes.iter() {
+            let block = Block::get(db, hash).unwrap();
+            let t = block.timestamp;
+            self.append(block, previous_timestamp);
+            previous_timestamp = t;
+        }
+    }
     pub fn reload(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -179,34 +185,16 @@ impl Dynamic {
         self.balance = trusted.balance.clone();
         self.balance_staked = trusted.balance_staked.clone();
         self.latest_block = Block::new_timestamp_0([0; 32]);
-        if hashes.is_empty() {
-            return;
-        }
-        let mut previous_timestamp = match hashes.first() {
-            Some(hash) => Block::get(db, hash).unwrap().timestamp,
-            None => 0,
-        };
-        for hash in hashes.iter() {
-            let block = Block::get(db, hash).unwrap();
-            let t = block.timestamp;
-            self.append(block, previous_timestamp);
-            previous_timestamp = t;
-        }
-        self.latest_block = Block::get(db, self.hashes.last().unwrap()).unwrap();
+        // if hashes.is_empty() {
+        // return;
+        // }
+        self.load(db, hashes);
+        // self.latest_block = Block::get(db, self.hashes.last().unwrap()).unwrap();
     }
-    pub fn append(
-        &mut self,
-        block: Block,
-        previous_timestamp: types::Timestamp,
-    ) -> Option<types::Hash> {
+    pub fn append(&mut self, block: Block, previous_timestamp: types::Timestamp) {
         self.hashes.push(block.hash());
         self.set(&block, previous_timestamp);
         self.latest_block = block;
-        if self.hashes.len() > TRUST_FORK_AFTER_BLOCKS {
-            Some(self.hashes.remove(0))
-        } else {
-            None
-        }
     }
 }
 impl Default for Dynamic {

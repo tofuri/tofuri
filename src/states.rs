@@ -30,7 +30,7 @@ impl States {
             return Ok(Dynamic::default());
         }
         let mut hashes = vec![];
-        if let Some(first) = blockchain.states.dynamic.get_hashes().first() {
+        if let Some(first) = blockchain.states.dynamic.hashes.first() {
             let mut hash = *previous_hash;
             for _ in 0..TRUST_FORK_AFTER_BLOCKS {
                 hashes.push(hash);
@@ -56,7 +56,7 @@ impl States {
     }
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &Vec<types::Hash>) {
         let start = Instant::now();
-        let hashes_0 = self.dynamic.get_hashes();
+        let hashes_0 = &self.dynamic.hashes;
         if hashes_0.len() == TRUST_FORK_AFTER_BLOCKS {
             let block = Block::get(db, hashes_0.first().unwrap()).unwrap();
             self.trusted.update(

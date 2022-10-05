@@ -80,7 +80,7 @@ pub fn blockchain(blockchain: &Blockchain) {
     info!(
         "{} {}",
         "Stakers".cyan(),
-        blockchain.states.dynamic.get_stakers().len()
+        blockchain.states.dynamic.stakers.len()
     );
 }
 pub fn validator_args(args: &ValidatorArgs) {

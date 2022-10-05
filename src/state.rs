@@ -6,12 +6,6 @@ use std::collections::{HashMap, VecDeque};
 macro_rules! impl_State {
     (for $($t:ty),+) => {
         $(impl $t {
-            pub fn get_stakers(&self) -> &types::Stakers {
-                &self.stakers
-            }
-            pub fn get_hashes(&self) -> &types::Hashes {
-                &self.hashes
-            }
             pub fn get_balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
                 match self.balance.get(public_key) {
                     Some(b) => *b,
@@ -141,8 +135,8 @@ macro_rules! impl_State {
 impl_State!(for Dynamic, Trusted);
 #[derive(Debug, Clone)]
 pub struct Dynamic {
-    hashes: types::Hashes,
-    stakers: types::Stakers,
+    pub hashes: types::Hashes,
+    pub stakers: types::Stakers,
     balance: types::Balance,
     balance_staked: types::Balance,
     pub latest_block: Block,
@@ -177,7 +171,7 @@ impl Dynamic {
             diff -= 1;
         }
         let index = diff / BLOCK_TIME_MAX as u32;
-        self.get_stakers().get(index as usize)
+        self.stakers.get(index as usize)
     }
 }
 impl Default for Dynamic {
@@ -193,8 +187,8 @@ impl Default for Dynamic {
 }
 #[derive(Debug, Clone)]
 pub struct Trusted {
-    hashes: types::Hashes,
-    stakers: types::Stakers,
+    pub hashes: types::Hashes,
+    pub stakers: types::Stakers,
     balance: types::Balance,
     balance_staked: types::Balance,
 }

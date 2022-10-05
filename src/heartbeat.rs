@@ -73,7 +73,7 @@ fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    if behaviour.blockchain.states.dynamic.get_hashes().is_empty() {
+    if behaviour.blockchain.states.dynamic.hashes.is_empty() {
         return Ok(());
     }
     if behaviour.gossipsub.all_peers().count() == 0 {

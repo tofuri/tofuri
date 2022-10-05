@@ -48,8 +48,8 @@ impl Blockchain {
         }
     }
     pub fn sync_block(&mut self) -> Block {
-        let hashes_trusted = self.states.trusted.get_hashes();
-        let hashes_dynamic = self.states.dynamic.get_hashes();
+        let hashes_trusted = &self.states.trusted.hashes;
+        let hashes_dynamic = &self.states.dynamic.hashes;
         if self.sync.index >= hashes_trusted.len() + hashes_dynamic.len() {
             self.sync.index = 0;
         }

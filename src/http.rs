@@ -180,21 +180,16 @@ Content-Type: application/json
                             balance_staked: states
                                 .dynamic
                                 .get_balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
-                            hashes: states.dynamic.get_hashes().len(),
+                            hashes: states.dynamic.hashes.len(),
                             latest_hashes: states
                                 .dynamic
-                                .get_hashes()
+                                .hashes
                                 .iter()
                                 .rev()
                                 .take(16)
                                 .map(hex::encode)
                                 .collect(),
-                            stakers: states
-                                .dynamic
-                                .get_stakers()
-                                .iter()
-                                .map(address::encode)
-                                .collect(),
+                            stakers: states.dynamic.stakers.iter().map(address::encode).collect(),
                         },
                         trusted: State {
                             balance: states
@@ -203,16 +198,11 @@ Content-Type: application/json
                             balance_staked: states
                                 .trusted
                                 .get_balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
-                            stakers: states
-                                .trusted
-                                .get_stakers()
-                                .iter()
-                                .map(address::encode)
-                                .collect(),
-                            hashes: states.trusted.get_hashes().len(),
+                            stakers: states.trusted.stakers.iter().map(address::encode).collect(),
+                            hashes: states.trusted.hashes.len(),
                             latest_hashes: states
                                 .trusted
-                                .get_hashes()
+                                .hashes
                                 .iter()
                                 .rev()
                                 .take(16)
@@ -352,8 +342,8 @@ async fn handler_get_json_hash_by_height(
         .ok_or("GET HASH_BY_HEIGHT 2")?
         .parse::<types::Height>()?;
     let states = &swarm.behaviour().blockchain.states;
-    let hashes_trusted = states.trusted.get_hashes();
-    let hashes_dynamic = states.dynamic.get_hashes();
+    let hashes_trusted = &states.trusted.hashes;
+    let hashes_dynamic = &states.dynamic.hashes;
     if height >= hashes_trusted.len() + hashes_dynamic.len() {
         return Err("GET HASH_BY_HEIGHT 3".into());
     }

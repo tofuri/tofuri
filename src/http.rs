@@ -44,16 +44,13 @@ pub async fn next(
 ) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
     Ok(listener.accept().await?.0)
 }
-pub async fn handle(
+pub async fn handler(
     mut stream: tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
-    let first = buffer
-        .lines()
-        .next()
-        .ok_or("handle http request first line")??;
+    let first = buffer.lines().next().ok_or("http request first line")??;
     print::http_handle(&first);
     if GET.is_match(&first) {
         handle_get(&mut stream, swarm, &first).await?;

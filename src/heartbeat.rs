@@ -20,7 +20,7 @@ pub async fn next() {
     nanos = NANOS - nanos;
     tokio::time::sleep(Duration::from_nanos(nanos as u64)).await
 }
-pub fn handle(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
+pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let behaviour = swarm.behaviour_mut();
     *behaviour.blockchain.get_heartbeats_mut() += 1;
     handle_sync(behaviour)?;

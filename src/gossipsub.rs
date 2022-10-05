@@ -3,7 +3,7 @@ use colored::*;
 use libp2p::gossipsub::GossipsubMessage;
 use log::info;
 use std::error::Error;
-pub fn handle(
+pub fn handler(
     behaviour: &mut MyBehaviour,
     message: GossipsubMessage,
 ) -> Result<(), Box<dyn Error>> {

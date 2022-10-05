@@ -124,7 +124,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
             if self.filter(&message.data, false) {
                 return;
             }
-            if let Err(err) = gossipsub::handle(self, message) {
+            if let Err(err) = gossipsub::handler(self, message) {
                 error!("{}", err)
             }
         }
@@ -162,10 +162,10 @@ pub async fn listen(
 ) -> Result<(), Box<dyn Error>> {
     loop {
         tokio::select! {
-            _ = heartbeat::next().fuse() => if let Err(err) = heartbeat::handle(swarm) {
+            _ = heartbeat::next().fuse() => if let Err(err) = heartbeat::handler(swarm) {
                 error!("{}", err);
             },
-            Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handle(stream, swarm).await {
+            Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, swarm).await {
                 error!("{}", err);
             },
             event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),

@@ -156,7 +156,7 @@ impl Block {
         }
         let dynamic = blockchain
             .states
-            .get_dynamic(blockchain, &self.previous_hash)?;
+            .dynamic_fork(blockchain, &self.previous_hash)?;
         let latest_block = &dynamic.latest_block;
         if self.previous_hash != [0; 32] {
             if self.previous_hash != latest_block.hash() {

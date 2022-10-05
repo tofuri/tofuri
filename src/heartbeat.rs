@@ -23,19 +23,17 @@ pub async fn next() {
 pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let behaviour = swarm.behaviour_mut();
     *behaviour.blockchain.get_heartbeats_mut() += 1;
-    handle_sync(behaviour)?;
+    sync(behaviour)?;
     if behaviour.blockchain.get_heartbeats() % TPS != 0 {
         return Ok(());
     }
     behaviour.message_data_hashes.clear();
-    handle_block(behaviour)?;
+    block(behaviour)?;
     behaviour.blockchain.heartbeat_handle();
-    let millis = lag();
-    print::heartbeat_lag(behaviour.blockchain.get_heartbeats(), millis);
-    behaviour.blockchain.set_lag(millis);
+    lag(behaviour);
     Ok(())
 }
-fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
+fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     let states = behaviour.blockchain.get_states();
     let mut forge = true;
     if *behaviour.blockchain.get_syncing() {
@@ -72,7 +70,7 @@ fn handle_block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     behaviour.blockchain.append_handle();
     Ok(())
 }
-fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
+fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     if behaviour
         .blockchain
         .get_states()
@@ -95,12 +93,14 @@ fn handle_sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     }
     Ok(())
 }
-fn lag() -> f64 {
+fn lag(behaviour: &mut MyBehaviour) {
     let mut micros = SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_micros();
     let secs = micros / MICROS;
     micros -= secs * MICROS;
-    micros as f64 / 1_000_f64
+    let millis = micros as f64 / 1_000_f64;
+    behaviour.blockchain.set_lag(millis);
+    print::heartbeat_lag(behaviour.blockchain.get_heartbeats(), millis);
 }

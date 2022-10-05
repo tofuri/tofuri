@@ -161,7 +161,7 @@ impl Dynamic {
         };
         dynamic
     }
-    pub fn get_staker(
+    pub fn staker(
         &self,
         timestamp: types::Timestamp,
         previous_timestamp: types::Timestamp,

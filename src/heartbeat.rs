@@ -46,7 +46,7 @@ fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         let timestamp = util::timestamp();
         if let Some(public_key) = states
             .dynamic
-            .get_staker(timestamp, states.dynamic.latest_block.timestamp)
+            .staker(timestamp, states.dynamic.latest_block.timestamp)
         {
             if public_key != behaviour.blockchain.keypair.public.as_bytes()
                 || timestamp

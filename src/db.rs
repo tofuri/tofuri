@@ -9,7 +9,7 @@ pub fn key(key: &Key) -> &[u8] {
         Key::LatestBlockHash => &[0],
     }
 }
-fn get_descriptors() -> Vec<ColumnFamilyDescriptor> {
+fn descriptors() -> Vec<ColumnFamilyDescriptor> {
     let mut options = Options::default();
     options.set_max_write_buffer_number(16);
     vec![
@@ -23,7 +23,7 @@ pub fn open(path: &str) -> DBWithThreadMode<SingleThreaded> {
     let mut options = Options::default();
     options.create_missing_column_families(true);
     options.create_if_missing(true);
-    DB::open_cf_descriptors(&options, path, get_descriptors()).unwrap()
+    DB::open_cf_descriptors(&options, path, descriptors()).unwrap()
 }
 pub fn blocks(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("blocks").unwrap()

@@ -129,10 +129,7 @@ impl Blockchain {
             }
             self.pending_transactions.remove(index);
         }
-        let balance = self
-            .states
-            .dynamic
-            .get_balance(&transaction.public_key_input);
+        let balance = self.states.dynamic.balance(&transaction.public_key_input);
         transaction.validate(
             &self.db,
             balance,
@@ -160,8 +157,8 @@ impl Blockchain {
             }
             self.pending_stakes.remove(index);
         }
-        let balance = self.states.dynamic.get_balance(&stake.public_key);
-        let balance_staked = self.states.dynamic.get_balance_staked(&stake.public_key);
+        let balance = self.states.dynamic.balance(&stake.public_key);
+        let balance_staked = self.states.dynamic.balance_staked(&stake.public_key);
         stake.validate(
             &self.db,
             balance,

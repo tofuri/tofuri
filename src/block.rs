@@ -229,8 +229,8 @@ impl Block {
                 }
             } else {
                 for stake in self.stakes.iter() {
-                    let balance = dynamic.get_balance(&stake.public_key);
-                    let balance_staked = dynamic.get_balance_staked(&stake.public_key);
+                    let balance = dynamic.balance(&stake.public_key);
+                    let balance_staked = dynamic.balance_staked(&stake.public_key);
                     stake.validate(
                         &blockchain.db,
                         balance,
@@ -241,7 +241,7 @@ impl Block {
             }
         }
         for transaction in self.transactions.iter() {
-            let balance = dynamic.get_balance(&transaction.public_key_input);
+            let balance = dynamic.balance(&transaction.public_key_input);
             transaction.validate(&blockchain.db, balance, latest_block.timestamp)?;
         }
         Ok(())

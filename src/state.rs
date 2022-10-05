@@ -6,13 +6,13 @@ use std::collections::{HashMap, VecDeque};
 macro_rules! impl_State {
     (for $($t:ty),+) => {
         $(impl $t {
-            pub fn get_balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
+            pub fn balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
                 match self.balance.get(public_key) {
                     Some(b) => *b,
                     None => 0,
                 }
             }
-            pub fn get_balance_staked(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
+            pub fn balance_staked(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
                 match self.balance_staked.get(public_key) {
                     Some(b) => *b,
                     None => 0,
@@ -30,16 +30,16 @@ macro_rules! impl_State {
             }
             fn set_balances(&mut self, block: &Block) {
                 for transaction in block.transactions.iter() {
-                    let mut balance_input = self.get_balance(&transaction.public_key_input);
-                    let mut balance_output = self.get_balance(&transaction.public_key_output);
+                    let mut balance_input = self.balance(&transaction.public_key_input);
+                    let mut balance_output = self.balance(&transaction.public_key_output);
                     balance_input -= transaction.amount + transaction.fee;
                     balance_output += transaction.amount;
                     self.set_balance(transaction.public_key_input, balance_input);
                     self.set_balance(transaction.public_key_output, balance_output);
                 }
                 for stake in block.stakes.iter() {
-                    let mut balance = self.get_balance(&stake.public_key);
-                    let mut balance_staked = self.get_balance_staked(&stake.public_key);
+                    let mut balance = self.balance(&stake.public_key);
+                    let mut balance_staked = self.balance_staked(&stake.public_key);
                     if stake.deposit {
                         balance -= stake.amount + stake.fee;
                         balance_staked += stake.amount;
@@ -56,7 +56,7 @@ macro_rules! impl_State {
                     self.stakers.rotate_left(1);
                 }
                 for stake in block.stakes.iter() {
-                    let balance_staked = self.get_balance_staked(&stake.public_key);
+                    let balance_staked = self.balance_staked(&stake.public_key);
                     let any = self.stakers.iter().any(|x| x == &stake.public_key);
                     if !any && balance_staked >= MIN_STAKE {
                         self.stakers.push_back(stake.public_key);
@@ -77,8 +77,8 @@ macro_rules! impl_State {
                 }
             }
             fn set_reward(&mut self, block: &Block) {
-                let balance_staked = self.get_balance_staked(&block.public_key);
-                let mut balance = self.get_balance(&block.public_key);
+                let balance_staked = self.balance_staked(&block.public_key);
+                let mut balance = self.balance(&block.public_key);
                 balance += block.reward(balance_staked);
                 if let Some(stake) = block.stakes.first() {
                     if stake.fee == 0 {

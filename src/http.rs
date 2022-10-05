@@ -176,10 +176,10 @@ Content-Type: application/json
                         dynamic: State {
                             balance: states
                                 .dynamic
-                                .get_balance(behaviour.blockchain.keypair.public.as_bytes()),
+                                .balance(behaviour.blockchain.keypair.public.as_bytes()),
                             balance_staked: states
                                 .dynamic
-                                .get_balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
+                                .balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
                             hashes: states.dynamic.hashes.len(),
                             latest_hashes: states
                                 .dynamic
@@ -194,10 +194,10 @@ Content-Type: application/json
                         trusted: State {
                             balance: states
                                 .trusted
-                                .get_balance(behaviour.blockchain.keypair.public.as_bytes()),
+                                .balance(behaviour.blockchain.keypair.public.as_bytes()),
                             balance_staked: states
                                 .trusted
-                                .get_balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
+                                .balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
                             stakers: states.trusted.stakers.iter().map(address::encode).collect(),
                             hashes: states.trusted.hashes.len(),
                             latest_hashes: states
@@ -257,7 +257,7 @@ async fn handler_get_json_balance(
         .blockchain
         .states
         .dynamic
-        .get_balance(&public_key);
+        .balance(&public_key);
     stream
         .write_all(
             format!(
@@ -292,7 +292,7 @@ async fn handler_get_json_balance_staked(
         .blockchain
         .states
         .dynamic
-        .get_balance_staked(&public_key);
+        .balance_staked(&public_key);
     stream
         .write_all(
             format!(

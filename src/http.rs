@@ -51,61 +51,61 @@ pub async fn handler(
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
-    print::http_handle(&first);
+    print::http_handler(&first);
     if GET.is_match(&first) {
-        handle_get(&mut stream, swarm, &first).await?;
+        handler_get(&mut stream, swarm, &first).await?;
     } else if POST.is_match(&first) {
-        handle_post(&mut stream, swarm, &first, &buffer).await?;
+        handler_post(&mut stream, swarm, &first, &buffer).await?;
     } else {
-        handle_404(&mut stream).await?;
+        handler_404(&mut stream).await?;
     };
     stream.flush().await?;
     Ok(())
 }
-async fn handle_get(
+async fn handler_get(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
     if INDEX.is_match(first) {
-        handle_get_index(stream).await?;
+        handler_get_index(stream).await?;
     } else if JSON.is_match(first) {
-        handle_get_json(stream, swarm).await?;
+        handler_get_json(stream, swarm).await?;
     } else if BALANCE.is_match(first) {
-        handle_get_json_balance(stream, swarm, first).await?;
+        handler_get_json_balance(stream, swarm, first).await?;
     } else if BALANCE_STAKED.is_match(first) {
-        handle_get_json_balance_staked(stream, swarm, first).await?;
+        handler_get_json_balance_staked(stream, swarm, first).await?;
     } else if HEIGHT.is_match(first) {
-        handle_get_json_height(stream, swarm).await?;
+        handler_get_json_height(stream, swarm).await?;
     } else if HASH_BY_HEIGHT.is_match(first) {
-        handle_get_json_hash_by_height(stream, swarm, first).await?;
+        handler_get_json_hash_by_height(stream, swarm, first).await?;
     } else if BLOCK_BY_HASH.is_match(first) {
-        handle_get_json_block_by_hash(stream, swarm, first).await?;
+        handler_get_json_block_by_hash(stream, swarm, first).await?;
     } else if TRANSACTION_BY_HASH.is_match(first) {
-        handle_get_json_transaction_by_hash(stream, swarm, first).await?;
+        handler_get_json_transaction_by_hash(stream, swarm, first).await?;
     } else if STAKE_BY_HASH.is_match(first) {
-        handle_get_json_stake_by_hash(stream, swarm, first).await?;
+        handler_get_json_stake_by_hash(stream, swarm, first).await?;
     } else {
-        handle_404(stream).await?;
+        handler_404(stream).await?;
     };
     Ok(())
 }
-async fn handle_post(
+async fn handler_post(
     stream: &mut tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,
     first: &str,
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
     if TRANSACTION.is_match(first) {
-        handle_post_json_transaction(stream, swarm, buffer).await?;
+        handler_post_json_transaction(stream, swarm, buffer).await?;
     } else if STAKE.is_match(first) {
-        handle_post_json_stake(stream, swarm, buffer).await?;
+        handler_post_json_stake(stream, swarm, buffer).await?;
     } else {
-        handle_404(stream).await?;
+        handler_404(stream).await?;
     };
     Ok(())
 }
-async fn handle_get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+async fn handler_get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
     stream
         .write_all(
             format!(
@@ -124,7 +124,7 @@ HTTP/1.1 200 OK
         .await?;
     Ok(())
 }
-async fn handle_get_json(
+async fn handler_get_json(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
@@ -248,7 +248,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_get_json_balance(
+async fn handler_get_json_balance(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -283,7 +283,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_get_json_balance_staked(
+async fn handler_get_json_balance_staked(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -318,7 +318,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_get_json_height(
+async fn handler_get_json_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
@@ -338,7 +338,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_get_json_hash_by_height(
+async fn handler_get_json_hash_by_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -377,7 +377,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_get_json_block_by_hash(
+async fn handler_get_json_block_by_hash(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -431,7 +431,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_get_json_transaction_by_hash(
+async fn handler_get_json_transaction_by_hash(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -477,7 +477,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_get_json_stake_by_hash(
+async fn handler_get_json_stake_by_hash(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
     first: &str,
@@ -523,7 +523,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_post_json_transaction(
+async fn handler_post_json_transaction(
     stream: &mut tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
@@ -562,7 +562,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_post_json_stake(
+async fn handler_post_json_stake(
     stream: &mut tokio::net::TcpStream,
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
@@ -601,7 +601,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handle_404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+async fn handler_404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
     stream
         .write_all("HTTP/1.1 404 NOT FOUND".as_bytes())
         .await?;

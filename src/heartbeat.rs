@@ -22,16 +22,22 @@ pub async fn next() {
 }
 pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let behaviour = swarm.behaviour_mut();
-    *behaviour.blockchain.get_heartbeats_mut() += 1;
+    heartbeats(behaviour);
     sync(behaviour)?;
     if behaviour.blockchain.get_heartbeats() % TPS != 0 {
         return Ok(());
     }
-    behaviour.message_data_hashes.clear();
+    message_data_hashes(behaviour);
     block(behaviour)?;
     behaviour.blockchain.heartbeat_handle();
     lag(behaviour);
     Ok(())
+}
+fn heartbeats(behaviour: &mut MyBehaviour) {
+    *behaviour.blockchain.get_heartbeats_mut() += 1;
+}
+fn message_data_hashes(behaviour: &mut MyBehaviour) {
+    behaviour.message_data_hashes.clear();
 }
 fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     let states = behaviour.blockchain.get_states();

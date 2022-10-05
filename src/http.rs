@@ -241,8 +241,8 @@ Content-Type: application/json
                         .iter()
                         .map(|x| hex::encode(x.hash()))
                         .collect(),
-                    sync_index: *behaviour.blockchain.get_sync_index(),
-                    syncing: *behaviour.blockchain.get_syncing(),
+                    sync_index: behaviour.blockchain.sync.index,
+                    syncing: behaviour.blockchain.sync.syncing,
                 })?
             )
             .as_bytes(),

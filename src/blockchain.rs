@@ -1,12 +1,13 @@
 use crate::{
     block::Block,
     constants::{
-        BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, PENDING_BLOCKS_LIMIT,
-        PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
+        BLOCK_STAKES_LIMIT, BLOCK_TRANSACTIONS_LIMIT, PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT,
+        PENDING_TRANSACTIONS_LIMIT,
     },
     stake::Stake,
     state::Dynamic,
     states::States,
+    sync::Sync,
     transaction::Transaction,
     tree::Tree,
     types,
@@ -24,10 +25,7 @@ pub struct Blockchain {
     pending_transactions: Vec<Transaction>,
     pending_stakes: Vec<Stake>,
     pending_blocks: Vec<Block>,
-    sync_index: usize,
-    sync_new: usize,
-    sync_history: [usize; BLOCK_TIME_MIN],
-    syncing: bool,
+    pub sync: Sync,
 }
 impl Blockchain {
     pub fn new(db: DBWithThreadMode<SingleThreaded>, keypair: types::Keypair) -> Self {
@@ -39,36 +37,8 @@ impl Blockchain {
             pending_transactions: vec![],
             pending_stakes: vec![],
             pending_blocks: vec![],
-            sync_index: 0,
-            sync_new: 0,
-            sync_history: [0; BLOCK_TIME_MIN],
-            syncing: true,
+            sync: Sync::default(),
         }
-    }
-    pub fn heartbeat_handle(&mut self) {
-        self.sync_history.rotate_right(1);
-        self.sync_history[0] = self.sync_new;
-        self.sync_new = 0;
-        let mut sum = 0;
-        for x in self.sync_history {
-            sum += x;
-        }
-        self.syncing = sum > 1;
-    }
-    pub fn get_sync_index(&self) -> &usize {
-        &self.sync_index
-    }
-    pub fn get_sync_new(&self) -> &usize {
-        &self.sync_new
-    }
-    pub fn get_sync_history(&self) -> &[usize; BLOCK_TIME_MIN] {
-        &self.sync_history
-    }
-    pub fn get_syncing(&self) -> &bool {
-        &self.syncing
-    }
-    pub fn get_sync_index_mut(&mut self) -> &mut usize {
-        &mut self.sync_index
     }
     pub fn get_states(&self) -> &States {
         &self.states
@@ -101,22 +71,22 @@ impl Blockchain {
     pub fn get_next_sync_block(&mut self) -> Block {
         let hashes_trusted = self.states.trusted.get_hashes();
         let hashes_dynamic = self.states.dynamic.get_hashes();
-        if self.sync_index >= hashes_trusted.len() + hashes_dynamic.len() {
-            self.sync_index = 0;
+        if self.sync.index >= hashes_trusted.len() + hashes_dynamic.len() {
+            self.sync.index = 0;
         }
-        let hash = if self.sync_index < hashes_trusted.len() {
-            hashes_trusted[self.sync_index]
+        let hash = if self.sync.index < hashes_trusted.len() {
+            hashes_trusted[self.sync.index]
         } else {
-            hashes_dynamic[self.sync_index - hashes_trusted.len()]
+            hashes_dynamic[self.sync.index - hashes_trusted.len()]
         };
         debug!(
             "{} {} {}",
             "Sync".cyan(),
-            self.sync_index.to_string().yellow(),
+            self.sync.index.to_string().yellow(),
             hex::encode(&hash)
         );
         let block = Block::get(&self.db, &hash).unwrap();
-        self.sync_index += 1;
+        self.sync.index += 1;
         block
     }
     pub fn set_cold_start_stake(&mut self, stake: Stake) {
@@ -281,7 +251,7 @@ impl Blockchain {
         self.pending_transactions.clear();
         self.pending_stakes.clear();
         if block.hash() == self.states.dynamic.get_latest_block().hash() {
-            self.sync_new += 1;
+            self.sync.new += 1;
         }
         hash
     }

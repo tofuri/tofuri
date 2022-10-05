@@ -22,19 +22,16 @@ pub async fn next() {
 }
 pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let behaviour = swarm.behaviour_mut();
-    heartbeats(behaviour);
+    behaviour.heartbeats += 1;
     sync(behaviour)?;
     if behaviour.heartbeats % TPS != 0 {
         return Ok(());
     }
     message_data_hashes(behaviour);
     block(behaviour)?;
-    behaviour.blockchain.heartbeat_handle();
+    syncing(behaviour);
     lag(behaviour);
     Ok(())
-}
-fn heartbeats(behaviour: &mut MyBehaviour) {
-    behaviour.heartbeats += 1;
 }
 fn message_data_hashes(behaviour: &mut MyBehaviour) {
     behaviour.message_data_hashes.clear();
@@ -42,7 +39,7 @@ fn message_data_hashes(behaviour: &mut MyBehaviour) {
 fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     let states = behaviour.blockchain.get_states();
     let mut forge = true;
-    if *behaviour.blockchain.get_syncing() {
+    if behaviour.blockchain.sync.syncing {
         forge = false;
     }
     if forge {
@@ -87,7 +84,7 @@ fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     if behaviour.gossipsub.all_peers().count() == 0 {
-        *behaviour.blockchain.get_sync_index_mut() = 0;
+        behaviour.blockchain.sync.index = 0;
         return Ok(());
     }
     for _ in 0..SYNC_BLOCKS_PER_TICK {
@@ -98,6 +95,9 @@ fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
             .publish(IdentTopic::new("block"), data)?;
     }
     Ok(())
+}
+fn syncing(behaviour: &mut MyBehaviour) {
+    behaviour.blockchain.sync.handler();
 }
 fn lag(behaviour: &mut MyBehaviour) {
     let mut micros = SystemTime::now()

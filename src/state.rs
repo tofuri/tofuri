@@ -18,7 +18,7 @@ macro_rules! impl_State {
                     None => 0,
                 }
             }
-            fn set_balances(&mut self, block: &Block) {
+            fn update_balances(&mut self, block: &Block) {
                 for transaction in block.transactions.iter() {
                     let mut balance_input = self.balance(&transaction.public_key_input);
                     let mut balance_output = self.balance(&transaction.public_key_output);
@@ -41,7 +41,7 @@ macro_rules! impl_State {
                     self.balance_staked.insert(stake.public_key, balance_staked);
                 }
             }
-            fn set_stakers(&mut self, block: &Block) {
+            fn update_stakers(&mut self, block: &Block) {
                 if self.stakers.len() > 1 {
                     self.stakers.rotate_left(1);
                 }
@@ -66,7 +66,7 @@ macro_rules! impl_State {
                     }
                 }
             }
-            fn set_reward(&mut self, block: &Block) {
+            fn update_reward(&mut self, block: &Block) {
                 let balance_staked = self.balance_staked(&block.public_key);
                 let mut balance = self.balance(&block.public_key);
                 balance += block.reward(balance_staked);
@@ -84,7 +84,7 @@ macro_rules! impl_State {
                 }
                 self.balance.insert(block.public_key, balance);
             }
-            pub fn set_penalty(
+            fn update_penalty(
                 &mut self,
                 timestamp: &types::Timestamp,
                 previous_timestamp: &types::Timestamp,
@@ -103,10 +103,10 @@ macro_rules! impl_State {
             }
             pub fn update(&mut self, block: &Block, previous_timestamp: types::Timestamp) {
                 self.hashes.push(block.hash());
-                self.set_penalty(&block.timestamp, &previous_timestamp);
-                self.set_reward(block);
-                self.set_balances(block);
-                self.set_stakers(block);
+                self.update_penalty(&block.timestamp, &previous_timestamp);
+                self.update_reward(block);
+                self.update_balances(block);
+                self.update_stakers(block);
             }
             pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
                 let mut previous_timestamp = match hashes.first() {

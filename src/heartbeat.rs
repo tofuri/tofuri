@@ -28,8 +28,8 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     message_data_hashes(behaviour);
-    block(behaviour)?;
     syncing(behaviour);
+    block(behaviour)?;
     lag(behaviour);
     Ok(())
 }

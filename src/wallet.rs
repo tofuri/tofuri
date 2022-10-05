@@ -1,11 +1,18 @@
-use crate::{address, command, constants::EXTENSION, kdf, key, types, util};
+use crate::{address, constants::EXTENSION, kdf, key, types, util};
 use argon2::password_hash::rand_core::RngCore;
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
     ChaCha20Poly1305,
 };
 use colored::*;
-use std::{error::Error, fs::File, io::prelude::*, path::Path, process};
+use inquire::{validator::Validation, Password, PasswordDisplayMode, Select};
+use std::{
+    error::Error,
+    fs::File,
+    io::prelude::*,
+    path::{Path, PathBuf},
+    process,
+};
 pub struct Wallet {
     pub keypair: types::Keypair,
     pub salt: Vec<u8>,
@@ -43,7 +50,7 @@ impl Wallet {
                 }
             };
         }
-        let (filename, wallet) = command::select_wallet()?;
+        let (filename, wallet) = Wallet::select_wallet()?;
         if let Some(wallet) = wallet {
             return Ok(wallet);
         }
@@ -58,7 +65,7 @@ impl Wallet {
         }
         Ok(wallet)
     }
-    pub fn import_attempt(filename: &str, passphrase: &str) -> Result<Wallet, Box<dyn Error>> {
+    fn import_attempt(filename: &str, passphrase: &str) -> Result<Wallet, Box<dyn Error>> {
         let mut path = Wallet::default_path().join(filename);
         path.set_extension(EXTENSION);
         let data = match Wallet::read_exact(path) {
@@ -84,7 +91,7 @@ impl Wallet {
             ciphertext: ciphertext.to_vec(),
         })
     }
-    pub fn export(&mut self, filename: String) -> Result<(), Box<dyn Error>> {
+    fn export(&mut self, filename: String) -> Result<(), Box<dyn Error>> {
         let (salt, nonce, ciphertext) = Wallet::encrypt(self.keypair.secret.as_bytes())?;
         self.salt = salt.to_vec();
         self.nonce = nonce.to_vec();
@@ -114,8 +121,8 @@ impl Wallet {
     pub fn key(&self) -> String {
         key::encode(&self.keypair.secret)
     }
-    pub fn encrypt(plaintext: &[u8]) -> Result<types::EncryptedWallet, Box<dyn Error>> {
-        let passphrase = command::new_passphrase();
+    fn encrypt(plaintext: &[u8]) -> Result<types::EncryptedWallet, Box<dyn Error>> {
+        let passphrase = Wallet::new_passphrase();
         let rng = &mut OsRng;
         let mut salt = [0; 32];
         rng.fill_bytes(&mut salt);
@@ -125,14 +132,14 @@ impl Wallet {
         let ciphertext = cipher.encrypt(&nonce, plaintext).unwrap();
         Ok((salt, nonce.into(), ciphertext))
     }
-    pub fn decrypt(
+    fn decrypt(
         salt: &[u8],
         nonce: &[u8],
         ciphertext: &[u8],
         passphrase: &str,
     ) -> Result<Vec<u8>, Box<dyn Error>> {
         let passphrase = match passphrase {
-            "" => command::passphrase(),
+            "" => Wallet::passphrase(),
             _ => passphrase.to_string(),
         };
         let key = kdf::derive(passphrase.as_bytes(), salt);
@@ -142,7 +149,7 @@ impl Wallet {
             Err(_) => Err("invalid passphrase".into()),
         }
     }
-    pub fn dir() -> Result<Vec<String>, Box<dyn Error>> {
+    fn dir() -> Result<Vec<String>, Box<dyn Error>> {
         if !Wallet::default_path().exists() {
             std::fs::create_dir(Wallet::default_path())?;
         }
@@ -159,5 +166,108 @@ impl Wallet {
             );
         }
         Ok(filenames)
+    }
+    fn select_wallet() -> Result<(String, Option<Wallet>), Box<dyn Error>> {
+        let mut filenames = Wallet::dir()?;
+        filenames.push("Generate new wallet".to_string());
+        let mut filename = Select::new(">>", filenames.to_vec())
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
+        if filename.as_str() == "Generate new wallet" {
+            filename = Wallet::name_wallet()?;
+            let mut wallet = Wallet::new();
+            wallet.export(filename.clone()).unwrap();
+            return Ok((filename, Some(wallet)));
+        };
+        Ok((filename, None))
+    }
+    fn name_wallet() -> Result<String, Box<dyn Error>> {
+        let filenames = Wallet::dir()?;
+        Ok(Password::new("Name:")
+            .with_display_toggle_enabled()
+            .with_display_mode(PasswordDisplayMode::Full)
+            .with_validator(move |input: &str| {
+                if input.is_empty() {
+                    return Ok(Validation::Invalid("A wallet name can't be empty.".into()));
+                }
+                let mut path = PathBuf::new().join(input);
+                path.set_extension(EXTENSION);
+                if filenames.contains(&path.file_name().unwrap().to_string_lossy().into_owned()) {
+                    Ok(Validation::Invalid(
+                        "A wallet with that name already exists.".into(),
+                    ))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            })
+            .with_formatter(&|name| name.to_string())
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            }))
+    }
+    fn new_passphrase() -> String {
+        let passphrase = Password::new("New passphrase:")
+            .with_display_toggle_enabled()
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .with_validator(move |input: &str| {
+                if input.is_empty() {
+                    Ok(Validation::Invalid("No passphrase isn't allowed.".into()))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            })
+            .with_formatter(&|input| {
+                let entropy = zxcvbn::zxcvbn(input, &[]).unwrap();
+                format!(
+                    "{}. Cracked after {} at 10 guesses per second.",
+                    match entropy.score() {
+                        0 => "Extremely weak",
+                        1 => "Very weak",
+                        2 => "Weak",
+                        3 => "Strong",
+                        4 => "Very strong",
+                        _ => "",
+                    },
+                    entropy.crack_times().online_no_throttling_10_per_second(),
+                )
+            })
+            .with_help_message("It is recommended to generate a new one only for this purpose")
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
+        Password::new("Confirm new passphrase:")
+            .with_display_toggle_enabled()
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .with_validator(move |input: &str| {
+                if passphrase != input {
+                    Ok(Validation::Invalid("Passphrase does not match.".into()))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            })
+            .with_formatter(&|_| String::from("Encrypting..."))
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            })
+    }
+    fn passphrase() -> String {
+        Password::new("Enter passphrase:")
+            .with_display_toggle_enabled()
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .with_formatter(&|_| String::from("Decrypting..."))
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            })
     }
 }

@@ -37,7 +37,7 @@ fn message_data_hashes(behaviour: &mut MyBehaviour) {
     behaviour.message_data_hashes.clear();
 }
 fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    let states = behaviour.blockchain.get_states();
+    let states = &behaviour.blockchain.states;
     let mut forge = true;
     if behaviour.blockchain.sync.syncing {
         forge = false;
@@ -48,7 +48,7 @@ fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
             .dynamic
             .get_staker(timestamp, states.dynamic.get_latest_block().timestamp)
         {
-            if public_key != behaviour.blockchain.get_keypair().public.as_bytes()
+            if public_key != behaviour.blockchain.keypair.public.as_bytes()
                 || timestamp
                     < states.dynamic.get_latest_block().timestamp
                         + BLOCK_TIME_MIN as types::Timestamp
@@ -57,7 +57,7 @@ fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
             }
         } else {
             let mut stake = Stake::new(true, MIN_STAKE, 0);
-            stake.sign(behaviour.blockchain.get_keypair());
+            stake.sign(&behaviour.blockchain.keypair);
             behaviour.blockchain.set_cold_start_stake(stake);
         }
     }
@@ -74,13 +74,7 @@ fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
-    if behaviour
-        .blockchain
-        .get_states()
-        .dynamic
-        .get_hashes()
-        .is_empty()
-    {
+    if behaviour.blockchain.states.dynamic.get_hashes().is_empty() {
         return Ok(());
     }
     if behaviour.gossipsub.all_peers().count() == 0 {

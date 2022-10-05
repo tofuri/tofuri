@@ -151,12 +151,11 @@ impl Block {
         self.fees() + util::reward(balance_staked)
     }
     pub fn validate(&self, blockchain: &Blockchain) -> Result<(), Box<dyn Error>> {
-        if self.previous_hash != [0; 32] && blockchain.get_tree().get(&self.previous_hash).is_none()
-        {
+        if self.previous_hash != [0; 32] && blockchain.tree.get(&self.previous_hash).is_none() {
             return Err("block doesn't extend chain".into());
         }
         let dynamic = blockchain
-            .get_states()
+            .states
             .get_dynamic(blockchain, &self.previous_hash)?;
         let latest_block = dynamic.get_latest_block();
         if self.previous_hash != [0; 32] {
@@ -196,10 +195,10 @@ impl Block {
         if self.timestamp > util::timestamp() {
             return Err("block has invalid timestamp (block is from the future)".into());
         }
-        if blockchain.get_tree().get(&self.hash()).is_some() {
+        if blockchain.tree.get(&self.hash()).is_some() {
             return Err("block hash already in tree".into());
         }
-        if Block::get(blockchain.get_db(), &self.hash()).is_ok() {
+        if Block::get(&blockchain.db, &self.hash()).is_ok() {
             return Err("block already in db".into());
         }
         if !self.stakes.is_empty() {
@@ -233,7 +232,7 @@ impl Block {
                     let balance = dynamic.get_balance(&stake.public_key);
                     let balance_staked = dynamic.get_balance_staked(&stake.public_key);
                     stake.validate(
-                        blockchain.get_db(),
+                        &blockchain.db,
                         balance,
                         balance_staked,
                         latest_block.timestamp,
@@ -243,7 +242,7 @@ impl Block {
         }
         for transaction in self.transactions.iter() {
             let balance = dynamic.get_balance(&transaction.public_key_input);
-            transaction.validate(blockchain.get_db(), balance, latest_block.timestamp)?;
+            transaction.validate(&blockchain.db, balance, latest_block.timestamp)?;
         }
         Ok(())
     }

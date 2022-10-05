@@ -30,14 +30,14 @@ impl States {
             return Ok(Dynamic::default());
         }
         let mut hashes = vec![];
-        if let Some(first) = blockchain.get_states().dynamic.get_hashes().first() {
+        if let Some(first) = blockchain.states.dynamic.get_hashes().first() {
             let mut hash = *previous_hash;
             for _ in 0..TRUST_FORK_AFTER_BLOCKS {
                 hashes.push(hash);
                 if first == &hash {
                     break;
                 }
-                match blockchain.get_tree().get(&hash) {
+                match blockchain.tree.get(&hash) {
                     Some(previous_hash) => hash = *previous_hash,
                     None => break,
                 };
@@ -52,7 +52,7 @@ impl States {
             }
             hashes.reverse();
         }
-        Ok(Dynamic::from(blockchain.get_db(), &hashes, &self.trusted))
+        Ok(Dynamic::from(&blockchain.db, &hashes, &self.trusted))
     }
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &Vec<types::Hash>) {
         let start = Instant::now();

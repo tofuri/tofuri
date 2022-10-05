@@ -18,13 +18,13 @@ use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};
 #[derive(Debug)]
 pub struct Blockchain {
-    db: DBWithThreadMode<SingleThreaded>,
-    keypair: types::Keypair,
-    tree: Tree,
-    states: States,
-    pending_transactions: Vec<Transaction>,
-    pending_stakes: Vec<Stake>,
-    pending_blocks: Vec<Block>,
+    pub db: DBWithThreadMode<SingleThreaded>,
+    pub keypair: types::Keypair,
+    pub tree: Tree,
+    pub states: States,
+    pub pending_transactions: Vec<Transaction>,
+    pub pending_stakes: Vec<Stake>,
+    pub pending_blocks: Vec<Block>,
     pub sync: Sync,
 }
 impl Blockchain {
@@ -39,27 +39,6 @@ impl Blockchain {
             pending_blocks: vec![],
             sync: Sync::default(),
         }
-    }
-    pub fn get_states(&self) -> &States {
-        &self.states
-    }
-    pub fn get_pending_transactions(&self) -> &Vec<Transaction> {
-        &self.pending_transactions
-    }
-    pub fn get_pending_stakes(&self) -> &Vec<Stake> {
-        &self.pending_stakes
-    }
-    pub fn get_pending_blocks(&self) -> &Vec<Block> {
-        &self.pending_blocks
-    }
-    pub fn get_keypair(&self) -> &types::Keypair {
-        &self.keypair
-    }
-    pub fn get_db(&self) -> &DBWithThreadMode<SingleThreaded> {
-        &self.db
-    }
-    pub fn get_tree(&self) -> &Tree {
-        &self.tree
     }
     pub fn get_height(&self) -> types::Height {
         if let Some(main) = self.tree.main() {

@@ -17,7 +17,7 @@ pub fn handler(
                 "Accept".green(),
                 behaviour
                     .blockchain
-                    .get_tree()
+                    .tree
                     .height(&block.previous_hash)
                     .to_string()
                     .yellow(),

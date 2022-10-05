@@ -157,7 +157,7 @@ async fn handle_get_json(
         stakers: Vec<String>,
     }
     let behaviour = swarm.behaviour();
-    let states = behaviour.blockchain.get_states();
+    let states = &behaviour.blockchain.states;
     stream
         .write_all(
             format!(
@@ -167,21 +167,19 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&Data {
-                    public_key: address::encode(
-                        behaviour.blockchain.get_keypair().public.as_bytes()
-                    ),
+                    public_key: address::encode(behaviour.blockchain.keypair.public.as_bytes()),
                     height: behaviour.blockchain.get_height(),
-                    tree_size: behaviour.blockchain.get_tree().size(),
+                    tree_size: behaviour.blockchain.tree.size(),
                     heartbeats: behaviour.heartbeats,
                     gossipsub_peers: behaviour.gossipsub.all_peers().count(),
                     states: States {
                         dynamic: State {
                             balance: states
                                 .dynamic
-                                .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
-                            balance_staked: states.dynamic.get_balance_staked(
-                                behaviour.blockchain.get_keypair().public.as_bytes()
-                            ),
+                                .get_balance(behaviour.blockchain.keypair.public.as_bytes()),
+                            balance_staked: states
+                                .dynamic
+                                .get_balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
                             hashes: states.dynamic.get_hashes().len(),
                             latest_hashes: states
                                 .dynamic
@@ -201,10 +199,10 @@ Content-Type: application/json
                         trusted: State {
                             balance: states
                                 .trusted
-                                .get_balance(behaviour.blockchain.get_keypair().public.as_bytes()),
-                            balance_staked: states.trusted.get_balance_staked(
-                                behaviour.blockchain.get_keypair().public.as_bytes()
-                            ),
+                                .get_balance(behaviour.blockchain.keypair.public.as_bytes()),
+                            balance_staked: states
+                                .trusted
+                                .get_balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
                             stakers: states
                                 .trusted
                                 .get_stakers()
@@ -225,19 +223,19 @@ Content-Type: application/json
                     lag: behaviour.lag,
                     pending_transactions: behaviour
                         .blockchain
-                        .get_pending_transactions()
+                        .pending_transactions
                         .iter()
                         .map(|x| hex::encode(x.hash()))
                         .collect(),
                     pending_stakes: behaviour
                         .blockchain
-                        .get_pending_stakes()
+                        .pending_stakes
                         .iter()
                         .map(|x| hex::encode(x.hash()))
                         .collect(),
                     pending_blocks: behaviour
                         .blockchain
-                        .get_pending_blocks()
+                        .pending_blocks
                         .iter()
                         .map(|x| hex::encode(x.hash()))
                         .collect(),
@@ -267,7 +265,7 @@ async fn handle_get_json_balance(
     let balance = swarm
         .behaviour()
         .blockchain
-        .get_states()
+        .states
         .dynamic
         .get_balance(&public_key);
     stream
@@ -302,7 +300,7 @@ async fn handle_get_json_balance_staked(
     let balance = swarm
         .behaviour()
         .blockchain
-        .get_states()
+        .states
         .dynamic
         .get_balance_staked(&public_key);
     stream
@@ -353,7 +351,7 @@ async fn handle_get_json_hash_by_height(
         .get(6..)
         .ok_or("GET HASH_BY_HEIGHT 2")?
         .parse::<types::Height>()?;
-    let states = swarm.behaviour().blockchain.get_states();
+    let states = &swarm.behaviour().blockchain.states;
     let hashes_trusted = states.trusted.get_hashes();
     let hashes_dynamic = states.dynamic.get_hashes();
     if height >= hashes_trusted.len() + hashes_dynamic.len() {
@@ -402,7 +400,7 @@ async fn handle_get_json_block_by_hash(
             .get(7..)
             .ok_or("GET BLOCK_BY_HASH 2")?,
     )?;
-    let block = Block::get(swarm.behaviour().blockchain.get_db(), &hash)?;
+    let block = Block::get(&swarm.behaviour().blockchain.db, &hash)?;
     stream
         .write_all(
             format!(
@@ -456,7 +454,7 @@ async fn handle_get_json_transaction_by_hash(
             .get(13..)
             .ok_or("GET TRANSACTION_BY_HASH 2")?,
     )?;
-    let transaction = Transaction::get(swarm.behaviour().blockchain.get_db(), &hash)?;
+    let transaction = Transaction::get(&swarm.behaviour().blockchain.db, &hash)?;
     stream
         .write_all(
             format!(
@@ -502,7 +500,7 @@ async fn handle_get_json_stake_by_hash(
             .get(7..)
             .ok_or("GET STAKE_BY_HASH 2")?,
     )?;
-    let stake = Stake::get(swarm.behaviour().blockchain.get_db(), &hash)?;
+    let stake = Stake::get(&swarm.behaviour().blockchain.db, &hash)?;
     stream
         .write_all(
             format!(

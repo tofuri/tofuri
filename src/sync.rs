@@ -3,7 +3,7 @@ use crate::constants::BLOCK_TIME_MIN;
 pub struct Sync {
     pub index: usize,
     pub new: usize,
-    pub history: [usize; BLOCK_TIME_MIN],
+    history: [usize; BLOCK_TIME_MIN],
     pub syncing: bool,
 }
 impl Sync {

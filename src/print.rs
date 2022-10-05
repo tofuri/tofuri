@@ -60,27 +60,27 @@ pub fn blockchain(blockchain: &Blockchain) {
     info!(
         "{} {}",
         "PubKey".cyan(),
-        address::encode(blockchain.get_keypair().public.as_bytes())
+        address::encode(blockchain.keypair.public.as_bytes())
     );
     let mut height = 0;
-    if let Some(main) = blockchain.get_tree().main() {
+    if let Some(main) = blockchain.tree.main() {
         height = main.1;
     }
     info!("{} {}", "Height".cyan(), height);
     info!(
         "{} {}",
         "Pending txns".cyan(),
-        blockchain.get_pending_transactions().len()
+        blockchain.pending_transactions.len()
     );
     info!(
         "{} {}",
         "Pending stakes".cyan(),
-        blockchain.get_pending_stakes().len()
+        blockchain.pending_stakes.len()
     );
     info!(
         "{} {}",
         "Stakers".cyan(),
-        blockchain.get_states().dynamic.get_stakers().len()
+        blockchain.states.dynamic.get_stakers().len()
     );
 }
 pub fn validator_args(args: &ValidatorArgs) {

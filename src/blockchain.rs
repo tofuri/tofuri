@@ -136,7 +136,7 @@ impl Blockchain {
         transaction.validate(
             &self.db,
             balance,
-            self.states.dynamic.get_latest_block().timestamp,
+            self.states.dynamic.latest_block.timestamp,
         )?;
         self.pending_transactions.push(transaction);
         self.limit_pending_transactions();
@@ -166,7 +166,7 @@ impl Blockchain {
             &self.db,
             balance,
             balance_staked,
-            self.states.dynamic.get_latest_block().timestamp,
+            self.states.dynamic.latest_block.timestamp,
         )?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
@@ -229,7 +229,7 @@ impl Blockchain {
         }
         self.pending_transactions.clear();
         self.pending_stakes.clear();
-        if block.hash() == self.states.dynamic.get_latest_block().hash() {
+        if block.hash() == self.states.dynamic.latest_block.hash() {
             self.sync.new += 1;
         }
         hash

@@ -145,7 +145,7 @@ pub struct Dynamic {
     stakers: types::Stakers,
     balance: types::Balance,
     balance_staked: types::Balance,
-    latest_block: Block,
+    pub latest_block: Block,
 }
 impl Dynamic {
     pub fn from(
@@ -166,9 +166,6 @@ impl Dynamic {
             None => {}
         };
         dynamic
-    }
-    pub fn get_latest_block(&self) -> &Block {
-        &self.latest_block
     }
     pub fn get_staker(
         &self,

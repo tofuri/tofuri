@@ -223,7 +223,7 @@ impl Blockchain {
             info!("{}", "Fork".cyan());
         }
         self.tree.sort_branches();
-        self.states.update(&self.db, &self.tree.get_vec_dynamic());
+        self.states.update(&self.db, &self.tree.hashes_dynamic());
         if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
             self.pending_blocks.remove(index);
         }
@@ -247,7 +247,7 @@ impl Blockchain {
             );
         }
         let start = Instant::now();
-        let (hashes_trusted, hashes_dynamic) = self.tree.get_vec();
+        let (hashes_trusted, hashes_dynamic) = self.tree.hashes();
         self.states.trusted.load(&self.db, &hashes_trusted);
         self.states.dynamic = Dynamic::from(&self.db, &hashes_dynamic, &self.states.trusted);
         info!("{} {:?}", "States load".cyan(), start.elapsed());

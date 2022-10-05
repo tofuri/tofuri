@@ -21,7 +21,7 @@ impl Tree {
     pub fn size(&self) -> usize {
         self.hashes.len()
     }
-    pub fn get_vec(&self) -> (Vec<types::Hash>, Vec<types::Hash>) {
+    pub fn hashes(&self) -> (Vec<types::Hash>, Vec<types::Hash>) {
         let mut trusted = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;
@@ -49,7 +49,7 @@ impl Tree {
         let dynamic = trusted.drain(start..len).collect();
         (trusted, dynamic)
     }
-    pub fn get_vec_dynamic(&self) -> Vec<types::Hash> {
+    pub fn hashes_dynamic(&self) -> Vec<types::Hash> {
         let mut vec = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;

@@ -82,7 +82,7 @@ fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     for _ in 0..SYNC_BLOCKS_PER_TICK {
-        let block = behaviour.blockchain.get_next_sync_block();
+        let block = behaviour.blockchain.sync_block();
         let data = bincode::serialize(&block)?;
         behaviour
             .gossipsub

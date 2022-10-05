@@ -168,7 +168,7 @@ Content-Type: application/json
 {}",
                 serde_json::to_string(&Data {
                     public_key: address::encode(behaviour.blockchain.keypair.public.as_bytes()),
-                    height: behaviour.blockchain.get_height(),
+                    height: behaviour.blockchain.height(),
                     tree_size: behaviour.blockchain.tree.size(),
                     heartbeats: behaviour.heartbeats,
                     gossipsub_peers: behaviour.gossipsub.all_peers().count(),
@@ -322,7 +322,7 @@ async fn handler_get_json_height(
     stream: &mut tokio::net::TcpStream,
     swarm: &Swarm<MyBehaviour>,
 ) -> Result<(), Box<dyn Error>> {
-    let height = swarm.behaviour().blockchain.get_height();
+    let height = swarm.behaviour().blockchain.height();
     stream
         .write_all(
             format!(

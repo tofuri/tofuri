@@ -40,14 +40,14 @@ impl Blockchain {
             sync: Sync::default(),
         }
     }
-    pub fn get_height(&self) -> types::Height {
+    pub fn height(&self) -> types::Height {
         if let Some(main) = self.tree.main() {
             main.1
         } else {
             0
         }
     }
-    pub fn get_next_sync_block(&mut self) -> Block {
+    pub fn sync_block(&mut self) -> Block {
         let hashes_trusted = self.states.trusted.get_hashes();
         let hashes_dynamic = self.states.dynamic.get_hashes();
         if self.sync.index >= hashes_trusted.len() + hashes_dynamic.len() {

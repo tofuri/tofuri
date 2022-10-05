@@ -172,7 +172,7 @@ Content-Type: application/json
                     ),
                     height: behaviour.blockchain.get_height(),
                     tree_size: behaviour.blockchain.get_tree().size(),
-                    heartbeats: *behaviour.blockchain.get_heartbeats(),
+                    heartbeats: behaviour.heartbeats,
                     gossipsub_peers: behaviour.gossipsub.all_peers().count(),
                     states: States {
                         dynamic: State {
@@ -222,7 +222,7 @@ Content-Type: application/json
                                 .collect(),
                         },
                     },
-                    lag: *behaviour.blockchain.get_lag(),
+                    lag: behaviour.lag,
                     pending_transactions: behaviour
                         .blockchain
                         .get_pending_transactions()

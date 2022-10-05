@@ -28,8 +28,6 @@ pub struct Blockchain {
     sync_new: usize,
     sync_history: [usize; BLOCK_TIME_MIN],
     syncing: bool,
-    heartbeats: types::Heartbeats,
-    lag: f64,
 }
 impl Blockchain {
     pub fn new(db: DBWithThreadMode<SingleThreaded>, keypair: types::Keypair) -> Self {
@@ -45,8 +43,6 @@ impl Blockchain {
             sync_new: 0,
             sync_history: [0; BLOCK_TIME_MIN],
             syncing: true,
-            heartbeats: 0,
-            lag: 0.0,
         }
     }
     pub fn heartbeat_handle(&mut self) {
@@ -86,20 +82,11 @@ impl Blockchain {
     pub fn get_pending_blocks(&self) -> &Vec<Block> {
         &self.pending_blocks
     }
-    pub fn get_heartbeats(&self) -> &types::Heartbeats {
-        &self.heartbeats
-    }
-    pub fn get_heartbeats_mut(&mut self) -> &mut types::Heartbeats {
-        &mut self.heartbeats
-    }
     pub fn get_keypair(&self) -> &types::Keypair {
         &self.keypair
     }
     pub fn get_db(&self) -> &DBWithThreadMode<SingleThreaded> {
         &self.db
-    }
-    pub fn get_lag(&self) -> &f64 {
-        &self.lag
     }
     pub fn get_tree(&self) -> &Tree {
         &self.tree
@@ -134,9 +121,6 @@ impl Blockchain {
     }
     pub fn set_cold_start_stake(&mut self, stake: Stake) {
         self.pending_stakes = vec![stake];
-    }
-    pub fn set_lag(&mut self, millis: f64) {
-        self.lag = millis;
     }
     fn sort_pending_transactions(&mut self) {
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));

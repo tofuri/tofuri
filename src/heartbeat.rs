@@ -24,7 +24,7 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let behaviour = swarm.behaviour_mut();
     heartbeats(behaviour);
     sync(behaviour)?;
-    if behaviour.blockchain.get_heartbeats() % TPS != 0 {
+    if behaviour.heartbeats % TPS != 0 {
         return Ok(());
     }
     message_data_hashes(behaviour);
@@ -34,7 +34,7 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn heartbeats(behaviour: &mut MyBehaviour) {
-    *behaviour.blockchain.get_heartbeats_mut() += 1;
+    behaviour.heartbeats += 1;
 }
 fn message_data_hashes(behaviour: &mut MyBehaviour) {
     behaviour.message_data_hashes.clear();
@@ -107,6 +107,6 @@ fn lag(behaviour: &mut MyBehaviour) {
     let secs = micros / MICROS;
     micros -= secs * MICROS;
     let millis = micros as f64 / 1_000_f64;
-    behaviour.blockchain.set_lag(millis);
-    print::heartbeat_lag(behaviour.blockchain.get_heartbeats(), millis);
+    behaviour.lag = millis;
+    print::heartbeat_lag(&behaviour.heartbeats, millis);
 }

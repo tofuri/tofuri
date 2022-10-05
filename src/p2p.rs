@@ -35,6 +35,10 @@ pub struct MyBehaviour {
     pub blockchain: Blockchain,
     #[behaviour(ignore)]
     pub message_data_hashes: Vec<types::Hash>,
+    #[behaviour(ignore)]
+    pub heartbeats: types::Heartbeats,
+    #[behaviour(ignore)]
+    pub lag: f64,
 }
 impl MyBehaviour {
     async fn new(
@@ -64,6 +68,8 @@ impl MyBehaviour {
             relay: Relay::new(local_peer_id, Default::default()),
             blockchain,
             message_data_hashes: vec![],
+            heartbeats: 0,
+            lag: 0.0,
         })
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {

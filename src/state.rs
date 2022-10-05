@@ -18,24 +18,14 @@ macro_rules! impl_State {
                     None => 0,
                 }
             }
-            fn set_balance(&mut self, public_key: types::PublicKeyBytes, balance: types::Amount) {
-                self.balance.insert(public_key, balance);
-            }
-            fn set_balance_staked(
-                &mut self,
-                public_key: types::PublicKeyBytes,
-                balance_staked: types::Amount,
-            ) {
-                self.balance_staked.insert(public_key, balance_staked);
-            }
             fn set_balances(&mut self, block: &Block) {
                 for transaction in block.transactions.iter() {
                     let mut balance_input = self.balance(&transaction.public_key_input);
                     let mut balance_output = self.balance(&transaction.public_key_output);
                     balance_input -= transaction.amount + transaction.fee;
                     balance_output += transaction.amount;
-                    self.set_balance(transaction.public_key_input, balance_input);
-                    self.set_balance(transaction.public_key_output, balance_output);
+                    self.balance.insert(transaction.public_key_input, balance_input);
+                    self.balance.insert(transaction.public_key_output, balance_output);
                 }
                 for stake in block.stakes.iter() {
                     let mut balance = self.balance(&stake.public_key);
@@ -47,8 +37,8 @@ macro_rules! impl_State {
                         balance += stake.amount - stake.fee;
                         balance_staked -= stake.amount;
                     }
-                    self.set_balance(stake.public_key, balance);
-                    self.set_balance_staked(stake.public_key, balance_staked);
+                    self.balance.insert(stake.public_key, balance);
+                    self.balance_staked.insert(stake.public_key, balance_staked);
                 }
             }
             fn set_stakers(&mut self, block: &Block) {
@@ -92,7 +82,7 @@ macro_rules! impl_State {
                         );
                     }
                 }
-                self.set_balance(block.public_key, balance);
+                self.balance.insert(block.public_key, balance);
             }
             pub fn set_penalty(
                 &mut self,

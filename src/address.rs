@@ -33,6 +33,21 @@ mod tests {
     use super::*;
     use test::Bencher;
     #[test]
+    fn test_encode() {
+        assert_eq!(
+            "0x00000000000000000000000000000000000000000000000000000000000000002ada83c1",
+            encode(&[0; 32])
+        );
+    }
+    #[test]
+    fn test_decode() {
+        assert_eq!(
+            [0; 32],
+            decode("0x00000000000000000000000000000000000000000000000000000000000000002ada83c1")
+                .unwrap()
+        );
+    }
+    #[test]
     fn test_cecksum() {
         assert_eq!(vec![0x2a, 0xda, 0x83, 0xc1], checksum(&[0; 32]));
     }

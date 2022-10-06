@@ -6,10 +6,7 @@ use crate::{
     types, util,
 };
 use libp2p::{gossipsub::IdentTopic, Swarm};
-use std::{
-    error::Error,
-    time::{Duration, SystemTime},
-};
+use std::time::{Duration, SystemTime};
 pub async fn next() {
     let mut nanos = SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -20,19 +17,18 @@ pub async fn next() {
     nanos = NANOS - nanos;
     tokio::time::sleep(Duration::from_nanos(nanos as u64)).await
 }
-pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
+pub fn handler(swarm: &mut Swarm<MyBehaviour>) {
     let behaviour = swarm.behaviour_mut();
     behaviour.heartbeats += 1;
-    sync(behaviour)?;
+    sync(behaviour);
     if behaviour.heartbeats % TPS != 0 {
-        return Ok(());
+        return;
     }
     behaviour.message_data_hashes.clear();
     behaviour.blockchain.sync.handler();
     forge(behaviour);
     behaviour.blockchain.pending_blocks_accept();
     lag(behaviour);
-    Ok(())
 }
 fn forge(behaviour: &mut MyBehaviour) {
     let states = &behaviour.blockchain.states;
@@ -64,22 +60,22 @@ fn forge(behaviour: &mut MyBehaviour) {
             .unwrap();
     }
 }
-fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
+fn sync(behaviour: &mut MyBehaviour) {
     if behaviour.blockchain.states.dynamic.hashes.is_empty() {
-        return Ok(());
+        return;
     }
     if behaviour.gossipsub.all_peers().count() == 0 {
         behaviour.blockchain.sync.index = 0;
-        return Ok(());
+        return;
     }
     for _ in 0..SYNC_BLOCKS_PER_TICK {
         let block = behaviour.blockchain.sync_block();
-        let data = bincode::serialize(&block)?;
+        let data = bincode::serialize(&block).unwrap();
         behaviour
             .gossipsub
-            .publish(IdentTopic::new("block"), data)?;
+            .publish(IdentTopic::new("block"), data)
+            .unwrap();
     }
-    Ok(())
 }
 fn lag(behaviour: &mut MyBehaviour) {
     let mut micros = SystemTime::now()

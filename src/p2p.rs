@@ -168,9 +168,7 @@ pub async fn listen(
 ) -> Result<(), Box<dyn Error>> {
     loop {
         tokio::select! {
-            _ = heartbeat::next().fuse() => if let Err(err) = heartbeat::handler(swarm) {
-                error!("{}", err);
-            },
+            _ = heartbeat::next().fuse() => heartbeat::handler(swarm),
             Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, swarm).await {
                 error!("{}", err);
             },

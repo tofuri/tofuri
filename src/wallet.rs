@@ -119,7 +119,7 @@ impl Wallet {
         address::encode(self.keypair.public.as_bytes())
     }
     pub fn key(&self) -> String {
-        key::encode(&self.keypair.secret)
+        key::encode(&self.keypair.secret.as_bytes())
     }
     fn encrypt(plaintext: &[u8]) -> Result<types::EncryptedWallet, Box<dyn Error>> {
         let passphrase = Wallet::new_passphrase();

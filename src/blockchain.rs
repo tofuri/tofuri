@@ -198,9 +198,9 @@ impl Blockchain {
         );
         Ok(block)
     }
-    pub fn append_handle(&mut self) {
+    pub fn pending_blocks_accept(&mut self) {
         for block in self.pending_blocks.clone() {
-            let hash = self.append(&block);
+            let hash = self.block_accept(&block);
             info!(
                 "{} {} {}",
                 "Accept".green(),
@@ -209,7 +209,7 @@ impl Blockchain {
             );
         }
     }
-    pub fn append(&mut self, block: &Block) -> types::Hash {
+    pub fn block_accept(&mut self, block: &Block) -> types::Hash {
         block.put(&self.db).unwrap();
         let hash = block.hash();
         if self

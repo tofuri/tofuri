@@ -30,7 +30,7 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     message_data_hashes(behaviour);
     syncing(behaviour);
     block_forge(behaviour);
-    block(behaviour);
+    pending_blocks_accept(behaviour);
     lag(behaviour);
     Ok(())
 }
@@ -67,8 +67,8 @@ fn block_forge(behaviour: &mut MyBehaviour) {
             .unwrap();
     }
 }
-fn block(behaviour: &mut MyBehaviour) {
-    behaviour.blockchain.append_handle();
+fn pending_blocks_accept(behaviour: &mut MyBehaviour) {
+    behaviour.blockchain.pending_blocks_accept();
 }
 fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     if behaviour.blockchain.states.dynamic.hashes.is_empty() {

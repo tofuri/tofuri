@@ -11,7 +11,7 @@ pub fn handler(
         "block" => {
             let block: Block = bincode::deserialize(&message.data)?;
             behaviour.blockchain.pending_blocks_push(block.clone())?;
-            let hash = behaviour.blockchain.append(&block);
+            let hash = behaviour.blockchain.block_accept(&block);
             info!(
                 "{} {} {}",
                 "Accept".green(),

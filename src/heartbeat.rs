@@ -29,12 +29,12 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     }
     behaviour.message_data_hashes.clear();
     behaviour.blockchain.sync.handler();
-    block_forge(behaviour);
+    forge(behaviour);
     behaviour.blockchain.pending_blocks_accept();
     lag(behaviour);
     Ok(())
 }
-fn block_forge(behaviour: &mut MyBehaviour) {
+fn forge(behaviour: &mut MyBehaviour) {
     let states = &behaviour.blockchain.states;
     if behaviour.blockchain.sync.syncing {
         return;

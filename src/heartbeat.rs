@@ -27,15 +27,12 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     if behaviour.heartbeats % TPS != 0 {
         return Ok(());
     }
-    message_data_hashes(behaviour);
-    syncing(behaviour);
+    behaviour.message_data_hashes.clear();
+    behaviour.blockchain.sync.handler();
     block_forge(behaviour);
-    pending_blocks_accept(behaviour);
+    behaviour.blockchain.pending_blocks_accept();
     lag(behaviour);
     Ok(())
-}
-fn message_data_hashes(behaviour: &mut MyBehaviour) {
-    behaviour.message_data_hashes.clear();
 }
 fn block_forge(behaviour: &mut MyBehaviour) {
     let states = &behaviour.blockchain.states;
@@ -67,9 +64,6 @@ fn block_forge(behaviour: &mut MyBehaviour) {
             .unwrap();
     }
 }
-fn pending_blocks_accept(behaviour: &mut MyBehaviour) {
-    behaviour.blockchain.pending_blocks_accept();
-}
 fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     if behaviour.blockchain.states.dynamic.hashes.is_empty() {
         return Ok(());
@@ -86,9 +80,6 @@ fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
             .publish(IdentTopic::new("block"), data)?;
     }
     Ok(())
-}
-fn syncing(behaviour: &mut MyBehaviour) {
-    behaviour.blockchain.sync.handler();
 }
 fn lag(behaviour: &mut MyBehaviour) {
     let mut micros = SystemTime::now()

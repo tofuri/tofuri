@@ -29,48 +29,46 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     }
     message_data_hashes(behaviour);
     syncing(behaviour);
-    block(behaviour)?;
+    block_forge(behaviour);
+    block(behaviour);
     lag(behaviour);
     Ok(())
 }
 fn message_data_hashes(behaviour: &mut MyBehaviour) {
     behaviour.message_data_hashes.clear();
 }
-fn block(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
+fn block_forge(behaviour: &mut MyBehaviour) {
     let states = &behaviour.blockchain.states;
-    let mut forge = true;
     if behaviour.blockchain.sync.syncing {
-        forge = false;
+        return;
     }
-    if forge {
-        let timestamp = util::timestamp();
-        if let Some(public_key) = states
-            .dynamic
-            .staker(timestamp, states.dynamic.latest_block.timestamp)
+    let timestamp = util::timestamp();
+    if let Some(public_key) = states
+        .dynamic
+        .staker(timestamp, states.dynamic.latest_block.timestamp)
+    {
+        if public_key != behaviour.blockchain.keypair.public.as_bytes()
+            || timestamp
+                < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp
         {
-            if public_key != behaviour.blockchain.keypair.public.as_bytes()
-                || timestamp
-                    < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp
-            {
-                forge = false;
-            }
-        } else {
-            let mut stake = Stake::new(true, MIN_STAKE, 0);
-            stake.sign(&behaviour.blockchain.keypair);
-            behaviour.blockchain.set_cold_start_stake(stake);
+            return;
         }
+    } else {
+        let mut stake = Stake::new(true, MIN_STAKE, 0);
+        stake.sign(&behaviour.blockchain.keypair);
+        behaviour.blockchain.set_cold_start_stake(stake);
     }
-    if forge {
-        let block = behaviour.blockchain.forge_block()?;
-        let data = bincode::serialize(&block)?;
-        if !behaviour.filter(&data, true) && behaviour.gossipsub.all_peers().count() > 0 {
-            behaviour
-                .gossipsub
-                .publish(IdentTopic::new("block"), data)?;
-        }
+    let block = behaviour.blockchain.forge_block().unwrap();
+    let data = bincode::serialize(&block).unwrap();
+    if !behaviour.filter(&data, true) && behaviour.gossipsub.all_peers().count() > 0 {
+        behaviour
+            .gossipsub
+            .publish(IdentTopic::new("block"), data)
+            .unwrap();
     }
+}
+fn block(behaviour: &mut MyBehaviour) {
     behaviour.blockchain.append_handle();
-    Ok(())
 }
 fn sync(behaviour: &mut MyBehaviour) -> Result<(), Box<dyn Error>> {
     if behaviour.blockchain.states.dynamic.hashes.is_empty() {

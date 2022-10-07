@@ -20,8 +20,8 @@ pub async fn main(wallet: &Wallet, api: &str) {
     match Select::new(
         ">>",
         vec![
-            "Address",
             "Search",
+            "Address",
             "Key",
             "Data",
             "Balance",
@@ -37,8 +37,8 @@ pub async fn main(wallet: &Wallet, api: &str) {
         println!("{}", err.to_string().red());
         process::exit(0)
     }) {
-        "Address" => address(wallet),
         "Search" => search(api).await,
+        "Address" => address(wallet),
         "Key" => key(wallet),
         "Data" => data(wallet),
         "Balance" => balance(api, &wallet.address()).await,
@@ -215,8 +215,8 @@ fn address(wallet: &Wallet) {
 }
 async fn search(api: &str) {
     let search = CustomType::<String>::new("Search:")
-        .with_error_message("Please enter a valid address or block hash.")
-        .with_help_message("Enter address or block hash.")
+        .with_error_message("Please enter a valid Address, Hash or Number.")
+        .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
         .with_parser(&|x| {
             if address::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
                 return Ok(x.to_string());
@@ -230,6 +230,7 @@ async fn search(api: &str) {
         });
     if address::decode(&search).is_ok() {
         balance(api, &search).await;
+        return;
     } else if search.len() == 64 {
         match get::block(api, &search).await {
             Ok(block) => {
@@ -291,7 +292,6 @@ async fn search(api: &str) {
             }
             _ => {}
         };
-        println!("{}", "Nothing found".red());
     } else if search.parse::<usize>().is_ok() {
         match get::hash(api, &search.parse::<usize>().unwrap()).await {
             Ok(hash) => {
@@ -307,6 +307,7 @@ async fn search(api: &str) {
             _ => {}
         };
     }
+    println!("{}", "Nothing found".red());
     fn print_block(block: &get::Block, hash: &String) {
         println!("{} {}", "Hash".cyan(), hash);
         println!("{} {}", "PreviousHash".cyan(), block.previous_hash);

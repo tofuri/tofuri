@@ -9,7 +9,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let wallet = Wallet::import(&args.wallet, &args.passphrase)?;
     print::clear();
     loop {
-        command::main(&wallet, &args.api).await?;
+        command::main(&wallet, &args.api).await;
         command::press_any_key_to_continue();
     }
 }

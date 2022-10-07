@@ -12,12 +12,11 @@ use chrono::{Local, TimeZone};
 use colored::*;
 use inquire::{Confirm, CustomType, Select};
 use std::{
-    error::Error,
     io::{stdin, stdout, Write},
     process,
 };
 use termion::{input::TermRead, raw::IntoRawMode};
-pub async fn main(wallet: &Wallet, api: &str) -> Result<(), Box<dyn Error>> {
+pub async fn main(wallet: &Wallet, api: &str) {
     match Select::new(
         ">>",
         vec![
@@ -50,7 +49,6 @@ pub async fn main(wallet: &Wallet, api: &str) -> Result<(), Box<dyn Error>> {
         "Exit" => exit(),
         _ => {}
     }
-    Ok(())
 }
 pub fn press_any_key_to_continue() {
     println!("Press any key to continue...");

@@ -1,10 +1,10 @@
 use crate::{
     address, amount,
-    block::Block,
+    api::{get, post},
     constants::DECIMAL_PRECISION,
     print,
-    stake::{CompressedStake, Stake},
-    transaction::{CompressedTransaction, Transaction},
+    stake::Stake,
+    transaction::Transaction,
     types,
     wallet::Wallet,
 };
@@ -12,7 +12,6 @@ use chrono::{Local, TimeZone};
 use colored::*;
 use inquire::{Confirm, CustomType, Select};
 use std::{
-    collections::HashMap,
     error::Error,
     io::{stdin, stdout, Write},
     process,
@@ -41,15 +40,14 @@ pub async fn main(wallet: &Wallet, api: &str) -> Result<(), Box<dyn Error>> {
         process::exit(0)
     }) {
         "Address" => address(wallet),
-        "Search" => search(api).await?,
+        "Search" => search(api).await,
         "Key" => key(wallet),
         "Data" => data(wallet),
-        "Balance" => balance(api, &wallet.address()).await?,
-        "Height" => height(api).await?,
-        "Transaction" => transaction(api, wallet).await?,
-        "Stake" => stake(api, wallet).await?,
-        "IP Address" => ip().await?,
-        "Validator" => validator(api).await?,
+        "Balance" => balance(api, &wallet.address()).await,
+        "Height" => height(api).await,
+        "Transaction" => transaction(api, wallet).await,
+        "Stake" => stake(api, wallet).await,
+        "Validator" => validator(api).await,
         "Exit" => exit(),
         _ => {}
     }
@@ -62,59 +60,36 @@ pub fn press_any_key_to_continue() {
     stdin().events().next();
     print::clear();
 }
-async fn validator(api: &str) -> Result<(), Box<dyn Error>> {
-    let info = match reqwest::get(api).await {
-        Ok(r) => r,
-        Err(err) => return reqwest_err(err),
-    }
-    .text()
-    .await?;
-    println!("{}", info.green());
-    Ok(())
+async fn validator(api: &str) {
+    match get::index(api).await {
+        Ok(info) => println!("{}", info.green()),
+        Err(err) => println!("{}", err.to_string().red()),
+    };
 }
-fn reqwest_err(err: reqwest::Error) -> Result<(), Box<dyn Error>> {
-    if err.is_connect() {
-        println!("{}", "Connection refused".red());
-        Ok(())
-    } else {
-        Err(Box::new(err))
-    }
+async fn balance(api: &str, address: &str) {
+    match get::balance(api, address).await {
+        Ok(balance) => match get::balance_staked(api, address).await {
+            Ok(balance_staked) => println!(
+                "Account balance: {}, locked: {}.",
+                (balance as f64 / DECIMAL_PRECISION as f64)
+                    .to_string()
+                    .yellow(),
+                (balance_staked as f64 / DECIMAL_PRECISION as f64)
+                    .to_string()
+                    .yellow()
+            ),
+            Err(err) => println!("{}", err.to_string().red()),
+        },
+        Err(err) => println!("{}", err.to_string().red()),
+    };
 }
-async fn balance(api: &str, address: &str) -> Result<(), Box<dyn Error>> {
-    let balance = match reqwest::get(format!("{}/balance/{}", api, address)).await {
-        Ok(r) => r,
-        Err(err) => return reqwest_err(err),
-    }
-    .json::<types::Amount>()
-    .await?;
-    let staked_balance = match reqwest::get(format!("{}/staked_balance/{}", api, address)).await {
-        Ok(r) => r,
-        Err(err) => return reqwest_err(err),
-    }
-    .json::<types::Amount>()
-    .await?;
-    println!(
-        "Account balance: {}, locked: {}.",
-        (balance as f64 / DECIMAL_PRECISION as f64)
-            .to_string()
-            .yellow(),
-        (staked_balance as f64 / DECIMAL_PRECISION as f64)
-            .to_string()
-            .yellow()
-    );
-    Ok(())
+async fn height(api: &str) {
+    match get::height(api).await {
+        Ok(height) => println!("Latest block height is {}.", height.to_string().yellow()),
+        Err(err) => println!("{}", err.to_string().red()),
+    };
 }
-async fn height(api: &str) -> Result<(), Box<dyn Error>> {
-    let height = match reqwest::get(format!("{}/height", api)).await {
-        Ok(r) => r,
-        Err(err) => return reqwest_err(err),
-    }
-    .json::<types::Height>()
-    .await?;
-    println!("Latest block height is {}.", height.to_string().yellow());
-    Ok(())
-}
-async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
+async fn transaction(api: &str, wallet: &Wallet) {
     let address = CustomType::<String>::new("Address:")
         .with_error_message("Please enter a valid address")
         .with_help_message("Type the hex encoded address with 0x as prefix")
@@ -160,36 +135,24 @@ async fn transaction(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
             process::exit(0)
         }
     } {
-        return Ok(());
+        return;
     }
-    let mut transaction = Transaction::new(address::decode(&address)?, amount, fee);
+    let mut transaction = Transaction::new(address::decode(&address).unwrap(), amount, fee);
     transaction.sign(&wallet.keypair);
     println!("Hash: {}", hex::encode(transaction.hash()).cyan());
-    let client = reqwest::Client::new();
-    let res: String = match client
-        .post(format!("{}/transaction", api))
-        .body(hex::encode(bincode::serialize(
-            &CompressedTransaction::from(&transaction),
-        )?))
-        .send()
-        .await
-    {
-        Ok(r) => r,
-        Err(err) => return reqwest_err(err),
-    }
-    .json()
-    .await?;
-    println!(
-        "{}",
-        if res == "success" {
-            res.green()
-        } else {
-            res.red()
-        }
-    );
-    Ok(())
+    match post::transaction(api, &transaction).await {
+        Ok(res) => println!(
+            "{}",
+            if res == "success" {
+                res.green()
+            } else {
+                res.red()
+            }
+        ),
+        Err(err) => println!("{}", err.to_string().red()),
+    };
 }
-async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
+async fn stake(api: &str, wallet: &Wallet) {
     let deposit = match Select::new(">>", vec!["deposit", "withdraw"])
         .prompt()
         .unwrap_or_else(|err| {
@@ -233,51 +196,27 @@ async fn stake(api: &str, wallet: &Wallet) -> Result<(), Box<dyn Error>> {
             process::exit(0)
         }
     } {
-        return Ok(());
+        return;
     }
     let mut stake = Stake::new(deposit, amount as types::Amount, fee);
     stake.sign(&wallet.keypair);
     println!("Hash: {}", hex::encode(stake.hash()).cyan());
-    let client = reqwest::Client::new();
-    let res: String = match client
-        .post(format!("{}/stake", api))
-        .body(hex::encode(bincode::serialize(&CompressedStake::from(
-            &stake,
-        ))?))
-        .send()
-        .await
-    {
-        Ok(r) => r,
-        Err(err) => return reqwest_err(err),
-    }
-    .json()
-    .await?;
-    println!(
-        "{}",
-        if res == "success" {
-            res.green()
-        } else {
-            res.red()
-        }
-    );
-    Ok(())
-}
-async fn ip() -> Result<(), Box<dyn Error>> {
-    let resp = match reqwest::get("https://httpbin.org/ip").await {
-        Ok(r) => r,
-        Err(err) => return reqwest_err(err),
-    }
-    .json::<HashMap<String, String>>()
-    .await?;
-    if let Some(origin) = resp.get("origin") {
-        println!("{}", origin.yellow());
-    }
-    Ok(())
+    match post::stake(api, &stake).await {
+        Ok(res) => println!(
+            "{}",
+            if res == "success" {
+                res.green()
+            } else {
+                res.red()
+            }
+        ),
+        Err(err) => println!("{}", err.to_string().red()),
+    };
 }
 fn address(wallet: &Wallet) {
     println!("{}", wallet.address().green());
 }
-async fn search(api: &str) -> Result<(), Box<dyn Error>> {
+async fn search(api: &str) {
     let search = CustomType::<String>::new("Search:")
         .with_error_message("Please enter a valid address or block hash.")
         .with_help_message("Enter address or block hash.")
@@ -293,48 +232,46 @@ async fn search(api: &str) -> Result<(), Box<dyn Error>> {
             process::exit(0)
         });
     if address::decode(&search).is_ok() {
-        balance(api, &search).await?;
+        balance(api, &search).await;
     } else if search.len() == 64 {
-        let block = match reqwest::get(format!("{}/block/{}", api, search)).await {
-            Ok(r) => r,
-            Err(err) => return reqwest_err(err),
-        }
-        .json::<Block>()
-        .await?;
-        println!("{} {}", "Forger".cyan(), address::encode(&block.public_key));
-        println!(
-            "{} {}",
-            "Timestamp".cyan(),
-            Local
-                .timestamp(block.timestamp as i64, 0)
-                .format("%H:%M:%S")
-        );
-        println!(
-            "{} {}",
-            "Transactions".cyan(),
-            block.transactions.len().to_string().yellow()
-        );
-        for (i, transaction) in block.transactions.iter().enumerate() {
-            println!(
-                "{} {}",
-                format!("#{}", i).magenta(),
-                hex::encode(transaction.hash())
-            )
-        }
-        println!(
-            "{} {}",
-            "Stakes".cyan(),
-            block.stakes.len().to_string().yellow()
-        );
-        for (i, stake) in block.stakes.iter().enumerate() {
-            println!(
-                "{} {}",
-                format!("#{}", i).magenta(),
-                hex::encode(stake.hash())
-            )
-        }
+        match get::block(api, &search).await {
+            Ok(block) => {
+                println!("{} {}", "Forger".cyan(), address::encode(&block.public_key));
+                println!(
+                    "{} {}",
+                    "Timestamp".cyan(),
+                    Local
+                        .timestamp(block.timestamp as i64, 0)
+                        .format("%H:%M:%S")
+                );
+                println!(
+                    "{} {}",
+                    "Transactions".cyan(),
+                    block.transactions.len().to_string().yellow()
+                );
+                for (i, transaction) in block.transactions.iter().enumerate() {
+                    println!(
+                        "{} {}",
+                        format!("#{}", i).magenta(),
+                        hex::encode(transaction.hash())
+                    )
+                }
+                println!(
+                    "{} {}",
+                    "Stakes".cyan(),
+                    block.stakes.len().to_string().yellow()
+                );
+                for (i, stake) in block.stakes.iter().enumerate() {
+                    println!(
+                        "{} {}",
+                        format!("#{}", i).magenta(),
+                        hex::encode(stake.hash())
+                    )
+                }
+            }
+            Err(err) => println!("{}", err.to_string().red()),
+        };
     }
-    Ok(())
 }
 fn key(wallet: &Wallet) {
     println!("{}", "Are you being watched?".yellow());

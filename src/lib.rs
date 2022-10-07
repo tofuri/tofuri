@@ -2,6 +2,7 @@
 extern crate test;
 pub mod address;
 pub mod amount;
+pub mod api;
 pub mod block;
 pub mod blockchain;
 pub mod cli;

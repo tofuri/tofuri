@@ -68,6 +68,12 @@ pub mod get {
             .json()
             .await?)
     }
+    pub async fn hash(api: &str, height: &usize) -> Result<String, Box<dyn Error>> {
+        Ok(reqwest::get(format!("{}/hash/{}", api, height))
+            .await?
+            .json()
+            .await?)
+    }
 }
 pub mod post {
     use crate::{

@@ -218,7 +218,7 @@ async fn search(api: &str) {
         .with_error_message("Please enter a valid address or block hash.")
         .with_help_message("Enter address or block hash.")
         .with_parser(&|x| {
-            if address::decode(x).is_ok() || x.len() == 64 {
+            if address::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
                 return Ok(x.to_string());
             }
             Err(())
@@ -233,38 +233,14 @@ async fn search(api: &str) {
     } else if search.len() == 64 {
         match get::block(api, &search).await {
             Ok(block) => {
-                println!("{} {}", "PreviousHash".cyan(), block.previous_hash);
-                println!(
-                    "{} {}",
-                    "Timestamp".cyan(),
-                    Local
-                        .timestamp(block.timestamp as i64, 0)
-                        .format("%H:%M:%S")
-                );
-                println!("{} {}", "Forger".cyan(), block.public_key);
-                println!("{} {}", "Signature".cyan(), block.signature);
-                println!(
-                    "{} {}",
-                    "Transactions".cyan(),
-                    block.transactions.len().to_string().yellow()
-                );
-                for (i, hash) in block.transactions.iter().enumerate() {
-                    println!("{} {}", format!("#{}", i).magenta(), hash)
-                }
-                println!(
-                    "{} {}",
-                    "Stakes".cyan(),
-                    block.stakes.len().to_string().yellow()
-                );
-                for (i, hash) in block.stakes.iter().enumerate() {
-                    println!("{} {}", format!("#{}", i).magenta(), hash)
-                }
+                print_block(&block, &search);
                 return;
             }
             _ => {}
         };
         match get::transaction(api, &search).await {
             Ok(transaction) => {
+                println!("{} {}", "Hash".cyan(), search);
                 println!("{} {}", "Input PubKey".cyan(), transaction.public_key_input);
                 println!(
                     "{} {}",
@@ -291,6 +267,7 @@ async fn search(api: &str) {
         };
         match get::stake(api, &search).await {
             Ok(stake) => {
+                println!("{} {}", "Hash".cyan(), search);
                 println!("{} {}", "PubKey".cyan(), stake.public_key);
                 println!("{} {}", "Amount".cyan(), stake.amount.to_string().yellow());
                 println!(
@@ -315,6 +292,49 @@ async fn search(api: &str) {
             _ => {}
         };
         println!("{}", "Nothing found".red());
+    } else if search.parse::<usize>().is_ok() {
+        match get::hash(api, &search.parse::<usize>().unwrap()).await {
+            Ok(hash) => {
+                match get::block(api, &hash).await {
+                    Ok(block) => {
+                        print_block(&block, &hash);
+                        return;
+                    }
+                    _ => {}
+                };
+                return;
+            }
+            _ => {}
+        };
+    }
+    fn print_block(block: &get::Block, hash: &String) {
+        println!("{} {}", "Hash".cyan(), hash);
+        println!("{} {}", "PreviousHash".cyan(), block.previous_hash);
+        println!(
+            "{} {}",
+            "Timestamp".cyan(),
+            Local
+                .timestamp(block.timestamp as i64, 0)
+                .format("%H:%M:%S")
+        );
+        println!("{} {}", "Forger".cyan(), block.public_key);
+        println!("{} {}", "Signature".cyan(), block.signature);
+        println!(
+            "{} {}",
+            "Transactions".cyan(),
+            block.transactions.len().to_string().yellow()
+        );
+        for (i, hash) in block.transactions.iter().enumerate() {
+            println!("{} {}", format!("#{}", i).magenta(), hash)
+        }
+        println!(
+            "{} {}",
+            "Stakes".cyan(),
+            block.stakes.len().to_string().yellow()
+        );
+        for (i, hash) in block.stakes.iter().enumerate() {
+            println!("{} {}", format!("#{}", i).magenta(), hash)
+        }
     }
 }
 fn key(wallet: &Wallet) {

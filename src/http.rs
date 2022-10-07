@@ -1,5 +1,5 @@
 use crate::{
-    address,
+    address, api,
     block::Block,
     p2p::MyBehaviour,
     print,
@@ -372,15 +372,6 @@ async fn handler_get_json_block_by_hash(
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
-    #[derive(Serialize)]
-    struct Data {
-        previous_hash: String,
-        timestamp: types::Timestamp,
-        public_key: String,
-        signature: String,
-        transactions: Vec<String>,
-        stakes: Vec<String>,
-    }
     let hash = hex::decode(
         BLOCK_BY_HASH
             .find(first)
@@ -399,7 +390,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&Data {
+                serde_json::to_string(&api::get::Block {
                     previous_hash: hex::encode(&block.previous_hash),
                     timestamp: block.timestamp,
                     public_key: address::encode(&block.public_key),
@@ -426,15 +417,6 @@ async fn handler_get_json_transaction_by_hash(
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
-    #[derive(Serialize)]
-    struct Data {
-        public_key_input: String,
-        public_key_output: String,
-        amount: types::Amount,
-        fee: types::Amount,
-        timestamp: types::Timestamp,
-        signature: String,
-    }
     let hash = hex::decode(
         TRANSACTION_BY_HASH
             .find(first)
@@ -453,7 +435,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&Data {
+                serde_json::to_string(&api::get::Transaction {
                     public_key_input: address::encode(&transaction.public_key_input),
                     public_key_output: address::encode(&transaction.public_key_output),
                     amount: transaction.amount,
@@ -472,15 +454,6 @@ async fn handler_get_json_stake_by_hash(
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
-    #[derive(Serialize)]
-    struct Data {
-        public_key: String,
-        amount: types::Amount,
-        deposit: bool,
-        fee: types::Amount,
-        timestamp: types::Timestamp,
-        signature: String,
-    }
     let hash = hex::decode(
         STAKE_BY_HASH
             .find(first)
@@ -499,7 +472,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&Data {
+                serde_json::to_string(&api::get::Stake {
                     public_key: address::encode(&stake.public_key),
                     amount: stake.amount,
                     deposit: stake.deposit,

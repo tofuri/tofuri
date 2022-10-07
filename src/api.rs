@@ -1,6 +1,34 @@
 pub mod get {
-    use crate::{block::Block, stake::Stake, transaction::Transaction, types};
+    use crate::types;
+    use serde::{Deserialize, Serialize};
     use std::error::Error;
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct Block {
+        pub previous_hash: String,
+        pub timestamp: types::Timestamp,
+        pub public_key: String,
+        pub signature: String,
+        pub transactions: Vec<String>,
+        pub stakes: Vec<String>,
+    }
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct Transaction {
+        pub public_key_input: String,
+        pub public_key_output: String,
+        pub amount: types::Amount,
+        pub fee: types::Amount,
+        pub timestamp: types::Timestamp,
+        pub signature: String,
+    }
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct Stake {
+        pub public_key: String,
+        pub amount: types::Amount,
+        pub deposit: bool,
+        pub fee: types::Amount,
+        pub timestamp: types::Timestamp,
+        pub signature: String,
+    }
     pub async fn height(api: &str) -> Result<types::Height, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/height", api))
             .await?

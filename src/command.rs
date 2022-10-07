@@ -233,7 +233,7 @@ async fn search(api: &str) {
     } else if search.len() == 64 {
         match get::block(api, &search).await {
             Ok(block) => {
-                println!("{} {}", "Forger".cyan(), address::encode(&block.public_key));
+                println!("{} {}", "PreviousHash".cyan(), block.previous_hash);
                 println!(
                     "{} {}",
                     "Timestamp".cyan(),
@@ -241,33 +241,79 @@ async fn search(api: &str) {
                         .timestamp(block.timestamp as i64, 0)
                         .format("%H:%M:%S")
                 );
+                println!("{} {}", "Forger".cyan(), block.public_key);
                 println!(
                     "{} {}",
                     "Transactions".cyan(),
                     block.transactions.len().to_string().yellow()
                 );
-                for (i, transaction) in block.transactions.iter().enumerate() {
-                    println!(
-                        "{} {}",
-                        format!("#{}", i).magenta(),
-                        hex::encode(transaction.hash())
-                    )
+                for (i, hash) in block.transactions.iter().enumerate() {
+                    println!("{} {}", format!("#{}", i).magenta(), hash)
                 }
                 println!(
                     "{} {}",
                     "Stakes".cyan(),
                     block.stakes.len().to_string().yellow()
                 );
-                for (i, stake) in block.stakes.iter().enumerate() {
-                    println!(
-                        "{} {}",
-                        format!("#{}", i).magenta(),
-                        hex::encode(stake.hash())
-                    )
+                for (i, hash) in block.stakes.iter().enumerate() {
+                    println!("{} {}", format!("#{}", i).magenta(), hash)
                 }
+                return;
             }
-            Err(err) => println!("{}", err.to_string().red()),
+            _ => {}
         };
+        match get::transaction(api, &search).await {
+            Ok(transaction) => {
+                println!("{} {}", "Input PubKey".cyan(), transaction.public_key_input);
+                println!(
+                    "{} {}",
+                    "Output PubKey".cyan(),
+                    transaction.public_key_output
+                );
+                println!(
+                    "{} {}",
+                    "Amount".cyan(),
+                    transaction.amount.to_string().yellow()
+                );
+                println!("{} {}", "Fee".cyan(), transaction.fee.to_string().yellow());
+                println!(
+                    "{} {}",
+                    "Timestamp".cyan(),
+                    Local
+                        .timestamp(transaction.timestamp as i64, 0)
+                        .format("%H:%M:%S")
+                );
+                println!("{} {}", "Signature".cyan(), transaction.signature);
+                return;
+            }
+            _ => {}
+        };
+        match get::stake(api, &search).await {
+            Ok(stake) => {
+                println!("{} {}", "PubKey".cyan(), stake.public_key);
+                println!("{} {}", "Amount".cyan(), stake.amount.to_string().yellow());
+                println!(
+                    "{}",
+                    if stake.deposit {
+                        "Deposit".magenta()
+                    } else {
+                        "Withdraw".magenta()
+                    }
+                );
+                println!("{} {}", "Fee".cyan(), stake.fee.to_string().yellow());
+                println!(
+                    "{} {}",
+                    "Timestamp".cyan(),
+                    Local
+                        .timestamp(stake.timestamp as i64, 0)
+                        .format("%H:%M:%S")
+                );
+                println!("{} {}", "Signature".cyan(), stake.signature);
+                return;
+            }
+            _ => {}
+        };
+        println!("{}", "Nothing found".red());
     }
 }
 fn key(wallet: &Wallet) {

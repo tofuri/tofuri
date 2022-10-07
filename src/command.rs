@@ -29,7 +29,6 @@ pub async fn main(wallet: &Wallet, api: &str) -> Result<(), Box<dyn Error>> {
             "Height",
             "Transaction",
             "Stake",
-            "IP Address",
             "Validator",
             "Exit",
         ],

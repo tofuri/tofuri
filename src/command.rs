@@ -242,6 +242,7 @@ async fn search(api: &str) {
                         .format("%H:%M:%S")
                 );
                 println!("{} {}", "Forger".cyan(), block.public_key);
+                println!("{} {}", "Signature".cyan(), block.signature);
                 println!(
                     "{} {}",
                     "Transactions".cyan(),

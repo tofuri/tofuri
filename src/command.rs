@@ -51,7 +51,7 @@ pub async fn main(wallet: &Wallet, api: &str) {
     }
 }
 pub fn press_any_key_to_continue() {
-    println!("Press any key to continue...");
+    println!("{}", "Press any key to continue...".magenta().italic());
     let mut stdout = stdout().into_raw_mode().unwrap();
     stdout.flush().unwrap();
     stdin().events().next();

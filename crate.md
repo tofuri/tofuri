@@ -1,42 +1,36 @@
-# pea
+# Pea
 
-## Usage
+A cryptocurrency made in rust.
 
-### Build Transaction
+## [API Documentation](https://docs.rs/pea)
 
-Filename: `examples/transaction.rs`
+## [Examples](https://github.com/pea-project/pea/tree/main/examples)
+
+`examples/api_get_height.rs`
 
 ```rust
-use pea::{address, constants::DECIMAL_PRECISION, transaction::Transaction, util};
-fn main() {
-    let keypair = util::keygen();
-    let mut transaction = Transaction::new(
-        address::decode(
-            "0xbd8685eb128064f3969078db51b4fa94ea7af71844f70bea1f2e86c36186675db9ff2b09",
-        )
-        .unwrap(),
-        69 * DECIMAL_PRECISION,
-        1337,
-    );
-    transaction.sign(&keypair);
-    println!("{:?}", transaction);
+use pea::api::get;
+use std::error::Error;
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let height = get::height("http://localhost:8080").await?;
+    println!("{}", height);
+    Ok(())
 }
 ```
 
-### Build Stake
-
-Filename: `examples/stake.rs`
+`examples/api_get_block.rs`
 
 ```rust
-use pea::{constants::DECIMAL_PRECISION, stake::Stake, util};
-fn main() {
-    let keypair = util::keygen();
-    let mut stake = Stake::new(
-        true, // false -> withdraw
-        69 * DECIMAL_PRECISION,
-        1337,
-    );
-    stake.sign(&keypair);
-    println!("{:?}", stake);
+use pea::api::get;
+use std::error::Error;
+const API: &str = "http://localhost:8080";
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let height = get::height(API).await?;
+    let hash = get::hash(API, &height).await?;
+    let block = get::block(API, &hash).await?;
+    println!("{:?}", block);
+    Ok(())
 }
 ```

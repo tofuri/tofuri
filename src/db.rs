@@ -60,13 +60,8 @@ pub mod block {
         db: &DBWithThreadMode<SingleThreaded>,
         hash: &[u8],
     ) -> Result<Block, Box<dyn Error>> {
-        load(db, &block_metadata_lean::get(db, hash)?)
-    }
-    pub fn load(
-        db: &DBWithThreadMode<SingleThreaded>,
-        bytes: &[u8],
-    ) -> Result<Block, Box<dyn Error>> {
-        let block_metadata_lean: block::MetadataLean = bincode::deserialize(bytes)?;
+        let block_metadata_lean: block::MetadataLean =
+            bincode::deserialize(&block_metadata_lean::get(db, hash)?)?;
         let mut transactions = vec![];
         for hash in block_metadata_lean.transaction_hashes {
             transactions.push(transaction::get(db, &hash)?);

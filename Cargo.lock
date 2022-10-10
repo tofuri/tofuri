@@ -2749,6 +2749,7 @@ dependencies = [
  "merkle-cbt",
  "pea-address",
  "pea-amount",
+ "pea-api",
  "pea-core",
  "rand 0.7.3",
  "regex",
@@ -2779,6 +2780,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pea-api"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "hex",
+ "pea-amount",
+ "pea-core",
+ "reqwest",
+ "serde",
+]
+
+[[package]]
 name = "pea-core"
 version = "0.1.0"
 dependencies = [
@@ -2787,6 +2800,8 @@ dependencies = [
  "ed25519-dalek",
  "merkle-cbt",
  "rand 0.7.3",
+ "serde",
+ "serde-big-array",
 ]
 
 [[package]]

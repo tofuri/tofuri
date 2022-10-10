@@ -1,4 +1,6 @@
-use crate::{constants::PREFIX_ADDRESS, types, util};
+#![feature(test)]
+extern crate test;
+use pea_core::{constants::PREFIX_ADDRESS, types, util};
 use std::error::Error;
 fn checksum(public_key: &types::PublicKeyBytes) -> types::Checksum {
     util::hash(public_key)

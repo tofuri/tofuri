@@ -2747,6 +2747,7 @@ dependencies = [
  "libp2p",
  "log",
  "merkle-cbt",
+ "pea-address",
  "pea-amount",
  "pea-core",
  "rand 0.7.3",
@@ -2763,6 +2764,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pea-address"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "pea-core",
+]
+
+[[package]]
 name = "pea-amount"
 version = "0.1.0"
 dependencies = [
@@ -2774,8 +2783,10 @@ name = "pea-core"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "ed25519",
  "ed25519-dalek",
  "merkle-cbt",
+ "rand 0.7.3",
 ]
 
 [[package]]

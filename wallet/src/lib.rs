@@ -1,9 +1,13 @@
-use crate::{address, constants::EXTENSION, kdf, types, util};
+#![feature(test)]
+extern crate test;
 use argon2::password_hash::rand_core::RngCore;
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
     ChaCha20Poly1305,
 };
+use pea_address as address;
+use pea_core::{constants::EXTENSION, types, util};
+pub mod kdf;
 use colored::*;
 use inquire::{validator::Validation, Password, PasswordDisplayMode, Select};
 use std::{

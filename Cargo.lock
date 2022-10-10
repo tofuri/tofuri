@@ -2752,6 +2752,7 @@ dependencies = [
  "pea-api",
  "pea-core",
  "pea-tree",
+ "pea-wallet",
  "rand 0.7.3",
  "regex",
  "reqwest",
@@ -2814,6 +2815,19 @@ dependencies = [
  "bincode",
  "hex",
  "pea-core",
+]
+
+[[package]]
+name = "pea-wallet"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "chacha20poly1305 0.10.1",
+ "colored",
+ "inquire",
+ "pea-address",
+ "pea-core",
+ "zxcvbn",
 ]
 
 [[package]]

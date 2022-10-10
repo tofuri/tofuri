@@ -1,7 +1,8 @@
-use crate::{block::Block, p2p::MyBehaviour, stake::Stake, transaction::Transaction};
+use crate::p2p::MyBehaviour;
 use colored::*;
 use libp2p::gossipsub::GossipsubMessage;
 use log::info;
+use pea_core::{block::Block, stake::Stake, transaction::Transaction};
 use std::error::Error;
 pub fn handler(
     behaviour: &mut MyBehaviour,

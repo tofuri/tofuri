@@ -1,6 +1,8 @@
-use crate::{address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, db, types};
+use crate::db;
 use colored::*;
 use log::debug;
+use pea_address as address;
+use pea_core::{block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
 macro_rules! impl_State {

@@ -1,7 +1,4 @@
-use crate::{
-    blockchain::Blockchain, constants::PROTOCOL_VERSION, gossipsub, heartbeat, http, print, types,
-    util,
-};
+use crate::{blockchain::Blockchain, gossipsub, heartbeat, http};
 use colored::*;
 use libp2p::{
     autonat,
@@ -18,7 +15,8 @@ use libp2p::{
     swarm::NetworkBehaviourEventProcess,
     NetworkBehaviour, PeerId, Swarm,
 };
-use log::error;
+use log::{error, info};
+use pea_core::{constants::PROTOCOL_VERSION, types, util};
 use std::{error::Error, time::Duration};
 use tokio::net::TcpListener;
 #[derive(NetworkBehaviour)]
@@ -87,7 +85,7 @@ impl NetworkBehaviourEventProcess<FloodsubEvent> for MyBehaviour {
     fn inject_event(&mut self, event: FloodsubEvent) {
         // print::p2p_event("FloodsubEvent", format!("{:?}", event));
         if let FloodsubEvent::Message(message) = event {
-            print::p2p_event(
+            p2p_event(
                 "FloodsubEvent::Message",
                 String::from_utf8_lossy(&message.data).green().to_string(),
             );
@@ -138,12 +136,12 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
 }
 impl NetworkBehaviourEventProcess<autonat::Event> for MyBehaviour {
     fn inject_event(&mut self, event: autonat::Event) {
-        print::p2p_event("autonat::Event", format!("{:?}", event));
+        p2p_event("autonat::Event", format!("{:?}", event));
     }
 }
 impl NetworkBehaviourEventProcess<relay::Event> for MyBehaviour {
     fn inject_event(&mut self, event: relay::Event) {
-        print::p2p_event("relay::Event", format!("{:?}", event));
+        p2p_event("relay::Event", format!("{:?}", event));
     }
 }
 pub async fn swarm(blockchain: Blockchain) -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
@@ -172,7 +170,10 @@ pub async fn listen(
             Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, swarm).await {
                 error!("{}", err);
             },
-            event = swarm.select_next_some() => print::p2p_event("SwarmEvent", format!("{:?}", event)),
+            event = swarm.select_next_some() => p2p_event("SwarmEvent", format!("{:?}", event)),
         }
     }
+}
+fn p2p_event(event_type: &str, event: String) {
+    info!("{} {}", event_type.cyan(), event)
 }

@@ -1,21 +1,18 @@
-use crate::{
+use crate::{db, state::Dynamic, states::States, sync::Sync};
+use colored::*;
+use log::{debug, info};
+use pea_core::util;
+use pea_core::{
     block::Block,
     constants::{
         BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE,
         PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
     },
-    db,
     stake::Stake,
-    state::Dynamic,
-    states::States,
-    sync::Sync,
     transaction::Transaction,
-    tree::Tree,
     types,
 };
-use colored::*;
-use log::{debug, info};
-use pea_core::util;
+use pea_tree::Tree;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};
 #[derive(Debug)]

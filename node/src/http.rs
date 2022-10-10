@@ -1,14 +1,15 @@
-use crate::{
-    address, api, db,
-    p2p::MyBehaviour,
-    print,
+use crate::{db, p2p::MyBehaviour};
+use colored::*;
+use lazy_static::lazy_static;
+use libp2p::Swarm;
+use log::{error, info};
+use pea_address as address;
+use pea_api as api;
+use pea_core::{
     stake::{self, Stake},
     transaction::{self, Transaction},
     types,
 };
-use lazy_static::lazy_static;
-use libp2p::Swarm;
-use log::error;
 use regex::Regex;
 use serde::Serialize;
 use std::{error::Error, io::BufRead};
@@ -66,7 +67,7 @@ pub async fn handler(
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
-    print::http_handler(&first);
+    info!("{} {}", "Interface".cyan(), first.green());
     if GET.is_match(&first) {
         handler_get(&mut stream, swarm, &first).await?;
     } else if POST.is_match(&first) {

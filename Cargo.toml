@@ -13,6 +13,7 @@ pea-address = { version = "0.1.0", path = "address" }
 pea-amount = { version = "0.1.0", path = "amount" }
 pea-api = { version = "0.1.0", path = "api" }
 pea-core = { version = "0.1.0", path = "core" }
+pea-node = { version = "0.1.0", path = "node" }
 pea-tree = { version = "0.1.0", path = "tree" }
 pea-wallet = { version = "0.1.0", path = "wallet" }
 serde_json = "1.0.82"
@@ -50,6 +51,7 @@ members = [
     "amount",
     "api",
     "core",
+    "node",
     "tree",
     "wallet"
 ]

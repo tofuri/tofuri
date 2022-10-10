@@ -1,11 +1,12 @@
-use crate::{
+use crate::p2p::MyBehaviour;
+use colored::*;
+use libp2p::{gossipsub::IdentTopic, Swarm};
+use log::debug;
+use pea_core::{
     constants::{BLOCK_TIME_MIN, MICROS, MIN_STAKE, NANOS, SYNC_BLOCKS_PER_TICK, TPS},
-    p2p::MyBehaviour,
-    print,
     stake::Stake,
     types, util,
 };
-use libp2p::{gossipsub::IdentTopic, Swarm};
 use std::time::{Duration, SystemTime};
 pub async fn next() {
     let mut nanos = SystemTime::now()
@@ -86,5 +87,10 @@ fn lag(behaviour: &mut MyBehaviour) {
     micros -= secs * MICROS;
     let millis = micros as f64 / 1_000_f64;
     behaviour.lag = millis;
-    print::heartbeat_lag(&behaviour.heartbeats, millis);
+    debug!(
+        "{} {} {}ms",
+        "Heartbeat".cyan(),
+        behaviour.heartbeats,
+        millis.to_string().yellow(),
+    );
 }

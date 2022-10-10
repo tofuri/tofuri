@@ -1,4 +1,4 @@
-use crate::constants::BLOCK_TIME_MIN;
+use pea_core::constants::BLOCK_TIME_MIN;
 #[derive(Debug)]
 pub struct Sync {
     pub index: usize,

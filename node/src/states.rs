@@ -1,12 +1,11 @@
 use crate::{
     blockchain::Blockchain,
-    constants::TRUST_FORK_AFTER_BLOCKS,
     db,
     state::{Dynamic, Trusted},
-    types,
 };
 use colored::*;
 use log::debug;
+use pea_core::{constants::TRUST_FORK_AFTER_BLOCKS, types};
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};
 #[derive(Debug)]

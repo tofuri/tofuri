@@ -2751,6 +2751,7 @@ dependencies = [
  "pea-amount",
  "pea-api",
  "pea-core",
+ "pea-node",
  "pea-tree",
  "pea-wallet",
  "rand 0.7.3",
@@ -2806,6 +2807,29 @@ dependencies = [
  "rand 0.7.3",
  "serde",
  "serde-big-array",
+]
+
+[[package]]
+name = "pea-node"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "colored",
+ "hex",
+ "lazy_static",
+ "libp2p",
+ "log",
+ "pea-address",
+ "pea-amount",
+ "pea-api",
+ "pea-core",
+ "pea-tree",
+ "regex",
+ "rocksdb",
+ "serde",
+ "serde_json",
+ "tempdir",
+ "tokio",
 ]
 
 [[package]]

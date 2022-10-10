@@ -182,7 +182,9 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&Data {
-                    public_key: address::encode(behaviour.blockchain.keypair.public.as_bytes()),
+                    public_key: address::public::encode(
+                        behaviour.blockchain.keypair.public.as_bytes()
+                    ),
                     height: behaviour.blockchain.height(),
                     tree_size: behaviour.blockchain.tree.size(),
                     heartbeats: behaviour.heartbeats,
@@ -204,7 +206,12 @@ Content-Type: application/json
                                 .take(16)
                                 .map(hex::encode)
                                 .collect(),
-                            stakers: states.dynamic.stakers.iter().map(address::encode).collect(),
+                            stakers: states
+                                .dynamic
+                                .stakers
+                                .iter()
+                                .map(address::public::encode)
+                                .collect(),
                         },
                         trusted: State {
                             balance: states
@@ -213,7 +220,12 @@ Content-Type: application/json
                             balance_staked: states
                                 .trusted
                                 .balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
-                            stakers: states.trusted.stakers.iter().map(address::encode).collect(),
+                            stakers: states
+                                .trusted
+                                .stakers
+                                .iter()
+                                .map(address::public::encode)
+                                .collect(),
                             hashes: states.trusted.hashes.len(),
                             latest_hashes: states
                                 .trusted
@@ -258,7 +270,7 @@ async fn handler_get_json_balance(
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let public_key = address::decode(
+    let public_key = address::public::decode(
         BALANCE
             .find(first)
             .ok_or("GET BALANCE 1")?
@@ -293,7 +305,7 @@ async fn handler_get_json_balance_staked(
     swarm: &Swarm<MyBehaviour>,
     first: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let public_key = address::decode(
+    let public_key = address::public::decode(
         BALANCE_STAKED
             .find(first)
             .ok_or("GET BALANCE_STAKED 1")?
@@ -408,7 +420,7 @@ Content-Type: application/json
                 serde_json::to_string(&api::get::Block {
                     previous_hash: hex::encode(&block.previous_hash),
                     timestamp: block.timestamp,
-                    public_key: address::encode(&block.public_key),
+                    public_key: address::public::encode(&block.public_key),
                     signature: hex::encode(&block.signature),
                     transactions: block
                         .transactions
@@ -451,8 +463,8 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&api::get::Transaction {
-                    public_key_input: address::encode(&transaction.public_key_input),
-                    public_key_output: address::encode(&transaction.public_key_output),
+                    public_key_input: address::public::encode(&transaction.public_key_input),
+                    public_key_output: address::public::encode(&transaction.public_key_output),
                     amount: transaction.amount,
                     fee: transaction.fee,
                     timestamp: transaction.timestamp,
@@ -488,7 +500,7 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&api::get::Stake {
-                    public_key: address::encode(&stake.public_key),
+                    public_key: address::public::encode(&stake.public_key),
                     amount: stake.amount,
                     deposit: stake.deposit,
                     fee: stake.fee,

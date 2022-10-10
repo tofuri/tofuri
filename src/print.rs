@@ -60,7 +60,7 @@ pub fn blockchain(blockchain: &Blockchain) {
     info!(
         "{} {}",
         "PubKey".cyan(),
-        address::encode(blockchain.keypair.public.as_bytes())
+        address::public::encode(blockchain.keypair.public.as_bytes())
     );
     let mut height = 0;
     if let Some(main) = blockchain.tree.main() {

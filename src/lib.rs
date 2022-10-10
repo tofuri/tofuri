@@ -8,7 +8,6 @@ pub mod gossipsub;
 pub mod heartbeat;
 pub mod http;
 pub mod kdf;
-pub mod key;
 pub mod p2p;
 pub mod print;
 pub mod state;

@@ -22,7 +22,7 @@ pub async fn main(wallet: &Wallet, api: &str) {
         vec![
             "Search",
             "Address",
-            "Key",
+            "Secret key",
             "Data",
             "Balance",
             "Height",
@@ -39,7 +39,7 @@ pub async fn main(wallet: &Wallet, api: &str) {
     }) {
         "Search" => search(api).await,
         "Address" => address(wallet),
-        "Key" => key(wallet),
+        "Secret key" => key(wallet),
         "Data" => data(wallet),
         "Balance" => balance(api, &wallet.address()).await,
         "Height" => height(api).await,
@@ -90,8 +90,8 @@ async fn transaction(api: &str, wallet: &Wallet) {
     let address = CustomType::<String>::new("Address:")
         .with_error_message("Please enter a valid address")
         .with_help_message("Type the hex encoded address with 0x as prefix")
-        .with_parser(&|x| match address::decode(x) {
-            Ok(y) => Ok(address::encode(&y)),
+        .with_parser(&|x| match address::public::decode(x) {
+            Ok(y) => Ok(address::public::encode(&y)),
             Err(_) => Err(()),
         })
         .prompt()
@@ -134,7 +134,7 @@ async fn transaction(api: &str, wallet: &Wallet) {
     } {
         return;
     }
-    let mut transaction = Transaction::new(address::decode(&address).unwrap(), amount, fee);
+    let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee);
     transaction.sign(&wallet.keypair);
     println!("Hash: {}", hex::encode(transaction.hash()).cyan());
     match post::transaction(api, &transaction).await {
@@ -218,7 +218,7 @@ async fn search(api: &str) {
         .with_error_message("Please enter a valid Address, Hash or Number.")
         .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
         .with_parser(&|x| {
-            if address::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
+            if address::public::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
                 return Ok(x.to_string());
             }
             Err(())
@@ -228,7 +228,7 @@ async fn search(api: &str) {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    if address::decode(&search).is_ok() {
+    if address::public::decode(&search).is_ok() {
         balance(api, &search).await;
         return;
     } else if search.len() == 64 {

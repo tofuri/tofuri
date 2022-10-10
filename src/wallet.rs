@@ -1,4 +1,4 @@
-use crate::{address, constants::EXTENSION, kdf, key, types, util};
+use crate::{address, constants::EXTENSION, kdf, types, util};
 use argon2::password_hash::rand_core::RngCore;
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
@@ -116,10 +116,10 @@ impl Wallet {
         Path::new("./wallets")
     }
     pub fn address(&self) -> String {
-        address::encode(self.keypair.public.as_bytes())
+        address::public::encode(self.keypair.public.as_bytes())
     }
     pub fn key(&self) -> String {
-        key::encode(&self.keypair.secret.as_bytes())
+        address::secret::encode(&self.keypair.secret.as_bytes())
     }
     fn encrypt(plaintext: &[u8]) -> Result<types::EncryptedWallet, Box<dyn Error>> {
         let passphrase = Wallet::new_passphrase();

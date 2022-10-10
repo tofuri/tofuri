@@ -16,7 +16,7 @@ fn main() {
 fn transaction() -> Transaction {
     let keypair = util::keygen();
     let mut transaction = Transaction::new(
-        address::decode(
+        address::public::decode(
             "0xbd8685eb128064f3969078db51b4fa94ea7af71844f70bea1f2e86c36186675db9ff2b09",
         )
         .unwrap(),

@@ -61,7 +61,7 @@ macro_rules! impl_State {
                         debug!(
                             "{} {}",
                             "Burned low balance".red(),
-                            address::encode(&stake.public_key),
+                            address::public::encode(&stake.public_key),
                         );
                     }
                 }
@@ -77,7 +77,7 @@ macro_rules! impl_State {
                             "{} {} {} {}",
                             "Minted".cyan(),
                             MIN_STAKE.to_string().yellow(),
-                            address::encode(&block.public_key).green(),
+                            address::public::encode(&block.public_key).green(),
                             hex::encode(block.hash())
                         );
                     }

@@ -1,6 +1,5 @@
 #![feature(test)]
 extern crate test;
-pub mod api;
 pub mod block;
 pub mod blockchain;
 pub mod cli;
@@ -22,4 +21,5 @@ pub mod tree;
 pub mod wallet;
 pub use pea_address as address;
 pub use pea_amount as amount;
+pub use pea_api as api;
 pub use pea_core::{constants, types, util};

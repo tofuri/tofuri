@@ -2795,9 +2795,11 @@ dependencies = [
 name = "pea-core"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "blake3",
  "ed25519",
  "ed25519-dalek",
+ "hex",
  "merkle-cbt",
  "rand 0.7.3",
  "serde",

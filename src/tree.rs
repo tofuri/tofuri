@@ -1,4 +1,4 @@
-use crate::{block::BlockMetadataLean, constants::TRUST_FORK_AFTER_BLOCKS, db, types};
+use crate::{block::MetadataLean, constants::TRUST_FORK_AFTER_BLOCKS, db, types};
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -130,7 +130,7 @@ impl Tree {
         for res in db.iterator_cf(db::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
-            let block: BlockMetadataLean = bincode::deserialize(&bytes).unwrap();
+            let block: MetadataLean = bincode::deserialize(&bytes).unwrap();
             match hashes.get(&block.previous_hash) {
                 Some((vec, _)) => {
                     let mut vec = vec.clone();

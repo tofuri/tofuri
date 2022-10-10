@@ -1,10 +1,9 @@
 use crate::{
-    address, api,
-    block::Block,
+    address, api, db,
     p2p::MyBehaviour,
     print,
-    stake::{CompressedStake, Stake},
-    transaction::{CompressedTransaction, Transaction},
+    stake::{self, Stake},
+    transaction::{self, Transaction},
     types,
 };
 use lazy_static::lazy_static;
@@ -27,17 +26,33 @@ lazy_static! {
     static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
     static ref STAKE_BY_HASH: Regex = Regex::new(r" /stake/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
-    static ref TRANSACTION_SERIALIZED: usize = hex::encode(
-        bincode::serialize(&CompressedTransaction::from(&Transaction::new(
-            [0; 32], 0, 0
-        )))
+    static ref TRANSACTION_SERIALIZED: usize = hex::encode({
+        let transaction = Transaction::new([0; 32], 0, 0);
+        bincode::serialize(&transaction::Compressed {
+            public_key_input: transaction.public_key_input,
+            public_key_output: transaction.public_key_output,
+            amount: pea_amount::to_bytes(&transaction.amount),
+            fee: pea_amount::to_bytes(&transaction.fee),
+            timestamp: transaction.timestamp,
+            signature: transaction.signature,
+        })
         .unwrap()
-    )
+    })
     .len();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
-    static ref STAKE_SERIALIZED: usize =
-        hex::encode(bincode::serialize(&CompressedStake::from(&Stake::new(false, 0, 0))).unwrap())
-            .len();
+    static ref STAKE_SERIALIZED: usize = hex::encode({
+        let stake = Stake::new(false, 0, 0);
+        bincode::serialize(&stake::Compressed {
+            public_key: stake.public_key,
+            amount: pea_amount::to_bytes(&stake.amount),
+            fee: pea_amount::to_bytes(&stake.fee),
+            deposit: stake.deposit,
+            timestamp: stake.timestamp,
+            signature: stake.signature,
+        })
+        .unwrap()
+    })
+    .len();
 }
 pub async fn next(
     listener: &tokio::net::TcpListener,
@@ -381,7 +396,7 @@ async fn handler_get_json_block_by_hash(
             .get(7..)
             .ok_or("GET BLOCK_BY_HASH 2")?,
     )?;
-    let block = Block::get(&swarm.behaviour().blockchain.db, &hash)?;
+    let block = db::block::get(&swarm.behaviour().blockchain.db, &hash)?;
     stream
         .write_all(
             format!(
@@ -426,7 +441,7 @@ async fn handler_get_json_transaction_by_hash(
             .get(13..)
             .ok_or("GET TRANSACTION_BY_HASH 2")?,
     )?;
-    let transaction = Transaction::get(&swarm.behaviour().blockchain.db, &hash)?;
+    let transaction = db::transaction::get(&swarm.behaviour().blockchain.db, &hash)?;
     stream
         .write_all(
             format!(
@@ -463,7 +478,7 @@ async fn handler_get_json_stake_by_hash(
             .get(7..)
             .ok_or("GET STAKE_BY_HASH 2")?,
     )?;
-    let stake = Stake::get(&swarm.behaviour().blockchain.db, &hash)?;
+    let stake = db::stake::get(&swarm.behaviour().blockchain.db, &hash)?;
     stream
         .write_all(
             format!(
@@ -491,7 +506,7 @@ async fn handler_post_json_transaction(
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
-    let compressed: CompressedTransaction = bincode::deserialize(&hex::decode(
+    let compressed: transaction::Compressed = bincode::deserialize(&hex::decode(
         buffer
             .lines()
             .nth(5)
@@ -500,10 +515,14 @@ async fn handler_post_json_transaction(
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
     let behaviour = swarm.behaviour_mut();
-    let status = match behaviour
-        .blockchain
-        .pending_transactions_push(Transaction::from(&compressed))
-    {
+    let status = match behaviour.blockchain.pending_transactions_push(Transaction {
+        public_key_input: compressed.public_key_input,
+        public_key_output: compressed.public_key_output,
+        amount: pea_amount::from_bytes(&compressed.amount),
+        fee: pea_amount::from_bytes(&compressed.fee),
+        timestamp: compressed.timestamp,
+        signature: compressed.signature,
+    }) {
         Ok(()) => "success".to_string(),
         Err(err) => {
             error!("{}", err);
@@ -530,7 +549,7 @@ async fn handler_post_json_stake(
     swarm: &mut Swarm<MyBehaviour>,
     buffer: &[u8; 1024],
 ) -> Result<(), Box<dyn Error>> {
-    let compressed: CompressedStake = bincode::deserialize(&hex::decode(
+    let compressed: stake::Compressed = bincode::deserialize(&hex::decode(
         buffer
             .lines()
             .nth(5)
@@ -539,10 +558,14 @@ async fn handler_post_json_stake(
             .ok_or("POST STAKE 2")?,
     )?)?;
     let behaviour = swarm.behaviour_mut();
-    let status = match behaviour
-        .blockchain
-        .pending_stakes_push(Stake::from(&compressed))
-    {
+    let status = match behaviour.blockchain.pending_stakes_push(Stake {
+        public_key: compressed.public_key,
+        amount: pea_amount::from_bytes(&compressed.amount),
+        fee: pea_amount::from_bytes(&compressed.fee),
+        deposit: compressed.deposit,
+        timestamp: compressed.timestamp,
+        signature: compressed.signature,
+    }) {
         Ok(()) => "success".to_string(),
         Err(err) => {
             error!("{}", err);

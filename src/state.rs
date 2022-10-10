@@ -1,4 +1,4 @@
-use crate::{address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
+use crate::{address, block::Block, constants::BLOCK_TIME_MAX, constants::MIN_STAKE, db, types};
 use colored::*;
 use log::debug;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -110,11 +110,11 @@ macro_rules! impl_State {
             }
             pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
                 let mut previous_timestamp = match hashes.first() {
-                    Some(hash) => Block::get(db, hash).unwrap().timestamp,
+                    Some(hash) => db::block::get(db, hash).unwrap().timestamp,
                     None => 0,
                 };
                 for hash in hashes.iter() {
-                    let block = Block::get(db, hash).unwrap();
+                    let block = db::block::get(db, hash).unwrap();
                     self.update(&block, previous_timestamp);
                     previous_timestamp = block.timestamp;
                 }
@@ -146,7 +146,7 @@ impl Dynamic {
         };
         dynamic.load(db, hashes);
         match hashes.last() {
-            Some(hash) => dynamic.latest_block = Block::get(db, hash).unwrap(),
+            Some(hash) => dynamic.latest_block = db::block::get(db, hash).unwrap(),
             None => {}
         };
         dynamic

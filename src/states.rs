@@ -1,7 +1,7 @@
 use crate::{
-    block::Block,
     blockchain::Blockchain,
     constants::TRUST_FORK_AFTER_BLOCKS,
+    db,
     state::{Dynamic, Trusted},
     types,
 };
@@ -58,10 +58,10 @@ impl States {
         let start = Instant::now();
         let hashes_0 = &self.dynamic.hashes;
         if hashes_0.len() == TRUST_FORK_AFTER_BLOCKS {
-            let block = Block::get(db, hashes_0.first().unwrap()).unwrap();
+            let block = db::block::get(db, hashes_0.first().unwrap()).unwrap();
             self.trusted.update(
                 &block,
-                match Block::get(db, &block.previous_hash) {
+                match db::block::get(db, &block.previous_hash) {
                     Ok(block) => block.timestamp,
                     Err(_) => 0,
                 },

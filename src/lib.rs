@@ -1,6 +1,5 @@
 #![feature(test)]
 extern crate test;
-pub mod block;
 pub mod blockchain;
 pub mod cli;
 pub mod command;
@@ -12,14 +11,12 @@ pub mod kdf;
 pub mod key;
 pub mod p2p;
 pub mod print;
-pub mod stake;
 pub mod state;
 pub mod states;
 pub mod sync;
-pub mod transaction;
 pub mod tree;
 pub mod wallet;
 pub use pea_address as address;
 pub use pea_amount as amount;
 pub use pea_api as api;
-pub use pea_core::{constants, types, util};
+pub use pea_core::{block, constants, stake, transaction, types, util};

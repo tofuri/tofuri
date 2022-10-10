@@ -1,13 +1,11 @@
 #![feature(test)]
 extern crate test;
 pub mod address;
-pub mod amount;
 pub mod api;
 pub mod block;
 pub mod blockchain;
 pub mod cli;
 pub mod command;
-pub mod constants;
 pub mod db;
 pub mod gossipsub;
 pub mod heartbeat;
@@ -22,6 +20,7 @@ pub mod states;
 pub mod sync;
 pub mod transaction;
 pub mod tree;
-pub mod types;
 pub mod util;
 pub mod wallet;
+pub use pea_amount as amount;
+pub use pea_core::{constants, types};

@@ -1,4 +1,4 @@
-use crate::constants::AMOUNT_BYTES;
+use pea_core::constants::AMOUNT_BYTES;
 pub fn to_bytes(input: &u128) -> [u8; AMOUNT_BYTES] {
     if input == &0 {
         return [0; AMOUNT_BYTES];
@@ -49,7 +49,6 @@ pub fn round(input: &u128) -> u128 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test::Bencher;
     #[test]
     fn test_encode() {
         assert_eq!([1, 0, 0, 8], to_bytes(&0x10000000000000000));
@@ -64,14 +63,5 @@ mod tests {
             0xfffffff0000000000000000000000000,
             from_bytes(&[0xff, 0xff, 0xff, 0xff])
         );
-    }
-    #[bench]
-    fn bench_encode(b: &mut Bencher) {
-        b.iter(|| to_bytes(&0x10000000000000000));
-    }
-    #[bench]
-    fn bench_decode(b: &mut Bencher) {
-        let bytes = to_bytes(&0x10000000000000000);
-        b.iter(|| from_bytes(&bytes));
     }
 }

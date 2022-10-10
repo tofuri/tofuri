@@ -2747,6 +2747,8 @@ dependencies = [
  "libp2p",
  "log",
  "merkle-cbt",
+ "pea-amount",
+ "pea-core",
  "rand 0.7.3",
  "regex",
  "reqwest",
@@ -2758,6 +2760,22 @@ dependencies = [
  "termion",
  "tokio",
  "zxcvbn",
+]
+
+[[package]]
+name = "pea-amount"
+version = "0.1.0"
+dependencies = [
+ "pea-core",
+]
+
+[[package]]
+name = "pea-core"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "ed25519-dalek",
+ "merkle-cbt",
 ]
 
 [[package]]

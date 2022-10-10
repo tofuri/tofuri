@@ -7,6 +7,7 @@ use chacha20poly1305::{
 };
 use pea_address as address;
 use pea_core::{constants::EXTENSION, types, util};
+pub mod command;
 pub mod kdf;
 use colored::*;
 use inquire::{validator::Validation, Password, PasswordDisplayMode, Select};

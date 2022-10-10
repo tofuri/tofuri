@@ -11,9 +11,6 @@ use env_logger::Builder;
 use log::{debug, error, info, Level, LevelFilter};
 use std::{error::Error, io::Write};
 use tokio::net::TcpListener;
-pub fn clear() {
-    print!("\x1B[2J\x1B[1;1H");
-}
 pub fn colored_level(level: Level) -> ColoredString {
     match level {
         Level::Error => level.to_string().red(),

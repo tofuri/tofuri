@@ -2,7 +2,6 @@
 extern crate test;
 pub mod blockchain;
 pub mod cli;
-pub mod command;
 pub mod db;
 pub mod gossipsub;
 pub mod heartbeat;

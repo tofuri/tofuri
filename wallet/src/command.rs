@@ -1,16 +1,11 @@
-use crate::{
-    address, amount,
-    api::{get, post},
-    constants::DECIMAL_PRECISION,
-    print,
-    stake::Stake,
-    transaction::Transaction,
-    types,
-    wallet::Wallet,
-};
+use crate::Wallet;
 use chrono::{Local, TimeZone};
 use colored::*;
 use inquire::{Confirm, CustomType, Select};
+use pea_address as address;
+use pea_amount as amount;
+use pea_api::{get, post};
+use pea_core::{constants::DECIMAL_PRECISION, stake::Stake, transaction::Transaction, types};
 use std::{
     io::{stdin, stdout, Write},
     process,
@@ -55,7 +50,10 @@ pub fn press_any_key_to_continue() {
     let mut stdout = stdout().into_raw_mode().unwrap();
     stdout.flush().unwrap();
     stdin().events().next();
-    print::clear();
+    clear();
+}
+pub fn clear() {
+    print!("\x1B[2J\x1B[1;1H");
 }
 async fn validator(api: &str) {
     match get::index(api).await {

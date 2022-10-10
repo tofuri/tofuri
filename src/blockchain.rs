@@ -235,7 +235,7 @@ impl Blockchain {
     }
     pub fn load(&mut self) {
         let start = Instant::now();
-        self.tree.reload(&self.db);
+        db::tree::reload(&mut self.tree, &self.db);
         info!("{} {:?}", "Tree load".cyan(), start.elapsed());
         if let Some(main) = self.tree.main() {
             info!(

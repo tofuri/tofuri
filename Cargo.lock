@@ -2751,6 +2751,7 @@ dependencies = [
  "pea-amount",
  "pea-api",
  "pea-core",
+ "pea-tree",
  "rand 0.7.3",
  "regex",
  "reqwest",
@@ -2804,6 +2805,15 @@ dependencies = [
  "rand 0.7.3",
  "serde",
  "serde-big-array",
+]
+
+[[package]]
+name = "pea-tree"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "hex",
+ "pea-core",
 ]
 
 [[package]]

@@ -185,6 +185,52 @@ pub mod stake {
         })
     }
 }
+pub mod tree {
+    use pea_core::{block::MetadataLean, types};
+    use pea_tree::Tree;
+    use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
+    use std::collections::HashMap;
+    pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) {
+        tree.clear();
+        let mut hashes: HashMap<types::Hash, (Vec<types::Hash>, types::Timestamp)> = HashMap::new();
+        for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
+            let (hash, bytes) = res.unwrap();
+            let hash = hash.to_vec().try_into().unwrap();
+            let block: MetadataLean = bincode::deserialize(&bytes).unwrap();
+            match hashes.get(&block.previous_hash) {
+                Some((vec, _)) => {
+                    let mut vec = vec.clone();
+                    vec.push(hash);
+                    hashes.insert(block.previous_hash, (vec, block.timestamp));
+                }
+                None => {
+                    hashes.insert(block.previous_hash, (vec![hash], block.timestamp));
+                }
+            };
+        }
+        if hashes.is_empty() {
+            return;
+        }
+        let previous_hash = [0; 32];
+        let (_, (vec, timestamp)) = hashes.iter().find(|(&x, _)| x == previous_hash).unwrap();
+        fn recurse(
+            tree: &mut Tree,
+            hashes: &HashMap<types::Hash, (Vec<types::Hash>, types::Timestamp)>,
+            previous_hash: types::Hash,
+            vec: &Vec<types::Hash>,
+            timestamp: types::Timestamp,
+        ) {
+            for hash in vec {
+                tree.insert(*hash, previous_hash, timestamp);
+                if let Some((vec, timestamp)) = hashes.get(hash) {
+                    recurse(tree, hashes, *hash, vec, *timestamp);
+                };
+            }
+        }
+        recurse(tree, &hashes, previous_hash, vec, *timestamp);
+        tree.sort_branches();
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

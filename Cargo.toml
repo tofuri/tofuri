@@ -6,7 +6,7 @@ license = "MIT"
 description = "エンドウ"
 readme = "crate.md"
 categories = ["cryptography::cryptocurrencies"]
-repository = "https://github.com/pea-project/pea"
+repository = "https://github.com/peacash/pea"
 
 [dependencies]
 pea-address = { version = "0.1.0", path = "address" }

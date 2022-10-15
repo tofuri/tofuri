@@ -9,7 +9,7 @@
 ## Build
 
 ```bash
-git clone https://github.com/pea-project/pea
+git clone https://github.com/peacash/pea
 cd pea
 rustup default nightly
 cargo build

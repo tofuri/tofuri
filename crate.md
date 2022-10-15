@@ -4,7 +4,7 @@ A cryptocurrency made in rust.
 
 ## [API Documentation](https://docs.rs/pea)
 
-## [Examples](https://github.com/pea-project/pea/tree/main/examples)
+## [Examples](https://github.com/peacash/pea/tree/main/examples)
 
 `examples/api_get_height.rs`
 

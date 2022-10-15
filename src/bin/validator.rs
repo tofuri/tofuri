@@ -16,7 +16,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let tempdir = TempDir::new("rocksdb")?;
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),
-        false => "./db",
+        false => "./peacash/db",
     };
     let db = db::open(path);
     let wallet = match args.tempkey {

@@ -118,7 +118,7 @@ impl Wallet {
         Ok(())
     }
     fn default_path() -> &'static Path {
-        Path::new("./wallets")
+        Path::new("./peacash/wallets")
     }
     pub fn address(&self) -> String {
         address::public::encode(self.keypair.public.as_bytes())
@@ -156,7 +156,7 @@ impl Wallet {
     }
     fn dir() -> Result<Vec<String>, Box<dyn Error>> {
         if !Wallet::default_path().exists() {
-            std::fs::create_dir(Wallet::default_path())?;
+            std::fs::create_dir_all(Wallet::default_path())?;
         }
         let dir = std::fs::read_dir(Wallet::default_path())?;
         let mut filenames: Vec<String> = vec![];

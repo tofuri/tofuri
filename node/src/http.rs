@@ -127,6 +127,7 @@ async fn handler_get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 
 {} {}
 {}/tree/{}",
@@ -179,6 +180,7 @@ async fn handler_get_json(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
@@ -291,6 +293,7 @@ async fn handler_get_json_balance(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
@@ -326,6 +329,7 @@ async fn handler_get_json_balance_staked(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
@@ -346,6 +350,7 @@ async fn handler_get_json_height(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
@@ -385,6 +390,7 @@ async fn handler_get_json_hash_by_height(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
@@ -415,6 +421,7 @@ async fn handler_get_json_block_by_hash(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
@@ -460,6 +467,7 @@ async fn handler_get_json_transaction_by_hash(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
@@ -497,6 +505,7 @@ async fn handler_get_json_stake_by_hash(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
@@ -547,6 +556,7 @@ async fn handler_post_json_transaction(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
@@ -590,6 +600,7 @@ async fn handler_post_json_stake(
             format!(
                 "\
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",

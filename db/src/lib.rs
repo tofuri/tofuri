@@ -1,3 +1,5 @@
+#![feature(test)]
+extern crate test;
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Options, SingleThreaded, DB,
 };

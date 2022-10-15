@@ -1,4 +1,4 @@
-use crate::{db, state::Dynamic, states::States, sync::Sync};
+use crate::{state::Dynamic, states::States, sync::Sync};
 use colored::*;
 use log::{debug, info};
 use pea_core::util;
@@ -12,6 +12,7 @@ use pea_core::{
     transaction::Transaction,
     types,
 };
+use pea_db as db;
 use pea_tree::Tree;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};

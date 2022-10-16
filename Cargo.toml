@@ -38,4 +38,4 @@ members = [
 
 [[bin]]
 name = "wallet"
-path = "wallet/src/bin/wallet.rs"
+path = "./wallet/src/bin/wallet.rs"

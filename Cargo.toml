@@ -35,3 +35,7 @@ members = [
     "tree",
     "wallet"
 ]
+
+[[bin]]
+name = "wallet"
+path = "wallet/src/bin/wallet.rs"

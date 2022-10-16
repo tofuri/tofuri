@@ -1,6 +1,5 @@
 #![feature(test)]
 extern crate test;
-pub mod cli;
 pub use pea_address as address;
 pub use pea_amount as amount;
 pub use pea_api as api;

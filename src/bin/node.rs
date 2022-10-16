@@ -1,9 +1,11 @@
 use chrono::Local;
-use clap::Parser;
 use colored::*;
 use env_logger::Builder;
 use log::{info, Level, LevelFilter};
-use pea::{address, blockchain::Blockchain, cli::ValidatorArgs, db, p2p, wallet::Wallet};
+use pea_node::{blockchain::Blockchain, p2p};
+use pea_address as address;
+use pea_db as db;
+use pea_wallet::Wallet;
 use std::{error::Error, io::Write};
 use tempdir::TempDir;
 use tokio::net::TcpListener;
@@ -115,4 +117,30 @@ pub fn print_http(listener: &TcpListener) -> Result<(), Box<dyn Error>> {
         listener.local_addr()?.to_string().green()
     );
     Ok(())
+}
+use clap::Parser;
+#[derive(Parser, Debug)]
+#[clap(version, about, long_about = None)]
+pub struct ValidatorArgs {
+    /// Log path to source file
+    #[clap(short, long, value_parser, default_value_t = false)]
+    pub debug: bool,
+    /// Multiaddr to a validator in the network
+    #[clap(short, long, value_parser, default_value = "/ip4/0.0.0.0/tcp/0")]
+    pub multiaddr: String,
+    /// Store blockchain in a temporary database
+    #[clap(long, value_parser, default_value_t = false)]
+    pub tempdb: bool,
+    /// Multiaddr to a validator in the network
+    #[clap(long, value_parser, default_value = ":::8080")]
+    pub http: String,
+    /// Use temporary random keypair
+    #[clap(long, value_parser, default_value_t = false)]
+    pub tempkey: bool,
+    /// Wallet filename
+    #[clap(long, value_parser, default_value = "")]
+    pub wallet: String,
+    /// Passphrase to wallet
+    #[clap(long, value_parser, default_value = "")]
+    pub passphrase: String,
 }

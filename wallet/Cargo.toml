@@ -1,9 +1,10 @@
 [package]
 name = "pea-wallet"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
+readme = "crate.md"
 categories = ["cryptography::cryptocurrencies"]
 repository = "https://github.com/peacash/pea"
 

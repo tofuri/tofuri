@@ -2816,7 +2816,7 @@ dependencies = [
 
 [[package]]
 name = "pea-wallet"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "argon2",
  "chacha20poly1305 0.10.1",

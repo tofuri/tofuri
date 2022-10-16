@@ -1,16 +1,13 @@
 use crate::Wallet;
 use chrono::{Local, TimeZone};
 use colored::*;
+use crossterm::{event, terminal};
 use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
 use pea_amount as amount;
 use pea_api::{get, post};
 use pea_core::{constants::DECIMAL_PRECISION, stake::Stake, transaction::Transaction, types};
-use std::{
-    io::{stdin, stdout, Write},
-    process,
-};
-use termion::{input::TermRead, raw::IntoRawMode};
+use std::process;
 pub async fn main(wallet: &Wallet, api: &str) {
     match Select::new(
         ">>",
@@ -47,9 +44,9 @@ pub async fn main(wallet: &Wallet, api: &str) {
 }
 pub fn press_any_key_to_continue() {
     println!("{}", "Press any key to continue...".magenta().italic());
-    let mut stdout = stdout().into_raw_mode().unwrap();
-    stdout.flush().unwrap();
-    stdin().events().next();
+    terminal::enable_raw_mode().unwrap();
+    event::read().unwrap();
+    terminal::disable_raw_mode().unwrap();
     clear();
 }
 pub fn clear() {

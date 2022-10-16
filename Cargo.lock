@@ -2713,11 +2713,6 @@ checksum = "0c520e05135d6e763148b6426a837e239041653ba7becd2e538c076c738025fc"
 name = "pea"
 version = "0.5.0"
 dependencies = [
- "chrono",
- "clap",
- "colored",
- "env_logger",
- "log",
  "pea-address",
  "pea-amount",
  "pea-api",
@@ -2726,8 +2721,6 @@ dependencies = [
  "pea-node",
  "pea-tree",
  "pea-wallet",
- "tempdir",
- "tokio",
 ]
 
 [[package]]
@@ -2789,7 +2782,10 @@ name = "pea-node"
 version = "0.2.0"
 dependencies = [
  "bincode",
+ "chrono",
+ "clap",
  "colored",
+ "env_logger",
  "hex",
  "lazy_static",
  "libp2p",
@@ -2800,10 +2796,12 @@ dependencies = [
  "pea-core",
  "pea-db",
  "pea-tree",
+ "pea-wallet",
  "regex",
  "rocksdb",
  "serde",
  "serde_json",
+ "tempdir",
  "tokio",
 ]
 

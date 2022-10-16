@@ -14,9 +14,9 @@ pea-amount = { version = "0.1.0", path = "amount" }
 pea-api = { version = "0.1.0", path = "api" }
 pea-core = { version = "0.1.0", path = "core" }
 pea-db = { version = "0.1.0", path = "db" }
-pea-node = { version = "0.1.0", path = "node" }
+pea-node = { version = "0.2.0", path = "node" }
 pea-tree = { version = "0.1.0", path = "tree" }
-pea-wallet = { version = "0.1.0", path = "wallet" }
+pea-wallet = { version = "0.2.0", path = "wallet" }
 tokio = { version = "1.19.2", features = ["full"] }
 clap = { version = "3.2.6", features = ["derive"] }
 colored = "2.0.0"

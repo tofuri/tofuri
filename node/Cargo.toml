@@ -1,6 +1,6 @@
 [package]
 name = "pea-node"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
@@ -16,7 +16,7 @@ pea-api = { version = "0.1.1", path = "../api" }
 pea-core = { version = "0.1.1", path = "../core" }
 pea-db = { version = "0.1.0", path = "../db" }
 pea-tree = { version = "0.1.1", path = "../tree" }
-pea-wallet = { version = "0.2.0", path = "../wallet" }
+pea-wallet = { version = "0.2.1", path = "../wallet" }
 rocksdb = "0.19.0"
 libp2p = { version = "0.45.1", features = ["tcp-tokio"] }
 colored = "2.0.0"

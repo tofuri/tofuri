@@ -54,6 +54,7 @@ lazy_static! {
         .unwrap()
     })
     .len();
+    static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
 }
 pub async fn next(
     listener: &tokio::net::TcpListener,
@@ -101,6 +102,8 @@ async fn handler_get(
         handler_get_json_transaction_by_hash(stream, swarm, first).await?;
     } else if STAKE_BY_HASH.is_match(first) {
         handler_get_json_stake_by_hash(stream, swarm, first).await?;
+    } else if PEERS.is_match(first) {
+        handler_get_json_peers(stream, swarm).await?;
     } else {
         handler_404(stream).await?;
     };
@@ -517,6 +520,27 @@ Content-Type: application/json
                     timestamp: stake.timestamp,
                     signature: hex::encode(&stake.signature)
                 })?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn handler_get_json_peers(
+    stream: &mut tokio::net::TcpStream,
+    swarm: &Swarm<MyBehaviour>,
+) -> Result<(), Box<dyn Error>> {
+    let peers = db::peer::get_all(&swarm.behaviour().blockchain.db);
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&peers)?
             )
             .as_bytes(),
         )

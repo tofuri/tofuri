@@ -129,7 +129,7 @@ pub struct ValidatorArgs {
     #[clap(short, long, value_parser, default_value_t = false)]
     pub debug: bool,
     /// Multiaddr to listen on
-    #[clap(short, long, value_parser, default_value = "/ip4/0.0.0.0/tcp/0")]
+    #[clap(short, long, value_parser, default_value = "/ip4/0.0.0.0/tcp/9333")]
     pub host: String,
     /// Multiaddr to dial
     #[clap(short, long, value_parser, default_value = "")]

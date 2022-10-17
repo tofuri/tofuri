@@ -27,11 +27,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         false => Wallet::import(&args.wallet, &args.passphrase)?,
     };
     let mut blockchain = Blockchain::new(db, wallet.keypair);
+    let peers = db::peer::get_all(&blockchain.db);
+    info!("{} {:?}", "Peers".cyan(), peers);
     blockchain.load();
     print_blockchain(&blockchain);
     let mut swarm = p2p::swarm(blockchain).await?;
     swarm.listen_on(args.host.parse()?)?;
     swarm.dial(args.peer.parse::<Multiaddr>()?)?;
+    for peer in peers {
+        swarm.dial(peer.parse::<Multiaddr>()?)?;
+    }
     let listener = TcpListener::bind(args.http).await?;
     print_http(&listener)?;
     p2p::listen(&mut swarm, listener).await?;
@@ -105,7 +110,6 @@ pub fn print_blockchain(blockchain: &Blockchain) {
         "Stakers".cyan(),
         blockchain.states.dynamic.stakers.len()
     );
-    info!("{} {:?}", "Peers".cyan(), db::peer::get_all(&blockchain.db));
 }
 pub fn print_validator_args(args: &ValidatorArgs) {
     info!("{} {}", "--debug".cyan(), args.debug);

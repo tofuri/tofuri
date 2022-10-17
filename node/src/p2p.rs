@@ -2,6 +2,7 @@ use crate::{blockchain::Blockchain, gossipsub, heartbeat, http};
 use colored::*;
 use libp2p::{
     autonat,
+    core::connection::ConnectedPoint,
     floodsub::{Floodsub, FloodsubEvent},
     futures::{FutureExt, StreamExt},
     gossipsub::{
@@ -13,8 +14,7 @@ use libp2p::{
     ping::{self, Ping, PingEvent},
     relay::v2::relay::{self, Relay},
     swarm::{NetworkBehaviourEventProcess, SwarmEvent},
-    NetworkBehaviour, PeerId, Swarm,
-    core::connection::ConnectedPoint, Multiaddr
+    Multiaddr, NetworkBehaviour, PeerId, Swarm,
 };
 use log::{error, info};
 use pea_core::{constants::PROTOCOL_VERSION, types, util};

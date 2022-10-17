@@ -105,6 +105,7 @@ pub fn print_blockchain(blockchain: &Blockchain) {
         "Stakers".cyan(),
         blockchain.states.dynamic.stakers.len()
     );
+    info!("{} {:?}", "Peers".cyan(), db::peer::get_all(&blockchain.db));
 }
 pub fn print_validator_args(args: &ValidatorArgs) {
     info!("{} {}", "--debug".cyan(), args.debug);

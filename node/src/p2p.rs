@@ -18,6 +18,7 @@ use libp2p::{
 };
 use log::{error, info};
 use pea_core::{constants::PROTOCOL_VERSION, types, util};
+use pea_db as db;
 use std::{error::Error, time::Duration};
 use tokio::net::TcpListener;
 #[derive(NetworkBehaviour)]
@@ -175,7 +176,7 @@ pub async fn listen(
                 p2p_event("SwarmEvent", format!("{:?}", event));
                 if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
                     if let ConnectedPoint::Dialer { address, .. } = endpoint {
-                        connection_established(address);
+                        connection_established(address, swarm);
                     }
                 };
             },
@@ -185,6 +186,6 @@ pub async fn listen(
 fn p2p_event(event_type: &str, event: String) {
     info!("{} {}", event_type.cyan(), event)
 }
-fn connection_established(address: Multiaddr) {
-    println!("{:?}", address);
+fn connection_established(address: Multiaddr, swarm: &mut Swarm<MyBehaviour>) {
+    let _ = db::peer::put(&address.to_string(), &swarm.behaviour().blockchain.db);
 }

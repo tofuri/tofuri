@@ -237,6 +237,35 @@ pub mod tree {
         tree.sort_branches();
     }
 }
+pub mod peer {
+    use pea_core::{types, util};
+    use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
+    use std::error::Error;
+    pub fn put(peer: &str, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+        let timestamp = util::timestamp();
+        db.put_cf(super::peers(db), peer, timestamp.to_le_bytes())?;
+        Ok(())
+    }
+    pub fn get(
+        db: &DBWithThreadMode<SingleThreaded>,
+        peer: &str,
+    ) -> Result<types::Timestamp, Box<dyn Error>> {
+        let bytes: [u8; 4] = db
+            .get_cf(super::peers(db), peer)?
+            .ok_or("peer not found")?
+            .as_slice()
+            .try_into()?;
+        Ok(u32::from_le_bytes(bytes))
+    }
+    pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Vec<String> {
+        let mut peers: Vec<String> = vec![];
+        for res in db.iterator_cf(super::peers(db), IteratorMode::Start) {
+            let (peer, _) = res.unwrap();
+            peers.push(std::str::from_utf8(&peer).unwrap().to_string());
+        }
+        peers
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

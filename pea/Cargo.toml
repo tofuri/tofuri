@@ -14,6 +14,6 @@ pea-amount = { version = "0.1.1", path = "../amount" }
 pea-api = { version = "0.1.1", path = "../api" }
 pea-core = { version = "0.1.1", path = "../core" }
 pea-db = { version = "0.2.0", path = "../db" }
-pea-node = { version = "0.2.2", path = "../node" }
+pea-node = { version = "0.3.0", path = "../node" }
 pea-tree = { version = "0.1.1", path = "../tree" }
 pea-wallet = { version = "0.2.3", path = "../wallet" }

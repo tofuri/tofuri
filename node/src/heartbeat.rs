@@ -65,17 +65,14 @@ fn sync(behaviour: &mut MyBehaviour) {
     if behaviour.blockchain.states.dynamic.hashes.is_empty() {
         return;
     }
+    if behaviour.gossipsub.all_peers().count() == 0 {
+        behaviour.blockchain.sync.index = 0;
+        return;
+    }
     for _ in 0..SYNC_BLOCKS_PER_TICK {
         let block = behaviour.blockchain.sync_block();
         let data = bincode::serialize(&block).unwrap();
-        if behaviour.gossipsub.all_peers().count() == 0 {
-            behaviour.blockchain.sync.index = 0;
-            return;
-        }
-        behaviour
-            .gossipsub
-            .publish(IdentTopic::new("block"), data)
-            .unwrap();
+        let _ = behaviour.gossipsub.publish(IdentTopic::new("block"), data);
     }
 }
 fn lag(behaviour: &mut MyBehaviour) {

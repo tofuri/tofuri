@@ -12,8 +12,9 @@ use libp2p::{
     mdns::{Mdns, MdnsConfig, MdnsEvent},
     ping::{self, Ping, PingEvent},
     relay::v2::relay::{self, Relay},
-    swarm::NetworkBehaviourEventProcess,
+    swarm::{NetworkBehaviourEventProcess, SwarmEvent},
     NetworkBehaviour, PeerId, Swarm,
+    core::connection::ConnectedPoint, Multiaddr
 };
 use log::{error, info};
 use pea_core::{constants::PROTOCOL_VERSION, types, util};
@@ -170,10 +171,20 @@ pub async fn listen(
             Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, swarm).await {
                 error!("{}", err);
             },
-            event = swarm.select_next_some() => p2p_event("SwarmEvent", format!("{:?}", event)),
+            event = swarm.select_next_some() => {
+                p2p_event("SwarmEvent", format!("{:?}", event));
+                if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
+                    if let ConnectedPoint::Dialer { address, .. } = endpoint {
+                        connection_established(address);
+                    }
+                };
+            },
         }
     }
 }
 fn p2p_event(event_type: &str, event: String) {
     info!("{} {}", event_type.cyan(), event)
+}
+fn connection_established(address: Multiaddr) {
+    println!("{:?}", address);
 }

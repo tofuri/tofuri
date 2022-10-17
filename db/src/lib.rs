@@ -238,12 +238,15 @@ pub mod tree {
     }
 }
 pub mod peer {
-    use pea_core::{types, util};
+    use pea_core::types;
     use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(peer: &str, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        let timestamp = util::timestamp();
-        db.put_cf(super::peers(db), peer, timestamp.to_le_bytes())?;
+    pub fn put(
+        peer: &str,
+        value: &[u8],
+        db: &DBWithThreadMode<SingleThreaded>,
+    ) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::peers(db), peer, value)?;
         Ok(())
     }
     pub fn get(

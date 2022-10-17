@@ -187,5 +187,7 @@ fn p2p_event(event_type: &str, event: String) {
     info!("{} {}", event_type.cyan(), event)
 }
 fn connection_established(address: Multiaddr, swarm: &mut Swarm<MyBehaviour>) {
-    let _ = db::peer::put(&address.to_string(), &swarm.behaviour().blockchain.db);
+    let timestamp = util::timestamp();
+    let bytes = timestamp.to_le_bytes();
+    let _ = db::peer::put(&address.to_string(), &bytes, &swarm.behaviour().blockchain.db);
 }

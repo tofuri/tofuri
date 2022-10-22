@@ -1,11 +1,5 @@
 # Pea
 
-|Specifications||
-|:-|:-:|
-|Block Time|~10s|
-|Smallest Unit|1e-18|
-|Consensus|Proof of Stake|
-
 ## Build
 
 ```bash

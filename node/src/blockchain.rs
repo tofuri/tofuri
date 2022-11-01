@@ -1,6 +1,7 @@
 use crate::{state::Dynamic, states::States, sync::Sync};
 use colored::*;
 use log::{debug, info};
+use pea_address as address;
 use pea_core::util;
 use pea_core::{
     block::Block,
@@ -177,15 +178,31 @@ impl Blockchain {
     pub fn load(&mut self) {
         let start = Instant::now();
         db::tree::reload(&mut self.tree, &self.db);
-        info!("{} {:?}", "Tree load".cyan(), start.elapsed());
-        if let Some(main) = self.tree.main() {
-            info!("{} {} {}", "Main branch".cyan(), main.1.to_string().yellow(), hex::encode(main.0));
-        }
+        info!("{} {}", "Tree load".cyan(), format!("{:?}", start.elapsed()).yellow());
+        info!("{} {}", "Tree height".cyan(), if let Some(main) = self.tree.main() { main.1.to_string().yellow() } else { "0".red() });
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes();
         self.states.trusted.load(&self.db, &hashes_trusted);
         self.states.dynamic = Dynamic::from(&self.db, &hashes_dynamic, &self.states.trusted);
-        info!("{} {:?}", "States load".cyan(), start.elapsed());
+        info!("{} {}", "States load".cyan(), format!("{:?}", start.elapsed()).yellow());
+        info!(
+            "{} {}",
+            "States dynamic stakers".cyan(),
+            if let Some(staker) = self.states.dynamic.stakers.get(0) {
+                format!("{} {}", self.states.dynamic.stakers.len().to_string().yellow(), address::public::encode(staker).green())
+            } else {
+                "0".red().to_string()
+            }
+        );
+        info!(
+            "{} {}",
+            "States trusted stakers".cyan(),
+            if let Some(staker) = self.states.trusted.stakers.get(0) {
+                format!("{} {}", self.states.trusted.stakers.len().to_string().yellow(), address::public::encode(staker).green())
+            } else {
+                "0".red().to_string()
+            }
+        );
     }
     pub fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
         if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {

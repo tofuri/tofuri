@@ -144,7 +144,7 @@ pub async fn swarm(blockchain: Blockchain) -> Result<Swarm<MyBehaviour>, Box<dyn
 }
 pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Option<TcpListener>) -> Result<(), Box<dyn Error>> {
     if let Some(listener) = tcp_listener_http_api {
-        info!("{} http://{}", "HTTP API".cyan(), listener.local_addr()?.to_string().green());
+        info!("{} {} http://{}", "Enabled".green(), "HTTP API".cyan(), listener.local_addr()?.to_string().green());
         loop {
             tokio::select! {
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, swarm).await {

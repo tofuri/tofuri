@@ -64,17 +64,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         true => Wallet::new(),
         false => Wallet::import(&args.wallet, &args.passphrase)?,
     };
-    info!("{} {}", "PubKey".cyan(), address::public::encode(wallet.keypair.public.as_bytes()));
+    info!("{} {}", "PubKey".cyan(), address::public::encode(wallet.keypair.public.as_bytes()).green());
     let mut blockchain = Blockchain::new(db, wallet.keypair);
     let peers = db::peer::get_all(&blockchain.db);
     info!("{} {:?}", "Peers".cyan(), peers);
     blockchain.load();
-    let mut height = 0;
-    if let Some(main) = blockchain.tree.main() {
-        height = main.1;
-    }
-    info!("{} {}", "Height".cyan(), height);
-    info!("{} {}", "Stakers".cyan(), blockchain.states.dynamic.stakers.len());
     let mut swarm = p2p::swarm(blockchain).await?;
     swarm.listen_on(args.host.parse()?)?;
     swarm.dial(args.peer.parse::<Multiaddr>()?)?;

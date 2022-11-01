@@ -74,8 +74,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         height = main.1;
     }
     info!("{} {}", "Height".cyan(), height);
-    info!("{} {}", "Pending txns".cyan(), blockchain.pending_transactions.len());
-    info!("{} {}", "Pending stakes".cyan(), blockchain.pending_stakes.len());
     info!("{} {}", "Stakers".cyan(), blockchain.states.dynamic.stakers.len());
     let mut swarm = p2p::swarm(blockchain).await?;
     swarm.listen_on(args.host.parse()?)?;

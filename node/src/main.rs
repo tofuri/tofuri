@@ -13,7 +13,7 @@ use tempdir::TempDir;
 use tokio::net::TcpListener;
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
-pub struct ValidatorArgs {
+pub struct Args {
     /// Log path to source file
     #[clap(short, long, value_parser, default_value_t = false)]
     pub debug: bool,
@@ -41,7 +41,7 @@ pub struct ValidatorArgs {
 }
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args = ValidatorArgs::parse();
+    let args = Args::parse();
     env_logger_init(args.debug);
     print_build();
     print_validator_args(&args);
@@ -143,7 +143,7 @@ pub fn print_blockchain(blockchain: &Blockchain) {
         blockchain.states.dynamic.stakers.len()
     );
 }
-pub fn print_validator_args(args: &ValidatorArgs) {
+pub fn print_validator_args(args: &Args) {
     info!("{} {}", "--debug".cyan(), args.debug);
     info!("{} {}", "--host".cyan(), args.host);
     info!("{} {}", "--peer".cyan(), args.peer);

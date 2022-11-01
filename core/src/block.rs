@@ -35,11 +35,7 @@ impl fmt::Debug for Block {
                 timestamp: self.timestamp,
                 public_key: hex::encode(self.public_key),
                 signature: hex::encode(self.signature),
-                transactions: self
-                    .transactions
-                    .iter()
-                    .map(|x| hex::encode(x.hash()))
-                    .collect(),
+                transactions: self.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
                 stakes: self.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
             }
         )
@@ -64,14 +60,7 @@ impl Block {
         }
     }
     pub fn new(previous_hash: types::Hash) -> Block {
-        Block::from(
-            previous_hash,
-            util::timestamp(),
-            [0; 32],
-            [0; 64],
-            vec![],
-            vec![],
-        )
+        Block::from(previous_hash, util::timestamp(), [0; 32], [0; 64], vec![], vec![])
     }
     pub fn new_timestamp_0(previous_hash: types::Hash) -> Block {
         Block::from(previous_hash, 0, [0; 32], [0; 64], vec![], vec![])
@@ -196,9 +185,8 @@ mod tests {
         println!("{:x?}", block.hash());
         assert_eq!(
             [
-                0xac, 0x6f, 0x86, 0xff, 0xf6, 0x30, 0xa5, 0x6a, 0x21, 0xf5, 0x9d, 0x3a, 0x0c, 0x1c,
-                0x69, 0x07, 0xfe, 0x3f, 0x7c, 0xaf, 0xd5, 0xfa, 0x91, 0x6f, 0x9b, 0x72, 0x20, 0x32,
-                0xf6, 0x05, 0x9e, 0xd9
+                0xac, 0x6f, 0x86, 0xff, 0xf6, 0x30, 0xa5, 0x6a, 0x21, 0xf5, 0x9d, 0x3a, 0x0c, 0x1c, 0x69, 0x07, 0xfe, 0x3f, 0x7c, 0xaf, 0xd5, 0xfa, 0x91, 0x6f, 0x9b, 0x72, 0x20, 0x32, 0xf6, 0x05,
+                0x9e, 0xd9
             ],
             block.hash()
         );
@@ -239,10 +227,7 @@ mod tests {
         block_metadata_lean.timestamp = util::timestamp();
         println!("{:?}", block_metadata_lean);
         println!("{:?}", bincode::serialize(&block_metadata_lean));
-        println!(
-            "{:?}",
-            bincode::serialize(&block_metadata_lean).unwrap().len()
-        );
+        println!("{:?}", bincode::serialize(&block_metadata_lean).unwrap().len());
         b.iter(|| bincode::serialize(&block_metadata_lean));
     }
     #[bench]

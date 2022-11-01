@@ -5,9 +5,7 @@ use libp2p::{
     core::connection::ConnectedPoint,
     floodsub::{Floodsub, FloodsubEvent},
     futures::{FutureExt, StreamExt},
-    gossipsub::{
-        Gossipsub, GossipsubConfigBuilder, GossipsubEvent, IdentTopic, MessageAuthenticity,
-    },
+    gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, IdentTopic, MessageAuthenticity},
     identify::{Identify, IdentifyConfig, IdentifyEvent},
     identity,
     mdns::{Mdns, MdnsConfig, MdnsEvent},
@@ -41,30 +39,21 @@ pub struct MyBehaviour {
     pub lag: f64,
 }
 impl MyBehaviour {
-    async fn new(
-        local_key: identity::Keypair,
-        blockchain: Blockchain,
-    ) -> Result<Self, Box<dyn Error>> {
+    async fn new(local_key: identity::Keypair, blockchain: Blockchain) -> Result<Self, Box<dyn Error>> {
         let local_public_key = local_key.public();
         let local_peer_id = PeerId::from(local_public_key.clone());
         Ok(Self {
             floodsub: Floodsub::new(PeerId::from(local_public_key.clone())),
             mdns: Mdns::new(MdnsConfig::default()).await?,
             ping: ping::Behaviour::new(ping::Config::new().with_keep_alive(true)),
-            identify: Identify::new(IdentifyConfig::new(
-                PROTOCOL_VERSION.to_string(),
-                local_public_key.clone(),
-            )),
+            identify: Identify::new(IdentifyConfig::new(PROTOCOL_VERSION.to_string(), local_public_key.clone())),
             gossipsub: Gossipsub::new(
                 MessageAuthenticity::Signed(local_key.clone()),
                 GossipsubConfigBuilder::default()
                     .heartbeat_interval(Duration::from_secs(10)) // This is set to aid debugging by not cluttering the log space
                     .build()?,
             )?,
-            autonat: autonat::Behaviour::new(
-                local_public_key.to_peer_id(),
-                autonat::Config::default(),
-            ),
+            autonat: autonat::Behaviour::new(local_public_key.to_peer_id(), autonat::Config::default()),
             relay: Relay::new(local_peer_id, Default::default()),
             blockchain,
             message_data_hashes: vec![],
@@ -87,10 +76,7 @@ impl NetworkBehaviourEventProcess<FloodsubEvent> for MyBehaviour {
     fn inject_event(&mut self, event: FloodsubEvent) {
         // print::p2p_event("FloodsubEvent", format!("{:?}", event));
         if let FloodsubEvent::Message(message) = event {
-            p2p_event(
-                "FloodsubEvent::Message",
-                String::from_utf8_lossy(&message.data).green().to_string(),
-            );
+            p2p_event("FloodsubEvent::Message", String::from_utf8_lossy(&message.data).green().to_string());
         }
     }
 }
@@ -151,27 +137,14 @@ pub async fn swarm(blockchain: Blockchain) -> Result<Swarm<MyBehaviour>, Box<dyn
     let local_peer_id = PeerId::from(local_key.public());
     let transport = libp2p::development_transport(local_key.clone()).await?;
     let mut behaviour = MyBehaviour::new(local_key, blockchain).await?;
-    for ident_topic in [
-        IdentTopic::new("block"),
-        IdentTopic::new("stake"),
-        IdentTopic::new("transaction"),
-    ]
-    .iter()
-    {
+    for ident_topic in [IdentTopic::new("block"), IdentTopic::new("stake"), IdentTopic::new("transaction")].iter() {
         behaviour.gossipsub.subscribe(ident_topic)?;
     }
     Ok(Swarm::new(transport, behaviour, local_peer_id))
 }
-pub async fn listen(
-    swarm: &mut Swarm<MyBehaviour>,
-    tcp_listener_http_api: Option<TcpListener>,
-) -> Result<(), Box<dyn Error>> {
+pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Option<TcpListener>) -> Result<(), Box<dyn Error>> {
     if let Some(listener) = tcp_listener_http_api {
-        info!(
-            "{} http://{}",
-            "HTTP API".cyan(),
-            listener.local_addr()?.to_string().green()
-        );
+        info!("{} http://{}", "HTTP API".cyan(), listener.local_addr()?.to_string().green());
         loop {
             tokio::select! {
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, swarm).await {
@@ -211,9 +184,5 @@ fn p2p_event(event_type: &str, event: String) {
 fn connection_established(address: Multiaddr, swarm: &mut Swarm<MyBehaviour>) {
     let timestamp = util::timestamp();
     let bytes = timestamp.to_le_bytes();
-    let _ = db::peer::put(
-        &address.to_string(),
-        &bytes,
-        &swarm.behaviour().blockchain.db,
-    );
+    let _ = db::peer::put(&address.to_string(), &bytes, &swarm.behaviour().blockchain.db);
 }

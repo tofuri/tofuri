@@ -43,37 +43,17 @@ pub struct Args {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     env_logger_init(args.debug);
-    info!(
-        "{} {}",
-        "Version".cyan(),
-        env!("CARGO_PKG_VERSION").yellow()
-    );
+    info!("{} {}", "Version".cyan(), env!("CARGO_PKG_VERSION").yellow());
     info!("{} {}", "Commit".cyan(), env!("GIT_HASH").yellow());
-    info!(
-        "{} {}",
-        "Repository".cyan(),
-        env!("CARGO_PKG_REPOSITORY").yellow()
-    );
+    info!("{} {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY").yellow());
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
     info!("{} {}", "--host".cyan(), args.host.magenta());
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
     info!("{} {}", "--http-api".cyan(), args.http_api.magenta());
-    info!(
-        "{} {}",
-        "--tempdb".cyan(),
-        args.tempdb.to_string().magenta()
-    );
-    info!(
-        "{} {}",
-        "--tempkey".cyan(),
-        args.tempkey.to_string().magenta()
-    );
+    info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
+    info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
-    info!(
-        "{} {}",
-        "--passphrase".cyan(),
-        "*".repeat(args.passphrase.len()).magenta()
-    );
+    info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     let tempdir = TempDir::new("rocksdb")?;
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),
@@ -88,42 +68,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let peers = db::peer::get_all(&blockchain.db);
     info!("{} {:?}", "Peers".cyan(), peers);
     blockchain.load();
-    info!(
-        "{} {}",
-        "PubKey".cyan(),
-        address::public::encode(blockchain.keypair.public.as_bytes())
-    );
+    info!("{} {}", "PubKey".cyan(), address::public::encode(blockchain.keypair.public.as_bytes()));
     let mut height = 0;
     if let Some(main) = blockchain.tree.main() {
         height = main.1;
     }
     info!("{} {}", "Height".cyan(), height);
-    info!(
-        "{} {}",
-        "Pending txns".cyan(),
-        blockchain.pending_transactions.len()
-    );
-    info!(
-        "{} {}",
-        "Pending stakes".cyan(),
-        blockchain.pending_stakes.len()
-    );
-    info!(
-        "{} {}",
-        "Stakers".cyan(),
-        blockchain.states.dynamic.stakers.len()
-    );
+    info!("{} {}", "Pending txns".cyan(), blockchain.pending_transactions.len());
+    info!("{} {}", "Pending stakes".cyan(), blockchain.pending_stakes.len());
+    info!("{} {}", "Stakers".cyan(), blockchain.states.dynamic.stakers.len());
     let mut swarm = p2p::swarm(blockchain).await?;
     swarm.listen_on(args.host.parse()?)?;
     swarm.dial(args.peer.parse::<Multiaddr>()?)?;
     for peer in peers {
         swarm.dial(peer.parse::<Multiaddr>()?)?;
     }
-    let tcp_listener_http_api = if args.http_api != "" {
-        Some(TcpListener::bind(args.http_api).await?)
-    } else {
-        None
-    };
+    let tcp_listener_http_api = if args.http_api != "" { Some(TcpListener::bind(args.http_api).await?) } else { None };
     p2p::listen(&mut swarm, tcp_listener_http_api).await?;
     Ok(())
 }
@@ -152,15 +112,7 @@ pub fn env_logger_init(log_path: bool) {
             )
         });
     } else {
-        builder.format(|buf, record| {
-            writeln!(
-                buf,
-                "[{} {}] {}",
-                Local::now().format("%H:%M:%S"),
-                colored_level(record.level()),
-                record.args()
-            )
-        });
+        builder.format(|buf, record| writeln!(buf, "[{} {}] {}", Local::now().format("%H:%M:%S"), colored_level(record.level()), record.args()));
     }
     builder.filter(None, LevelFilter::Info).init();
 }

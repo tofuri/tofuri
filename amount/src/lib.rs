@@ -59,9 +59,6 @@ mod tests {
     }
     #[test]
     fn test_decode_max() {
-        assert_eq!(
-            0xfffffff0000000000000000000000000,
-            from_bytes(&[0xff, 0xff, 0xff, 0xff])
-        );
+        assert_eq!(0xfffffff0000000000000000000000000, from_bytes(&[0xff, 0xff, 0xff, 0xff]));
     }
 }

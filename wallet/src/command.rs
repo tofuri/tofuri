@@ -9,26 +9,12 @@ use pea_api::{get, post};
 use pea_core::{constants::DECIMAL_PRECISION, stake::Stake, transaction::Transaction, types};
 use std::process;
 pub async fn main(wallet: &Wallet, api: &str) {
-    match Select::new(
-        ">>",
-        vec![
-            "Search",
-            "Address",
-            "Secret key",
-            "Data",
-            "Balance",
-            "Height",
-            "Transaction",
-            "Stake",
-            "Validator",
-            "Exit",
-        ],
-    )
-    .prompt()
-    .unwrap_or_else(|err| {
-        println!("{}", err.to_string().red());
-        process::exit(0)
-    }) {
+    match Select::new(">>", vec!["Search", "Address", "Secret key", "Data", "Balance", "Height", "Transaction", "Stake", "Validator", "Exit"])
+        .prompt()
+        .unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        }) {
         "Search" => search(api).await,
         "Address" => address(wallet),
         "Secret key" => key(wallet),
@@ -63,12 +49,8 @@ async fn balance(api: &str, address: &str) {
         Ok(balance) => match get::balance_staked(api, address).await {
             Ok(balance_staked) => println!(
                 "Account balance: {}, locked: {}.",
-                (balance as f64 / DECIMAL_PRECISION as f64)
-                    .to_string()
-                    .yellow(),
-                (balance_staked as f64 / DECIMAL_PRECISION as f64)
-                    .to_string()
-                    .yellow()
+                (balance as f64 / DECIMAL_PRECISION as f64).to_string().yellow(),
+                (balance_staked as f64 / DECIMAL_PRECISION as f64).to_string().yellow()
             ),
             Err(err) => println!("{}", err.to_string().red()),
         },
@@ -99,10 +81,7 @@ async fn transaction(api: &str, wallet: &Wallet) {
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in pea using a decimal point as a separator")
         .with_parser(&|x| match x.parse::<f64>() {
-            Ok(f) => Ok(
-                amount::round(&((f * DECIMAL_PRECISION as f64) as u128)) as f64
-                    / DECIMAL_PRECISION as f64,
-            ),
+            Ok(f) => Ok(amount::round(&((f * DECIMAL_PRECISION as f64) as u128)) as f64 / DECIMAL_PRECISION as f64),
             Err(_) => Err(()),
         })
         .prompt()
@@ -133,24 +112,15 @@ async fn transaction(api: &str, wallet: &Wallet) {
     transaction.sign(&wallet.keypair);
     println!("Hash: {}", hex::encode(transaction.hash()).cyan());
     match post::transaction(api, &transaction).await {
-        Ok(res) => println!(
-            "{}",
-            if res == "success" {
-                res.green()
-            } else {
-                res.red()
-            }
-        ),
+        Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
         Err(err) => println!("{}", err.to_string().red()),
     };
 }
 async fn stake(api: &str, wallet: &Wallet) {
-    let deposit = match Select::new(">>", vec!["deposit", "withdraw"])
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }) {
+    let deposit = match Select::new(">>", vec!["deposit", "withdraw"]).prompt().unwrap_or_else(|err| {
+        println!("{}", err.to_string().red());
+        process::exit(0)
+    }) {
         "deposit" => true,
         "withdraw" => false,
         _ => false,
@@ -160,10 +130,7 @@ async fn stake(api: &str, wallet: &Wallet) {
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in pea using a decimal point as a separator")
         .with_parser(&|x| match x.parse::<f64>() {
-            Ok(f) => Ok(
-                amount::round(&((f * DECIMAL_PRECISION as f64) as u128)) as f64
-                    / DECIMAL_PRECISION as f64,
-            ),
+            Ok(f) => Ok(amount::round(&((f * DECIMAL_PRECISION as f64) as u128)) as f64 / DECIMAL_PRECISION as f64),
             Err(_) => Err(()),
         })
         .prompt()
@@ -194,14 +161,7 @@ async fn stake(api: &str, wallet: &Wallet) {
     stake.sign(&wallet.keypair);
     println!("Hash: {}", hex::encode(stake.hash()).cyan());
     match post::stake(api, &stake).await {
-        Ok(res) => println!(
-            "{}",
-            if res == "success" {
-                res.green()
-            } else {
-                res.red()
-            }
-        ),
+        Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
         Err(err) => println!("{}", err.to_string().red()),
     };
 }
@@ -238,24 +198,10 @@ async fn search(api: &str) {
             Ok(transaction) => {
                 println!("{} {}", "Hash".cyan(), search);
                 println!("{} {}", "Input PubKey".cyan(), transaction.public_key_input);
-                println!(
-                    "{} {}",
-                    "Output PubKey".cyan(),
-                    transaction.public_key_output
-                );
-                println!(
-                    "{} {}",
-                    "Amount".cyan(),
-                    transaction.amount.to_string().yellow()
-                );
+                println!("{} {}", "Output PubKey".cyan(), transaction.public_key_output);
+                println!("{} {}", "Amount".cyan(), transaction.amount.to_string().yellow());
                 println!("{} {}", "Fee".cyan(), transaction.fee.to_string().yellow());
-                println!(
-                    "{} {}",
-                    "Timestamp".cyan(),
-                    Local
-                        .timestamp(transaction.timestamp as i64, 0)
-                        .format("%H:%M:%S")
-                );
+                println!("{} {}", "Timestamp".cyan(), Local.timestamp(transaction.timestamp as i64, 0).format("%H:%M:%S"));
                 println!("{} {}", "Signature".cyan(), transaction.signature);
                 return;
             }
@@ -266,22 +212,9 @@ async fn search(api: &str) {
                 println!("{} {}", "Hash".cyan(), search);
                 println!("{} {}", "PubKey".cyan(), stake.public_key);
                 println!("{} {}", "Amount".cyan(), stake.amount.to_string().yellow());
-                println!(
-                    "{}",
-                    if stake.deposit {
-                        "Deposit".magenta()
-                    } else {
-                        "Withdraw".magenta()
-                    }
-                );
+                println!("{}", if stake.deposit { "Deposit".magenta() } else { "Withdraw".magenta() });
                 println!("{} {}", "Fee".cyan(), stake.fee.to_string().yellow());
-                println!(
-                    "{} {}",
-                    "Timestamp".cyan(),
-                    Local
-                        .timestamp(stake.timestamp as i64, 0)
-                        .format("%H:%M:%S")
-                );
+                println!("{} {}", "Timestamp".cyan(), Local.timestamp(stake.timestamp as i64, 0).format("%H:%M:%S"));
                 println!("{} {}", "Signature".cyan(), stake.signature);
                 return;
             }
@@ -306,28 +239,14 @@ async fn search(api: &str) {
     fn print_block(block: &get::Block, hash: &String) {
         println!("{} {}", "Hash".cyan(), hash);
         println!("{} {}", "PreviousHash".cyan(), block.previous_hash);
-        println!(
-            "{} {}",
-            "Timestamp".cyan(),
-            Local
-                .timestamp(block.timestamp as i64, 0)
-                .format("%H:%M:%S")
-        );
+        println!("{} {}", "Timestamp".cyan(), Local.timestamp(block.timestamp as i64, 0).format("%H:%M:%S"));
         println!("{} {}", "Forger".cyan(), block.public_key);
         println!("{} {}", "Signature".cyan(), block.signature);
-        println!(
-            "{} {}",
-            "Transactions".cyan(),
-            block.transactions.len().to_string().yellow()
-        );
+        println!("{} {}", "Transactions".cyan(), block.transactions.len().to_string().yellow());
         for (i, hash) in block.transactions.iter().enumerate() {
             println!("{} {}", format!("#{}", i).magenta(), hash)
         }
-        println!(
-            "{} {}",
-            "Stakes".cyan(),
-            block.stakes.len().to_string().yellow()
-        );
+        println!("{} {}", "Stakes".cyan(), block.stakes.len().to_string().yellow());
         for (i, hash) in block.stakes.iter().enumerate() {
             println!("{} {}", format!("#{}", i).magenta(), hash)
         }
@@ -336,10 +255,7 @@ async fn search(api: &str) {
 fn key(wallet: &Wallet) {
     println!("{}", "Are you being watched?".yellow());
     println!("{}", "Never share your secret key!".yellow());
-    println!(
-        "{}",
-        "Anyone who has it can access your funds from anywhere.".italic()
-    );
+    println!("{}", "Anyone who has it can access your funds from anywhere.".italic());
     println!("{}", "View in private with no cameras around.".italic());
     if match Confirm::new("View secret key?").prompt() {
         Ok(b) => b,
@@ -352,12 +268,7 @@ fn key(wallet: &Wallet) {
     }
 }
 fn data(wallet: &Wallet) {
-    println!(
-        "{}{}{}",
-        hex::encode(&wallet.salt).red(),
-        hex::encode(&wallet.nonce).red(),
-        hex::encode(&wallet.ciphertext).red()
-    );
+    println!("{}{}{}", hex::encode(&wallet.salt).red(), hex::encode(&wallet.nonce).red(), hex::encode(&wallet.ciphertext).red());
 }
 fn exit() {
     process::exit(0);

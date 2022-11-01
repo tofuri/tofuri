@@ -41,10 +41,7 @@ impl Wallet {
     pub fn import(wallet_filename: &str, passphrase: &str) -> Result<Wallet, Box<dyn Error>> {
         if !wallet_filename.is_empty() || !passphrase.is_empty() {
             if !(!wallet_filename.is_empty() && !passphrase.is_empty()) {
-                println!(
-                    "{}",
-                    "To use autodecrypt you must specify both --wallet and --passphrase!".red()
-                );
+                println!("{}", "To use autodecrypt you must specify both --wallet and --passphrase!".red());
                 process::exit(0);
             }
             return match Wallet::import_attempt(wallet_filename, passphrase) {
@@ -83,8 +80,7 @@ impl Wallet {
         let salt = &data[..32];
         let nonce = &data[32..44];
         let ciphertext = &data[44..];
-        let secret_key =
-            types::SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
+        let secret_key = types::SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
         let public_key: types::PublicKey = (&secret_key).into();
         Ok(Wallet {
             keypair: types::Keypair {
@@ -137,12 +133,7 @@ impl Wallet {
         let ciphertext = cipher.encrypt(&nonce, plaintext).unwrap();
         Ok((salt, nonce.into(), ciphertext))
     }
-    fn decrypt(
-        salt: &[u8],
-        nonce: &[u8],
-        ciphertext: &[u8],
-        passphrase: &str,
-    ) -> Result<Vec<u8>, Box<dyn Error>> {
+    fn decrypt(salt: &[u8], nonce: &[u8], ciphertext: &[u8], passphrase: &str) -> Result<Vec<u8>, Box<dyn Error>> {
         let passphrase = match passphrase {
             "" => Wallet::passphrase(),
             _ => passphrase.to_string(),
@@ -161,26 +152,17 @@ impl Wallet {
         let dir = std::fs::read_dir(Wallet::default_path())?;
         let mut filenames: Vec<String> = vec![];
         for entry in dir {
-            filenames.push(
-                entry?
-                    .path()
-                    .file_name()
-                    .unwrap()
-                    .to_string_lossy()
-                    .into_owned(),
-            );
+            filenames.push(entry?.path().file_name().unwrap().to_string_lossy().into_owned());
         }
         Ok(filenames)
     }
     fn select_wallet() -> Result<(String, Option<Wallet>), Box<dyn Error>> {
         let mut filenames = Wallet::dir()?;
         filenames.push("Generate new wallet".to_string());
-        let mut filename = Select::new(">>", filenames.to_vec())
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            });
+        let mut filename = Select::new(">>", filenames.to_vec()).prompt().unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        });
         if filename.as_str() == "Generate new wallet" {
             filename = Wallet::name_wallet()?;
             let mut wallet = Wallet::new();
@@ -201,9 +183,7 @@ impl Wallet {
                 let mut path = PathBuf::new().join(input);
                 path.set_extension(EXTENSION);
                 if filenames.contains(&path.file_name().unwrap().to_string_lossy().into_owned()) {
-                    Ok(Validation::Invalid(
-                        "A wallet with that name already exists.".into(),
-                    ))
+                    Ok(Validation::Invalid("A wallet with that name already exists.".into()))
                 } else {
                     Ok(Validation::Valid)
                 }

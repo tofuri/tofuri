@@ -14,11 +14,7 @@ pub struct Transaction {
     pub signature: types::SignatureBytes,
 }
 impl Transaction {
-    pub fn new(
-        public_key_output: types::PublicKeyBytes,
-        amount: types::Amount,
-        fee: types::Amount,
-    ) -> Transaction {
+    pub fn new(public_key_output: types::PublicKeyBytes, amount: types::Amount, fee: types::Amount) -> Transaction {
         Transaction {
             public_key_input: [0; 32],
             public_key_output,

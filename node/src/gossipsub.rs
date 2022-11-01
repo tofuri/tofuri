@@ -4,10 +4,7 @@ use libp2p::gossipsub::GossipsubMessage;
 use log::info;
 use pea_core::{block::Block, stake::Stake, transaction::Transaction};
 use std::error::Error;
-pub fn handler(
-    behaviour: &mut MyBehaviour,
-    message: GossipsubMessage,
-) -> Result<(), Box<dyn Error>> {
+pub fn handler(behaviour: &mut MyBehaviour, message: GossipsubMessage) -> Result<(), Box<dyn Error>> {
     match message.topic.as_str() {
         "block" => {
             let block: Block = bincode::deserialize(&message.data)?;
@@ -16,12 +13,7 @@ pub fn handler(
             info!(
                 "{} {} {}",
                 "Accept".green(),
-                behaviour
-                    .blockchain
-                    .tree
-                    .height(&block.previous_hash)
-                    .to_string()
-                    .yellow(),
+                behaviour.blockchain.tree.height(&block.previous_hash).to_string().yellow(),
                 hex::encode(hash)
             );
         }
@@ -31,9 +23,7 @@ pub fn handler(
         }
         "transaction" => {
             let transaction: Transaction = bincode::deserialize(&message.data)?;
-            behaviour
-                .blockchain
-                .pending_transactions_push(transaction)?;
+            behaviour.blockchain.pending_transactions_push(transaction)?;
         }
         _ => {}
     };

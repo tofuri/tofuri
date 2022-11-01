@@ -9,10 +9,7 @@ use pea_core::{
 };
 use std::time::{Duration, SystemTime};
 pub async fn next() {
-    let mut nanos = SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
+    let mut nanos = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
     let secs = nanos / NANOS;
     nanos -= secs * NANOS;
     nanos = NANOS - nanos;
@@ -37,14 +34,8 @@ fn forge(behaviour: &mut MyBehaviour) {
         return;
     }
     let timestamp = util::timestamp();
-    if let Some(public_key) = states
-        .dynamic
-        .staker(timestamp, states.dynamic.latest_block.timestamp)
-    {
-        if public_key != behaviour.blockchain.keypair.public.as_bytes()
-            || timestamp
-                < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp
-        {
+    if let Some(public_key) = states.dynamic.staker(timestamp, states.dynamic.latest_block.timestamp) {
+        if public_key != behaviour.blockchain.keypair.public.as_bytes() || timestamp < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
             return;
         }
     } else {
@@ -55,10 +46,7 @@ fn forge(behaviour: &mut MyBehaviour) {
     let block = behaviour.blockchain.forge_block().unwrap();
     let data = bincode::serialize(&block).unwrap();
     if !behaviour.filter(&data, true) && behaviour.gossipsub.all_peers().count() > 0 {
-        behaviour
-            .gossipsub
-            .publish(IdentTopic::new("block"), data)
-            .unwrap();
+        behaviour.gossipsub.publish(IdentTopic::new("block"), data).unwrap();
     }
 }
 fn sync(behaviour: &mut MyBehaviour) {
@@ -76,18 +64,10 @@ fn sync(behaviour: &mut MyBehaviour) {
     }
 }
 fn lag(behaviour: &mut MyBehaviour) {
-    let mut micros = SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_micros();
+    let mut micros = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros();
     let secs = micros / MICROS;
     micros -= secs * MICROS;
     let millis = micros as f64 / 1_000_f64;
     behaviour.lag = millis;
-    debug!(
-        "{} {} {}ms",
-        "Heartbeat".cyan(),
-        behaviour.heartbeats,
-        millis.to_string().yellow(),
-    );
+    debug!("{} {} {}ms", "Heartbeat".cyan(), behaviour.heartbeats, millis.to_string().yellow(),);
 }

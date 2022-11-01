@@ -56,15 +56,10 @@ lazy_static! {
     .len();
     static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
 }
-pub async fn next(
-    listener: &tokio::net::TcpListener,
-) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
+pub async fn next(listener: &tokio::net::TcpListener) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
     Ok(listener.accept().await?.0)
 }
-pub async fn handler(
-    mut stream: tokio::net::TcpStream,
-    swarm: &mut Swarm<MyBehaviour>,
-) -> Result<(), Box<dyn Error>> {
+pub async fn handler(mut stream: tokio::net::TcpStream, swarm: &mut Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
@@ -79,11 +74,7 @@ pub async fn handler(
     stream.flush().await?;
     Ok(())
 }
-async fn handler_get(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-    first: &str,
-) -> Result<(), Box<dyn Error>> {
+async fn handler_get(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>, first: &str) -> Result<(), Box<dyn Error>> {
     if INDEX.is_match(first) {
         handler_get_index(stream).await?;
     } else if JSON.is_match(first) {
@@ -109,12 +100,7 @@ async fn handler_get(
     };
     Ok(())
 }
-async fn handler_post(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &mut Swarm<MyBehaviour>,
-    first: &str,
-    buffer: &[u8; 1024],
-) -> Result<(), Box<dyn Error>> {
+async fn handler_post(stream: &mut tokio::net::TcpStream, swarm: &mut Swarm<MyBehaviour>, first: &str, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
     if TRANSACTION.is_match(first) {
         handler_post_json_transaction(stream, swarm, buffer).await?;
     } else if STAKE.is_match(first) {
@@ -144,10 +130,7 @@ Access-Control-Allow-Origin: *
         .await?;
     Ok(())
 }
-async fn handler_get_json(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-) -> Result<(), Box<dyn Error>> {
+async fn handler_get_json(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     #[derive(Serialize)]
     struct Data {
         public_key: String,
@@ -188,80 +171,31 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&Data {
-                    public_key: address::public::encode(
-                        behaviour.blockchain.keypair.public.as_bytes()
-                    ),
+                    public_key: address::public::encode(behaviour.blockchain.keypair.public.as_bytes()),
                     height: behaviour.blockchain.height(),
                     tree_size: behaviour.blockchain.tree.size(),
                     heartbeats: behaviour.heartbeats,
                     gossipsub_peers: behaviour.gossipsub.all_peers().count(),
                     states: States {
                         dynamic: State {
-                            balance: states
-                                .dynamic
-                                .balance(behaviour.blockchain.keypair.public.as_bytes()),
-                            balance_staked: states
-                                .dynamic
-                                .balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
+                            balance: states.dynamic.balance(behaviour.blockchain.keypair.public.as_bytes()),
+                            balance_staked: states.dynamic.balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
                             hashes: states.dynamic.hashes.len(),
-                            latest_hashes: states
-                                .dynamic
-                                .hashes
-                                .iter()
-                                .rev()
-                                .take(16)
-                                .map(hex::encode)
-                                .collect(),
-                            stakers: states
-                                .dynamic
-                                .stakers
-                                .iter()
-                                .map(address::public::encode)
-                                .collect(),
+                            latest_hashes: states.dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
+                            stakers: states.dynamic.stakers.iter().map(address::public::encode).collect(),
                         },
                         trusted: State {
-                            balance: states
-                                .trusted
-                                .balance(behaviour.blockchain.keypair.public.as_bytes()),
-                            balance_staked: states
-                                .trusted
-                                .balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
-                            stakers: states
-                                .trusted
-                                .stakers
-                                .iter()
-                                .map(address::public::encode)
-                                .collect(),
+                            balance: states.trusted.balance(behaviour.blockchain.keypair.public.as_bytes()),
+                            balance_staked: states.trusted.balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
+                            stakers: states.trusted.stakers.iter().map(address::public::encode).collect(),
                             hashes: states.trusted.hashes.len(),
-                            latest_hashes: states
-                                .trusted
-                                .hashes
-                                .iter()
-                                .rev()
-                                .take(16)
-                                .map(hex::encode)
-                                .collect(),
+                            latest_hashes: states.trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
                         },
                     },
                     lag: behaviour.lag,
-                    pending_transactions: behaviour
-                        .blockchain
-                        .pending_transactions
-                        .iter()
-                        .map(|x| hex::encode(x.hash()))
-                        .collect(),
-                    pending_stakes: behaviour
-                        .blockchain
-                        .pending_stakes
-                        .iter()
-                        .map(|x| hex::encode(x.hash()))
-                        .collect(),
-                    pending_blocks: behaviour
-                        .blockchain
-                        .pending_blocks
-                        .iter()
-                        .map(|x| hex::encode(x.hash()))
-                        .collect(),
+                    pending_transactions: behaviour.blockchain.pending_transactions.iter().map(|x| hex::encode(x.hash())).collect(),
+                    pending_stakes: behaviour.blockchain.pending_stakes.iter().map(|x| hex::encode(x.hash())).collect(),
+                    pending_blocks: behaviour.blockchain.pending_blocks.iter().map(|x| hex::encode(x.hash())).collect(),
                     sync_index: behaviour.blockchain.sync.index,
                     syncing: behaviour.blockchain.sync.syncing,
                 })?
@@ -271,26 +205,9 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_balance(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-    first: &str,
-) -> Result<(), Box<dyn Error>> {
-    let public_key = address::public::decode(
-        BALANCE
-            .find(first)
-            .ok_or("GET BALANCE 1")?
-            .as_str()
-            .trim()
-            .get(9..)
-            .ok_or("GET BALANCE 2")?,
-    )?;
-    let balance = swarm
-        .behaviour()
-        .blockchain
-        .states
-        .dynamic
-        .balance(&public_key);
+async fn handler_get_json_balance(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>, first: &str) -> Result<(), Box<dyn Error>> {
+    let public_key = address::public::decode(BALANCE.find(first).ok_or("GET BALANCE 1")?.as_str().trim().get(9..).ok_or("GET BALANCE 2")?)?;
+    let balance = swarm.behaviour().blockchain.states.dynamic.balance(&public_key);
     stream
         .write_all(
             format!(
@@ -307,26 +224,9 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_balance_staked(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-    first: &str,
-) -> Result<(), Box<dyn Error>> {
-    let public_key = address::public::decode(
-        BALANCE_STAKED
-            .find(first)
-            .ok_or("GET BALANCE_STAKED 1")?
-            .as_str()
-            .trim()
-            .get(16..)
-            .ok_or("GET BALANCE_STAKED 2")?,
-    )?;
-    let balance = swarm
-        .behaviour()
-        .blockchain
-        .states
-        .dynamic
-        .balance_staked(&public_key);
+async fn handler_get_json_balance_staked(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>, first: &str) -> Result<(), Box<dyn Error>> {
+    let public_key = address::public::decode(BALANCE_STAKED.find(first).ok_or("GET BALANCE_STAKED 1")?.as_str().trim().get(16..).ok_or("GET BALANCE_STAKED 2")?)?;
+    let balance = swarm.behaviour().blockchain.states.dynamic.balance_staked(&public_key);
     stream
         .write_all(
             format!(
@@ -343,10 +243,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_height(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-) -> Result<(), Box<dyn Error>> {
+async fn handler_get_json_height(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let height = swarm.behaviour().blockchain.height();
     stream
         .write_all(
@@ -364,11 +261,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_hash_by_height(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-    first: &str,
-) -> Result<(), Box<dyn Error>> {
+async fn handler_get_json_hash_by_height(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>, first: &str) -> Result<(), Box<dyn Error>> {
     let height = HASH_BY_HEIGHT
         .find(first)
         .ok_or("GET HASH_BY_HEIGHT 1")?
@@ -404,20 +297,8 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_block_by_hash(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-    first: &str,
-) -> Result<(), Box<dyn Error>> {
-    let hash = hex::decode(
-        BLOCK_BY_HASH
-            .find(first)
-            .ok_or("GET BLOCK_BY_HASH 1")?
-            .as_str()
-            .trim()
-            .get(7..)
-            .ok_or("GET BLOCK_BY_HASH 2")?,
-    )?;
+async fn handler_get_json_block_by_hash(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>, first: &str) -> Result<(), Box<dyn Error>> {
+    let hash = hex::decode(BLOCK_BY_HASH.find(first).ok_or("GET BLOCK_BY_HASH 1")?.as_str().trim().get(7..).ok_or("GET BLOCK_BY_HASH 2")?)?;
     let block = db::block::get(&swarm.behaviour().blockchain.db, &hash)?;
     stream
         .write_all(
@@ -433,16 +314,8 @@ Content-Type: application/json
                     timestamp: block.timestamp,
                     public_key: address::public::encode(&block.public_key),
                     signature: hex::encode(&block.signature),
-                    transactions: block
-                        .transactions
-                        .iter()
-                        .map(|x| hex::encode(&x.hash()))
-                        .collect(),
-                    stakes: block
-                        .stakes
-                        .iter()
-                        .map(|x| hex::encode(&x.hash()))
-                        .collect(),
+                    transactions: block.transactions.iter().map(|x| hex::encode(&x.hash())).collect(),
+                    stakes: block.stakes.iter().map(|x| hex::encode(&x.hash())).collect(),
                 })?
             )
             .as_bytes(),
@@ -450,11 +323,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_transaction_by_hash(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-    first: &str,
-) -> Result<(), Box<dyn Error>> {
+async fn handler_get_json_transaction_by_hash(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>, first: &str) -> Result<(), Box<dyn Error>> {
     let hash = hex::decode(
         TRANSACTION_BY_HASH
             .find(first)
@@ -488,20 +357,8 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_stake_by_hash(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-    first: &str,
-) -> Result<(), Box<dyn Error>> {
-    let hash = hex::decode(
-        STAKE_BY_HASH
-            .find(first)
-            .ok_or("GET STAKE_BY_HASH 1")?
-            .as_str()
-            .trim()
-            .get(7..)
-            .ok_or("GET STAKE_BY_HASH 2")?,
-    )?;
+async fn handler_get_json_stake_by_hash(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>, first: &str) -> Result<(), Box<dyn Error>> {
+    let hash = hex::decode(STAKE_BY_HASH.find(first).ok_or("GET STAKE_BY_HASH 1")?.as_str().trim().get(7..).ok_or("GET STAKE_BY_HASH 2")?)?;
     let stake = db::stake::get(&swarm.behaviour().blockchain.db, &hash)?;
     stream
         .write_all(
@@ -526,10 +383,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_peers(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &Swarm<MyBehaviour>,
-) -> Result<(), Box<dyn Error>> {
+async fn handler_get_json_peers(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
     let peers = db::peer::get_all(&swarm.behaviour().blockchain.db);
     stream
         .write_all(
@@ -547,18 +401,9 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_post_json_transaction(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &mut Swarm<MyBehaviour>,
-    buffer: &[u8; 1024],
-) -> Result<(), Box<dyn Error>> {
+async fn handler_post_json_transaction(stream: &mut tokio::net::TcpStream, swarm: &mut Swarm<MyBehaviour>, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
     let compressed: transaction::Compressed = bincode::deserialize(&hex::decode(
-        buffer
-            .lines()
-            .nth(5)
-            .ok_or("POST TRANSACTION 1")??
-            .get(0..*TRANSACTION_SERIALIZED)
-            .ok_or("POST TRANSACTION 2")?,
+        buffer.lines().nth(5).ok_or("POST TRANSACTION 1")??.get(0..*TRANSACTION_SERIALIZED).ok_or("POST TRANSACTION 2")?,
     )?)?;
     let behaviour = swarm.behaviour_mut();
     let status = match behaviour.blockchain.pending_transactions_push(Transaction {
@@ -591,19 +436,8 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_post_json_stake(
-    stream: &mut tokio::net::TcpStream,
-    swarm: &mut Swarm<MyBehaviour>,
-    buffer: &[u8; 1024],
-) -> Result<(), Box<dyn Error>> {
-    let compressed: stake::Compressed = bincode::deserialize(&hex::decode(
-        buffer
-            .lines()
-            .nth(5)
-            .ok_or("POST STAKE 1")??
-            .get(0..*STAKE_SERIALIZED)
-            .ok_or("POST STAKE 2")?,
-    )?)?;
+async fn handler_post_json_stake(stream: &mut tokio::net::TcpStream, swarm: &mut Swarm<MyBehaviour>, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
+    let compressed: stake::Compressed = bincode::deserialize(&hex::decode(buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?)?)?;
     let behaviour = swarm.behaviour_mut();
     let status = match behaviour.blockchain.pending_stakes_push(Stake {
         public_key: compressed.public_key,
@@ -636,8 +470,6 @@ Content-Type: application/json
     Ok(())
 }
 async fn handler_404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
-    stream
-        .write_all("HTTP/1.1 404 NOT FOUND".as_bytes())
-        .await?;
+    stream.write_all("HTTP/1.1 404 NOT FOUND".as_bytes()).await?;
     Ok(())
 }

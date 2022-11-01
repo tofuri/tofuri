@@ -134,11 +134,7 @@ pub struct Dynamic {
     pub latest_block: Block,
 }
 impl Dynamic {
-    pub fn from(
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &Vec<types::Hash>,
-        trusted: &Trusted,
-    ) -> Dynamic {
+    pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>, trusted: &Trusted) -> Dynamic {
         let mut dynamic = Self {
             hashes: vec![],
             stakers: trusted.stakers.clone(),
@@ -153,11 +149,7 @@ impl Dynamic {
         };
         dynamic
     }
-    pub fn staker(
-        &self,
-        timestamp: types::Timestamp,
-        previous_timestamp: types::Timestamp,
-    ) -> Option<&types::PublicKeyBytes> {
+    pub fn staker(&self, timestamp: types::Timestamp, previous_timestamp: types::Timestamp) -> Option<&types::PublicKeyBytes> {
         let mut diff = timestamp - previous_timestamp;
         if diff > 0 {
             diff -= 1;

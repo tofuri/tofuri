@@ -20,11 +20,7 @@ impl States {
             trusted: Trusted::default(),
         }
     }
-    pub fn dynamic_fork(
-        &self,
-        blockchain: &Blockchain,
-        previous_hash: &types::Hash,
-    ) -> Result<Dynamic, Box<dyn Error>> {
+    pub fn dynamic_fork(&self, blockchain: &Blockchain, previous_hash: &types::Hash) -> Result<Dynamic, Box<dyn Error>> {
         if previous_hash == &[0; 32] {
             return Ok(Dynamic::default());
         }

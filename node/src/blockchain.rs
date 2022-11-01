@@ -4,10 +4,7 @@ use log::{debug, info};
 use pea_core::util;
 use pea_core::{
     block::Block,
-    constants::{
-        BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE,
-        PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
-    },
+    constants::{BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT},
     stake::Stake,
     transaction::Transaction,
     types,
@@ -58,12 +55,7 @@ impl Blockchain {
         } else {
             hashes_dynamic[self.sync.index - hashes_trusted.len()]
         };
-        debug!(
-            "{} {} {}",
-            "Sync".cyan(),
-            self.sync.index.to_string().yellow(),
-            hex::encode(&hash)
-        );
+        debug!("{} {} {}", "Sync".cyan(), self.sync.index.to_string().yellow(), hex::encode(&hash));
         let block = db::block::get(&self.db, &hash).unwrap();
         self.sync.index += 1;
         block
@@ -84,8 +76,7 @@ impl Blockchain {
     }
     fn limit_pending_transactions(&mut self) {
         while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
-            self.pending_transactions
-                .remove(self.pending_transactions.len() - 1);
+            self.pending_transactions.remove(self.pending_transactions.len() - 1);
         }
     }
     fn limit_pending_stakes(&mut self) {
@@ -94,11 +85,7 @@ impl Blockchain {
         }
     }
     pub fn pending_blocks_push(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
-        if self
-            .pending_blocks
-            .iter()
-            .any(|b| b.signature == block.signature)
-        {
+        if self.pending_blocks.iter().any(|b| b.signature == block.signature) {
             return Err("block already pending".into());
         }
         self.validate_block(&block)?;
@@ -106,52 +93,27 @@ impl Blockchain {
         self.limit_pending_blocks();
         Ok(())
     }
-    pub fn pending_transactions_push(
-        &mut self,
-        transaction: Transaction,
-    ) -> Result<(), Box<dyn Error>> {
-        if self
-            .pending_transactions
-            .iter()
-            .any(|x| x.signature == transaction.signature)
-        {
+    pub fn pending_transactions_push(&mut self, transaction: Transaction) -> Result<(), Box<dyn Error>> {
+        if self.pending_transactions.iter().any(|x| x.signature == transaction.signature) {
             return Err("transaction already pending".into());
         }
-        if let Some(index) = self
-            .pending_transactions
-            .iter()
-            .position(|s| s.public_key_input == transaction.public_key_input)
-        {
+        if let Some(index) = self.pending_transactions.iter().position(|s| s.public_key_input == transaction.public_key_input) {
             if transaction.fee <= self.pending_transactions[index].fee {
-                return Err(
-                    "transaction fee too low to replace previous pending transaction".into(),
-                );
+                return Err("transaction fee too low to replace previous pending transaction".into());
             }
             self.pending_transactions.remove(index);
         }
         let balance = self.states.dynamic.balance(&transaction.public_key_input);
-        self.validate_transaction(
-            &transaction,
-            balance,
-            self.states.dynamic.latest_block.timestamp,
-        )?;
+        self.validate_transaction(&transaction, balance, self.states.dynamic.latest_block.timestamp)?;
         self.pending_transactions.push(transaction);
         self.limit_pending_transactions();
         Ok(())
     }
     pub fn pending_stakes_push(&mut self, stake: Stake) -> Result<(), Box<dyn Error>> {
-        if self
-            .pending_stakes
-            .iter()
-            .any(|x| x.signature == stake.signature)
-        {
+        if self.pending_stakes.iter().any(|x| x.signature == stake.signature) {
             return Err("stake already pending".into());
         }
-        if let Some(index) = self
-            .pending_stakes
-            .iter()
-            .position(|s| s.public_key == stake.public_key)
-        {
+        if let Some(index) = self.pending_stakes.iter().position(|s| s.public_key == stake.public_key) {
             if stake.fee <= self.pending_stakes[index].fee {
                 return Err("stake fee too low to replace previous pending stake".into());
             }
@@ -159,12 +121,7 @@ impl Blockchain {
         }
         let balance = self.states.dynamic.balance(&stake.public_key);
         let balance_staked = self.states.dynamic.balance_staked(&stake.public_key);
-        self.validate_stake(
-            &stake,
-            balance,
-            balance_staked,
-            self.states.dynamic.latest_block.timestamp,
-        )?;
+        self.validate_stake(&stake, balance, balance_staked, self.states.dynamic.latest_block.timestamp)?;
         self.pending_stakes.push(stake);
         self.limit_pending_stakes();
         Ok(())
@@ -190,33 +147,19 @@ impl Blockchain {
         }
         block.sign(&self.keypair);
         self.pending_blocks_push(block.clone())?;
-        info!(
-            "{} {} {}",
-            "Forged".magenta(),
-            self.tree.height(&block.previous_hash).to_string().yellow(),
-            hex::encode(block.hash())
-        );
+        info!("{} {} {}", "Forged".magenta(), self.tree.height(&block.previous_hash).to_string().yellow(), hex::encode(block.hash()));
         Ok(block)
     }
     pub fn pending_blocks_accept(&mut self) {
         for block in self.pending_blocks.clone() {
             let hash = self.block_accept(&block);
-            info!(
-                "{} {} {}",
-                "Accept".green(),
-                self.tree.height(&block.previous_hash).to_string().yellow(),
-                hex::encode(hash)
-            );
+            info!("{} {} {}", "Accept".green(), self.tree.height(&block.previous_hash).to_string().yellow(), hex::encode(hash));
         }
     }
     pub fn block_accept(&mut self, block: &Block) -> types::Hash {
         db::block::put(&block, &self.db).unwrap();
         let hash = block.hash();
-        if self
-            .tree
-            .insert(hash, block.previous_hash, block.timestamp)
-            .unwrap()
-        {
+        if self.tree.insert(hash, block.previous_hash, block.timestamp).unwrap() {
             info!("{}", "Fork".cyan());
         }
         self.tree.sort_branches();
@@ -236,12 +179,7 @@ impl Blockchain {
         db::tree::reload(&mut self.tree, &self.db);
         info!("{} {:?}", "Tree load".cyan(), start.elapsed());
         if let Some(main) = self.tree.main() {
-            info!(
-                "{} {} {}",
-                "Main branch".cyan(),
-                main.1.to_string().yellow(),
-                hex::encode(main.0)
-            );
+            info!("{} {} {}", "Main branch".cyan(), main.1.to_string().yellow(), hex::encode(main.0));
         }
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes();
@@ -268,21 +206,11 @@ impl Blockchain {
         if block.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return Err("block created too early".into());
         }
-        let public_key_inputs = block
-            .transactions
-            .iter()
-            .map(|t| t.public_key_input)
-            .collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_key_inputs.len())
-            .any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1]))
-        {
+        let public_key_inputs = block.transactions.iter().map(|t| t.public_key_input).collect::<Vec<types::PublicKeyBytes>>();
+        if (1..public_key_inputs.len()).any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1])) {
             return Err("block includes multiple transactions from same public_key_input".into());
         }
-        let public_keys = block
-            .stakes
-            .iter()
-            .map(|s| s.public_key)
-            .collect::<Vec<types::PublicKeyBytes>>();
+        let public_keys = block.stakes.iter().map(|s| s.public_key).collect::<Vec<types::PublicKeyBytes>>();
         if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
             return Err("block includes multiple stakes from same public_key".into());
         }
@@ -305,9 +233,7 @@ impl Blockchain {
                     return Err("mint stake has invalid signature".into());
                 }
                 if stake.timestamp > util::timestamp() {
-                    return Err(
-                        "mint stake has invalid timestamp (mint stake is from the future)".into(),
-                    );
+                    return Err("mint stake has invalid timestamp (mint stake is from the future)".into());
                 }
                 if stake.timestamp < block.timestamp {
                     return Err("mint stake too old".into());
@@ -335,12 +261,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_transaction(
-        &self,
-        transaction: &Transaction,
-        balance: types::Amount,
-        timestamp: types::Timestamp,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn validate_transaction(&self, transaction: &Transaction, balance: types::Amount, timestamp: types::Timestamp) -> Result<(), Box<dyn Error>> {
         if types::PublicKey::from_bytes(&transaction.public_key_output).is_err() {
             return Err("transaction has invalid public_key_output".into());
         }
@@ -348,9 +269,7 @@ impl Blockchain {
             return Err("transaction has invalid signature".into());
         }
         if transaction.timestamp > util::timestamp() {
-            return Err(
-                "transaction has invalid timestamp (transaction is from the future)".into(),
-            );
+            return Err("transaction has invalid timestamp (transaction is from the future)".into());
         }
         if transaction.public_key_input == transaction.public_key_output {
             return Err("transaction public_key_input == public_key_output".into());
@@ -372,13 +291,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_stake(
-        &self,
-        stake: &Stake,
-        balance: types::Amount,
-        balance_staked: types::Amount,
-        timestamp: types::Timestamp,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn validate_stake(&self, stake: &Stake, balance: types::Amount, balance_staked: types::Amount, timestamp: types::Timestamp) -> Result<(), Box<dyn Error>> {
         if stake.verify().is_err() {
             return Err("stake has invalid signature".into());
         }

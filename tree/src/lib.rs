@@ -40,11 +40,7 @@ impl Tree {
         }
         trusted.reverse();
         let len = trusted.len();
-        let start = if len < TRUST_FORK_AFTER_BLOCKS {
-            0
-        } else {
-            len - TRUST_FORK_AFTER_BLOCKS
-        };
+        let start = if len < TRUST_FORK_AFTER_BLOCKS { 0 } else { len - TRUST_FORK_AFTER_BLOCKS };
         let dynamic = trusted.drain(start..len).collect();
         (trusted, dynamic)
     }
@@ -71,27 +67,17 @@ impl Tree {
     pub fn get(&self, hash: &types::Hash) -> Option<&types::Hash> {
         self.hashes.get(hash)
     }
-    pub fn insert(
-        &mut self,
-        hash: types::Hash,
-        previous_hash: types::Hash,
-        timestamp: types::Timestamp,
-    ) -> Option<bool> {
+    pub fn insert(&mut self, hash: types::Hash, previous_hash: types::Hash, timestamp: types::Timestamp) -> Option<bool> {
         if self.hashes.insert(hash, previous_hash).is_some() {
             return None;
         }
-        if let Some(index) = self
-            .branches
-            .iter()
-            .position(|(hash, _, _)| hash == &previous_hash)
-        {
+        if let Some(index) = self.branches.iter().position(|(hash, _, _)| hash == &previous_hash) {
             // extend branch
             self.branches[index] = (hash, self.branches[index].1 + 1, timestamp);
             Some(false)
         } else {
             // new branch
-            self.branches
-                .push((hash, self.height(&previous_hash), timestamp));
+            self.branches.push((hash, self.height(&previous_hash), timestamp));
             Some(true)
         }
     }
@@ -140,16 +126,8 @@ impl fmt::Debug for Tree {
             f,
             "{:?}",
             Tree {
-                branches: self
-                    .branches
-                    .iter()
-                    .map(|(hash, height, timestamp)| (hex::encode(hash), *height, *timestamp))
-                    .collect(),
-                hashes: self
-                    .hashes
-                    .iter()
-                    .map(|(hash, previous_hash)| (hex::encode(hash), hex::encode(previous_hash)))
-                    .collect(),
+                branches: self.branches.iter().map(|(hash, height, timestamp)| (hex::encode(hash), *height, *timestamp)).collect(),
+                hashes: self.hashes.iter().map(|(hash, previous_hash)| (hex::encode(hash), hex::encode(previous_hash))).collect(),
             }
         )
     }

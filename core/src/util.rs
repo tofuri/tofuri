@@ -15,10 +15,7 @@ pub fn keygen() -> types::Keypair {
     types::Keypair::generate(&mut csprng)
 }
 pub fn timestamp() -> types::Timestamp {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs() as types::Timestamp
+    SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs() as types::Timestamp
 }
 pub fn hash(input: &[u8]) -> types::Hash {
     blake3::hash(input).into()
@@ -26,15 +23,10 @@ pub fn hash(input: &[u8]) -> types::Hash {
 pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>> {
     let file = File::open(path)?;
     let buf = BufReader::new(file);
-    Ok(buf
-        .lines()
-        .map(|l| l.expect("Could not parse line"))
-        .collect())
+    Ok(buf.lines().map(|l| l.expect("Could not parse line")).collect())
 }
 pub fn reward(balance_staked: types::Amount) -> types::Amount {
-    ((2f64.powf((balance_staked as f64 / DECIMAL_PRECISION as f64) / MIN_STAKE_MULTIPLIER as f64)
-        - 1f64)
-        * DECIMAL_PRECISION as f64) as types::Amount
+    ((2f64.powf((balance_staked as f64 / DECIMAL_PRECISION as f64) / MIN_STAKE_MULTIPLIER as f64) - 1f64) * DECIMAL_PRECISION as f64) as types::Amount
 }
 #[cfg(test)]
 mod tests {
@@ -44,10 +36,7 @@ mod tests {
     use test::Bencher;
     #[test]
     fn test_hash() {
-        assert_eq!(
-            blake3::hash(b"test").to_string(),
-            "4878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215".to_string()
-        );
+        assert_eq!(blake3::hash(b"test").to_string(), "4878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215".to_string());
     }
     #[bench]
     fn bench_hash(b: &mut Bencher) {

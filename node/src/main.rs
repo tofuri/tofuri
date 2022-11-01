@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "PubKey".cyan(), address::public::encode(wallet.keypair.public.as_bytes()).green());
     let mut blockchain = Blockchain::new(db, wallet.keypair);
     let peers = db::peer::get_all(&blockchain.db);
-    info!("{} {:?}", "Peers".cyan(), peers);
+    info!("{} {}", "Peers".cyan(), format!("{:?}", peers).yellow());
     blockchain.load();
     let mut swarm = p2p::swarm(blockchain).await?;
     swarm.listen_on(args.host.parse()?)?;

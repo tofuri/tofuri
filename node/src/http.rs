@@ -63,7 +63,15 @@ pub async fn handler(mut stream: tokio::net::TcpStream, swarm: &mut Swarm<MyBeha
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
-    info!("{} {}", "Interface".cyan(), first.green());
+    info!(
+        "{} {} {}",
+        "HTTP API".cyan(),
+        first.green(),
+        match stream.peer_addr() {
+            Ok(addr) => addr.to_string().yellow(),
+            Err(err) => err.to_string().red(),
+        }
+    );
     if GET.is_match(&first) {
         handler_get(&mut stream, swarm, &first).await?;
     } else if POST.is_match(&first) {

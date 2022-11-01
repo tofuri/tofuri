@@ -189,6 +189,7 @@ pub async fn listen(
             }
         }
     } else {
+        info!("{} http://{}", "HTTP API".cyan(), "Disabled".red());
         loop {
             tokio::select! {
                 _ = heartbeat::next().fuse() => heartbeat::handler(swarm),

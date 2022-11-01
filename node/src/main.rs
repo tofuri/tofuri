@@ -1,4 +1,5 @@
 use chrono::Local;
+use clap::Parser;
 use colored::*;
 use env_logger::Builder;
 use libp2p::Multiaddr;
@@ -10,6 +11,34 @@ use pea_wallet::Wallet;
 use std::{error::Error, io::Write};
 use tempdir::TempDir;
 use tokio::net::TcpListener;
+#[derive(Parser, Debug)]
+#[clap(version, about, long_about = None)]
+pub struct ValidatorArgs {
+    /// Log path to source file
+    #[clap(short, long, value_parser, default_value_t = false)]
+    pub debug: bool,
+    /// Multiaddr to listen on
+    #[clap(short, long, value_parser, default_value = "/ip4/0.0.0.0/tcp/9333")]
+    pub host: String,
+    /// Multiaddr to dial
+    #[clap(short, long, value_parser, default_value = "")]
+    pub peer: String,
+    /// Store blockchain in a temporary database
+    #[clap(long, value_parser, default_value_t = false)]
+    pub tempdb: bool,
+    /// TCP socket address to bind to
+    #[clap(long, value_parser, default_value = "")]
+    pub http_api: String,
+    /// Use temporary random keypair
+    #[clap(long, value_parser, default_value_t = false)]
+    pub tempkey: bool,
+    /// Wallet filename
+    #[clap(long, value_parser, default_value = "")]
+    pub wallet: String,
+    /// Passphrase to wallet
+    #[clap(long, value_parser, default_value = "")]
+    pub passphrase: String,
+}
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = ValidatorArgs::parse();
@@ -37,9 +66,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for peer in peers {
         swarm.dial(peer.parse::<Multiaddr>()?)?;
     }
-    let listener = TcpListener::bind(args.http).await?;
-    print_http(&listener)?;
-    p2p::listen(&mut swarm, listener).await?;
+    let tcp_listener_http_api = if args.http_api != "" {
+        Some(TcpListener::bind(args.http_api).await?)
+    } else {
+        None
+    };
+    p2p::listen(&mut swarm, tcp_listener_http_api).await?;
     Ok(())
 }
 pub fn colored_level(level: Level) -> ColoredString {
@@ -117,41 +149,4 @@ pub fn print_validator_args(args: &ValidatorArgs) {
     info!("{} {}", "--peer".cyan(), args.peer);
     info!("{} {}", "--tempdb".cyan(), args.tempdb);
     info!("{} {}", "--tempkey".cyan(), args.tempkey);
-}
-pub fn print_http(listener: &TcpListener) -> Result<(), Box<dyn Error>> {
-    info!(
-        "{} http://{}",
-        "Interface".cyan(),
-        listener.local_addr()?.to_string().green()
-    );
-    Ok(())
-}
-use clap::Parser;
-#[derive(Parser, Debug)]
-#[clap(version, about, long_about = None)]
-pub struct ValidatorArgs {
-    /// Log path to source file
-    #[clap(short, long, value_parser, default_value_t = false)]
-    pub debug: bool,
-    /// Multiaddr to listen on
-    #[clap(short, long, value_parser, default_value = "/ip4/0.0.0.0/tcp/9333")]
-    pub host: String,
-    /// Multiaddr to dial
-    #[clap(short, long, value_parser, default_value = "")]
-    pub peer: String,
-    /// Store blockchain in a temporary database
-    #[clap(long, value_parser, default_value_t = false)]
-    pub tempdb: bool,
-    /// HTTP API endpoint
-    #[clap(long, value_parser, default_value = ":::8080")]
-    pub http: String,
-    /// Use temporary random keypair
-    #[clap(long, value_parser, default_value_t = false)]
-    pub tempkey: bool,
-    /// Wallet filename
-    #[clap(long, value_parser, default_value = "")]
-    pub wallet: String,
-    /// Passphrase to wallet
-    #[clap(long, value_parser, default_value = "")]
-    pub passphrase: String,
 }

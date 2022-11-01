@@ -164,22 +164,43 @@ pub async fn swarm(blockchain: Blockchain) -> Result<Swarm<MyBehaviour>, Box<dyn
 }
 pub async fn listen(
     swarm: &mut Swarm<MyBehaviour>,
-    listener: TcpListener,
+    tcp_listener_http_api: Option<TcpListener>,
 ) -> Result<(), Box<dyn Error>> {
-    loop {
-        tokio::select! {
-            _ = heartbeat::next().fuse() => heartbeat::handler(swarm),
-            Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, swarm).await {
-                error!("{}", err);
-            },
-            event = swarm.select_next_some() => {
-                p2p_event("SwarmEvent", format!("{:?}", event));
-                if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
-                    if let ConnectedPoint::Dialer { address, .. } = endpoint {
-                        connection_established(address, swarm);
-                    }
-                };
-            },
+    if let Some(listener) = tcp_listener_http_api {
+        info!(
+            "{} http://{}",
+            "HTTP API".cyan(),
+            listener.local_addr()?.to_string().green()
+        );
+        loop {
+            tokio::select! {
+                Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, swarm).await {
+                    error!("{}", err);
+                },
+                _ = heartbeat::next().fuse() => heartbeat::handler(swarm),
+                event = swarm.select_next_some() => {
+                    p2p_event("SwarmEvent", format!("{:?}", event));
+                    if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
+                        if let ConnectedPoint::Dialer { address, .. } = endpoint {
+                            connection_established(address, swarm);
+                        }
+                    };
+                },
+            }
+        }
+    } else {
+        loop {
+            tokio::select! {
+                _ = heartbeat::next().fuse() => heartbeat::handler(swarm),
+                event = swarm.select_next_some() => {
+                    p2p_event("SwarmEvent", format!("{:?}", event));
+                    if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
+                        if let ConnectedPoint::Dialer { address, .. } = endpoint {
+                            connection_established(address, swarm);
+                        }
+                    };
+                },
+            }
         }
     }
 }

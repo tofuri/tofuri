@@ -79,16 +79,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     p2p::listen(&mut swarm, tcp_listener_http_api).await?;
     Ok(())
 }
-pub fn colored_level(level: Level) -> ColoredString {
-    match level {
-        Level::Error => level.to_string().red(),
-        Level::Warn => level.to_string().yellow(),
-        Level::Info => level.to_string().green(),
-        Level::Debug => level.to_string().blue(),
-        Level::Trace => level.to_string().magenta(),
+fn env_logger_init(log_path: bool) {
+    fn colored_level(level: Level) -> ColoredString {
+        match level {
+            Level::Error => level.to_string().red(),
+            Level::Warn => level.to_string().yellow(),
+            Level::Info => level.to_string().green(),
+            Level::Debug => level.to_string().blue(),
+            Level::Trace => level.to_string().magenta(),
+        }
     }
-}
-pub fn env_logger_init(log_path: bool) {
     let mut builder = Builder::new();
     if log_path {
         builder.format(|buf, record| {

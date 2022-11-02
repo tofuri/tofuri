@@ -24,7 +24,7 @@ pub struct Args {
     #[clap(short, long, value_parser, default_value = "")]
     pub peer: String,
     /// TCP socket address to bind to
-    #[clap(long, value_parser, default_value = "")]
+    #[clap(long, value_parser, default_value = ":::9332")]
     pub http_api: String,
     /// Store blockchain in a temporary database
     #[clap(long, value_parser, default_value_t = false)]

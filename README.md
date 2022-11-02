@@ -1,5 +1,12 @@
 # Pea
 
+## Running
+
+```bash
+cargo run --bin pea-node --http-api=:::8080
+cargo run --bin pea-wallet --http-api=:::8080
+```
+
 ## Build
 
 ```bash

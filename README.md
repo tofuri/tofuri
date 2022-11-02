@@ -1,10 +1,17 @@
 # Pea
 
-## Running
+## Install using [Cargo](https://doc.rust-lang.org/cargo/)
+
+### Node
 
 ```bash
-cargo run --bin pea-node --http-api=:::8080
-cargo run --bin pea-wallet --http-api=:::8080
+cargo install pea-node
+```
+
+### Wallet
+
+```bash
+cargo install pea-wallet
 ```
 
 ## Build

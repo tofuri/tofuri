@@ -1,5 +1,7 @@
 # Pea
 
+It is recommended that you read through [The Technical Paper](https://github.com/peacash/paper/blob/main/README.md).
+
 ## Install using [Cargo](https://doc.rust-lang.org/cargo/)
 
 ### Node

@@ -2,7 +2,7 @@ pub mod get {
     use pea_core::types;
     use serde::{Deserialize, Serialize};
     use std::error::Error;
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Data {
         pub public_key: String,
         pub height: types::Height,
@@ -17,12 +17,12 @@ pub mod get {
         pub sync_index: usize,
         pub syncing: bool,
     }
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct States {
         pub dynamic: State,
         pub trusted: State,
     }
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct State {
         pub balance: types::Amount,
         pub balance_staked: types::Amount,
@@ -30,7 +30,7 @@ pub mod get {
         pub latest_hashes: Vec<String>,
         pub stakers: Vec<String>,
     }
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Block {
         pub hash: String,
         pub previous_hash: String,
@@ -40,7 +40,7 @@ pub mod get {
         pub transactions: Vec<String>,
         pub stakes: Vec<String>,
     }
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Transaction {
         pub hash: String,
         pub public_key_input: String,
@@ -50,7 +50,7 @@ pub mod get {
         pub timestamp: types::Timestamp,
         pub signature: String,
     }
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Stake {
         pub hash: String,
         pub public_key: String,

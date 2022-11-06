@@ -3,6 +3,7 @@ use pea_core::{
     types::{self, SecretKey},
     util,
 };
+const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 #[derive(Debug, Clone)]
 pub struct Payment {
     pub public_key: types::PublicKeyBytes,
@@ -15,21 +16,20 @@ pub struct PaymentProcessor {
     pub secret_key: types::SecretKeyBytes,
     pub counter: usize,
     pub payments: Vec<Payment>,
-    pub blocks: Vec<Block>,
-    pub latest_hashes: Vec<String>,
-    pub latest_block: Block,
     pub confirmations: usize,
+    pub expires_after_secs: u32,
+    pub chain: Vec<Block>,
 }
 impl PaymentProcessor {
-    pub fn new<'a>(api: String, secret_key: types::SecretKeyBytes, confirmations: usize) -> Self {
+    pub fn new<'a>(api: String, secret_key: types::SecretKeyBytes, confirmations: usize, expires_after_secs: u32) -> Self {
         Self {
             api,
             secret_key,
             counter: 0,
             payments: vec![],
-            blocks: vec![],
-            latest_hashes: vec![],
             confirmations,
+            expires_after_secs,
+            chain: vec![],
         }
     }
     pub fn pay(&mut self, amount: types::Amount) -> Payment {
@@ -47,19 +47,55 @@ impl PaymentProcessor {
         self.counter += 1;
         payment
     }
-    pub async fn check(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let latest_block = get::latest_block(&self.api).await?;
-        if self.latest_block.signature != latest_block.signature {
-            self.latest_block = latest_block;
+    pub async fn check(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut transactions = vec![];
+        for (i, block) in self.chain.iter().enumerate() {
+            if i < self.confirmations {
+                continue;
+            }
+            for hash in block.transactions.iter() {
+                let transaction = get::transaction(&self.api, hash).await?;
+                transactions.push(transaction);
+            }
         }
-        let data = get::data(&self.api).await?;
-        let latest_hashes = data.states.dynamic.latest_hashes;
-        if self.latest_hashes == latest_hashes {
+        Ok(())
+    }
+    pub async fn update_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let latest_block = get::latest_block(&self.api).await?;
+        if match self.chain.first() {
+            Some(block) => block.hash == latest_block.hash,
+            None => false,
+        } {
             return Ok(()); // nothing changed
         }
-        self.latest_hashes = latest_hashes;
-        for hash in self.latest_hashes.iter() {
-            let block = get::block(&self.api, hash).await?;
+        if match self.chain.first() {
+            Some(block) => block.hash == latest_block.previous_hash,
+            None => false,
+        } {
+            self.chain.push(latest_block);
+        } else {
+            // fork or missed block
+            println!("fork or missed block")
+        }
+        while match self.chain.first() {
+            Some(block) => block.timestamp < util::timestamp() - self.expires_after_secs,
+            None => false,
+        } {
+            self.chain.remove(0);
+        }
+        Ok(())
+    }
+    pub async fn reload_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.chain = vec![];
+        let latest_block = get::latest_block(&self.api).await?;
+        let mut previous_hash = latest_block.hash;
+        loop {
+            let block = get::block(&self.api, &previous_hash).await?;
+            if block.previous_hash == GENESIS || block.timestamp < util::timestamp() - self.expires_after_secs {
+                break;
+            }
+            previous_hash = block.previous_hash.clone();
+            self.chain.insert(0, block);
         }
         Ok(())
     }

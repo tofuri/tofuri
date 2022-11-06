@@ -255,6 +255,7 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&get::Block {
+                    hash: hex::encode(&block.hash()),
                     previous_hash: hex::encode(&block.previous_hash),
                     timestamp: block.timestamp,
                     public_key: address::public::encode(&block.public_key),
@@ -317,6 +318,7 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&get::Block {
+                    hash: hex::encode(&block.hash()),
                     previous_hash: hex::encode(&block.previous_hash),
                     timestamp: block.timestamp,
                     public_key: address::public::encode(&block.public_key),
@@ -351,6 +353,7 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&get::Transaction {
+                    hash: hex::encode(&transaction.hash()),
                     public_key_input: address::public::encode(&transaction.public_key_input),
                     public_key_output: address::public::encode(&transaction.public_key_output),
                     amount: transaction.amount,
@@ -377,6 +380,7 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&get::Stake {
+                    hash: hex::encode(&stake.hash()),
                     public_key: address::public::encode(&stake.public_key),
                     amount: stake.amount,
                     deposit: stake.deposit,

@@ -17,6 +17,7 @@ pub struct PaymentProcessor {
     pub payments: Vec<Payment>,
     pub blocks: Vec<Block>,
     pub latest_hashes: Vec<String>,
+    pub latest_block: Block,
     pub confirmations: usize,
 }
 impl PaymentProcessor {
@@ -47,6 +48,10 @@ impl PaymentProcessor {
         payment
     }
     pub async fn check(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let latest_block = get::latest_block(&self.api).await?;
+        if self.latest_block.signature != latest_block.signature {
+            self.latest_block = latest_block;
+        }
         let data = get::data(&self.api).await?;
         let latest_hashes = data.states.dynamic.latest_hashes;
         if self.latest_hashes == latest_hashes {

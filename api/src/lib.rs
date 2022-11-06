@@ -32,6 +32,7 @@ pub mod get {
     }
     #[derive(Serialize, Deserialize, Debug)]
     pub struct Block {
+        pub hash: String,
         pub previous_hash: String,
         pub timestamp: types::Timestamp,
         pub public_key: String,
@@ -41,6 +42,7 @@ pub mod get {
     }
     #[derive(Serialize, Deserialize, Debug)]
     pub struct Transaction {
+        pub hash: String,
         pub public_key_input: String,
         pub public_key_output: String,
         pub amount: types::Amount,
@@ -50,6 +52,7 @@ pub mod get {
     }
     #[derive(Serialize, Deserialize, Debug)]
     pub struct Stake {
+        pub hash: String,
         pub public_key: String,
         pub amount: types::Amount,
         pub deposit: bool,

@@ -75,6 +75,9 @@ pub mod get {
     pub async fn block(api: &str, hash: &str) -> Result<Block, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/block/{}", api, hash)).await?.json().await?)
     }
+    pub async fn latest_block(api: &str) -> Result<Block, Box<dyn Error>> {
+        Ok(reqwest::get(format!("{}/block/latest", api)).await?.json().await?)
+    }
     pub async fn transaction(api: &str, hash: &str) -> Result<Transaction, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/transaction/{}", api, hash)).await?.json().await?)
     }

@@ -1,4 +1,4 @@
-use pea_api::get::Block;
+use pea_api::get::{self, Block};
 use pea_core::{
     types::{self, SecretKey},
     util,
@@ -41,4 +41,5 @@ impl PaymentProcessor {
         self.counter += 1;
         payment
     }
+    pub async fn check(&self) {}
 }

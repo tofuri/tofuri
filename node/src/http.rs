@@ -4,14 +4,13 @@ use lazy_static::lazy_static;
 use libp2p::Swarm;
 use log::{error, info};
 use pea_address as address;
-use pea_api as api;
+use pea_api::get;
 use pea_core::{
     stake::{self, Stake},
     transaction::{self, Transaction},
     types,
 };
 use regex::Regex;
-use serde::Serialize;
 use std::{error::Error, io::BufRead};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 lazy_static! {
@@ -139,34 +138,6 @@ Access-Control-Allow-Origin: *
     Ok(())
 }
 async fn handler_get_json(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
-    #[derive(Serialize)]
-    struct Data {
-        public_key: String,
-        height: types::Height,
-        tree_size: usize,
-        heartbeats: types::Heartbeats,
-        lag: f64,
-        gossipsub_peers: usize,
-        states: States,
-        pending_transactions: Vec<String>,
-        pending_stakes: Vec<String>,
-        pending_blocks: Vec<String>,
-        sync_index: usize,
-        syncing: bool,
-    }
-    #[derive(Serialize)]
-    struct States {
-        dynamic: State,
-        trusted: State,
-    }
-    #[derive(Serialize)]
-    struct State {
-        balance: types::Amount,
-        balance_staked: types::Amount,
-        hashes: usize,
-        latest_hashes: Vec<String>,
-        stakers: Vec<String>,
-    }
     let behaviour = swarm.behaviour();
     let states = &behaviour.blockchain.states;
     stream
@@ -178,21 +149,21 @@ Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&Data {
+                serde_json::to_string(&get::Data {
                     public_key: address::public::encode(behaviour.blockchain.keypair.public.as_bytes()),
                     height: behaviour.blockchain.height(),
                     tree_size: behaviour.blockchain.tree.size(),
                     heartbeats: behaviour.heartbeats,
                     gossipsub_peers: behaviour.gossipsub.all_peers().count(),
-                    states: States {
-                        dynamic: State {
+                    states: get::States {
+                        dynamic: get::State {
                             balance: states.dynamic.balance(behaviour.blockchain.keypair.public.as_bytes()),
                             balance_staked: states.dynamic.balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
                             hashes: states.dynamic.hashes.len(),
                             latest_hashes: states.dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
                             stakers: states.dynamic.stakers.iter().map(address::public::encode).collect(),
                         },
-                        trusted: State {
+                        trusted: get::State {
                             balance: states.trusted.balance(behaviour.blockchain.keypair.public.as_bytes()),
                             balance_staked: states.trusted.balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
                             stakers: states.trusted.stakers.iter().map(address::public::encode).collect(),
@@ -317,7 +288,7 @@ Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&api::get::Block {
+                serde_json::to_string(&get::Block {
                     previous_hash: hex::encode(&block.previous_hash),
                     timestamp: block.timestamp,
                     public_key: address::public::encode(&block.public_key),
@@ -351,7 +322,7 @@ Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&api::get::Transaction {
+                serde_json::to_string(&get::Transaction {
                     public_key_input: address::public::encode(&transaction.public_key_input),
                     public_key_output: address::public::encode(&transaction.public_key_output),
                     amount: transaction.amount,
@@ -377,7 +348,7 @@ Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&api::get::Stake {
+                serde_json::to_string(&get::Stake {
                     public_key: address::public::encode(&stake.public_key),
                     amount: stake.amount,
                     deposit: stake.deposit,

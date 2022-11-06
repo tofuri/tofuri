@@ -3,6 +3,34 @@ pub mod get {
     use serde::{Deserialize, Serialize};
     use std::error::Error;
     #[derive(Serialize, Deserialize, Debug)]
+    pub struct Data {
+        pub public_key: String,
+        pub height: types::Height,
+        pub tree_size: usize,
+        pub heartbeats: types::Heartbeats,
+        pub lag: f64,
+        pub gossipsub_peers: usize,
+        pub states: States,
+        pub pending_transactions: Vec<String>,
+        pub pending_stakes: Vec<String>,
+        pub pending_blocks: Vec<String>,
+        pub sync_index: usize,
+        pub syncing: bool,
+    }
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct States {
+        pub dynamic: State,
+        pub trusted: State,
+    }
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct State {
+        pub balance: types::Amount,
+        pub balance_staked: types::Amount,
+        pub hashes: usize,
+        pub latest_hashes: Vec<String>,
+        pub stakers: Vec<String>,
+    }
+    #[derive(Serialize, Deserialize, Debug)]
     pub struct Block {
         pub previous_hash: String,
         pub timestamp: types::Timestamp,

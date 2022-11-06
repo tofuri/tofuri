@@ -5,6 +5,7 @@ members = [
     "api",
     "core",
     "node",
+    "pay",
     "pea",
     "tree",
     "wallet"

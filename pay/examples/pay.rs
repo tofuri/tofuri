@@ -6,7 +6,10 @@ const CONFIRMATIONS: usize = 10;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let keypair = util::keygen();
-    let payment_processor = PaymentProcessor::new(HTTP_API.to_string(), keypair.secret.to_bytes(), CONFIRMATIONS);
+    let mut payment_processor = PaymentProcessor::new(HTTP_API.to_string(), keypair.secret.to_bytes(), CONFIRMATIONS);
+    println!("{:?}", payment_processor);
+    let payment = payment_processor.pay(100);
+    println!("{:?}", payment);
     let data = payment_processor.check().await;
     println!("{:?}", data);
     Ok(())

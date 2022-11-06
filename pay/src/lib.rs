@@ -3,12 +3,13 @@ use pea_core::{
     types::{self, SecretKey},
     util,
 };
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Payment {
     pub public_key: types::PublicKeyBytes,
     pub amount: types::Amount,
     pub created: types::Timestamp,
 }
+#[derive(Debug)]
 pub struct PaymentProcessor {
     pub api: String,
     pub secret_key: types::SecretKeyBytes,

@@ -2810,6 +2810,7 @@ name = "pea-pay"
 version = "0.0.0"
 dependencies = [
  "hex",
+ "log",
  "pea-address",
  "pea-amount",
  "pea-api",

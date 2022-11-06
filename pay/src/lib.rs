@@ -1,3 +1,4 @@
+use log::{error, info};
 use pea_api::get::{self, Block};
 use pea_core::{
     types::{self, SecretKey},
@@ -10,6 +11,7 @@ pub struct Payment {
     pub created: types::Timestamp,
 }
 pub struct PaymentProcessor {
+    pub api: String,
     pub secret_key: types::SecretKeyBytes,
     pub counter: usize,
     pub payments: Vec<Payment>,
@@ -17,8 +19,9 @@ pub struct PaymentProcessor {
     pub confirmations: usize,
 }
 impl PaymentProcessor {
-    pub fn new(secret_key: types::SecretKeyBytes, confirmations: usize) -> Self {
+    pub fn new<'a>(api: String, secret_key: types::SecretKeyBytes, confirmations: usize) -> Self {
         Self {
+            api,
             secret_key,
             counter: 0,
             payments: vec![],
@@ -41,5 +44,14 @@ impl PaymentProcessor {
         self.counter += 1;
         payment
     }
-    pub async fn check(&self) {}
+    pub async fn check(&self) {
+        match get::data(&self.api).await {
+            Ok(data) => {
+                info!("{:?}", data);
+            }
+            Err(err) => {
+                error!("{}", err.to_string())
+            }
+        }
+    }
 }

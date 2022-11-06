@@ -21,6 +21,7 @@ lazy_static! {
     static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref BALANCE_STAKED: Regex = Regex::new(r" /balance_staked/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
+    static ref BLOCK_LATEST: Regex = Regex::new(r" /block/latest ").unwrap();
     static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]+ ").unwrap();
     static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
@@ -92,6 +93,8 @@ async fn handler_get(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehavio
         handler_get_json_balance_staked(stream, swarm, first).await?;
     } else if HEIGHT.is_match(first) {
         handler_get_json_height(stream, swarm).await?;
+    } else if BLOCK_LATEST.is_match(first) {
+        handler_get_json_block_latest(stream, swarm).await?;
     } else if HASH_BY_HEIGHT.is_match(first) {
         handler_get_json_hash_by_height(stream, swarm, first).await?;
     } else if BLOCK_BY_HASH.is_match(first) {
@@ -234,6 +237,31 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&height)?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn handler_get_json_block_latest(stream: &mut tokio::net::TcpStream, swarm: &Swarm<MyBehaviour>) -> Result<(), Box<dyn Error>> {
+    let block = swarm.behaviour().blockchain.latest_block();
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&get::Block {
+                    previous_hash: hex::encode(&block.previous_hash),
+                    timestamp: block.timestamp,
+                    public_key: address::public::encode(&block.public_key),
+                    signature: hex::encode(&block.signature),
+                    transactions: block.transactions.iter().map(|x| hex::encode(&x.hash())).collect(),
+                    stakes: block.stakes.iter().map(|x| hex::encode(&x.hash())).collect(),
+                })?
             )
             .as_bytes(),
         )

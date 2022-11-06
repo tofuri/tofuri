@@ -38,6 +38,9 @@ impl Blockchain {
             sync: Sync::default(),
         }
     }
+    pub fn latest_block(&self) -> &Block {
+        &self.states.dynamic.latest_block
+    }
     pub fn height(&self) -> types::Height {
         if let Some(main) = self.tree.main() {
             main.1

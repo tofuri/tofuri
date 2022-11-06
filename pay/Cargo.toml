@@ -4,7 +4,6 @@ version = "0.0.0"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
-readme = "crate.md"
 categories = ["cryptography::cryptocurrencies"]
 repository = "https://github.com/peacash/pea"
 

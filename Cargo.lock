@@ -2808,6 +2808,13 @@ dependencies = [
 [[package]]
 name = "pea-pay"
 version = "0.0.0"
+dependencies = [
+ "hex",
+ "pea-address",
+ "pea-amount",
+ "pea-api",
+ "pea-core",
+]
 
 [[package]]
 name = "pea-tree"

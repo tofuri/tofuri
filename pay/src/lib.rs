@@ -47,7 +47,8 @@ impl PaymentProcessor {
         self.counter += 1;
         payment
     }
-    pub async fn check(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn check(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.update_chain().await?;
         let mut transactions = vec![];
         for (i, block) in self.chain.iter().enumerate() {
             if i < self.confirmations {
@@ -60,22 +61,25 @@ impl PaymentProcessor {
         }
         Ok(())
     }
-    pub async fn update_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn update_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let latest_block = get::latest_block(&self.api).await?;
-        if match self.chain.first() {
+        if match self.chain.last() {
             Some(block) => block.hash == latest_block.hash,
             None => false,
         } {
+            println!("nothing changed");
             return Ok(()); // nothing changed
         }
-        if match self.chain.first() {
+        if match self.chain.last() {
             Some(block) => block.hash == latest_block.previous_hash,
             None => false,
         } {
+            println!("chain.push");
             self.chain.push(latest_block);
         } else {
             // fork or missed block
-            println!("fork or missed block")
+            println!("fork or missed block");
+            self.reload_chain().await?;
         }
         while match self.chain.first() {
             Some(block) => block.timestamp < util::timestamp() - self.expires_after_secs,
@@ -85,7 +89,7 @@ impl PaymentProcessor {
         }
         Ok(())
     }
-    pub async fn reload_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn reload_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         self.chain = vec![];
         let latest_block = get::latest_block(&self.api).await?;
         let mut previous_hash = latest_block.hash;

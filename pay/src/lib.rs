@@ -1,3 +1,4 @@
+use pea_address as address;
 use pea_api::get::{self, Block};
 use pea_core::{
     types::{self, SecretKey},
@@ -6,7 +7,7 @@ use pea_core::{
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 #[derive(Debug, Clone)]
 pub struct Payment {
-    pub public_key: types::PublicKeyBytes,
+    pub address: types::Address,
     pub amount: types::Amount,
     pub created: types::Timestamp,
 }
@@ -39,7 +40,7 @@ impl PaymentProcessor {
         let secret_key = SecretKey::from_bytes(&hash).unwrap();
         let public_key: types::PublicKey = (&secret_key).into();
         let payment = Payment {
-            public_key: public_key.to_bytes(),
+            address: address::public::encode(&public_key.to_bytes()),
             amount,
             created: util::timestamp(),
         };
@@ -57,6 +58,11 @@ impl PaymentProcessor {
             for hash in block.transactions.iter() {
                 let transaction = get::transaction(&self.api, hash).await?;
                 transactions.push(transaction);
+            }
+        }
+        for transaction in transactions {
+            for payment in self.payments.iter() {
+                if transaction.public_key_output == payment.address {}
             }
         }
         Ok(())

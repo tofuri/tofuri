@@ -4,6 +4,7 @@ use pea_core::{
     types::{self, SecretKey},
     util,
 };
+use std::collections::HashMap;
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 #[derive(Debug, Clone)]
 pub struct Payment {
@@ -48,7 +49,7 @@ impl PaymentProcessor {
         self.counter += 1;
         payment
     }
-    pub async fn check(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn check(&mut self) -> Result<Vec<(Payment, types::Amount)>, Box<dyn std::error::Error>> {
         self.update_chain().await?;
         let mut transactions = vec![];
         for (i, block) in self.chain.iter().enumerate() {
@@ -60,12 +61,30 @@ impl PaymentProcessor {
                 transactions.push(transaction);
             }
         }
+        let mut map: HashMap<String, types::Amount> = HashMap::new();
         for transaction in transactions {
             for payment in self.payments.iter() {
-                if transaction.public_key_output == payment.address {}
+                if transaction.public_key_output == payment.address {
+                    let amount = match map.get(&payment.address) {
+                        Some(a) => *a,
+                        None => 0,
+                    };
+                    map.insert(payment.address.clone(), amount + transaction.amount);
+                }
             }
         }
-        Ok(())
+        let mut completed = vec![];
+        for payment in self.payments.iter() {
+            let amount = match map.get(&payment.address) {
+                Some(a) => *a,
+                None => 0,
+            };
+            if amount < payment.amount {
+                continue;
+            }
+            completed.push((payment.clone(), amount));
+        }
+        Ok(completed)
     }
     async fn update_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let latest_block = get::latest_block(&self.api).await?;

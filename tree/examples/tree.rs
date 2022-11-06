@@ -1,4 +1,5 @@
-use pea::{tree::Tree, util::timestamp};
+use pea_core::util::timestamp;
+use pea_tree::Tree;
 fn main() {
     let mut tree = Tree::new();
     tree.insert([0x11; 32], [0x00; 32], timestamp());

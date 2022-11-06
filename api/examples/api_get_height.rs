@@ -1,4 +1,4 @@
-use pea::api::get;
+use pea_api::get;
 use std::error::Error;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

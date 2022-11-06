@@ -1,4 +1,4 @@
-use pea::api::get;
+use pea_api::get;
 use std::error::Error;
 const API: &str = "http://localhost:8080";
 #[tokio::main]

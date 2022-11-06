@@ -2748,6 +2748,7 @@ dependencies = [
  "pea-core",
  "reqwest",
  "serde",
+ "tokio",
 ]
 
 [[package]]
@@ -2810,11 +2811,11 @@ name = "pea-pay"
 version = "0.0.0"
 dependencies = [
  "hex",
- "log",
  "pea-address",
  "pea-amount",
  "pea-api",
  "pea-core",
+ "tokio",
 ]
 
 [[package]]

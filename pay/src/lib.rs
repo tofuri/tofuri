@@ -1,4 +1,3 @@
-use log::{error, info};
 use pea_api::get::{self, Block};
 use pea_core::{
     types::{self, SecretKey},
@@ -44,14 +43,7 @@ impl PaymentProcessor {
         self.counter += 1;
         payment
     }
-    pub async fn check(&self) {
-        match get::data(&self.api).await {
-            Ok(data) => {
-                info!("{:?}", data);
-            }
-            Err(err) => {
-                error!("{}", err.to_string())
-            }
-        }
+    pub async fn check(&self) -> Result<get::Data, Box<dyn std::error::Error>> {
+        get::data(&self.api).await
     }
 }

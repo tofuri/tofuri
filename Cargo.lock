@@ -2779,6 +2779,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pea-key"
+version = "0.1.0"
+dependencies = [
+ "ed25519",
+ "ed25519-dalek",
+ "pea-address",
+ "pea-core",
+ "rand 0.7.3",
+]
+
+[[package]]
 name = "pea-node"
 version = "0.3.0"
 dependencies = [

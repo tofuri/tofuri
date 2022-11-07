@@ -1,0 +1,17 @@
+[package]
+name = "pea-key"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "エンドウ"
+categories = ["cryptography::cryptocurrencies"]
+repository = "https://github.com/peacash/pea"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pea-address = { version = "0.1.1", path = "../address" }
+pea-core = { version = "0.1.1", path = "../core" }
+ed25519 = "1.5.2"
+ed25519-dalek = "1.0.1"
+rand = "0.7.3"

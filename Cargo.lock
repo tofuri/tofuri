@@ -2761,9 +2761,9 @@ name = "pea-block"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "ed25519",
  "hex",
  "pea-core",
+ "pea-key",
  "pea-stake",
  "pea-transaction",
  "serde",
@@ -2830,6 +2830,7 @@ dependencies = [
  "pea-block",
  "pea-core",
  "pea-db",
+ "pea-key",
  "pea-stake",
  "pea-transaction",
  "pea-tree",
@@ -2851,6 +2852,7 @@ dependencies = [
  "pea-amount",
  "pea-api",
  "pea-core",
+ "pea-key",
  "pea-transaction",
  "tokio",
 ]
@@ -2860,8 +2862,8 @@ name = "pea-stake"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "ed25519",
  "pea-core",
+ "pea-key",
  "serde",
  "serde-big-array",
 ]
@@ -2871,8 +2873,8 @@ name = "pea-transaction"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "ed25519",
  "pea-core",
+ "pea-key",
  "serde",
  "serde-big-array",
 ]
@@ -2903,6 +2905,7 @@ dependencies = [
  "pea-amount",
  "pea-api",
  "pea-core",
+ "pea-key",
  "pea-stake",
  "pea-transaction",
  "tokio",

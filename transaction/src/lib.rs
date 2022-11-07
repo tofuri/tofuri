@@ -1,5 +1,5 @@
-use ed25519::signature::Signer;
 use pea_core::{types, util};
+use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::error::Error;
@@ -27,9 +27,9 @@ impl Transaction {
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&Header::from(self)).unwrap())
     }
-    pub fn sign(&mut self, keypair: &types::Keypair) {
-        self.public_key_input = keypair.public.to_bytes();
-        self.signature = keypair.sign(&self.hash()).to_bytes();
+    pub fn sign(&mut self, key: &Key) {
+        self.public_key_input = key.public_key_bytes();
+        self.signature = key.sign(&self.hash());
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
         let public_key = types::PublicKey::from_bytes(&self.public_key_input)?;

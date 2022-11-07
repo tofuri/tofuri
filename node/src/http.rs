@@ -151,22 +151,22 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&get::Data {
-                    public_key: address::public::encode(behaviour.blockchain.keypair.public.as_bytes()),
+                    public_key: behaviour.blockchain.key.public(),
                     height: behaviour.blockchain.height(),
                     tree_size: behaviour.blockchain.tree.size(),
                     heartbeats: behaviour.heartbeats,
                     gossipsub_peers: behaviour.gossipsub.all_peers().count(),
                     states: get::States {
                         dynamic: get::State {
-                            balance: states.dynamic.balance(behaviour.blockchain.keypair.public.as_bytes()),
-                            balance_staked: states.dynamic.balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
+                            balance: states.dynamic.balance(&behaviour.blockchain.key.public_key_bytes()),
+                            balance_staked: states.dynamic.balance_staked(&behaviour.blockchain.key.public_key_bytes()),
                             hashes: states.dynamic.hashes.len(),
                             latest_hashes: states.dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
                             stakers: states.dynamic.stakers.iter().map(address::public::encode).collect(),
                         },
                         trusted: get::State {
-                            balance: states.trusted.balance(behaviour.blockchain.keypair.public.as_bytes()),
-                            balance_staked: states.trusted.balance_staked(behaviour.blockchain.keypair.public.as_bytes()),
+                            balance: states.trusted.balance(&behaviour.blockchain.key.public_key_bytes()),
+                            balance_staked: states.trusted.balance_staked(&behaviour.blockchain.key.public_key_bytes()),
                             stakers: states.trusted.stakers.iter().map(address::public::encode).collect(),
                             hashes: states.trusted.hashes.len(),
                             latest_hashes: states.trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),

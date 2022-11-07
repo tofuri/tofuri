@@ -3,6 +3,7 @@ use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use pea_address as address;
 use pea_core::types;
 use rand::rngs::OsRng;
+#[derive(Debug)]
 pub struct Key {
     keypair: Keypair,
 }

@@ -14,6 +14,7 @@ pea-address = { version = "0.1.1", path = "../address" }
 pea-api = { version = "0.1.1", path = "../api" }
 pea-amount = { version = "0.1.1", path = "../amount" }
 pea-core = { version = "0.1.1", path = "../core" }
+pea-key = { version = "0.1.0", path = "../key" }
 pea-transaction = { version = "0.1.0", path = "../transaction" }
 hex = "0.4.3"
 tokio = { version = "1.19.2", features = ["full"] }

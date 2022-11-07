@@ -1,7 +1,7 @@
 #![feature(test)]
 extern crate test;
-use ed25519::signature::Signer;
 use pea_core::{types, util};
+use pea_key::Key;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
 use serde::{Deserialize, Serialize};
@@ -69,9 +69,9 @@ impl Block {
     pub fn new_timestamp_0(previous_hash: types::Hash) -> Block {
         Block::from(previous_hash, 0, [0; 32], [0; 64], vec![], vec![])
     }
-    pub fn sign(&mut self, keypair: &types::Keypair) {
-        self.public_key = keypair.public.to_bytes();
-        self.signature = keypair.sign(&self.hash()).to_bytes();
+    pub fn sign(&mut self, key: &Key) {
+        self.public_key = key.public_key_bytes();
+        self.signature = key.sign(&self.hash());
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
         let public_key = types::PublicKey::from_bytes(&self.public_key)?;

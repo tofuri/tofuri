@@ -21,7 +21,7 @@ pub async fn main(wallet: &Wallet, api: &str) {
         "Address" => address(wallet),
         "Secret key" => key(wallet),
         "Data" => data(wallet),
-        "Balance" => balance(api, &wallet.address()).await,
+        "Balance" => balance(api, &wallet.key.public()).await,
         "Height" => height(api).await,
         "Transaction" => transaction(api, wallet).await,
         "Stake" => stake(api, wallet).await,
@@ -111,7 +111,7 @@ async fn transaction(api: &str, wallet: &Wallet) {
         return;
     }
     let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee);
-    transaction.sign(&wallet.keypair);
+    transaction.sign(&wallet.key);
     println!("Hash: {}", hex::encode(transaction.hash()).cyan());
     match post::transaction(api, &transaction).await {
         Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
@@ -160,7 +160,7 @@ async fn stake(api: &str, wallet: &Wallet) {
         return;
     }
     let mut stake = Stake::new(deposit, amount as types::Amount, fee);
-    stake.sign(&wallet.keypair);
+    stake.sign(&wallet.key);
     println!("Hash: {}", hex::encode(stake.hash()).cyan());
     match post::stake(api, &stake).await {
         Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
@@ -168,7 +168,7 @@ async fn stake(api: &str, wallet: &Wallet) {
     };
 }
 fn address(wallet: &Wallet) {
-    println!("{}", wallet.address().green());
+    println!("{}", wallet.key.public().green());
 }
 async fn search(api: &str) {
     let search = CustomType::<String>::new("Search:")
@@ -266,7 +266,7 @@ fn key(wallet: &Wallet) {
             process::exit(0)
         }
     } {
-        println!("{}", wallet.key().red());
+        println!("{}", wallet.key.secret().red());
     }
 }
 fn data(wallet: &Wallet) {

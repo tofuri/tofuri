@@ -64,8 +64,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         true => Wallet::new(),
         false => Wallet::import(&args.wallet, &args.passphrase)?,
     };
-    info!("{} {}", "PubKey".cyan(), address::public::encode(wallet.keypair.public.as_bytes()).green());
-    let mut blockchain = Blockchain::new(db, wallet.keypair);
+    info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
+    let mut blockchain = Blockchain::new(db, wallet.key);
     let peers = db::peer::get_all(&blockchain.db);
     info!("{} {}", "Peers".cyan(), format!("{:?}", peers).yellow());
     blockchain.load();

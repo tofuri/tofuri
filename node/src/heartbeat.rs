@@ -35,12 +35,12 @@ fn forge(behaviour: &mut MyBehaviour) {
     }
     let timestamp = util::timestamp();
     if let Some(public_key) = states.dynamic.staker(timestamp, states.dynamic.latest_block.timestamp) {
-        if public_key != behaviour.blockchain.keypair.public.as_bytes() || timestamp < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
+        if public_key != &behaviour.blockchain.key.public_key_bytes() || timestamp < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
             return;
         }
     } else {
         let mut stake = Stake::new(true, MIN_STAKE, 0);
-        stake.sign(&behaviour.blockchain.keypair);
+        stake.sign(&behaviour.blockchain.key);
         behaviour.blockchain.set_cold_start_stake(stake);
     }
     let block = behaviour.blockchain.forge_block().unwrap();

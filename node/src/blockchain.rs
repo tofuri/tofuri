@@ -9,6 +9,7 @@ use pea_core::{
     types,
 };
 use pea_db as db;
+use pea_key::Key;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
 use pea_tree::Tree;
@@ -17,7 +18,7 @@ use std::{error::Error, time::Instant};
 #[derive(Debug)]
 pub struct Blockchain {
     pub db: DBWithThreadMode<SingleThreaded>,
-    pub keypair: types::Keypair,
+    pub key: Key,
     pub tree: Tree,
     pub states: States,
     pub pending_transactions: Vec<Transaction>,
@@ -26,10 +27,10 @@ pub struct Blockchain {
     pub sync: Sync,
 }
 impl Blockchain {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, keypair: types::Keypair) -> Self {
+    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key) -> Self {
         Self {
             db,
-            keypair,
+            key,
             tree: Tree::default(),
             states: States::default(),
             pending_transactions: vec![],
@@ -149,7 +150,7 @@ impl Blockchain {
                 block.stakes.push(stake.clone());
             }
         }
-        block.sign(&self.keypair);
+        block.sign(&self.key);
         self.pending_blocks_push(block.clone())?;
         info!("{} {} {}", "Forged".magenta(), self.tree.height(&block.previous_hash).to_string().yellow(), hex::encode(block.hash()));
         Ok(block)

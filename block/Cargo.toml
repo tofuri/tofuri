@@ -11,9 +11,9 @@ repository = "https://github.com/peacash/pea"
 
 [dependencies]
 pea-core = { version = "0.1.1", path = "../core" }
+pea-key = { version = "0.1.0", path = "../key" }
 pea-stake = { version = "0.1.0", path = "../stake" }
 pea-transaction = { version = "0.1.0", path = "../transaction" }
-ed25519 = "1.5.2"
 serde = { version = "1.0.137", features = ["derive"] }
 serde-big-array = "0.4.1"
 hex = "0.4.3"

@@ -5,12 +5,12 @@ use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
     ChaCha20Poly1305,
 };
-use pea_address as address;
-use pea_core::{constants::EXTENSION, types, util};
+use pea_core::{constants::EXTENSION, types};
 pub mod command;
 pub mod kdf;
 use colored::*;
 use inquire::{validator::Validation, Password, PasswordDisplayMode, Select};
+use pea_key::Key;
 use std::{
     error::Error,
     fs::File,
@@ -19,7 +19,7 @@ use std::{
     process,
 };
 pub struct Wallet {
-    pub keypair: types::Keypair,
+    pub key: Key,
     pub salt: Vec<u8>,
     pub nonce: Vec<u8>,
     pub ciphertext: Vec<u8>,
@@ -32,7 +32,7 @@ impl Default for Wallet {
 impl Wallet {
     pub fn new() -> Wallet {
         Wallet {
-            keypair: util::keygen(),
+            key: Key::generate(),
             salt: vec![],
             nonce: vec![],
             ciphertext: vec![],
@@ -81,19 +81,17 @@ impl Wallet {
         let nonce = &data[32..44];
         let ciphertext = &data[44..];
         let secret_key = types::SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
-        let public_key: types::PublicKey = (&secret_key).into();
+        let secret_key_bytes = secret_key.to_bytes();
+        let key = Key::from_secret_key_bytes(&secret_key_bytes);
         Ok(Wallet {
-            keypair: types::Keypair {
-                secret: secret_key,
-                public: public_key,
-            },
+            key,
             salt: salt.to_vec(),
             nonce: nonce.to_vec(),
             ciphertext: ciphertext.to_vec(),
         })
     }
     fn export(&mut self, filename: String) -> Result<(), Box<dyn Error>> {
-        let (salt, nonce, ciphertext) = Wallet::encrypt(self.keypair.secret.as_bytes())?;
+        let (salt, nonce, ciphertext) = Wallet::encrypt(&self.key.secret_key_bytes())?;
         self.salt = salt.to_vec();
         self.nonce = nonce.to_vec();
         self.ciphertext = ciphertext.to_vec();
@@ -115,12 +113,6 @@ impl Wallet {
     }
     fn default_path() -> &'static Path {
         Path::new("./peacash/wallets")
-    }
-    pub fn address(&self) -> String {
-        address::public::encode(self.keypair.public.as_bytes())
-    }
-    pub fn key(&self) -> String {
-        address::secret::encode(&self.keypair.secret.as_bytes())
     }
     fn encrypt(plaintext: &[u8]) -> Result<types::EncryptedWallet, Box<dyn Error>> {
         let passphrase = Wallet::new_passphrase();

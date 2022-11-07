@@ -21,9 +21,10 @@ pub struct PaymentProcessor {
     pub confirmations: usize,
     pub expires_after_secs: u32,
     pub chain: Vec<Block>,
+    pub withdrawal_address: types::Address,
 }
 impl PaymentProcessor {
-    pub fn new<'a>(api: String, secret_key: types::SecretKeyBytes, confirmations: usize, expires_after_secs: u32) -> Self {
+    pub fn new<'a>(api: String, secret_key: types::SecretKeyBytes, confirmations: usize, expires_after_secs: u32, withdrawal_address: types::Address) -> Self {
         Self {
             api,
             secret_key,
@@ -32,6 +33,7 @@ impl PaymentProcessor {
             confirmations,
             expires_after_secs,
             chain: vec![],
+            withdrawal_address,
         }
     }
     pub fn send() {}

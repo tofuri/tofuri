@@ -40,16 +40,14 @@ impl PaymentProcessor {
         let hash = util::hash(&secret_key);
         let secret_key = SecretKey::from_bytes(&hash).unwrap();
         let public_key: types::PublicKey = (&secret_key).into();
-        let payment = Payment {
-            address: address::public::encode(&public_key.to_bytes()),
-            amount,
-            created: util::timestamp(),
-        };
+        let address = address::public::encode(&public_key.to_bytes());
+        let created = util::timestamp();
+        let payment = Payment { address, amount, created };
         self.payments.push(payment.clone());
         self.counter += 1;
         payment
     }
-    pub async fn check(&mut self) -> Result<Vec<(Payment, types::Amount)>, Box<dyn std::error::Error>> {
+    pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn std::error::Error>> {
         self.update_chain().await?;
         let mut transactions = vec![];
         for (i, block) in self.chain.iter().enumerate() {
@@ -73,18 +71,23 @@ impl PaymentProcessor {
                 }
             }
         }
-        let mut completed = vec![];
-        for payment in self.payments.iter() {
-            let amount = match map.get(&payment.address) {
-                Some(a) => *a,
-                None => 0,
-            };
-            if amount < payment.amount {
-                continue;
+        let mut vec = vec![];
+        let mut i = 0;
+        while i < self.payments.len() {
+            let payment = &self.payments[i];
+            if {
+                let amount = match map.get(&payment.address) {
+                    Some(a) => *a,
+                    None => 0,
+                };
+                payment.amount < amount
+            } {
+                vec.push(self.payments.remove(i));
+            } else {
+                i += 1;
             }
-            completed.push((payment.clone(), amount));
         }
-        Ok(completed)
+        Ok(vec)
     }
     async fn update_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let latest_block = get::latest_block(&self.api).await?;
@@ -92,18 +95,15 @@ impl PaymentProcessor {
             Some(block) => block.hash == latest_block.hash,
             None => false,
         } {
-            println!("nothing changed");
             return Ok(()); // nothing changed
         }
         if match self.chain.last() {
             Some(block) => block.hash == latest_block.previous_hash,
             None => false,
         } {
-            println!("chain.push");
             self.chain.push(latest_block);
         } else {
             // fork or missed block
-            println!("fork or missed block");
             self.reload_chain().await?;
         }
         while match self.chain.first() {

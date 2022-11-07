@@ -50,8 +50,8 @@ impl PaymentProcessor {
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn std::error::Error>> {
         self.update_chain().await?;
         let mut transactions = vec![];
-        for (i, block) in self.chain.iter().enumerate() {
-            if i < self.confirmations {
+        for (i, block) in self.chain.iter().rev().enumerate() {
+            if i + 1 < self.confirmations {
                 continue;
             }
             for hash in block.transactions.iter() {
@@ -95,7 +95,7 @@ impl PaymentProcessor {
             Some(block) => block.hash == latest_block.hash,
             None => false,
         } {
-            return Ok(()); // nothing changed
+            return Ok(());
         }
         if match self.chain.last() {
             Some(block) => block.hash == latest_block.previous_hash,
@@ -103,7 +103,6 @@ impl PaymentProcessor {
         } {
             self.chain.push(latest_block);
         } else {
-            // fork or missed block
             self.reload_chain().await?;
         }
         while match self.chain.first() {

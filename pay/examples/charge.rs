@@ -10,7 +10,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let keypair = util::keygen();
     let address = address::public::encode(&keypair.public.to_bytes());
     println!("{}", address);
-    let mut payment_processor = PaymentProcessor::new(HTTP_API.to_string(), keypair.secret.to_bytes(), CONFIRMATIONS, EXPIRES_AFTER_SECS, address);
+    let mut payment_processor = PaymentProcessor::new(HTTP_API.to_string(), keypair, CONFIRMATIONS, EXPIRES_AFTER_SECS, address);
     println!("{:?}", payment_processor);
     let payment = payment_processor.charge(10000000000);
     println!("{:?}", payment);

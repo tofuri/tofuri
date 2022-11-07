@@ -1,6 +1,10 @@
 use pea_address as address;
-use pea_api::get::{self, Block};
+use pea_api::{
+    get::{self, Block},
+    post,
+};
 use pea_core::{
+    transaction::Transaction,
     types::{self, SecretKey},
     util,
 };
@@ -15,7 +19,7 @@ pub struct Payment {
 #[derive(Debug)]
 pub struct PaymentProcessor {
     pub api: String,
-    pub secret_key: types::SecretKeyBytes,
+    pub keypair: types::Keypair,
     pub counter: usize,
     pub payments: Vec<Payment>,
     pub confirmations: usize,
@@ -24,10 +28,10 @@ pub struct PaymentProcessor {
     pub withdrawal_address: types::Address,
 }
 impl PaymentProcessor {
-    pub fn new<'a>(api: String, secret_key: types::SecretKeyBytes, confirmations: usize, expires_after_secs: u32, withdrawal_address: types::Address) -> Self {
+    pub fn new<'a>(api: String, keypair: types::Keypair, confirmations: usize, expires_after_secs: u32, withdrawal_address: types::Address) -> Self {
         Self {
             api,
-            secret_key,
+            keypair,
             counter: 0,
             payments: vec![],
             confirmations,
@@ -36,10 +40,15 @@ impl PaymentProcessor {
             withdrawal_address,
         }
     }
-    pub fn send() {}
+    pub async fn send(&self, address: &str, amount: types::Amount, fee: types::Amount) -> Result<(), Box<dyn std::error::Error>> {
+        let mut transaction = Transaction::new(address::public::decode(address).unwrap(), amount, fee);
+        transaction.sign(&self.keypair);
+        post::transaction(&self.api, &transaction).await?;
+        Ok(())
+    }
     pub fn withdraw() {}
     pub fn charge(&mut self, amount: types::Amount) -> Payment {
-        let mut secret_key = self.secret_key.to_vec();
+        let mut secret_key = self.keypair.secret.to_bytes().to_vec();
         secret_key.append(&mut self.counter.to_le_bytes().to_vec());
         let hash = util::hash(&secret_key);
         let secret_key = SecretKey::from_bytes(&hash).unwrap();

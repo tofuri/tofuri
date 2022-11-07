@@ -9,7 +9,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let keypair = util::keygen();
     let mut payment_processor = PaymentProcessor::new(HTTP_API.to_string(), keypair.secret.to_bytes(), CONFIRMATIONS, EXPIRES_AFTER_SECS);
     println!("{:?}", payment_processor);
-    let payment = payment_processor.pay(10000000000);
+    let payment = payment_processor.charge(10000000000);
     println!("{:?}", payment);
     loop {
         thread::sleep(Duration::from_millis(500));

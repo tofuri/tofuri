@@ -34,6 +34,8 @@ impl PaymentProcessor {
             chain: vec![],
         }
     }
+    pub fn send() {}
+    pub fn withdraw() {}
     pub fn charge(&mut self, amount: types::Amount) -> Payment {
         let mut secret_key = self.secret_key.to_vec();
         secret_key.append(&mut self.counter.to_le_bytes().to_vec());

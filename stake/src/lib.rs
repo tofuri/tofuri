@@ -1,5 +1,5 @@
-use crate::{types, util};
 use ed25519::signature::Signer;
+use pea_core::{types, util};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::error::Error;

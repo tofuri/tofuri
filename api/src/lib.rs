@@ -92,10 +92,8 @@ pub mod get {
     }
 }
 pub mod post {
-    use pea_core::{
-        stake::{self, Stake},
-        transaction::{self, Transaction},
-    };
+    use pea_stake::{self as stake, Stake};
+    use pea_transaction::{self as transaction, Transaction};
     use std::error::Error;
     pub async fn transaction(api: &str, transaction: &Transaction) -> Result<String, Box<dyn Error>> {
         Ok(reqwest::Client::new()

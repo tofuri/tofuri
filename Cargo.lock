@@ -2716,9 +2716,12 @@ dependencies = [
  "pea-address",
  "pea-amount",
  "pea-api",
+ "pea-block",
  "pea-core",
  "pea-db",
  "pea-node",
+ "pea-stake",
+ "pea-transaction",
  "pea-tree",
  "pea-wallet",
 ]
@@ -2746,9 +2749,25 @@ dependencies = [
  "hex",
  "pea-amount",
  "pea-core",
+ "pea-stake",
+ "pea-transaction",
  "reqwest",
  "serde",
  "tokio",
+]
+
+[[package]]
+name = "pea-block"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "ed25519",
+ "hex",
+ "pea-core",
+ "pea-stake",
+ "pea-transaction",
+ "serde",
+ "serde-big-array",
 ]
 
 [[package]]
@@ -2772,7 +2791,10 @@ version = "0.2.0"
 dependencies = [
  "bincode",
  "pea-amount",
+ "pea-block",
  "pea-core",
+ "pea-stake",
+ "pea-transaction",
  "pea-tree",
  "rocksdb",
  "tempdir",
@@ -2805,8 +2827,11 @@ dependencies = [
  "pea-address",
  "pea-amount",
  "pea-api",
+ "pea-block",
  "pea-core",
  "pea-db",
+ "pea-stake",
+ "pea-transaction",
  "pea-tree",
  "pea-wallet",
  "regex",
@@ -2826,7 +2851,30 @@ dependencies = [
  "pea-amount",
  "pea-api",
  "pea-core",
+ "pea-transaction",
  "tokio",
+]
+
+[[package]]
+name = "pea-stake"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "ed25519",
+ "pea-core",
+ "serde",
+ "serde-big-array",
+]
+
+[[package]]
+name = "pea-transaction"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "ed25519",
+ "pea-core",
+ "serde",
+ "serde-big-array",
 ]
 
 [[package]]
@@ -2855,6 +2903,8 @@ dependencies = [
  "pea-amount",
  "pea-api",
  "pea-core",
+ "pea-stake",
+ "pea-transaction",
  "tokio",
  "zxcvbn",
 ]

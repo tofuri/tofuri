@@ -1,5 +1,9 @@
-use crate::{stake::Stake, transaction::Transaction, types, util};
+#![feature(test)]
+extern crate test;
 use ed25519::signature::Signer;
+use pea_core::{types, util};
+use pea_stake::Stake;
+use pea_transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::{error::Error, fmt};

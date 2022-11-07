@@ -3,12 +3,15 @@ members = [
     "address",
     "amount",
     "api",
+    "block",
     "core",
     "db",
     "key",
     "node",
     "pay",
     "pea",
+    "stake",
+    "transaction",
     "tree",
     "wallet"
 ]

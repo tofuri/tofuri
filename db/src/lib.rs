@@ -45,7 +45,7 @@ pub mod block {
     use super::block_metadata_lean;
     use super::stake;
     use super::transaction;
-    use pea_core::block::{self, Block};
+    use pea_block::{self as block, Block};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
     pub fn put(block: &Block, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
@@ -81,10 +81,8 @@ pub mod block {
     }
 }
 pub mod block_metadata_lean {
-    use pea_core::{
-        block::{self},
-        types,
-    };
+    use pea_block as block;
+    use pea_core::types;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
     pub fn put(db: &DBWithThreadMode<SingleThreaded>, hash: &types::Hash, block_metadata_lean: block::MetadataLean) -> Result<(), Box<dyn Error>> {
@@ -96,7 +94,7 @@ pub mod block_metadata_lean {
     }
 }
 pub mod transaction {
-    use pea_core::transaction::{self, Transaction};
+    use pea_transaction::{self as transaction, Transaction};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
     pub fn put(transaction: &Transaction, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
@@ -127,7 +125,7 @@ pub mod transaction {
     }
 }
 pub mod stake {
-    use pea_core::stake::{self, Stake};
+    use pea_stake::{self as stake, Stake};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
     pub fn put(stake: &Stake, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
@@ -158,7 +156,8 @@ pub mod stake {
     }
 }
 pub mod tree {
-    use pea_core::{block::MetadataLean, types};
+    use pea_block::MetadataLean;
+    use pea_core::types;
     use pea_tree::Tree;
     use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
     use std::collections::HashMap;

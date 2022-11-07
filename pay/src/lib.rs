@@ -4,10 +4,10 @@ use pea_api::{
     post,
 };
 use pea_core::{
-    transaction::Transaction,
     types::{self, SecretKey},
     util,
 };
+use pea_transaction::Transaction;
 use std::collections::HashMap;
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 #[derive(Debug, Clone)]

@@ -2,15 +2,15 @@ use crate::{state::Dynamic, states::States, sync::Sync};
 use colored::*;
 use log::{debug, info};
 use pea_address as address;
+use pea_block::Block;
 use pea_core::util;
 use pea_core::{
-    block::Block,
     constants::{BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT},
-    stake::Stake,
-    transaction::Transaction,
     types,
 };
 use pea_db as db;
+use pea_stake::Stake;
+use pea_transaction::Transaction;
 use pea_tree::Tree;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};

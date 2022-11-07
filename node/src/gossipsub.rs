@@ -2,7 +2,9 @@ use crate::p2p::MyBehaviour;
 use colored::*;
 use libp2p::gossipsub::GossipsubMessage;
 use log::info;
-use pea_core::{block::Block, stake::Stake, transaction::Transaction};
+use pea_block::Block;
+use pea_stake::Stake;
+use pea_transaction::Transaction;
 use std::error::Error;
 pub fn handler(behaviour: &mut MyBehaviour, message: GossipsubMessage) -> Result<(), Box<dyn Error>> {
     match message.topic.as_str() {

@@ -6,7 +6,9 @@ use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
 use pea_amount as amount;
 use pea_api::{get, post};
-use pea_core::{constants::DECIMAL_PRECISION, stake::Stake, transaction::Transaction, types};
+use pea_core::{constants::DECIMAL_PRECISION, types};
+use pea_stake::Stake;
+use pea_transaction::Transaction;
 use std::process;
 pub async fn main(wallet: &Wallet, api: &str) {
     match Select::new(">>", vec!["Search", "Address", "Secret key", "Data", "Balance", "Height", "Transaction", "Stake", "Validator", "Exit"])

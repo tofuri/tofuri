@@ -178,8 +178,11 @@ impl PaymentProcessor {
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, &self).await {
                     error!("{}", err);
                 },
-                _ = Self::next().fuse() => if let Err(err) = self.check().await {
-                    error!("{}", err);
+                _ = Self::next().fuse() => match self.check().await {
+                    Ok(vec) => if !vec.is_empty() {
+                        info!("{:?}", vec);
+                    },
+                    Err(err) => error!("{}", err)
                 },
             }
         }

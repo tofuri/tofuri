@@ -10,7 +10,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let address = key.public();
     println!("{}", address);
     let mut payment_processor = PaymentProcessor::new(HTTP_API.to_string(), key, CONFIRMATIONS, EXPIRES_AFTER_SECS, address);
-    println!("{:?}", payment_processor);
     let payment = payment_processor.charge(10000000000);
     println!("{:?}", payment);
     loop {

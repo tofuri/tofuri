@@ -3,39 +3,43 @@ use pea_api::{
     get::{self, Block},
     post,
 };
-use pea_core::util;
+use pea_core::{types, util};
 use pea_key::Key;
 use pea_transaction::Transaction;
 use std::collections::HashMap;
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 #[derive(Debug, Clone)]
-pub struct Payment {
-    pub address: String,
-    pub amount: u128,
-    pub created: u32,
+struct Charge {
+    secret_key_bytes: types::SecretKeyBytes,
+    amount: u128,
+    timestamp: u32,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct Payment {
+    pub public: String,
+    pub secret: String,
+    pub amount: u128,
+    pub timestamp: u32,
+}
 pub struct PaymentProcessor {
     pub api: String,
     pub key: Key,
-    pub counter: usize,
-    pub payments: Vec<Payment>,
     pub confirmations: usize,
-    pub expires_after_secs: u32,
-    pub chain: Vec<Block>,
     pub withdrawal_address: String,
+    pub expires_after_secs: u32,
+    chain: Vec<Block>,
+    charges: Vec<Charge>,
 }
 impl PaymentProcessor {
     pub fn new<'a>(api: String, key: Key, confirmations: usize, expires_after_secs: u32, withdrawal_address: String) -> Self {
         Self {
             api,
             key,
-            counter: 0,
-            payments: vec![],
             confirmations,
             expires_after_secs,
-            chain: vec![],
             withdrawal_address,
+            chain: vec![],
+            charges: vec![],
         }
     }
     pub async fn send(&self, address: &str, amount: u128, fee: u128) -> Result<(), Box<dyn std::error::Error>> {
@@ -46,16 +50,17 @@ impl PaymentProcessor {
     }
     pub fn withdraw() {}
     pub fn charge(&mut self, amount: u128) -> Payment {
-        let mut secret_key = self.key.secret_key_bytes().to_vec();
-        secret_key.append(&mut self.counter.to_le_bytes().to_vec());
-        let hash = util::hash(&secret_key);
-        let key = Key::from_secret_key_bytes(&hash);
-        let address = key.public();
-        let created = util::timestamp();
-        let payment = Payment { address, amount, created };
-        self.payments.push(payment.clone());
-        self.counter += 1;
-        payment
+        let key = Key::generate();
+        let public = key.public();
+        let secret = key.secret();
+        let timestamp = util::timestamp();
+        let charge = Charge {
+            secret_key_bytes: key.secret_key_bytes(),
+            amount,
+            timestamp,
+        };
+        self.charges.push(charge);
+        Payment { public, secret, amount, timestamp }
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn std::error::Error>> {
         self.update_chain().await?;
@@ -71,33 +76,47 @@ impl PaymentProcessor {
         }
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
-            for payment in self.payments.iter() {
-                if transaction.public_key_output == payment.address {
-                    let amount = match map.get(&payment.address) {
+            for charge in self.charges.iter() {
+                let public = Key::from_secret_key_bytes(&charge.secret_key_bytes).public();
+                if transaction.public_key_output == public {
+                    let amount = match map.get(&public) {
                         Some(a) => *a,
                         None => 0,
                     };
-                    map.insert(payment.address.clone(), amount + transaction.amount);
+                    map.insert(public, amount + transaction.amount);
                 }
             }
         }
-        let mut vec = vec![];
+        let mut vec_0 = vec![];
         let mut i = 0;
-        while i < self.payments.len() {
-            let payment = &self.payments[i];
+        while i < self.charges.len() {
+            let charge = &self.charges[i];
+            let public = Key::from_secret_key_bytes(&charge.secret_key_bytes).public();
             if {
-                let amount = match map.get(&payment.address) {
+                let amount = match map.get(&public) {
                     Some(a) => *a,
                     None => 0,
                 };
-                payment.amount < amount
+                charge.amount < amount
             } {
-                vec.push(self.payments.remove(i));
+                vec_0.push(self.charges.remove(i));
             } else {
                 i += 1;
             }
         }
-        Ok(vec)
+        let mut vec_1 = vec![];
+        for charge in vec_0 {
+            let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
+            let public = key.public();
+            let secret = key.secret();
+            vec_1.push(Payment {
+                public,
+                secret,
+                amount: charge.amount,
+                timestamp: charge.timestamp,
+            })
+        }
+        Ok(vec_1)
     }
     async fn update_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let latest_block = get::latest_block(&self.api).await?;

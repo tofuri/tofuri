@@ -1,14 +1,13 @@
-use chrono::Local;
 use clap::Parser;
 use colored::*;
-use env_logger::Builder;
 use libp2p::Multiaddr;
-use log::{info, Level, LevelFilter};
+use log::info;
 use pea_address as address;
 use pea_db as db;
+use pea_logger as logger;
 use pea_node::{blockchain::Blockchain, p2p};
 use pea_wallet::Wallet;
-use std::{error::Error, io::Write};
+use std::error::Error;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
 #[derive(Parser, Debug)]
@@ -42,7 +41,7 @@ pub struct Args {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    env_logger_init(args.debug);
+    logger::init(args.debug);
     info!("{} {}", "Version".cyan(), env!("CARGO_PKG_VERSION").yellow());
     info!("{} {}", "Commit".cyan(), env!("GIT_HASH").yellow());
     info!("{} {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY").yellow());
@@ -78,33 +77,4 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let tcp_listener_http_api = if args.http_api != "" { Some(TcpListener::bind(args.http_api).await?) } else { None };
     p2p::listen(&mut swarm, tcp_listener_http_api).await?;
     Ok(())
-}
-fn env_logger_init(log_path: bool) {
-    fn colored_level(level: Level) -> ColoredString {
-        match level {
-            Level::Error => level.to_string().red(),
-            Level::Warn => level.to_string().yellow(),
-            Level::Info => level.to_string().green(),
-            Level::Debug => level.to_string().blue(),
-            Level::Trace => level.to_string().magenta(),
-        }
-    }
-    let mut builder = Builder::new();
-    if log_path {
-        builder.format(|buf, record| {
-            writeln!(
-                buf,
-                "[{} {} {}{}{}] {}",
-                Local::now().format("%H:%M:%S"),
-                colored_level(record.level()),
-                record.file_static().unwrap().black(),
-                ":".black(),
-                record.line().unwrap().to_string().black(),
-                record.args()
-            )
-        });
-    } else {
-        builder.format(|buf, record| writeln!(buf, "[{} {}] {}", Local::now().format("%H:%M:%S"), colored_level(record.level()), record.args()));
-    }
-    builder.filter(None, LevelFilter::Info).init();
 }

@@ -1,7 +1,7 @@
 use crate::processor::PaymentProcessor;
 use colored::*;
 use lazy_static::lazy_static;
-use log::{error, info};
+use log::info;
 use regex::Regex;
 use std::{error::Error, io::BufRead};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};

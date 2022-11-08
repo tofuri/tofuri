@@ -1,5 +1,6 @@
 use clap::Parser;
 use log::info;
+use pea_logger as logger;
 use pea_pay::processor::PaymentProcessor;
 use pea_wallet::Wallet;
 use std::error::Error;
@@ -10,6 +11,9 @@ const EXPIRES_AFTER_SECS: u32 = 60;
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
+    /// Log path to source file
+    #[clap(short, long, value_parser, default_value_t = false)]
+    pub debug: bool,
     /// API Endpoint
     #[clap(long, value_parser, default_value = ":::9331")]
     pub http_api: String,
@@ -23,6 +27,7 @@ pub struct Args {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
+    logger::init(args.debug);
     let wallet = Wallet::import(&args.wallet, &args.passphrase)?;
     let mut payment_processor = PaymentProcessor::new(wallet, HTTP_API.to_string(), CONFIRMATIONS, EXPIRES_AFTER_SECS);
     let payment = payment_processor.charge(10000000000);

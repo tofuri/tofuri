@@ -1,0 +1,17 @@
+[package]
+name = "pea-logger"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "エンドウ"
+readme = "crate.md"
+categories = ["cryptography::cryptocurrencies"]
+repository = "https://github.com/peacash/pea"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.17"
+env_logger = "0.9.0"
+colored = "2.0.0"
+chrono = "0.4.19"

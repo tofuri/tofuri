@@ -2810,15 +2810,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pea-logger"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "colored",
+ "env_logger",
+ "log",
+]
+
+[[package]]
 name = "pea-node"
 version = "0.3.0"
 dependencies = [
  "bincode",
- "chrono",
  "clap",
  "colored",
  "ed25519-dalek",
- "env_logger",
  "futures",
  "hex",
  "lazy_static",
@@ -2831,6 +2839,7 @@ dependencies = [
  "pea-core",
  "pea-db",
  "pea-key",
+ "pea-logger",
  "pea-stake",
  "pea-transaction",
  "pea-tree",
@@ -2858,6 +2867,7 @@ dependencies = [
  "pea-api",
  "pea-core",
  "pea-key",
+ "pea-logger",
  "pea-transaction",
  "pea-wallet",
  "regex",

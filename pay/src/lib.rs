@@ -87,7 +87,7 @@ impl PaymentProcessor {
                 }
             }
         }
-        let mut vec_0 = vec![];
+        let mut charges = vec![];
         let mut i = 0;
         while i < self.charges.len() {
             let charge = &self.charges[i];
@@ -99,24 +99,24 @@ impl PaymentProcessor {
                 };
                 charge.amount < amount
             } {
-                vec_0.push(self.charges.remove(i));
+                charges.push(self.charges.remove(i));
             } else {
                 i += 1;
             }
         }
-        let mut vec_1 = vec![];
-        for charge in vec_0 {
+        let mut payments = vec![];
+        for charge in charges {
             let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
             let public = key.public();
             let secret = key.secret();
-            vec_1.push(Payment {
+            payments.push(Payment {
                 public,
                 secret,
                 amount: charge.amount,
                 timestamp: charge.timestamp,
             })
         }
-        Ok(vec_1)
+        Ok(payments)
     }
     async fn update_chain(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let latest_block = get::latest_block(&self.api).await?;

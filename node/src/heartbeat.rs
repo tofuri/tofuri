@@ -4,7 +4,7 @@ use libp2p::{gossipsub::IdentTopic, Swarm};
 use log::debug;
 use pea_core::{
     constants::{BLOCK_TIME_MIN, MICROS, MIN_STAKE, NANOS, SYNC_BLOCKS_PER_TICK, TPS},
-    types, util,
+    util,
 };
 use pea_stake::Stake;
 use std::time::{Duration, SystemTime};

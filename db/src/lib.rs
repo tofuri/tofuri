@@ -197,7 +197,6 @@ pub mod tree {
     }
 }
 pub mod peer {
-    use pea_core::types;
     use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
     use std::error::Error;
     pub fn put(peer: &str, value: &[u8], db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {

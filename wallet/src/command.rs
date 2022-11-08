@@ -6,7 +6,7 @@ use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
 use pea_amount as amount;
 use pea_api::{get, post};
-use pea_core::{constants::DECIMAL_PRECISION, types};
+use pea_core::constants::DECIMAL_PRECISION;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
 use std::process;

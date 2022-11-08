@@ -3,7 +3,7 @@ use pea_api::{
     get::{self, Block},
     post,
 };
-use pea_core::{types, util};
+use pea_core::util;
 use pea_key::Key;
 use pea_transaction::Transaction;
 use std::collections::HashMap;

@@ -27,6 +27,15 @@ pub enum ChargeStatus {
     Completed,
     Cancelled,
 }
+pub fn status(status: &ChargeStatus) -> String {
+    match *status {
+        ChargeStatus::New => "NEW".to_string(),
+        ChargeStatus::Pending => "PENDING".to_string(),
+        ChargeStatus::Expired => "EXPIRED".to_string(),
+        ChargeStatus::Completed => "COMPLETED".to_string(),
+        ChargeStatus::Cancelled => "CANCELLED".to_string(),
+    }
+}
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Charge {
     secret_key_bytes: types::SecretKeyBytes,
@@ -45,6 +54,7 @@ pub struct Payment {
     pub public: String,
     pub amount: u128,
     pub timestamp: u32,
+    pub status: String,
 }
 pub struct PaymentProcessor {
     pub wallet: Wallet,
@@ -77,6 +87,7 @@ impl PaymentProcessor {
                 public,
                 amount: charge.amount,
                 timestamp: charge.timestamp,
+                status: status(&charge.status),
             })
         }
         payments
@@ -99,9 +110,10 @@ impl PaymentProcessor {
             status: ChargeStatus::Pending,
             subkey: self.subkey,
         };
+        let status = status(&charge.status);
         self.charges.insert(charge.hash(), charge);
         self.subkey += 1;
-        Payment { public, amount, timestamp }
+        Payment { public, amount, timestamp, status }
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
         self.update_chain().await?;
@@ -129,7 +141,7 @@ impl PaymentProcessor {
             }
         }
         let mut charges = vec![];
-        for charge in self.charges.values() {
+        for charge in self.charges.values_mut() {
             let public = Key::from_secret_key_bytes(&charge.secret_key_bytes).public();
             if {
                 let amount = match map.get(&public) {
@@ -138,6 +150,7 @@ impl PaymentProcessor {
                 };
                 charge.amount < amount
             } {
+                charge.status = ChargeStatus::Completed;
                 charges.push(charge);
             }
         }
@@ -149,6 +162,7 @@ impl PaymentProcessor {
                 public,
                 amount: charge.amount,
                 timestamp: charge.timestamp,
+                status: status(&charge.status),
             })
         }
         Ok(payments)

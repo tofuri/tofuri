@@ -10,7 +10,7 @@ use std::{error::Error, fmt};
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Block {
     pub previous_hash: types::Hash,
-    pub timestamp: types::Timestamp,
+    pub timestamp: u32,
     pub public_key: types::PublicKeyBytes,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
@@ -46,14 +46,7 @@ impl fmt::Debug for Block {
     }
 }
 impl Block {
-    pub fn from(
-        previous_hash: types::Hash,
-        timestamp: types::Timestamp,
-        public_key: types::PublicKeyBytes,
-        signature: types::SignatureBytes,
-        transactions: Vec<Transaction>,
-        stakes: Vec<Stake>,
-    ) -> Block {
+    pub fn from(previous_hash: types::Hash, timestamp: u32, public_key: types::PublicKeyBytes, signature: types::SignatureBytes, transactions: Vec<Transaction>, stakes: Vec<Stake>) -> Block {
         Block {
             previous_hash,
             timestamp,
@@ -80,7 +73,7 @@ impl Block {
         let block_metadata = Metadata::from(self);
         util::hash(&bincode::serialize(&Header::from(&block_metadata)).unwrap())
     }
-    pub fn fees(&self) -> types::Amount {
+    pub fn fees(&self) -> u128 {
         let mut fees = 0;
         for transaction in self.transactions.iter() {
             fees += transaction.fee;
@@ -90,7 +83,7 @@ impl Block {
         }
         fees
     }
-    pub fn reward(&self, balance_staked: types::Amount) -> types::Amount {
+    pub fn reward(&self, balance_staked: u128) -> u128 {
         self.fees() + util::reward(balance_staked)
     }
 }
@@ -99,7 +92,7 @@ pub struct Header {
     pub previous_hash: types::Hash,
     pub transaction_merkle_root: types::MerkleRoot,
     pub stake_merkle_root: types::MerkleRoot,
-    pub timestamp: types::Timestamp,
+    pub timestamp: u32,
 }
 impl Header {
     pub fn from(block: &Metadata) -> Header {
@@ -114,7 +107,7 @@ impl Header {
 #[derive(Debug)]
 pub struct Metadata {
     pub previous_hash: types::Hash,
-    pub timestamp: types::Timestamp,
+    pub timestamp: u32,
     pub public_key: types::PublicKeyBytes,
     pub signature: types::SignatureBytes,
     pub transaction_hashes: Vec<types::Hash>,
@@ -158,7 +151,7 @@ impl Metadata {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MetadataLean {
     pub previous_hash: types::Hash,
-    pub timestamp: types::Timestamp,
+    pub timestamp: u32,
     pub public_key: types::PublicKeyBytes,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,

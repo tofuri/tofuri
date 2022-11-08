@@ -9,13 +9,13 @@ use std::collections::{HashMap, VecDeque};
 macro_rules! impl_State {
     (for $($t:ty),+) => {
         $(impl $t {
-            pub fn balance(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
+            pub fn balance(&self, public_key: &types::PublicKeyBytes) -> u128 {
                 match self.balance.get(public_key) {
                     Some(b) => *b,
                     None => 0,
                 }
             }
-            pub fn balance_staked(&self, public_key: &types::PublicKeyBytes) -> types::Amount {
+            pub fn balance_staked(&self, public_key: &types::PublicKeyBytes) -> u128 {
                 match self.balance_staked.get(public_key) {
                     Some(b) => *b,
                     None => 0,
@@ -89,8 +89,8 @@ macro_rules! impl_State {
             }
             fn update_penalty(
                 &mut self,
-                timestamp: &types::Timestamp,
-                previous_timestamp: &types::Timestamp,
+                timestamp: &u32,
+                previous_timestamp: &u32,
             ) {
                 let mut diff = timestamp - previous_timestamp;
                 if diff > 0 {
@@ -104,7 +104,7 @@ macro_rules! impl_State {
                     self.stakers.remove(0).unwrap();
                 }
             }
-            pub fn update(&mut self, block: &Block, previous_timestamp: types::Timestamp) {
+            pub fn update(&mut self, block: &Block, previous_timestamp: u32) {
                 self.hashes.push(block.hash());
                 self.update_penalty(&block.timestamp, &previous_timestamp);
                 self.update_reward(block);
@@ -128,10 +128,10 @@ macro_rules! impl_State {
 impl_State!(for Dynamic, Trusted);
 #[derive(Debug, Clone)]
 pub struct Dynamic {
-    pub hashes: types::Hashes,
-    pub stakers: types::Stakers,
-    balance: types::Balance,
-    balance_staked: types::Balance,
+    pub hashes: Vec<types::Hash>,
+    pub stakers: VecDeque<types::PublicKeyBytes>,
+    balance: HashMap<types::PublicKeyBytes, u128>,
+    balance_staked: HashMap<types::PublicKeyBytes, u128>,
     pub latest_block: Block,
 }
 impl Dynamic {
@@ -150,7 +150,7 @@ impl Dynamic {
         };
         dynamic
     }
-    pub fn staker(&self, timestamp: types::Timestamp, previous_timestamp: types::Timestamp) -> Option<&types::PublicKeyBytes> {
+    pub fn staker(&self, timestamp: u32, previous_timestamp: u32) -> Option<&types::PublicKeyBytes> {
         let mut diff = timestamp - previous_timestamp;
         if diff > 0 {
             diff -= 1;
@@ -172,10 +172,10 @@ impl Default for Dynamic {
 }
 #[derive(Debug, Clone)]
 pub struct Trusted {
-    pub hashes: types::Hashes,
-    pub stakers: types::Stakers,
-    balance: types::Balance,
-    balance_staked: types::Balance,
+    pub hashes: Vec<types::Hash>,
+    pub stakers: VecDeque<types::PublicKeyBytes>,
+    balance: HashMap<types::PublicKeyBytes, u128>,
+    balance_staked: HashMap<types::PublicKeyBytes, u128>,
 }
 impl Default for Trusted {
     fn default() -> Self {

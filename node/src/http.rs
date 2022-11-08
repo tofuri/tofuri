@@ -275,7 +275,7 @@ async fn handler_get_json_hash_by_height(stream: &mut tokio::net::TcpStream, swa
         .trim()
         .get(6..)
         .ok_or("GET HASH_BY_HEIGHT 2")?
-        .parse::<types::Height>()?;
+        .parse::<usize>()?;
     let states = &swarm.behaviour().blockchain.states;
     let hashes_trusted = &states.trusted.hashes;
     let hashes_dynamic = &states.dynamic.hashes;

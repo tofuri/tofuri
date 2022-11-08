@@ -9,8 +9,8 @@ use std::{
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
-pub fn timestamp() -> types::Timestamp {
-    SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs() as types::Timestamp
+pub fn timestamp() -> u32 {
+    SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs() as u32
 }
 pub fn hash(input: &[u8]) -> types::Hash {
     blake3::hash(input).into()
@@ -20,8 +20,8 @@ pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>>
     let buf = BufReader::new(file);
     Ok(buf.lines().map(|l| l.expect("Could not parse line")).collect())
 }
-pub fn reward(balance_staked: types::Amount) -> types::Amount {
-    ((2f64.powf((balance_staked as f64 / DECIMAL_PRECISION as f64) / MIN_STAKE_MULTIPLIER as f64) - 1f64) * DECIMAL_PRECISION as f64) as types::Amount
+pub fn reward(balance_staked: u128) -> u128 {
+    ((2f64.powf((balance_staked as f64 / DECIMAL_PRECISION as f64) / MIN_STAKE_MULTIPLIER as f64) - 1f64) * DECIMAL_PRECISION as f64) as u128
 }
 #[cfg(test)]
 mod tests {

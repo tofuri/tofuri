@@ -163,7 +163,7 @@ pub mod tree {
     use std::collections::HashMap;
     pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) {
         tree.clear();
-        let mut hashes: HashMap<types::Hash, (Vec<types::Hash>, types::Timestamp)> = HashMap::new();
+        let mut hashes: HashMap<types::Hash, (Vec<types::Hash>, u32)> = HashMap::new();
         for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
@@ -184,7 +184,7 @@ pub mod tree {
         }
         let previous_hash = [0; 32];
         let (_, (vec, timestamp)) = hashes.iter().find(|(&x, _)| x == previous_hash).unwrap();
-        fn recurse(tree: &mut Tree, hashes: &HashMap<types::Hash, (Vec<types::Hash>, types::Timestamp)>, previous_hash: types::Hash, vec: &Vec<types::Hash>, timestamp: types::Timestamp) {
+        fn recurse(tree: &mut Tree, hashes: &HashMap<types::Hash, (Vec<types::Hash>, u32)>, previous_hash: types::Hash, vec: &Vec<types::Hash>, timestamp: u32) {
             for hash in vec {
                 tree.insert(*hash, previous_hash, timestamp);
                 if let Some((vec, timestamp)) = hashes.get(hash) {
@@ -204,7 +204,7 @@ pub mod peer {
         db.put_cf(super::peers(db), peer, value)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> Result<types::Timestamp, Box<dyn Error>> {
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> Result<u32, Box<dyn Error>> {
         let bytes: [u8; 4] = db.get_cf(super::peers(db), peer)?.ok_or("peer not found")?.as_slice().try_into()?;
         Ok(u32::from_le_bytes(bytes))
     }

@@ -10,9 +10,9 @@ use std::collections::HashMap;
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 #[derive(Debug, Clone)]
 pub struct Payment {
-    pub address: types::Address,
-    pub amount: types::Amount,
-    pub created: types::Timestamp,
+    pub address: String,
+    pub amount: u128,
+    pub created: u32,
 }
 #[derive(Debug)]
 pub struct PaymentProcessor {
@@ -23,10 +23,10 @@ pub struct PaymentProcessor {
     pub confirmations: usize,
     pub expires_after_secs: u32,
     pub chain: Vec<Block>,
-    pub withdrawal_address: types::Address,
+    pub withdrawal_address: String,
 }
 impl PaymentProcessor {
-    pub fn new<'a>(api: String, key: Key, confirmations: usize, expires_after_secs: u32, withdrawal_address: types::Address) -> Self {
+    pub fn new<'a>(api: String, key: Key, confirmations: usize, expires_after_secs: u32, withdrawal_address: String) -> Self {
         Self {
             api,
             key,
@@ -38,14 +38,14 @@ impl PaymentProcessor {
             withdrawal_address,
         }
     }
-    pub async fn send(&self, address: &str, amount: types::Amount, fee: types::Amount) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn send(&self, address: &str, amount: u128, fee: u128) -> Result<(), Box<dyn std::error::Error>> {
         let mut transaction = Transaction::new(address::public::decode(address).unwrap(), amount, fee);
         transaction.sign(&self.key);
         post::transaction(&self.api, &transaction).await?;
         Ok(())
     }
     pub fn withdraw() {}
-    pub fn charge(&mut self, amount: types::Amount) -> Payment {
+    pub fn charge(&mut self, amount: u128) -> Payment {
         let mut secret_key = self.key.secret_key_bytes().to_vec();
         secret_key.append(&mut self.counter.to_le_bytes().to_vec());
         let hash = util::hash(&secret_key);
@@ -69,7 +69,7 @@ impl PaymentProcessor {
                 transactions.push(transaction);
             }
         }
-        let mut map: HashMap<String, types::Amount> = HashMap::new();
+        let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
             for payment in self.payments.iter() {
                 if transaction.public_key_output == payment.address {

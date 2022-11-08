@@ -34,7 +34,7 @@ pub struct MyBehaviour {
     #[behaviour(ignore)]
     pub message_data_hashes: Vec<types::Hash>,
     #[behaviour(ignore)]
-    pub heartbeats: types::Heartbeats,
+    pub heartbeats: usize,
     #[behaviour(ignore)]
     pub lag: f64,
 }

@@ -115,7 +115,7 @@ impl Wallet {
     fn default_path() -> &'static Path {
         Path::new("./peacash/wallets")
     }
-    fn encrypt(plaintext: &[u8]) -> Result<types::EncryptedWallet, Box<dyn Error>> {
+    fn encrypt(plaintext: &[u8]) -> Result<([u8; 32], [u8; 12], Vec<u8>), Box<dyn Error>> {
         let passphrase = Wallet::new_passphrase();
         let rng = &mut OsRng;
         let mut salt = [0; 32];

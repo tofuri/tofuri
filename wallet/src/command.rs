@@ -91,8 +91,8 @@ async fn transaction(api: &str, wallet: &Wallet) {
             println!("{}", err.to_string().red());
             process::exit(0)
         })
-        * DECIMAL_PRECISION as f64) as types::Amount;
-    let fee = CustomType::<types::Amount>::new("Fee:")
+        * DECIMAL_PRECISION as f64) as u128;
+    let fee = CustomType::<u128>::new("Fee:")
         .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in satoshis using a decimal point as a separator")
@@ -140,8 +140,8 @@ async fn stake(api: &str, wallet: &Wallet) {
             println!("{}", err.to_string().red());
             process::exit(0)
         })
-        * DECIMAL_PRECISION as f64) as types::Amount;
-    let fee = CustomType::<types::Amount>::new("Fee:")
+        * DECIMAL_PRECISION as f64) as u128;
+    let fee = CustomType::<u128>::new("Fee:")
         .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount in satoshis using a decimal point as a separator")
@@ -159,7 +159,7 @@ async fn stake(api: &str, wallet: &Wallet) {
     } {
         return;
     }
-    let mut stake = Stake::new(deposit, amount as types::Amount, fee);
+    let mut stake = Stake::new(deposit, amount as u128, fee);
     stake.sign(&wallet.key);
     println!("Hash: {}", hex::encode(stake.hash()).cyan());
     match post::stake(api, &stake).await {

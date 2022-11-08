@@ -43,7 +43,7 @@ impl Blockchain {
     pub fn latest_block(&self) -> &Block {
         &self.states.dynamic.latest_block
     }
-    pub fn height(&self) -> types::Height {
+    pub fn height(&self) -> usize {
         if let Some(main) = self.tree.main() {
             main.1
         } else {
@@ -283,7 +283,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_transaction(&self, transaction: &Transaction, balance: types::Amount, timestamp: types::Timestamp) -> Result<(), Box<dyn Error>> {
+    pub fn validate_transaction(&self, transaction: &Transaction, balance: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if PublicKey::from_bytes(&transaction.public_key_output).is_err() {
             return Err("transaction has invalid public_key_output".into());
         }
@@ -313,7 +313,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_stake(&self, stake: &Stake, balance: types::Amount, balance_staked: types::Amount, timestamp: types::Timestamp) -> Result<(), Box<dyn Error>> {
+    pub fn validate_stake(&self, stake: &Stake, balance: u128, balance_staked: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if stake.verify().is_err() {
             return Err("stake has invalid signature".into());
         }

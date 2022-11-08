@@ -2,7 +2,7 @@ use pea_core::{constants::TRUST_FORK_AFTER_BLOCKS, types};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt;
-type Branch = (types::Hash, types::Height, types::Timestamp);
+type Branch = (types::Hash, usize, u32);
 pub struct Tree {
     branches: Vec<Branch>,
     hashes: HashMap<types::Hash, types::Hash>,
@@ -67,7 +67,7 @@ impl Tree {
     pub fn get(&self, hash: &types::Hash) -> Option<&types::Hash> {
         self.hashes.get(hash)
     }
-    pub fn insert(&mut self, hash: types::Hash, previous_hash: types::Hash, timestamp: types::Timestamp) -> Option<bool> {
+    pub fn insert(&mut self, hash: types::Hash, previous_hash: types::Hash, timestamp: u32) -> Option<bool> {
         if self.hashes.insert(hash, previous_hash).is_some() {
             return None;
         }
@@ -90,7 +90,7 @@ impl Tree {
             x => x,
         });
     }
-    pub fn height(&self, previous_hash: &types::Hash) -> types::Height {
+    pub fn height(&self, previous_hash: &types::Hash) -> usize {
         let mut hash = previous_hash;
         let mut height = 0;
         loop {
@@ -119,7 +119,7 @@ impl fmt::Debug for Tree {
         #![allow(dead_code)]
         #[derive(Debug)]
         struct Tree {
-            branches: Vec<(String, types::Height, types::Timestamp)>,
+            branches: Vec<(String, usize, u32)>,
             hashes: HashMap<String, String>,
         }
         write!(

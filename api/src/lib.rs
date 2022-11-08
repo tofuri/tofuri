@@ -5,9 +5,9 @@ pub mod get {
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Data {
         pub public_key: String,
-        pub height: types::Height,
+        pub height: usize,
         pub tree_size: usize,
-        pub heartbeats: types::Heartbeats,
+        pub heartbeats: usize,
         pub lag: f64,
         pub gossipsub_peers: usize,
         pub states: States,
@@ -24,8 +24,8 @@ pub mod get {
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct State {
-        pub balance: types::Amount,
-        pub balance_staked: types::Amount,
+        pub balance: u128,
+        pub balance_staked: u128,
         pub hashes: usize,
         pub latest_hashes: Vec<String>,
         pub stakers: Vec<String>,
@@ -34,7 +34,7 @@ pub mod get {
     pub struct Block {
         pub hash: String,
         pub previous_hash: String,
-        pub timestamp: types::Timestamp,
+        pub timestamp: u32,
         pub public_key: String,
         pub signature: String,
         pub transactions: Vec<String>,
@@ -45,31 +45,31 @@ pub mod get {
         pub hash: String,
         pub public_key_input: String,
         pub public_key_output: String,
-        pub amount: types::Amount,
-        pub fee: types::Amount,
-        pub timestamp: types::Timestamp,
+        pub amount: u128,
+        pub fee: u128,
+        pub timestamp: u32,
         pub signature: String,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Stake {
         pub hash: String,
         pub public_key: String,
-        pub amount: types::Amount,
+        pub amount: u128,
         pub deposit: bool,
-        pub fee: types::Amount,
-        pub timestamp: types::Timestamp,
+        pub fee: u128,
+        pub timestamp: u32,
         pub signature: String,
     }
     pub async fn data(api: &str) -> Result<Data, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/json", api)).await?.json().await?)
     }
-    pub async fn height(api: &str) -> Result<types::Height, Box<dyn Error>> {
+    pub async fn height(api: &str) -> Result<usize, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/height", api)).await?.json().await?)
     }
-    pub async fn balance(api: &str, address: &str) -> Result<types::Amount, Box<dyn Error>> {
+    pub async fn balance(api: &str, address: &str) -> Result<u128, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/balance/{}", api, address)).await?.json().await?)
     }
-    pub async fn balance_staked(api: &str, address: &str) -> Result<types::Amount, Box<dyn Error>> {
+    pub async fn balance_staked(api: &str, address: &str) -> Result<u128, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/balance_staked/{}", api, address)).await?.json().await?)
     }
     pub async fn index(api: &str) -> Result<String, Box<dyn Error>> {

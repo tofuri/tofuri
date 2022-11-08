@@ -7,14 +7,14 @@ use std::error::Error;
 pub struct Transaction {
     pub public_key_input: types::PublicKeyBytes,
     pub public_key_output: types::PublicKeyBytes,
-    pub amount: types::Amount,
-    pub fee: types::Amount,
-    pub timestamp: types::Timestamp,
+    pub amount: u128,
+    pub fee: u128,
+    pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
 impl Transaction {
-    pub fn new(public_key_output: types::PublicKeyBytes, amount: types::Amount, fee: types::Amount) -> Transaction {
+    pub fn new(public_key_output: types::PublicKeyBytes, amount: u128, fee: u128) -> Transaction {
         Transaction {
             public_key_input: [0; 32],
             public_key_output,
@@ -39,9 +39,9 @@ impl Transaction {
 pub struct Header {
     pub public_key_input: types::PublicKeyBytes,
     pub public_key_output: types::PublicKeyBytes,
-    pub amount: types::Amount,
-    pub fee: types::Amount,
-    pub timestamp: types::Timestamp,
+    pub amount: u128,
+    pub fee: u128,
+    pub timestamp: u32,
 }
 impl Header {
     pub fn from(transaction: &Transaction) -> Header {
@@ -60,7 +60,7 @@ pub struct Compressed {
     pub public_key_output: types::PublicKeyBytes,
     pub amount: types::CompressedAmount,
     pub fee: types::CompressedAmount,
-    pub timestamp: types::Timestamp,
+    pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }

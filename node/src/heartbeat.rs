@@ -35,7 +35,7 @@ fn forge(behaviour: &mut MyBehaviour) {
     }
     let timestamp = util::timestamp();
     if let Some(public_key) = states.dynamic.staker(timestamp, states.dynamic.latest_block.timestamp) {
-        if public_key != &behaviour.blockchain.key.public_key_bytes() || timestamp < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as types::Timestamp {
+        if public_key != &behaviour.blockchain.key.public_key_bytes() || timestamp < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return;
         }
     } else {

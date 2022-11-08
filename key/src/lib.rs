@@ -1,7 +1,7 @@
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
 use pea_address as address;
-use pea_core::types;
+use pea_core::{types, util};
 use rand::rngs::OsRng;
 #[derive(Debug)]
 pub struct Key {
@@ -41,5 +41,11 @@ impl Key {
         let public_key = PublicKey::from_bytes(public_key_bytes)?;
         let signature = Signature::from_bytes(signature_bytes)?;
         Ok(public_key.verify_strict(message, &signature)?)
+    }
+    pub fn sub_key(&self, n: usize) -> Key {
+        let mut vec = self.keypair.secret.to_bytes().to_vec();
+        vec.append(&mut n.to_le_bytes().to_vec());
+        let hash = util::hash(&vec);
+        Key::from_secret_key_bytes(&hash)
     }
 }

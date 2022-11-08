@@ -16,5 +16,12 @@ pea-amount = { version = "0.1.1", path = "../amount" }
 pea-core = { version = "0.1.1", path = "../core" }
 pea-key = { version = "0.1.0", path = "../key" }
 pea-transaction = { version = "0.1.0", path = "../transaction" }
+pea-wallet = { version = "0.2.3", path = "../wallet" }
 hex = "0.4.3"
 tokio = { version = "1.19.2", features = ["full"] }
+clap = { version = "3.2.6", features = ["derive"] }
+lazy_static = "1.4.0"
+regex = "1.6.0"
+log = "0.4.17"
+colored = "2.0.0"
+futures = "0.3.25"

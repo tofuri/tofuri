@@ -1,10 +1,10 @@
 use crate::{blockchain::Blockchain, gossipsub, heartbeat, http};
 use colored::*;
+use futures::{FutureExt, StreamExt};
 use libp2p::{
     autonat,
     core::connection::ConnectedPoint,
     floodsub::{Floodsub, FloodsubEvent},
-    futures::{FutureExt, StreamExt},
     gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, IdentTopic, MessageAuthenticity},
     identify::{Identify, IdentifyConfig, IdentifyEvent},
     identity,

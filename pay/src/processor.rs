@@ -38,6 +38,7 @@ pub struct PaymentProcessor {
     pub expires_after_secs: u32,
     charges: Vec<Charge>,
     chain: Vec<Block>,
+    subkey: usize,
 }
 impl PaymentProcessor {
     pub fn new<'a>(wallet: Wallet, api: String, confirmations: usize, expires_after_secs: u32) -> Self {
@@ -48,6 +49,7 @@ impl PaymentProcessor {
             expires_after_secs,
             chain: vec![],
             charges: vec![],
+            subkey: 0,
         }
     }
     pub fn get_charges(&self) -> Vec<Payment> {
@@ -71,7 +73,8 @@ impl PaymentProcessor {
     }
     pub fn withdraw() {}
     pub fn charge(&mut self, amount: u128) -> Payment {
-        let key = Key::generate();
+        let key = self.wallet.key.subkey(self.subkey);
+        self.subkey += 1;
         let public = key.public();
         let timestamp = util::timestamp();
         let charge = Charge {

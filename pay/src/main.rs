@@ -32,8 +32,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     logger::init(args.debug);
     let wallet = Wallet::import(&args.wallet, &args.passphrase)?;
     let mut payment_processor = PaymentProcessor::new(wallet, args.http_api.to_string(), CONFIRMATIONS, EXPIRES_AFTER_SECS);
-    let payment = payment_processor.charge(10000000000);
-    info!("{:?}", payment);
+    for _ in 0..3 {
+        let payment = payment_processor.charge(10000000000);
+        info!("{:?}", payment);
+    }
     let listener = TcpListener::bind(args.bind_http_api).await?;
     payment_processor.listen(listener).await?;
     Ok(())

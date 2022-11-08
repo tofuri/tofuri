@@ -42,7 +42,7 @@ impl Key {
         let signature = Signature::from_bytes(signature_bytes)?;
         Ok(public_key.verify_strict(message, &signature)?)
     }
-    pub fn sub_key(&self, n: usize) -> Key {
+    pub fn subkey(&self, n: usize) -> Key {
         let mut vec = self.keypair.secret.to_bytes().to_vec();
         vec.append(&mut n.to_le_bytes().to_vec());
         let hash = util::hash(&vec);

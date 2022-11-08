@@ -2871,6 +2871,8 @@ dependencies = [
  "pea-transaction",
  "pea-wallet",
  "regex",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 

@@ -9,6 +9,7 @@ lazy_static! {
     static ref GET: Regex = Regex::new(r"^GET [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
     static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();
+    static ref CHARGES: Regex = Regex::new(r" /charges ").unwrap();
 }
 pub async fn next(listener: &tokio::net::TcpListener) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
     Ok(listener.accept().await?.0)
@@ -37,6 +38,8 @@ pub async fn handler(mut stream: tokio::net::TcpStream, payment_processor: &Paym
 async fn handler_get(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
     if INDEX.is_match(first) {
         handler_get_index(stream).await?;
+    } else if CHARGES.is_match(first) {
+        handler_get_json_charges(stream, payment_processor).await?;
     } else {
         handler_404(stream).await?;
     };
@@ -56,6 +59,23 @@ Access-Control-Allow-Origin: *
                 env!("CARGO_PKG_VERSION"),
                 env!("CARGO_PKG_REPOSITORY"),
                 env!("GIT_HASH"),
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn handler_get_json_charges(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor) -> Result<(), Box<dyn Error>> {
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&payment_processor.get_charges())?
             )
             .as_bytes(),
         )

@@ -11,6 +11,7 @@ use pea_core::{constants::NANOS, types, util};
 use pea_key::Key;
 use pea_transaction::Transaction;
 use pea_wallet::Wallet;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     error::Error,
@@ -18,16 +19,15 @@ use std::{
 };
 use tokio::net::TcpListener;
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
-#[derive(Debug, Clone)]
-struct Charge {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Charge {
     secret_key_bytes: types::SecretKeyBytes,
     amount: u128,
     timestamp: u32,
 }
-#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Payment {
     pub public: String,
-    pub secret: String,
     pub amount: u128,
     pub timestamp: u32,
 }
@@ -36,8 +36,8 @@ pub struct PaymentProcessor {
     pub api: String,
     pub confirmations: usize,
     pub expires_after_secs: u32,
-    chain: Vec<Block>,
     charges: Vec<Charge>,
+    chain: Vec<Block>,
 }
 impl PaymentProcessor {
     pub fn new<'a>(wallet: Wallet, api: String, confirmations: usize, expires_after_secs: u32) -> Self {
@@ -50,6 +50,19 @@ impl PaymentProcessor {
             charges: vec![],
         }
     }
+    pub fn get_charges(&self) -> Vec<Payment> {
+        let mut payments = vec![];
+        for charge in self.charges.iter() {
+            let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
+            let public = key.public();
+            payments.push(Payment {
+                public,
+                amount: charge.amount,
+                timestamp: charge.timestamp,
+            })
+        }
+        payments
+    }
     pub async fn send(&self, address: &str, amount: u128, fee: u128) -> Result<(), Box<dyn Error>> {
         let mut transaction = Transaction::new(address::public::decode(address).unwrap(), amount, fee);
         transaction.sign(&self.wallet.key);
@@ -60,7 +73,6 @@ impl PaymentProcessor {
     pub fn charge(&mut self, amount: u128) -> Payment {
         let key = Key::generate();
         let public = key.public();
-        let secret = key.secret();
         let timestamp = util::timestamp();
         let charge = Charge {
             secret_key_bytes: key.secret_key_bytes(),
@@ -68,7 +80,7 @@ impl PaymentProcessor {
             timestamp,
         };
         self.charges.push(charge);
-        Payment { public, secret, amount, timestamp }
+        Payment { public, amount, timestamp }
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
         self.update_chain().await?;
@@ -116,10 +128,8 @@ impl PaymentProcessor {
         for charge in charges {
             let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
             let public = key.public();
-            let secret = key.secret();
             payments.push(Payment {
                 public,
-                secret,
                 amount: charge.amount,
                 timestamp: charge.timestamp,
             })

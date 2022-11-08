@@ -1,5 +1,5 @@
 use ed25519::signature::Signer;
-use ed25519_dalek::{Keypair, PublicKey, SecretKey};
+use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
 use pea_address as address;
 use pea_core::types;
 use rand::rngs::OsRng;
@@ -38,8 +38,8 @@ impl Key {
         self.keypair.sign(msg).to_bytes()
     }
     pub fn verify(public_key_bytes: &types::PublicKeyBytes, message: &[u8], signature_bytes: &types::SignatureBytes) -> Result<(), Box<dyn std::error::Error>> {
-        let public_key = types::PublicKey::from_bytes(public_key_bytes)?;
-        let signature = types::Signature::from_bytes(signature_bytes)?;
+        let public_key = PublicKey::from_bytes(public_key_bytes)?;
+        let signature = Signature::from_bytes(signature_bytes)?;
         Ok(public_key.verify_strict(message, &signature)?)
     }
 }

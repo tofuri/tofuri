@@ -1,5 +1,6 @@
 use crate::{state::Dynamic, states::States, sync::Sync};
 use colored::*;
+use ed25519_dalek::PublicKey;
 use log::{debug, info};
 use pea_address as address;
 use pea_block::Block;
@@ -283,7 +284,7 @@ impl Blockchain {
         Ok(())
     }
     pub fn validate_transaction(&self, transaction: &Transaction, balance: types::Amount, timestamp: types::Timestamp) -> Result<(), Box<dyn Error>> {
-        if types::PublicKey::from_bytes(&transaction.public_key_output).is_err() {
+        if PublicKey::from_bytes(&transaction.public_key_output).is_err() {
             return Err("transaction has invalid public_key_output".into());
         }
         if transaction.verify().is_err() {

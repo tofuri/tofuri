@@ -3,10 +3,7 @@ use pea_api::{
     get::{self, Block},
     post,
 };
-use pea_core::{
-    types::{self, SecretKey},
-    util,
-};
+use pea_core::{types, util};
 use pea_key::Key;
 use pea_transaction::Transaction;
 use std::collections::HashMap;
@@ -52,9 +49,8 @@ impl PaymentProcessor {
         let mut secret_key = self.key.secret_key_bytes().to_vec();
         secret_key.append(&mut self.counter.to_le_bytes().to_vec());
         let hash = util::hash(&secret_key);
-        let secret_key = SecretKey::from_bytes(&hash).unwrap();
-        let public_key: types::PublicKey = (&secret_key).into();
-        let address = address::public::encode(&public_key.to_bytes());
+        let key = Key::from_secret_key_bytes(&hash);
+        let address = key.public();
         let created = util::timestamp();
         let payment = Payment { address, amount, created };
         self.payments.push(payment.clone());

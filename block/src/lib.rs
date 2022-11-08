@@ -74,9 +74,7 @@ impl Block {
         self.signature = key.sign(&self.hash());
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        let public_key = types::PublicKey::from_bytes(&self.public_key)?;
-        let signature = types::Signature::from_bytes(&self.signature)?;
-        Ok(public_key.verify_strict(&self.hash(), &signature)?)
+        Key::verify(&self.public_key, &self.hash(), &self.signature)
     }
     pub fn hash(&self) -> types::Hash {
         let block_metadata = Metadata::from(self);

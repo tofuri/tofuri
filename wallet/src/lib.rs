@@ -5,6 +5,7 @@ use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
     ChaCha20Poly1305,
 };
+use ed25519_dalek::SecretKey;
 use pea_core::{constants::EXTENSION, types};
 pub mod command;
 pub mod kdf;
@@ -80,7 +81,7 @@ impl Wallet {
         let salt = &data[..32];
         let nonce = &data[32..44];
         let ciphertext = &data[44..];
-        let secret_key = types::SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
+        let secret_key = SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
         let secret_key_bytes = secret_key.to_bytes();
         let key = Key::from_secret_key_bytes(&secret_key_bytes);
         Ok(Wallet {

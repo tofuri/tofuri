@@ -20,7 +20,7 @@ use std::{
 use tokio::net::TcpListener;
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Charge {
+struct Charge {
     secret_key_bytes: types::SecretKeyBytes,
     amount: u128,
     timestamp: u32,

@@ -24,7 +24,7 @@ pub struct Args {
     pub peer: String,
     /// TCP socket address to bind to
     #[clap(long, value_parser, default_value = ":::9332")]
-    pub http_api: String,
+    pub bind_http_api: String,
     /// Store blockchain in a temporary database
     #[clap(long, value_parser, default_value_t = false)]
     pub tempdb: bool,
@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
     info!("{} {}", "--host".cyan(), args.host.magenta());
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
-    info!("{} {}", "--http-api".cyan(), args.http_api.magenta());
+    info!("{} {}", "--http-api".cyan(), args.bind_http_api.magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
@@ -74,7 +74,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for peer in peers {
         swarm.dial(peer.parse::<Multiaddr>()?)?;
     }
-    let tcp_listener_http_api = if args.http_api != "" { Some(TcpListener::bind(args.http_api).await?) } else { None };
+    let tcp_listener_http_api = if args.bind_http_api != "" { Some(TcpListener::bind(args.bind_http_api).await?) } else { None };
     p2p::listen(&mut swarm, tcp_listener_http_api).await?;
     Ok(())
 }

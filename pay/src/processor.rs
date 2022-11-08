@@ -20,10 +20,25 @@ use std::{
 use tokio::net::TcpListener;
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ChargeStatus {
+    New,
+    Pending,
+    Expired,
+    Completed,
+    Cancelled,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Charge {
     secret_key_bytes: types::SecretKeyBytes,
     amount: u128,
     timestamp: u32,
+    status: ChargeStatus,
+    subkey: usize,
+}
+impl Charge {
+    fn hash(&self) -> types::Hash {
+        util::hash(&bincode::serialize(&self).unwrap())
+    }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Payment {
@@ -36,7 +51,8 @@ pub struct PaymentProcessor {
     pub api: String,
     pub confirmations: usize,
     pub expires_after_secs: u32,
-    charges: Vec<Charge>,
+    // charges: HashMap<usize, Charge>,
+    charges: HashMap<types::Hash, Charge>,
     chain: Vec<Block>,
     subkey: usize,
 }
@@ -48,13 +64,13 @@ impl PaymentProcessor {
             confirmations,
             expires_after_secs,
             chain: vec![],
-            charges: vec![],
+            charges: HashMap::new(),
             subkey: 0,
         }
     }
     pub fn get_charges(&self) -> Vec<Payment> {
         let mut payments = vec![];
-        for charge in self.charges.iter() {
+        for charge in self.charges.values() {
             let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
             let public = key.public();
             payments.push(Payment {
@@ -74,15 +90,17 @@ impl PaymentProcessor {
     pub fn withdraw() {}
     pub fn charge(&mut self, amount: u128) -> Payment {
         let key = self.wallet.key.subkey(self.subkey);
-        self.subkey += 1;
         let public = key.public();
         let timestamp = util::timestamp();
         let charge = Charge {
             secret_key_bytes: key.secret_key_bytes(),
             amount,
             timestamp,
+            status: ChargeStatus::Pending,
+            subkey: self.subkey,
         };
-        self.charges.push(charge);
+        self.charges.insert(charge.hash(), charge);
+        self.subkey += 1;
         Payment { public, amount, timestamp }
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
@@ -99,7 +117,7 @@ impl PaymentProcessor {
         }
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
-            for charge in self.charges.iter() {
+            for charge in self.charges.values() {
                 let public = Key::from_secret_key_bytes(&charge.secret_key_bytes).public();
                 if transaction.public_key_output == public {
                     let amount = match map.get(&public) {
@@ -111,9 +129,7 @@ impl PaymentProcessor {
             }
         }
         let mut charges = vec![];
-        let mut i = 0;
-        while i < self.charges.len() {
-            let charge = &self.charges[i];
+        for charge in self.charges.values() {
             let public = Key::from_secret_key_bytes(&charge.secret_key_bytes).public();
             if {
                 let amount = match map.get(&public) {
@@ -122,9 +138,7 @@ impl PaymentProcessor {
                 };
                 charge.amount < amount
             } {
-                charges.push(self.charges.remove(i));
-            } else {
-                i += 1;
+                charges.push(charge);
             }
         }
         let mut payments = vec![];

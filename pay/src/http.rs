@@ -10,6 +10,7 @@ lazy_static! {
     static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();
     static ref CHARGES: Regex = Regex::new(r" /charges ").unwrap();
+    static ref CHARGE: Regex = Regex::new(r" /charge/[0-9A-Fa-f]* ").unwrap();
 }
 pub async fn next(listener: &tokio::net::TcpListener) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
     Ok(listener.accept().await?.0)
@@ -39,7 +40,9 @@ async fn handler_get(stream: &mut tokio::net::TcpStream, payment_processor: &Pay
     if INDEX.is_match(first) {
         handler_get_index(stream).await?;
     } else if CHARGES.is_match(first) {
-        handler_get_json_charges(stream, payment_processor).await?;
+        handler_get_charges(stream, payment_processor).await?;
+    } else if CHARGE.is_match(first) {
+        handler_get_charge(stream, payment_processor, first).await?;
     } else {
         handler_404(stream).await?;
     };
@@ -65,7 +68,7 @@ Access-Control-Allow-Origin: *
         .await?;
     Ok(())
 }
-async fn handler_get_json_charges(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor) -> Result<(), Box<dyn Error>> {
+async fn handler_get_charges(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor) -> Result<(), Box<dyn Error>> {
     stream
         .write_all(
             format!(
@@ -76,6 +79,25 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&payment_processor.get_charges())?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn handler_get_charge(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+    let hash = hex::decode(CHARGE.find(first).ok_or("GET CHARGE 1")?.as_str().trim().get(8..).ok_or("GET CHARGE 2")?)?;
+    let payment = payment_processor.get_charge(&hash);
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&payment)?
             )
             .as_bytes(),
         )

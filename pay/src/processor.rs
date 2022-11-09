@@ -91,14 +91,14 @@ impl PaymentProcessor {
             subkey: 0,
         }
     }
-    pub fn get_charges(&self) -> Vec<Payment> {
+    pub fn get_charges(&self) -> Vec<(String, Payment)> {
         let mut payments = vec![];
-        for charge in self.charges.values() {
-            payments.push(Payment::from(charge));
+        for (hash, charge) in self.charges.iter() {
+            payments.push((hex::encode(hash), Payment::from(charge)));
         }
         payments
     }
-    pub fn get_charge(&self, hash: &types::Hash) -> Option<Payment> {
+    pub fn get_charge(&self, hash: &[u8]) -> Option<Payment> {
         match self.charges.get(hash) {
             Some(charge) => Some(Payment::from(charge)),
             None => None,

@@ -56,6 +56,19 @@ pub struct Payment {
     pub timestamp: u32,
     pub status: String,
 }
+impl Payment {
+    fn from(charge: &Charge) -> Payment {
+        let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
+        let public = key.public();
+        let status = status(&charge.status);
+        Payment {
+            public,
+            amount: charge.amount,
+            timestamp: charge.timestamp,
+            status,
+        }
+    }
+}
 pub struct PaymentProcessor {
     pub wallet: Wallet,
     pub api: String,
@@ -81,16 +94,15 @@ impl PaymentProcessor {
     pub fn get_charges(&self) -> Vec<Payment> {
         let mut payments = vec![];
         for charge in self.charges.values() {
-            let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
-            let public = key.public();
-            payments.push(Payment {
-                public,
-                amount: charge.amount,
-                timestamp: charge.timestamp,
-                status: status(&charge.status),
-            })
+            payments.push(Payment::from(charge));
         }
         payments
+    }
+    pub fn get_charge(&self, hash: &types::Hash) -> Option<Payment> {
+        match self.charges.get(hash) {
+            Some(charge) => Some(Payment::from(charge)),
+            None => None,
+        }
     }
     pub async fn send(&self, address: &str, amount: u128, fee: u128) -> Result<(), Box<dyn Error>> {
         let mut transaction = Transaction::new(address::public::decode(address).unwrap(), amount, fee);
@@ -101,7 +113,6 @@ impl PaymentProcessor {
     pub fn withdraw() {}
     pub fn charge(&mut self, amount: u128) -> Payment {
         let key = self.wallet.key.subkey(self.subkey);
-        let public = key.public();
         let timestamp = util::timestamp();
         let charge = Charge {
             secret_key_bytes: key.secret_key_bytes(),
@@ -110,10 +121,10 @@ impl PaymentProcessor {
             status: ChargeStatus::Pending,
             subkey: self.subkey,
         };
-        let status = status(&charge.status);
+        let payment = Payment::from(&charge);
         self.charges.insert(charge.hash(), charge);
         self.subkey += 1;
-        Payment { public, amount, timestamp, status }
+        payment
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
         self.update_chain().await?;
@@ -156,14 +167,7 @@ impl PaymentProcessor {
         }
         let mut payments = vec![];
         for charge in charges {
-            let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
-            let public = key.public();
-            payments.push(Payment {
-                public,
-                amount: charge.amount,
-                timestamp: charge.timestamp,
-                status: status(&charge.status),
-            })
+            payments.push(Payment::from(charge))
         }
         Ok(payments)
     }

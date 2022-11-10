@@ -2873,8 +2873,10 @@ dependencies = [
  "pea-wallet",
  "regex",
  "reqwest",
+ "rocksdb",
  "serde",
  "serde_json",
+ "tempdir",
  "tokio",
 ]
 

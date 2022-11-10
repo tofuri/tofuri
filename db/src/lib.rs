@@ -1,14 +1,6 @@
 #![feature(test)]
 extern crate test;
 use rocksdb::{ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Options, SingleThreaded, DB};
-pub enum Key {
-    LatestBlockHash,
-}
-pub fn key(key: &Key) -> &[u8] {
-    match *key {
-        Key::LatestBlockHash => &[0],
-    }
-}
 fn descriptors() -> Vec<ColumnFamilyDescriptor> {
     let mut options = Options::default();
     options.set_max_write_buffer_number(16);

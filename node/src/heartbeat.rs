@@ -3,25 +3,18 @@ use colored::*;
 use libp2p::{gossipsub::IdentTopic, Swarm};
 use log::debug;
 use pea_core::{
-    constants::{BLOCK_TIME_MIN, MICROS, MIN_STAKE, NANOS, SYNC_BLOCKS_PER_TICK, TPS},
+    constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS_PER_TICK},
     util,
 };
 use pea_stake::Stake;
 use std::time::{Duration, SystemTime};
-pub async fn next() {
-    let mut nanos = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-    let secs = nanos / NANOS;
-    nanos -= secs * NANOS;
-    nanos = NANOS - nanos;
-    tokio::time::sleep(Duration::from_nanos(nanos as u64)).await
+pub async fn next(tps: f64) {
+    tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
 }
 pub fn handler(swarm: &mut Swarm<MyBehaviour>) {
     let behaviour = swarm.behaviour_mut();
     behaviour.heartbeats += 1;
     sync(behaviour);
-    if behaviour.heartbeats % TPS != 0 {
-        return;
-    }
     behaviour.message_data_hashes.clear();
     behaviour.blockchain.sync.handler();
     forge(behaviour);
@@ -63,11 +56,18 @@ fn sync(behaviour: &mut MyBehaviour) {
         let _ = behaviour.gossipsub.publish(IdentTopic::new("block"), data);
     }
 }
+fn nanos(tps: f64) -> u64 {
+    let f = 1 as f64 / tps;
+    let u = (f * 1_000_000_000 as f64) as u128;
+    let mut nanos = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+    let secs = nanos / u;
+    nanos -= secs * u;
+    (u - nanos) as u64
+}
 fn lag(behaviour: &mut MyBehaviour) {
-    let mut micros = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros();
-    let secs = micros / MICROS;
-    micros -= secs * MICROS;
-    let millis = micros as f64 / 1_000_f64;
-    behaviour.lag = millis;
-    debug!("{} {} {}ms", "Heartbeat".cyan(), behaviour.heartbeats, millis.to_string().yellow(),);
+    let f = 1 as f64 / behaviour.tps;
+    let u = (f * 1_000_000_000 as f64) as u64;
+    let nanos = u - nanos(behaviour.tps);
+    behaviour.lag = (nanos / 1_000) as f64 / 1_000 as f64;
+    debug!("{} {} {}", "Heartbeat".cyan(), behaviour.heartbeats, format!("{:?}", Duration::from_nanos(nanos)).yellow());
 }

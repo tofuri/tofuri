@@ -31,6 +31,9 @@ pub struct Args {
     /// Use temporary random keypair
     #[clap(long, value_parser, default_value_t = false)]
     pub tempkey: bool,
+    /// Ticks per second
+    #[clap(long, value_parser, default_value = "1")]
+    pub tps: f64,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,
@@ -51,6 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--bind-http-api".cyan(), args.bind_http_api.magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
+    info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     let tempdir = TempDir::new("peacash")?;
@@ -68,7 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let peers = db::peer::get_all(&blockchain.db);
     info!("{} {}", "Peers".cyan(), format!("{:?}", peers).yellow());
     blockchain.load();
-    let mut swarm = p2p::swarm(blockchain).await?;
+    let mut swarm = p2p::swarm(blockchain, args.tps).await?;
     swarm.listen_on(args.host.parse()?)?;
     swarm.dial(args.peer.parse::<Multiaddr>()?)?;
     for peer in peers {

@@ -37,9 +37,11 @@ pub struct MyBehaviour {
     pub heartbeats: usize,
     #[behaviour(ignore)]
     pub lag: f64,
+    #[behaviour(ignore)]
+    pub tps: f64,
 }
 impl MyBehaviour {
-    async fn new(local_key: identity::Keypair, blockchain: Blockchain) -> Result<Self, Box<dyn Error>> {
+    async fn new(local_key: identity::Keypair, blockchain: Blockchain, tps: f64) -> Result<Self, Box<dyn Error>> {
         let local_public_key = local_key.public();
         let local_peer_id = PeerId::from(local_public_key.clone());
         Ok(Self {
@@ -59,6 +61,7 @@ impl MyBehaviour {
             message_data_hashes: vec![],
             heartbeats: 0,
             lag: 0.0,
+            tps,
         })
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
@@ -132,11 +135,11 @@ impl NetworkBehaviourEventProcess<relay::Event> for MyBehaviour {
         p2p_event("relay::Event", format!("{:?}", event));
     }
 }
-pub async fn swarm(blockchain: Blockchain) -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
+pub async fn swarm(blockchain: Blockchain, tps: f64) -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
     let transport = libp2p::development_transport(local_key.clone()).await?;
-    let mut behaviour = MyBehaviour::new(local_key, blockchain).await?;
+    let mut behaviour = MyBehaviour::new(local_key, blockchain, tps).await?;
     for ident_topic in [IdentTopic::new("block"), IdentTopic::new("stake"), IdentTopic::new("transaction")].iter() {
         behaviour.gossipsub.subscribe(ident_topic)?;
     }
@@ -150,7 +153,7 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, swarm).await {
                     error!("{}", err);
                 },
-                _ = heartbeat::next().fuse() => heartbeat::handler(swarm),
+                _ = heartbeat::next(swarm.behaviour().tps).fuse() => heartbeat::handler(swarm),
                 event = swarm.select_next_some() => {
                     p2p_event("SwarmEvent", format!("{:?}", event));
                     if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
@@ -165,7 +168,7 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
         info!("{} {}", "HTTP API".cyan(), "Disabled".red());
         loop {
             tokio::select! {
-                _ = heartbeat::next().fuse() => heartbeat::handler(swarm),
+                _ = heartbeat::next(swarm.behaviour().tps).fuse() => heartbeat::handler(swarm),
                 event = swarm.select_next_some() => {
                     p2p_event("SwarmEvent", format!("{:?}", event));
                     if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {

@@ -53,7 +53,7 @@ pub mod block {
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block, Box<dyn Error>> {
-        let block_metadata_lean: block::MetadataLean = bincode::deserialize(&block_metadata_lean::get(db, hash)?)?;
+        let block_metadata_lean = block_metadata_lean::get(db, hash)?;
         let mut transactions = vec![];
         for hash in block_metadata_lean.transaction_hashes {
             transactions.push(transaction::get(db, &hash)?);
@@ -73,16 +73,16 @@ pub mod block {
     }
 }
 pub mod block_metadata_lean {
-    use pea_block as block;
+    use pea_block::MetadataLean;
     use pea_core::types;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(db: &DBWithThreadMode<SingleThreaded>, hash: &types::Hash, block_metadata_lean: block::MetadataLean) -> Result<(), Box<dyn Error>> {
+    pub fn put(db: &DBWithThreadMode<SingleThreaded>, hash: &types::Hash, block_metadata_lean: MetadataLean) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::blocks(db), hash, bincode::serialize(&block_metadata_lean)?)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
-        Ok(db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<MetadataLean, Box<dyn Error>> {
+        Ok(bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?)
     }
 }
 pub mod transaction {

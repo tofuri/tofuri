@@ -11,11 +11,12 @@ lazy_static! {
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();
     static ref CHARGES: Regex = Regex::new(r" /charges ").unwrap();
     static ref CHARGE: Regex = Regex::new(r" /charge/[0-9A-Fa-f]* ").unwrap();
+    static ref CHARGE_NEW: Regex = Regex::new(r" /charge/new/[0-9]* ").unwrap();
 }
 pub async fn next(listener: &tokio::net::TcpListener) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
     Ok(listener.accept().await?.0)
 }
-pub async fn handler(mut stream: tokio::net::TcpStream, payment_processor: &PaymentProcessor) -> Result<(), Box<dyn Error>> {
+pub async fn handler(mut stream: tokio::net::TcpStream, payment_processor: &mut PaymentProcessor) -> Result<(), Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
@@ -36,13 +37,15 @@ pub async fn handler(mut stream: tokio::net::TcpStream, payment_processor: &Paym
     stream.flush().await?;
     Ok(())
 }
-async fn handler_get(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+async fn handler_get(stream: &mut tokio::net::TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
     if INDEX.is_match(first) {
         handler_get_index(stream).await?;
     } else if CHARGES.is_match(first) {
         handler_get_charges(stream, payment_processor).await?;
     } else if CHARGE.is_match(first) {
         handler_get_charge(stream, payment_processor, first).await?;
+    } else if CHARGE_NEW.is_match(first) {
+        handler_get_charge_new(stream, payment_processor, first).await?;
     } else {
         handler_404(stream).await?;
     };
@@ -88,6 +91,25 @@ Content-Type: application/json
 async fn handler_get_charge(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
     let hash = hex::decode(CHARGE.find(first).ok_or("GET CHARGE 1")?.as_str().trim().get(8..).ok_or("GET CHARGE 2")?)?;
     let payment = payment_processor.get_charge(&hash);
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&payment)?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn handler_get_charge_new(stream: &mut tokio::net::TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+    let amount: u128 = CHARGE_NEW.find(first).ok_or("GET CHARGE 1")?.as_str().trim().get(12..).ok_or("GET CHARGE 2")?.parse()?;
+    let payment = payment_processor.charge(amount);
     stream
         .write_all(
             format!(

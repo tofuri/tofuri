@@ -220,7 +220,7 @@ impl PaymentProcessor {
         info!("{} {} http://{}", "Enabled".green(), "HTTP API".cyan(), listener.local_addr()?.to_string().green());
         loop {
             tokio::select! {
-                Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, &self).await {
+                Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {
                     error!("{}", err);
                 },
                 _ = Self::next().fuse() => match self.check().await {

@@ -52,6 +52,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let db = db::open(path);
     let wallet = Wallet::import(&args.wallet, &args.passphrase)?;
     let mut payment_processor = PaymentProcessor::new(db, wallet, args.http_api.to_string(), CONFIRMATIONS, EXPIRES_AFTER_SECS);
+    payment_processor.load();
     let listener = TcpListener::bind(args.bind_http_api).await?;
     payment_processor.listen(listener).await?;
     Ok(())

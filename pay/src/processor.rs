@@ -11,12 +11,12 @@ use pea_core::{constants::NANOS, types, util};
 use pea_key::Key;
 use pea_transaction::Transaction;
 use pea_wallet::Wallet;
-use rocksdb::{DBWithThreadMode, SingleThreaded};
+use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     error::Error,
-    time::{Duration, SystemTime},
+    time::{Duration, Instant, SystemTime},
 };
 use tokio::net::TcpListener;
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
@@ -236,5 +236,15 @@ impl PaymentProcessor {
                 },
             }
         }
+    }
+    pub fn load(&mut self) {
+        let start = Instant::now();
+        for res in self.db.iterator_cf(db::charges(&self.db), IteratorMode::Start) {
+            let (hash, bytes) = res.unwrap();
+            let hash = hash.to_vec().try_into().unwrap();
+            let charge: Charge = bincode::deserialize(&bytes).unwrap();
+            self.charges.insert(hash, charge);
+        }
+        info!("{} {}", "Charges load".cyan(), format!("{:?}", start.elapsed()).yellow());
     }
 }

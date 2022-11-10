@@ -49,7 +49,7 @@ pub mod block {
         for stake in block.stakes.iter() {
             stake::put(stake, db)?;
         }
-        block_metadata_lean::put(db, &block.hash(), block_metadata_lean)?;
+        block_metadata_lean::put(db, &block.hash(), &block_metadata_lean)?;
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block, Box<dyn Error>> {
@@ -77,8 +77,8 @@ pub mod block_metadata_lean {
     use pea_core::types;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(db: &DBWithThreadMode<SingleThreaded>, hash: &types::Hash, block_metadata_lean: MetadataLean) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::blocks(db), hash, bincode::serialize(&block_metadata_lean)?)?;
+    pub fn put(db: &DBWithThreadMode<SingleThreaded>, hash: &types::Hash, block_metadata_lean: &MetadataLean) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::blocks(db), hash, bincode::serialize(block_metadata_lean)?)?;
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<MetadataLean, Box<dyn Error>> {

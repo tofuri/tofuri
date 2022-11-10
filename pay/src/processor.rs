@@ -1,4 +1,4 @@
-use crate::http;
+use crate::{db, http};
 use colored::*;
 use futures::FutureExt;
 use log::{error, info};
@@ -126,6 +126,7 @@ impl PaymentProcessor {
         };
         let payment = Payment::from(&charge);
         let hash = charge.hash();
+        db::charge::put(&self.db, &charge).unwrap();
         self.charges.insert(hash, charge);
         self.subkey += 1;
         (hex::encode(&hash), payment)

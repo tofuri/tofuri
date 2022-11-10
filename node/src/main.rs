@@ -32,7 +32,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value_t = false)]
     pub tempkey: bool,
     /// Ticks per second
-    #[clap(long, value_parser, default_value = "1")]
+    #[clap(long, value_parser, default_value = "5")]
     pub tps: f64,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]

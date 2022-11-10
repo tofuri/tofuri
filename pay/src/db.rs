@@ -13,3 +13,15 @@ pub fn open(path: &str) -> DBWithThreadMode<SingleThreaded> {
 pub fn charges(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("charges").unwrap()
 }
+pub mod charge {
+    use crate::processor::Charge;
+    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use std::error::Error;
+    pub fn put(db: &DBWithThreadMode<SingleThreaded>, charge: Charge) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::charges(db), charge.hash(), bincode::serialize(&charge)?)?;
+        Ok(())
+    }
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Charge, Box<dyn Error>> {
+        Ok(bincode::deserialize(&db.get_cf(super::charges(db), hash)?.ok_or("charge not found")?)?)
+    }
+}

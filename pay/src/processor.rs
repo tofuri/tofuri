@@ -11,6 +11,7 @@ use pea_core::{constants::NANOS, types, util};
 use pea_key::Key;
 use pea_transaction::Transaction;
 use pea_wallet::Wallet;
+use rocksdb::{DBWithThreadMode, SingleThreaded};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -37,7 +38,7 @@ pub fn status(status: &ChargeStatus) -> String {
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct Charge {
+pub struct Charge {
     secret_key_bytes: types::SecretKeyBytes,
     amount: u128,
     timestamp: u32,
@@ -45,7 +46,7 @@ struct Charge {
     subkey: usize,
 }
 impl Charge {
-    fn hash(&self) -> types::Hash {
+    pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&self).unwrap())
     }
 }
@@ -70,6 +71,7 @@ impl Payment {
     }
 }
 pub struct PaymentProcessor {
+    pub db: DBWithThreadMode<SingleThreaded>,
     pub wallet: Wallet,
     pub api: String,
     pub confirmations: usize,
@@ -80,8 +82,9 @@ pub struct PaymentProcessor {
     subkey: usize,
 }
 impl PaymentProcessor {
-    pub fn new<'a>(wallet: Wallet, api: String, confirmations: usize, expires_after_secs: u32) -> Self {
+    pub fn new(db: DBWithThreadMode<SingleThreaded>, wallet: Wallet, api: String, confirmations: usize, expires_after_secs: u32) -> Self {
         Self {
+            db,
             wallet,
             api,
             confirmations,

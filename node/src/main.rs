@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
     info!("{} {}", "--host".cyan(), args.host.magenta());
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
-    info!("{} {}", "--http-api".cyan(), args.bind_http_api.magenta());
+    info!("{} {}", "--bind-http-api".cyan(), args.bind_http_api.magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());

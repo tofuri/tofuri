@@ -1,9 +1,11 @@
 use clap::Parser;
+use colored::*;
 use log::info;
 use pea_logger as logger;
-use pea_pay::processor::PaymentProcessor;
+use pea_pay::{db, processor::PaymentProcessor};
 use pea_wallet::Wallet;
 use std::error::Error;
+use tempdir::TempDir;
 use tokio::net::TcpListener;
 const CONFIRMATIONS: usize = 10;
 const EXPIRES_AFTER_SECS: u32 = 60;
@@ -19,6 +21,9 @@ pub struct Args {
     /// API Endpoint
     #[clap(long, value_parser, default_value = "http://[::]:9332")]
     pub http_api: String,
+    /// Store blockchain in a temporary database
+    #[clap(long, value_parser, default_value_t = false)]
+    pub tempdb: bool,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,
@@ -30,6 +35,21 @@ pub struct Args {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     logger::init(args.debug);
+    info!("{} {}", "Version".cyan(), env!("CARGO_PKG_VERSION").yellow());
+    info!("{} {}", "Commit".cyan(), env!("GIT_HASH").yellow());
+    info!("{} {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY").yellow());
+    info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
+    info!("{} {}", "--bind-http-api".cyan(), args.bind_http_api.magenta());
+    info!("{} {}", "--http-api".cyan(), args.http_api.magenta());
+    info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
+    info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
+    info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
+    let tempdir = TempDir::new("peacash")?;
+    let path: &str = match args.tempdb {
+        true => tempdir.path().to_str().unwrap(),
+        false => "./peacash/pay-db",
+    };
+    let db = db::open(path);
     let wallet = Wallet::import(&args.wallet, &args.passphrase)?;
     let mut payment_processor = PaymentProcessor::new(wallet, args.http_api.to_string(), CONFIRMATIONS, EXPIRES_AFTER_SECS);
     for _ in 0..3 {

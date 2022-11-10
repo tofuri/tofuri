@@ -214,22 +214,23 @@ impl PaymentProcessor {
         }
         Ok(())
     }
-    pub async fn next(millis: u128) {
-        let n = millis * 1_000_000;
+    async fn next(tps: f64) {
+        let f = 1 as f64 / tps;
+        let u = (f * 1_000_000_000 as f64) as u128;
         let mut nanos = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-        let secs = nanos / n;
-        nanos -= secs * n;
-        nanos = n - nanos;
-        tokio::time::sleep(Duration::from_nanos(nanos as u64)).await
+        let secs = nanos / u;
+        nanos -= secs * u;
+        let nanos = (u - nanos) as u64;
+        tokio::time::sleep(Duration::from_nanos(nanos)).await
     }
-    pub async fn listen(&mut self, listener: TcpListener, millis: u128) -> Result<(), Box<dyn Error>> {
+    pub async fn listen(&mut self, listener: TcpListener, tps: f64) -> Result<(), Box<dyn Error>> {
         info!("{} {} http://{}", "Enabled".green(), "HTTP API".cyan(), listener.local_addr()?.to_string().green());
         loop {
             tokio::select! {
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {
                     error!("{}", err);
                 },
-                _ = Self::next(millis).fuse() => match self.check().await {
+                _ = Self::next(tps).fuse() => match self.check().await {
                     Ok(vec) => if !vec.is_empty() {
                         info!("{:?}", vec);
                     },

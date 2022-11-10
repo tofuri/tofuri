@@ -24,6 +24,9 @@ pub struct Args {
     /// Store blockchain in a temporary database
     #[clap(long, value_parser, default_value_t = false)]
     pub tempdb: bool,
+    /// Refresh delay in milliseconds
+    #[clap(long, value_parser, default_value = "1000")]
+    pub millis: u128,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,
@@ -42,6 +45,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--bind-http-api".cyan(), args.bind_http_api.magenta());
     info!("{} {}", "--http-api".cyan(), args.http_api.magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
+    info!("{} {}", "--millis".cyan(), args.millis.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     let tempdir = TempDir::new("peacash")?;
@@ -54,6 +58,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut payment_processor = PaymentProcessor::new(db, wallet, args.http_api.to_string(), CONFIRMATIONS, EXPIRES_AFTER_SECS);
     payment_processor.load();
     let listener = TcpListener::bind(args.bind_http_api).await?;
-    payment_processor.listen(listener).await?;
+    payment_processor.listen(listener, args.millis).await?;
     Ok(())
 }

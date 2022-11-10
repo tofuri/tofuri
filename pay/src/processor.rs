@@ -7,7 +7,7 @@ use pea_api::{
     get::{self, Block},
     post,
 };
-use pea_core::{constants::NANOS, types, util};
+use pea_core::{types, util};
 use pea_key::Key;
 use pea_transaction::Transaction;
 use pea_wallet::Wallet;
@@ -214,21 +214,22 @@ impl PaymentProcessor {
         }
         Ok(())
     }
-    pub async fn next() {
+    pub async fn next(millis: u128) {
+        let n = millis * 1_000_000;
         let mut nanos = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-        let secs = nanos / NANOS;
-        nanos -= secs * NANOS;
-        nanos = NANOS - nanos;
+        let secs = nanos / n;
+        nanos -= secs * n;
+        nanos = n - nanos;
         tokio::time::sleep(Duration::from_nanos(nanos as u64)).await
     }
-    pub async fn listen(&mut self, listener: TcpListener) -> Result<(), Box<dyn Error>> {
+    pub async fn listen(&mut self, listener: TcpListener, millis: u128) -> Result<(), Box<dyn Error>> {
         info!("{} {} http://{}", "Enabled".green(), "HTTP API".cyan(), listener.local_addr()?.to_string().green());
         loop {
             tokio::select! {
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {
                     error!("{}", err);
                 },
-                _ = Self::next().fuse() => match self.check().await {
+                _ = Self::next(millis).fuse() => match self.check().await {
                     Ok(vec) => if !vec.is_empty() {
                         info!("{:?}", vec);
                     },

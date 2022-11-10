@@ -111,7 +111,7 @@ impl PaymentProcessor {
         Ok(())
     }
     pub fn withdraw() {}
-    pub fn charge(&mut self, amount: u128) -> Payment {
+    pub fn charge(&mut self, amount: u128) -> (String, Payment) {
         let key = self.wallet.key.subkey(self.subkey);
         let timestamp = util::timestamp();
         let charge = Charge {
@@ -122,9 +122,10 @@ impl PaymentProcessor {
             subkey: self.subkey,
         };
         let payment = Payment::from(&charge);
-        self.charges.insert(charge.hash(), charge);
+        let hash = charge.hash();
+        self.charges.insert(hash, charge);
         self.subkey += 1;
-        payment
+        (hex::encode(&hash), payment)
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
         self.update_chain().await?;

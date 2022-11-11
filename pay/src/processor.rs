@@ -158,10 +158,6 @@ impl PaymentProcessor {
         }
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
-            if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < util::timestamp() - self.expires_after_secs {
-                charge.status = ChargeStatus::Expired;
-                db::charge::put(&self.db, &charge).unwrap();
-            }
             let public = Key::from_secret_key_bytes(&charge.secret_key_bytes).public();
             if {
                 let amount = match map.get(&public) {
@@ -173,6 +169,9 @@ impl PaymentProcessor {
                 charge.status = ChargeStatus::Completed;
                 db::charge::put(&self.db, &charge).unwrap();
                 charges.push(charge);
+            } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < util::timestamp() - self.expires_after_secs {
+                charge.status = ChargeStatus::Expired;
+                db::charge::put(&self.db, &charge).unwrap();
             }
         }
         let mut payments = vec![];

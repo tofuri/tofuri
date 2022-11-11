@@ -242,6 +242,7 @@ impl PaymentProcessor {
     pub fn load(&mut self) {
         let start = Instant::now();
         for res in self.db.iterator_cf(db::charges(&self.db), IteratorMode::Start) {
+            self.subkey += 1;
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
             let charge: Charge = bincode::deserialize(&bytes).unwrap();

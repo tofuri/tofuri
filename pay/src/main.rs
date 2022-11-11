@@ -19,7 +19,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value = ":::9331")]
     pub bind_http_api: String,
     /// API Endpoint
-    #[clap(long, value_parser, default_value = "http://[::]:9332")]
+    #[clap(long, value_parser, default_value = "http://localhost:9332")]
     pub http_api: String,
     /// Store blockchain in a temporary database
     #[clap(long, value_parser, default_value_t = false)]

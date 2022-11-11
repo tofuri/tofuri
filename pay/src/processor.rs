@@ -246,7 +246,9 @@ impl PaymentProcessor {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
             let charge: Charge = bincode::deserialize(&bytes).unwrap();
-            self.charges.insert(hash, charge);
+            if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) {
+                self.charges.insert(hash, charge);
+            }
         }
         info!("{} {}", "Charges load".cyan(), format!("{:?}", start.elapsed()).yellow());
     }

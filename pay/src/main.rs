@@ -8,8 +8,6 @@ use pea_wallet::Wallet;
 use std::error::Error;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
-const CONFIRMATIONS: usize = 10;
-const EXPIRES_AFTER_SECS: u32 = 60;
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
@@ -28,6 +26,12 @@ pub struct Args {
     /// Ticks per second
     #[clap(long, value_parser, default_value = "1")]
     pub tps: f64,
+    /// Confirmations needed
+    #[clap(long, value_parser, default_value = "10")]
+    pub confirmations: usize,
+    /// Charge expires after seconds
+    #[clap(long, value_parser, default_value = "7200")]
+    pub expires: u32,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,
@@ -56,7 +60,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
     let db = db::open(path);
     let wallet = Wallet::import(&args.wallet, &args.passphrase)?;
-    let mut payment_processor = PaymentProcessor::new(db, wallet, args.http_api.to_string(), CONFIRMATIONS, EXPIRES_AFTER_SECS);
+    let mut payment_processor = PaymentProcessor::new(db, wallet, args.http_api.to_string(), args.confirmations, args.expires);
     payment_processor.load();
     let listener = TcpListener::bind(args.bind_http_api).await?;
     payment_processor.listen(listener, args.tps).await?;

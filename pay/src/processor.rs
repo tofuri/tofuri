@@ -20,7 +20,6 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 use tokio::net::TcpListener;
-const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 pub struct PaymentProcessor {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub wallet: Wallet,
@@ -161,7 +160,7 @@ impl PaymentProcessor {
         let mut previous_hash = latest_block.hash;
         loop {
             let block = get::block(&self.api, &previous_hash).await?;
-            if block.previous_hash == GENESIS || block.timestamp < util::timestamp() - self.expires_after_secs {
+            if block.previous_hash == "0000000000000000000000000000000000000000000000000000000000000000" || block.timestamp < util::timestamp() - self.expires_after_secs {
                 break;
             }
             previous_hash = block.previous_hash.clone();

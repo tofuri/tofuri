@@ -1,10 +1,11 @@
-use crate::{db, p2p::MyBehaviour};
+use crate::p2p::MyBehaviour;
 use colored::*;
 use lazy_static::lazy_static;
 use libp2p::Swarm;
 use log::{error, info};
 use pea_address as address;
 use pea_api::get;
+use pea_db as db;
 use pea_stake::{self as stake, Stake};
 use pea_transaction::{self as transaction, Transaction};
 use regex::Regex;

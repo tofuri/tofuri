@@ -2713,17 +2713,33 @@ checksum = "0c520e05135d6e763148b6426a837e239041653ba7becd2e538c076c738025fc"
 name = "pea"
 version = "0.5.0"
 dependencies = [
+ "bincode",
+ "clap",
+ "colored",
+ "ed25519-dalek",
+ "futures",
+ "hex",
+ "lazy_static",
+ "libp2p",
+ "log",
  "pea-address",
  "pea-amount",
  "pea-api",
  "pea-block",
  "pea-core",
  "pea-db",
- "pea-node",
+ "pea-key",
+ "pea-logger",
  "pea-stake",
  "pea-transaction",
  "pea-tree",
  "pea-wallet",
+ "regex",
+ "rocksdb",
+ "serde",
+ "serde_json",
+ "tempdir",
+ "tokio",
 ]
 
 [[package]]
@@ -2817,39 +2833,6 @@ dependencies = [
  "colored",
  "env_logger",
  "log",
-]
-
-[[package]]
-name = "pea-node"
-version = "0.3.0"
-dependencies = [
- "bincode",
- "clap",
- "colored",
- "ed25519-dalek",
- "futures",
- "hex",
- "lazy_static",
- "libp2p",
- "log",
- "pea-address",
- "pea-amount",
- "pea-api",
- "pea-block",
- "pea-core",
- "pea-db",
- "pea-key",
- "pea-logger",
- "pea-stake",
- "pea-transaction",
- "pea-tree",
- "pea-wallet",
- "regex",
- "rocksdb",
- "serde",
- "serde_json",
- "tempdir",
- "tokio",
 ]
 
 [[package]]

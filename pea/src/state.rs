@@ -1,9 +1,9 @@
-use crate::db;
 use colored::*;
 use log::debug;
 use pea_address as address;
 use pea_block::Block;
 use pea_core::{constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
+use pea_db as db;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
 macro_rules! impl_State {

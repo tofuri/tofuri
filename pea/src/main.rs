@@ -57,10 +57,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
-    let tempdir = TempDir::new("peacash")?;
+    let tempdir = TempDir::new("pea")?;
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),
-        false => "./peacash/db",
+        false => "./storage/pea",
     };
     let db = db::open(path);
     let wallet = match args.tempkey {

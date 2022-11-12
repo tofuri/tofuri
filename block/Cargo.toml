@@ -1,6 +1,6 @@
 [package]
 name = "pea-block"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
@@ -9,10 +9,10 @@ repository = "https://github.com/peacash/pea"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pea-core = { version = "0.1.1", path = "../core" }
-pea-key = { version = "0.1.0", path = "../key" }
-pea-stake = { version = "0.1.0", path = "../stake" }
-pea-transaction = { version = "0.1.0", path = "../transaction" }
+pea-core = { version = "0.2.0", path = "../core" }
+pea-key = { version = "0.2.0", path = "../key" }
+pea-stake = { version = "0.2.0", path = "../stake" }
+pea-transaction = { version = "0.2.0", path = "../transaction" }
 serde = { version = "1.0.137", features = ["derive"] }
 serde-big-array = "0.4.1"
 hex = "0.4.3"

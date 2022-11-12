@@ -7,7 +7,7 @@ It is recommended that you read through [The Technical Paper](https://github.com
 ### Node
 
 ```bash
-cargo install pea-node
+cargo install pea
 ```
 
 ### Wallet

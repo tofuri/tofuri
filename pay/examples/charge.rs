@@ -1,5 +1,5 @@
 use colored::Colorize;
-use pea_pay::processor::Payment;
+use pea_pay_core::Payment;
 use std::error::Error;
 const HTTP_API: &str = "http://localhost:9331";
 #[tokio::main]

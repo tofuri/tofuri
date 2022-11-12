@@ -1,5 +1,5 @@
 use colored::*;
-use pea_pay::processor::Payment;
+use pea_pay_core::Payment;
 use std::error::Error;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

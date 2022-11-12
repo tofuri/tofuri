@@ -14,7 +14,7 @@ pub fn charges(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("charges").unwrap()
 }
 pub mod charge {
-    use crate::processor::Charge;
+    use pea_pay_core::Charge;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
     pub fn put(db: &DBWithThreadMode<SingleThreaded>, charge: &Charge) -> Result<(), Box<dyn Error>> {

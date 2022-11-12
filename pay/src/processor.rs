@@ -9,10 +9,10 @@ use pea_api::{
 };
 use pea_core::{types, util};
 use pea_key::Key;
+use pea_pay_core::{Charge, ChargeStatus, Payment};
 use pea_transaction::Transaction;
 use pea_wallet::Wallet;
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
-use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     error::Error,
@@ -20,56 +20,6 @@ use std::{
 };
 use tokio::net::TcpListener;
 const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum ChargeStatus {
-    New,
-    Pending,
-    Expired,
-    Completed,
-    Cancelled,
-}
-pub fn status(status: &ChargeStatus) -> String {
-    match *status {
-        ChargeStatus::New => "NEW".to_string(),
-        ChargeStatus::Pending => "PENDING".to_string(),
-        ChargeStatus::Expired => "EXPIRED".to_string(),
-        ChargeStatus::Completed => "COMPLETED".to_string(),
-        ChargeStatus::Cancelled => "CANCELLED".to_string(),
-    }
-}
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Charge {
-    secret_key_bytes: types::SecretKeyBytes,
-    amount: u128,
-    timestamp: u32,
-    status: ChargeStatus,
-    subkey: usize,
-}
-impl Charge {
-    pub fn hash(&self) -> types::Hash {
-        util::hash(&bincode::serialize(&self).unwrap())
-    }
-}
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Payment {
-    pub public: String,
-    pub amount: u128,
-    pub timestamp: u32,
-    pub status: String,
-}
-impl Payment {
-    fn from(charge: &Charge) -> Payment {
-        let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
-        let public = key.public();
-        let status = status(&charge.status);
-        Payment {
-            public,
-            amount: charge.amount,
-            timestamp: charge.timestamp,
-            status,
-        }
-    }
-}
 pub struct PaymentProcessor {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub wallet: Wallet,

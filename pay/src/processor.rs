@@ -1,4 +1,4 @@
-use crate::{db, http};
+use crate::http;
 use colored::*;
 use futures::FutureExt;
 use log::{error, info};
@@ -10,6 +10,7 @@ use pea_api::{
 use pea_core::{types, util};
 use pea_key::Key;
 use pea_pay_core::{Charge, ChargeStatus, Payment};
+use pea_pay_db as db;
 use pea_transaction::Transaction;
 use pea_wallet::Wallet;
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};

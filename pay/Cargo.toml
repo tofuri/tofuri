@@ -15,6 +15,7 @@ pea-api = { version = "0.1.1", path = "../api" }
 pea-amount = { version = "0.1.1", path = "../amount" }
 pea-core = { version = "0.1.1", path = "../core" }
 pea-pay-core = { version = "0.1.0", path = "../pay-core" }
+pea-pay-db = { version = "0.1.0", path = "../pay-db" }
 pea-key = { version = "0.1.0", path = "../key" }
 pea-logger = { version = "0.1.0", path = "../logger" }
 pea-transaction = { version = "0.1.0", path = "../transaction" }

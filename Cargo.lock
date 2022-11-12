@@ -2870,6 +2870,7 @@ dependencies = [
  "pea-key",
  "pea-logger",
  "pea-pay-core",
+ "pea-pay-db",
  "pea-transaction",
  "pea-wallet",
  "regex",
@@ -2888,6 +2889,15 @@ dependencies = [
  "pea-core",
  "pea-key",
  "serde",
+]
+
+[[package]]
+name = "pea-pay-db"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "pea-pay-core",
+ "rocksdb",
 ]
 
 [[package]]

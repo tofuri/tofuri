@@ -34,6 +34,9 @@ pub struct Args {
     /// Ticks per second
     #[clap(long, value_parser, default_value = "5")]
     pub tps: f64,
+    /// Trust fork after blocks
+    #[clap(long, value_parser, default_value = "128")]
+    pub trust: usize,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,
@@ -68,7 +71,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         false => Wallet::import(&args.wallet, &args.passphrase)?,
     };
     info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
-    let mut blockchain = Blockchain::new(db, wallet.key);
+    let mut blockchain = Blockchain::new(db, wallet.key, args.trust);
     let peers = db::peer::get_all(&blockchain.db);
     info!("{} {}", "Peers".cyan(), format!("{:?}", peers).yellow());
     blockchain.load();

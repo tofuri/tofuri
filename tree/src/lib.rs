@@ -1,4 +1,4 @@
-use pea_core::{constants::TRUST_FORK_AFTER_BLOCKS, types};
+use pea_core::types;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt;
@@ -20,7 +20,7 @@ impl Tree {
     pub fn size(&self) -> usize {
         self.hashes.len()
     }
-    pub fn hashes(&self) -> (Vec<types::Hash>, Vec<types::Hash>) {
+    pub fn hashes(&self, trust_fork_after_blocks: usize) -> (Vec<types::Hash>, Vec<types::Hash>) {
         let mut trusted = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;
@@ -40,15 +40,15 @@ impl Tree {
         }
         trusted.reverse();
         let len = trusted.len();
-        let start = if len < TRUST_FORK_AFTER_BLOCKS { 0 } else { len - TRUST_FORK_AFTER_BLOCKS };
+        let start = if len < trust_fork_after_blocks { 0 } else { len - trust_fork_after_blocks };
         let dynamic = trusted.drain(start..len).collect();
         (trusted, dynamic)
     }
-    pub fn hashes_dynamic(&self) -> Vec<types::Hash> {
+    pub fn hashes_dynamic(&self, trust_fork_after_blocks: usize) -> Vec<types::Hash> {
         let mut vec = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;
-            for _ in 0..TRUST_FORK_AFTER_BLOCKS {
+            for _ in 0..trust_fork_after_blocks {
                 vec.push(hash);
                 match self.get(&hash) {
                     Some(previous_hash) => hash = *previous_hash,

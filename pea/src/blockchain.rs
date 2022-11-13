@@ -26,9 +26,10 @@ pub struct Blockchain {
     pub pending_stakes: Vec<Stake>,
     pub pending_blocks: Vec<Block>,
     pub sync: Sync,
+    pub trust_fork_after_blocks: usize,
 }
 impl Blockchain {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key) -> Self {
+    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize) -> Self {
         Self {
             db,
             key,
@@ -38,6 +39,7 @@ impl Blockchain {
             pending_stakes: vec![],
             pending_blocks: vec![],
             sync: Sync::default(),
+            trust_fork_after_blocks,
         }
     }
     pub fn latest_block(&self) -> &Block {
@@ -183,7 +185,7 @@ impl Blockchain {
             info!("{}", "Fork".cyan());
         }
         self.tree.sort_branches();
-        self.states.update(&self.db, &self.tree.hashes_dynamic());
+        self.states.update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
         if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
             self.pending_blocks.remove(index);
         }
@@ -200,7 +202,7 @@ impl Blockchain {
         info!("{} {}", "Tree load".cyan(), format!("{:?}", start.elapsed()).yellow());
         info!("{} {}", "Tree height".cyan(), if let Some(main) = self.tree.main() { main.1.to_string().yellow() } else { "0".red() });
         let start = Instant::now();
-        let (hashes_trusted, hashes_dynamic) = self.tree.hashes();
+        let (hashes_trusted, hashes_dynamic) = self.tree.hashes(self.trust_fork_after_blocks);
         self.states.trusted.load(&self.db, &hashes_trusted);
         self.states.dynamic = Dynamic::from(&self.db, &hashes_dynamic, &self.states.trusted);
         info!("{} {}", "States load".cyan(), format!("{:?}", start.elapsed()).yellow());

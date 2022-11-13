@@ -1,7 +1,7 @@
 use chrono::Local;
 use colored::*;
-use env_logger::Builder;
-use log::{Level, LevelFilter};
+use env_logger::{Builder, Env};
+use log::Level;
 use std::io::Write;
 pub fn init(log_path: bool) {
     fn colored_level(level: Level) -> ColoredString {
@@ -13,7 +13,7 @@ pub fn init(log_path: bool) {
             Level::Trace => level.to_string().magenta(),
         }
     }
-    let mut builder = Builder::new();
+    let mut builder = Builder::from_env(Env::default().default_filter_or("info"));
     if log_path {
         builder.format(|buf, record| {
             writeln!(
@@ -30,5 +30,5 @@ pub fn init(log_path: bool) {
     } else {
         builder.format(|buf, record| writeln!(buf, "[{} {}] {}", Local::now().format("%H:%M:%S"), colored_level(record.level()), record.args()));
     }
-    builder.filter(None, LevelFilter::Info).init();
+    builder.init();
 }

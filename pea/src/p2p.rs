@@ -14,7 +14,7 @@ use libp2p::{
     swarm::{NetworkBehaviourEventProcess, SwarmEvent},
     Multiaddr, NetworkBehaviour, PeerId, Swarm,
 };
-use log::{error, info};
+use log::{debug, error, info};
 use pea_core::{constants::PROTOCOL_VERSION, types, util};
 use pea_db as db;
 use std::{error::Error, time::Duration};
@@ -120,7 +120,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
                 return;
             }
             if let Err(err) = gossipsub::handler(self, message) {
-                error!("{}", err)
+                debug!("{}", err)
             }
         }
     }

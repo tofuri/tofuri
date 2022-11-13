@@ -25,14 +25,8 @@ pub fn reward(balance_staked: u128) -> u128 {
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use test::Bencher;
     #[test]
     fn test_hash() {
         assert_eq!(blake3::hash(b"test").to_string(), "4878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215".to_string());
-    }
-    #[bench]
-    fn bench_hash(b: &mut Bencher) {
-        b.iter(|| hash(b"test"));
     }
 }

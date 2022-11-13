@@ -1,5 +1,3 @@
-#![feature(test)]
-extern crate test;
 use pea_core::{types, util};
 use pea_key::Key;
 use pea_stake::Stake;
@@ -173,7 +171,6 @@ impl MetadataLean {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test::Bencher;
     #[test]
     fn test_hash() {
         let block = Block::from([0; 32], 0, [0; 32], [0; 64], vec![], vec![]);
@@ -185,95 +182,5 @@ mod tests {
             ],
             block.hash()
         );
-    }
-    #[bench]
-    fn bench_metadata_from(b: &mut Bencher) {
-        let block = Block::new([0; 32]);
-        b.iter(|| Metadata::from(&block));
-    }
-    #[bench]
-    fn bench_header_from_metadata(b: &mut Bencher) {
-        let block = Block::new([0; 32]);
-        let block_metadata = Metadata::from(&block);
-        b.iter(|| Header::from(&block_metadata));
-    }
-    #[bench]
-    fn bench_metadata_lean_from_metadata(b: &mut Bencher) {
-        let block = Block::new([0; 32]);
-        let block_metadata = Metadata::from(&block);
-        b.iter(|| MetadataLean::from(&block_metadata));
-    }
-    #[bench]
-    fn bench_bincode_serialize_header(b: &mut Bencher) {
-        let block = Block::new([0; 32]);
-        let block_metadata = Metadata::from(&block);
-        let block_header = Header::from(&block_metadata);
-        println!("{:?}", block_header);
-        println!("{:?}", bincode::serialize(&block_header));
-        println!("{:?}", bincode::serialize(&block_header).unwrap().len());
-        b.iter(|| bincode::serialize(&block_header));
-    }
-    #[bench]
-    fn bench_bincode_serialize(b: &mut Bencher) {
-        let block = Block::new([0; 32]);
-        let block_metadata = Metadata::from(&block);
-        let mut block_metadata_lean = MetadataLean::from(&block_metadata);
-        block_metadata_lean.signature = [0xff; 64];
-        block_metadata_lean.timestamp = util::timestamp();
-        println!("{:?}", block_metadata_lean);
-        println!("{:?}", bincode::serialize(&block_metadata_lean));
-        println!("{:?}", bincode::serialize(&block_metadata_lean).unwrap().len());
-        b.iter(|| bincode::serialize(&block_metadata_lean));
-    }
-    #[bench]
-    fn bench_bincode_deserialize(b: &mut Bencher) {
-        let block = Block::new([0; 32]);
-        let block_metadata = Metadata::from(&block);
-        let block_metadata_lean = MetadataLean::from(&block_metadata);
-        let bytes = bincode::serialize(&block_metadata_lean).unwrap();
-        b.iter(|| {
-            let _: MetadataLean = bincode::deserialize(&bytes).unwrap();
-        });
-    }
-    #[bench]
-    fn bench_hash(b: &mut Bencher) {
-        let block = Block::new([0; 32]);
-        b.iter(|| block.hash());
-    }
-    #[bench]
-    fn bench_merkle_root_1(b: &mut Bencher) {
-        let mut block = Block::new([0; 32]);
-        for i in 0..1 {
-            block.transactions.push(Transaction::new([0; 32], i, i));
-        }
-        let transaction_hashes = Metadata::transaction_hashes(&block.transactions);
-        b.iter(|| Metadata::merkle_root(&transaction_hashes));
-    }
-    #[bench]
-    fn bench_merkle_root_10(b: &mut Bencher) {
-        let mut block = Block::new([0; 32]);
-        for i in 0..10 {
-            block.transactions.push(Transaction::new([0; 32], i, i));
-        }
-        let transaction_hashes = Metadata::transaction_hashes(&block.transactions);
-        b.iter(|| Metadata::merkle_root(&transaction_hashes));
-    }
-    #[bench]
-    fn bench_merkle_root_100(b: &mut Bencher) {
-        let mut block = Block::new([0; 32]);
-        for i in 0..100 {
-            block.transactions.push(Transaction::new([0; 32], i, i));
-        }
-        let transaction_hashes = Metadata::transaction_hashes(&block.transactions);
-        b.iter(|| Metadata::merkle_root(&transaction_hashes));
-    }
-    #[bench]
-    fn bench_merkle_root_1000(b: &mut Bencher) {
-        let mut block = Block::new([0; 32]);
-        for i in 0..1000 {
-            block.transactions.push(Transaction::new([0; 32], i, i));
-        }
-        let transaction_hashes = Metadata::transaction_hashes(&block.transactions);
-        b.iter(|| Metadata::merkle_root(&transaction_hashes));
     }
 }

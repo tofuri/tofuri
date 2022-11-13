@@ -1,5 +1,3 @@
-#![feature(test)]
-extern crate test;
 use argon2::password_hash::rand_core::RngCore;
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},

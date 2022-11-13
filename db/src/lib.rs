@@ -1,5 +1,3 @@
-#![feature(test)]
-extern crate test;
 use rocksdb::{ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Options, SingleThreaded, DB};
 fn descriptors() -> Vec<ColumnFamilyDescriptor> {
     let mut options = Options::default();
@@ -206,23 +204,5 @@ pub mod peer {
             peers.push(std::str::from_utf8(&peer).unwrap().to_string());
         }
         peers
-    }
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempdir::TempDir;
-    use test::Bencher;
-    #[bench]
-    fn bench_put(b: &mut Bencher) {
-        let tempdir = TempDir::new("rocksdb").unwrap();
-        let db = open(tempdir.path().to_str().unwrap());
-        b.iter(|| db.put(b"test", b"value"));
-    }
-    #[bench]
-    fn bench_get(b: &mut Bencher) {
-        let tempdir = TempDir::new("rocksdb").unwrap();
-        let db = open(tempdir.path().to_str().unwrap());
-        b.iter(|| db.get(b"test"));
     }
 }

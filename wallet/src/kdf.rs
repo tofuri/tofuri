@@ -13,12 +13,3 @@ pub fn derive(password: &[u8], salt: &[u8]) -> types::Hash {
     ctx.hash_password_into(password, salt, &mut out).unwrap();
     out
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test::Bencher;
-    #[bench]
-    fn bench_kdf_derive(b: &mut Bencher) {
-        b.iter(|| derive("test".as_bytes(), &[0; 32]));
-    }
-}

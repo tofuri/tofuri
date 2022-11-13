@@ -1,7 +1,8 @@
 use pea_core::constants::BLOCK_TIME_MIN;
 #[derive(Debug)]
 pub struct Sync {
-    pub index: usize,
+    pub index_0: usize,
+    pub index_1: usize,
     pub new: usize,
     history: [usize; BLOCK_TIME_MIN],
     pub syncing: bool,
@@ -21,7 +22,8 @@ impl Sync {
 impl Default for Sync {
     fn default() -> Self {
         Self {
-            index: 0,
+            index_0: 0,
+            index_1: 0,
             new: 0,
             history: [0; BLOCK_TIME_MIN],
             syncing: true,

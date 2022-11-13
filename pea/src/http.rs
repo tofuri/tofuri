@@ -176,7 +176,7 @@ Content-Type: application/json
                     pending_transactions: behaviour.blockchain.pending_transactions.iter().map(|x| hex::encode(x.hash())).collect(),
                     pending_stakes: behaviour.blockchain.pending_stakes.iter().map(|x| hex::encode(x.hash())).collect(),
                     pending_blocks: behaviour.blockchain.pending_blocks.iter().map(|x| hex::encode(x.hash())).collect(),
-                    sync_index: behaviour.blockchain.sync.index,
+                    sync_index: behaviour.blockchain.sync.index_0,
                     syncing: behaviour.blockchain.sync.syncing,
                 })?
             )

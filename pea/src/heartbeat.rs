@@ -47,13 +47,14 @@ fn sync(behaviour: &mut MyBehaviour) {
         return;
     }
     if behaviour.gossipsub.all_peers().count() == 0 {
-        behaviour.blockchain.sync.index = 0;
+        behaviour.blockchain.sync.index_0 = 0;
         return;
     }
     for _ in 0..SYNC_BLOCKS_PER_TICK {
-        let block = behaviour.blockchain.sync_block();
-        let data = bincode::serialize(&block).unwrap();
-        let _ = behaviour.gossipsub.publish(IdentTopic::new("block"), data);
+        for block in behaviour.blockchain.sync_blocks() {
+            let data = bincode::serialize(&block).unwrap();
+            let _ = behaviour.gossipsub.publish(IdentTopic::new("block"), data);
+        }
     }
 }
 fn nanos(tps: f64) -> u64 {

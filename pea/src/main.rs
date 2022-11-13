@@ -37,6 +37,9 @@ pub struct Args {
     /// Trust fork after blocks
     #[clap(long, value_parser, default_value = "128")]
     pub trust: usize,
+    /// Pending blocks limit
+    #[clap(long, value_parser, default_value = "10")]
+    pub pending: usize,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,
@@ -57,6 +60,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--bind-http-api".cyan(), args.bind_http_api.magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
+    info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
+    info!("{} {}", "--pending".cyan(), args.pending.to_string().magenta());
     info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
@@ -71,7 +76,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         false => Wallet::import(&args.wallet, &args.passphrase)?,
     };
     info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
-    let mut blockchain = Blockchain::new(db, wallet.key, args.trust);
+    let mut blockchain = Blockchain::new(db, wallet.key, args.trust, args.pending);
     let peers = db::peer::get_all(&blockchain.db);
     info!("{} {}", "Peers".cyan(), format!("{:?}", peers).yellow());
     blockchain.load();

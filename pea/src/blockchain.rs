@@ -6,7 +6,7 @@ use pea_address as address;
 use pea_block::Block;
 use pea_core::util;
 use pea_core::{
-    constants::{BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_BLOCKS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT},
+    constants::{BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT},
     types,
 };
 use pea_db as db;
@@ -27,9 +27,10 @@ pub struct Blockchain {
     pub pending_blocks: Vec<Block>,
     pub sync: Sync,
     pub trust_fork_after_blocks: usize,
+    pub pending_blocks_limit: usize,
 }
 impl Blockchain {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize) -> Self {
+    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize, pending_blocks_limit: usize) -> Self {
         Self {
             db,
             key,
@@ -40,6 +41,7 @@ impl Blockchain {
             pending_blocks: vec![],
             sync: Sync::default(),
             trust_fork_after_blocks,
+            pending_blocks_limit,
         }
     }
     pub fn latest_block(&self) -> &Block {
@@ -92,7 +94,7 @@ impl Blockchain {
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
     }
     fn limit_pending_blocks(&mut self) {
-        while self.pending_blocks.len() > PENDING_BLOCKS_LIMIT {
+        while self.pending_blocks.len() > self.pending_blocks_limit {
             self.pending_blocks.remove(0);
         }
     }

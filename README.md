@@ -1,4 +1,4 @@
-# Pea
+# Pea Core integration/staging tree
 
 It is recommended that you read through [The Technical Paper](https://github.com/peacash/paper/blob/main/README.md).
 

@@ -6,6 +6,6 @@ fn main() {
         let bytes = amount::to_bytes(int);
         println!("{:x?}", bytes);
         println!("{}", amount::from_bytes(&bytes));
-        println!("")
+        println!()
     }
 }

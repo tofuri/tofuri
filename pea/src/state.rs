@@ -169,20 +169,10 @@ impl Default for Dynamic {
         }
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Trusted {
     pub hashes: Vec<types::Hash>,
     pub stakers: VecDeque<types::PublicKeyBytes>,
     balance: HashMap<types::PublicKeyBytes, u128>,
     balance_staked: HashMap<types::PublicKeyBytes, u128>,
-}
-impl Default for Trusted {
-    fn default() -> Self {
-        Self {
-            hashes: vec![],
-            stakers: VecDeque::new(),
-            balance: HashMap::new(),
-            balance_staked: HashMap::new(),
-        }
-    }
 }

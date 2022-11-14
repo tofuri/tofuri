@@ -49,7 +49,7 @@ impl States {
         }
         Ok(Dynamic::from(&blockchain.db, &hashes, &self.trusted))
     }
-    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &Vec<types::Hash>, trust_fork_after_blocks: usize) {
+    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[types::Hash], trust_fork_after_blocks: usize) {
         let start = Instant::now();
         let hashes_0 = &self.dynamic.hashes;
         if hashes_0.len() == trust_fork_after_blocks {

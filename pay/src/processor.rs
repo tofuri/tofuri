@@ -52,10 +52,7 @@ impl PaymentProcessor {
         payments
     }
     pub fn get_charge(&self, hash: &[u8]) -> Option<Payment> {
-        match self.charges.get(hash) {
-            Some(charge) => Some(Payment::from(charge)),
-            None => None,
-        }
+        self.charges.get(hash).map(Payment::from)
     }
     pub async fn send(&self, address: &str, amount: u128, fee: u128) -> Result<(), Box<dyn Error>> {
         let mut transaction = Transaction::new(address::public::decode(address).unwrap(), amount, fee);
@@ -109,19 +106,20 @@ impl PaymentProcessor {
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
             let public = Key::from_secret_key_bytes(&charge.secret_key_bytes).public();
-            if {
+            let res = {
                 let amount = match map.get(&public) {
                     Some(a) => *a,
                     None => 0,
                 };
                 charge.amount < amount
-            } {
+            };
+            if res {
                 charge.status = ChargeStatus::Completed;
-                db::charge::put(&self.db, &charge).unwrap();
+                db::charge::put(&self.db, charge).unwrap();
                 charges.push(charge);
             } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < util::timestamp() - self.expires_after_secs {
                 charge.status = ChargeStatus::Expired;
-                db::charge::put(&self.db, &charge).unwrap();
+                db::charge::put(&self.db, charge).unwrap();
             }
         }
         let mut payments = vec![];
@@ -169,8 +167,8 @@ impl PaymentProcessor {
         Ok(())
     }
     async fn next(tps: f64) {
-        let f = 1 as f64 / tps;
-        let u = (f * 1_000_000_000 as f64) as u128;
+        let f = 1_f64 / tps;
+        let u = (f * 1_000_000_000_f64) as u128;
         let mut nanos = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
         let secs = nanos / u;
         nanos -= secs * u;

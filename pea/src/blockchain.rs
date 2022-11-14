@@ -181,7 +181,7 @@ impl Blockchain {
         }
     }
     pub fn block_accept(&mut self, block: &Block) -> types::Hash {
-        db::block::put(&block, &self.db).unwrap();
+        db::block::put(block, &self.db).unwrap();
         let hash = block.hash();
         if self.tree.insert(hash, block.previous_hash, block.timestamp).unwrap() {
             info!("{}", "Fork".cyan());

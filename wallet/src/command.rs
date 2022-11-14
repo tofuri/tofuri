@@ -189,52 +189,37 @@ async fn search(api: &str) {
         balance(api, &search).await;
         return;
     } else if search.len() == 64 {
-        match get::block(api, &search).await {
-            Ok(block) => {
-                print_block(&block, &search);
-                return;
-            }
-            _ => {}
+        if let Ok(block) = get::block(api, &search).await {
+            print_block(&block, &search);
+            return;
         };
-        match get::transaction(api, &search).await {
-            Ok(transaction) => {
-                println!("{} {}", "Hash".cyan(), search);
-                println!("{} {}", "Input PubKey".cyan(), transaction.public_key_input);
-                println!("{} {}", "Output PubKey".cyan(), transaction.public_key_output);
-                println!("{} {}", "Amount".cyan(), transaction.amount.to_string().yellow());
-                println!("{} {}", "Fee".cyan(), transaction.fee.to_string().yellow());
-                println!("{} {}", "Timestamp".cyan(), Local.timestamp(transaction.timestamp as i64, 0).format("%H:%M:%S"));
-                println!("{} {}", "Signature".cyan(), transaction.signature);
-                return;
-            }
-            _ => {}
+        if let Ok(transaction) = get::transaction(api, &search).await {
+            println!("{} {}", "Hash".cyan(), search);
+            println!("{} {}", "Input PubKey".cyan(), transaction.public_key_input);
+            println!("{} {}", "Output PubKey".cyan(), transaction.public_key_output);
+            println!("{} {}", "Amount".cyan(), transaction.amount.to_string().yellow());
+            println!("{} {}", "Fee".cyan(), transaction.fee.to_string().yellow());
+            println!("{} {}", "Timestamp".cyan(), Local.timestamp(transaction.timestamp as i64, 0).format("%H:%M:%S"));
+            println!("{} {}", "Signature".cyan(), transaction.signature);
+            return;
         };
-        match get::stake(api, &search).await {
-            Ok(stake) => {
-                println!("{} {}", "Hash".cyan(), search);
-                println!("{} {}", "PubKey".cyan(), stake.public_key);
-                println!("{} {}", "Amount".cyan(), stake.amount.to_string().yellow());
-                println!("{}", if stake.deposit { "Deposit".magenta() } else { "Withdraw".magenta() });
-                println!("{} {}", "Fee".cyan(), stake.fee.to_string().yellow());
-                println!("{} {}", "Timestamp".cyan(), Local.timestamp(stake.timestamp as i64, 0).format("%H:%M:%S"));
-                println!("{} {}", "Signature".cyan(), stake.signature);
-                return;
-            }
-            _ => {}
+        if let Ok(stake) = get::stake(api, &search).await {
+            println!("{} {}", "Hash".cyan(), search);
+            println!("{} {}", "PubKey".cyan(), stake.public_key);
+            println!("{} {}", "Amount".cyan(), stake.amount.to_string().yellow());
+            println!("{}", if stake.deposit { "Deposit".magenta() } else { "Withdraw".magenta() });
+            println!("{} {}", "Fee".cyan(), stake.fee.to_string().yellow());
+            println!("{} {}", "Timestamp".cyan(), Local.timestamp(stake.timestamp as i64, 0).format("%H:%M:%S"));
+            println!("{} {}", "Signature".cyan(), stake.signature);
+            return;
         };
     } else if search.parse::<usize>().is_ok() {
-        match get::hash(api, &search.parse::<usize>().unwrap()).await {
-            Ok(hash) => {
-                match get::block(api, &hash).await {
-                    Ok(block) => {
-                        print_block(&block, &hash);
-                        return;
-                    }
-                    _ => {}
-                };
+        if let Ok(hash) = get::hash(api, &search.parse::<usize>().unwrap()).await {
+            if let Ok(block) = get::block(api, &hash).await {
+                print_block(&block, &hash);
                 return;
-            }
-            _ => {}
+            };
+            return;
         };
     }
     println!("{}", "Nothing found".red());

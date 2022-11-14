@@ -86,7 +86,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for peer in peers {
         swarm.dial(peer.parse::<Multiaddr>()?)?;
     }
-    let tcp_listener_http_api = if args.bind_http_api != "" { Some(TcpListener::bind(args.bind_http_api).await?) } else { None };
+    let tcp_listener_http_api = if !args.bind_http_api.is_empty() {
+        Some(TcpListener::bind(args.bind_http_api).await?)
+    } else {
+        None
+    };
     p2p::listen(&mut swarm, tcp_listener_http_api).await?;
     Ok(())
 }

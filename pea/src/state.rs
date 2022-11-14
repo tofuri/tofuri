@@ -111,7 +111,7 @@ macro_rules! impl_State {
                 self.update_balances(block);
                 self.update_stakers(block);
             }
-            pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>) {
+            pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]) {
                 let mut previous_timestamp = match hashes.first() {
                     Some(hash) => db::block::get(db, hash).unwrap().timestamp,
                     None => 0,
@@ -135,7 +135,7 @@ pub struct Dynamic {
     pub latest_block: Block,
 }
 impl Dynamic {
-    pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &Vec<types::Hash>, trusted: &Trusted) -> Dynamic {
+    pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash], trusted: &Trusted) -> Dynamic {
         let mut dynamic = Self {
             hashes: vec![],
             stakers: trusted.stakers.clone(),
@@ -144,9 +144,8 @@ impl Dynamic {
             latest_block: Block::new_timestamp_0([0; 32]),
         };
         dynamic.load(db, hashes);
-        match hashes.last() {
-            Some(hash) => dynamic.latest_block = db::block::get(db, hash).unwrap(),
-            None => {}
+        if let Some(hash) = hashes.last() {
+            dynamic.latest_block = db::block::get(db, hash).unwrap()
         };
         dynamic
     }

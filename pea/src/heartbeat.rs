@@ -58,17 +58,17 @@ fn sync(behaviour: &mut MyBehaviour) {
     }
 }
 fn nanos(tps: f64) -> u64 {
-    let f = 1 as f64 / tps;
-    let u = (f * 1_000_000_000 as f64) as u128;
+    let f = 1_f64 / tps;
+    let u = (f * 1_000_000_000_f64) as u128;
     let mut nanos = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
     let secs = nanos / u;
     nanos -= secs * u;
     (u - nanos) as u64
 }
 fn lag(behaviour: &mut MyBehaviour) {
-    let f = 1 as f64 / behaviour.tps;
-    let u = (f * 1_000_000_000 as f64) as u64;
+    let f = 1_f64 / behaviour.tps;
+    let u = (f * 1_000_000_000_f64) as u64;
     let nanos = u - nanos(behaviour.tps);
-    behaviour.lag = (nanos / 1_000) as f64 / 1_000 as f64;
+    behaviour.lag = (nanos / 1_000) as f64 / 1_000_f64;
     debug!("{} {} {}", "Heartbeat".cyan(), behaviour.heartbeats, format!("{:?}", Duration::from_nanos(nanos)).yellow());
 }

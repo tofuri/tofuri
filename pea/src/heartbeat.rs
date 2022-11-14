@@ -1,7 +1,7 @@
 use crate::p2p::MyBehaviour;
 use colored::*;
 use libp2p::{gossipsub::IdentTopic, Swarm};
-use log::debug;
+use log::{debug, error};
 use pea_core::{
     constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS_PER_TICK},
     util,
@@ -37,9 +37,15 @@ fn forge(behaviour: &mut MyBehaviour) {
         behaviour.blockchain.set_cold_start_stake(stake);
     }
     let block = behaviour.blockchain.forge_block().unwrap();
+    if behaviour.gossipsub.all_peers().count() == 0 {
+        return;
+    }
     let data = bincode::serialize(&block).unwrap();
-    if !behaviour.filter(&data, true) && behaviour.gossipsub.all_peers().count() > 0 {
-        behaviour.gossipsub.publish(IdentTopic::new("block"), data).unwrap();
+    if behaviour.filter(&data, true) {
+        return;
+    }
+    if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("block"), data) {
+        error!("{}", err);
     }
 }
 fn sync(behaviour: &mut MyBehaviour) {
@@ -53,7 +59,9 @@ fn sync(behaviour: &mut MyBehaviour) {
     for _ in 0..SYNC_BLOCKS_PER_TICK {
         for block in behaviour.blockchain.sync_blocks() {
             let data = bincode::serialize(&block).unwrap();
-            let _ = behaviour.gossipsub.publish(IdentTopic::new("block"), data);
+            if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("block"), data) {
+                error!("{}", err);
+            }
         }
     }
 }

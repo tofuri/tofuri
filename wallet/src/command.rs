@@ -159,7 +159,7 @@ async fn stake(api: &str, wallet: &Wallet) {
     } {
         return;
     }
-    let mut stake = Stake::new(deposit, amount as u128, fee);
+    let mut stake = Stake::new(deposit, amount, fee);
     stake.sign(&wallet.key);
     println!("Hash: {}", hex::encode(stake.hash()).cyan());
     match post::stake(api, &stake).await {

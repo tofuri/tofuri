@@ -253,13 +253,13 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&get::Block {
-                    hash: hex::encode(&block.hash()),
-                    previous_hash: hex::encode(&block.previous_hash),
+                    hash: hex::encode(block.hash()),
+                    previous_hash: hex::encode(block.previous_hash),
                     timestamp: block.timestamp,
                     public_key: address::public::encode(&block.public_key),
-                    signature: hex::encode(&block.signature),
-                    transactions: block.transactions.iter().map(|x| hex::encode(&x.hash())).collect(),
-                    stakes: block.stakes.iter().map(|x| hex::encode(&x.hash())).collect(),
+                    signature: hex::encode(block.signature),
+                    transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
+                    stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
                 })?
             )
             .as_bytes(),
@@ -316,13 +316,13 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&get::Block {
-                    hash: hex::encode(&block.hash()),
-                    previous_hash: hex::encode(&block.previous_hash),
+                    hash: hex::encode(block.hash()),
+                    previous_hash: hex::encode(block.previous_hash),
                     timestamp: block.timestamp,
                     public_key: address::public::encode(&block.public_key),
-                    signature: hex::encode(&block.signature),
-                    transactions: block.transactions.iter().map(|x| hex::encode(&x.hash())).collect(),
-                    stakes: block.stakes.iter().map(|x| hex::encode(&x.hash())).collect(),
+                    signature: hex::encode(block.signature),
+                    transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
+                    stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
                 })?
             )
             .as_bytes(),
@@ -351,13 +351,13 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&get::Transaction {
-                    hash: hex::encode(&transaction.hash()),
+                    hash: hex::encode(transaction.hash()),
                     public_key_input: address::public::encode(&transaction.public_key_input),
                     public_key_output: address::public::encode(&transaction.public_key_output),
                     amount: transaction.amount,
                     fee: transaction.fee,
                     timestamp: transaction.timestamp,
-                    signature: hex::encode(&transaction.signature)
+                    signature: hex::encode(transaction.signature)
                 })?
             )
             .as_bytes(),
@@ -378,13 +378,13 @@ Content-Type: application/json
 
 {}",
                 serde_json::to_string(&get::Stake {
-                    hash: hex::encode(&stake.hash()),
+                    hash: hex::encode(stake.hash()),
                     public_key: address::public::encode(&stake.public_key),
                     amount: stake.amount,
                     deposit: stake.deposit,
                     fee: stake.fee,
                     timestamp: stake.timestamp,
-                    signature: hex::encode(&stake.signature)
+                    signature: hex::encode(stake.signature)
                 })?
             )
             .as_bytes(),

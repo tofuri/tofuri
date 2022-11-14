@@ -65,7 +65,7 @@ impl Blockchain {
         } else {
             hashes_dynamic[self.sync.index_0 - hashes_trusted.len()]
         };
-        debug!("{} {} {}", "Sync 0".cyan(), self.sync.index_0.to_string().yellow(), hex::encode(&hash));
+        debug!("{} {} {}", "Sync 0".cyan(), self.sync.index_0.to_string().yellow(), hex::encode(hash));
         let block = db::block::get(&self.db, &hash).unwrap();
         self.sync.index_0 += 1;
         block
@@ -76,7 +76,7 @@ impl Blockchain {
             self.sync.index_1 = 0;
         }
         let hash = hashes_dynamic[self.sync.index_1];
-        debug!("{} {} {}", "Sync 1".cyan(), self.sync.index_1.to_string().yellow(), hex::encode(&hash));
+        debug!("{} {} {}", "Sync 1".cyan(), self.sync.index_1.to_string().yellow(), hex::encode(hash));
         let block = db::block::get(&self.db, &hash).unwrap();
         self.sync.index_1 += 1;
         block

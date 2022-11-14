@@ -76,7 +76,7 @@ impl PaymentProcessor {
         db::charge::put(&self.db, &charge).unwrap();
         self.charges.insert(hash, charge);
         self.subkey += 1;
-        (hex::encode(&hash), payment)
+        (hex::encode(hash), payment)
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
         self.update_chain().await?;

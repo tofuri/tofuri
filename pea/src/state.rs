@@ -151,9 +151,7 @@ impl Dynamic {
     }
     pub fn staker(&self, timestamp: u32, previous_timestamp: u32) -> Option<&types::PublicKeyBytes> {
         let mut diff = timestamp - previous_timestamp;
-        if diff > 0 {
-            diff -= 1;
-        }
+        diff = diff.saturating_sub(1);
         let index = diff / BLOCK_TIME_MAX as u32;
         self.stakers.get(index as usize)
     }

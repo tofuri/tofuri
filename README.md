@@ -4,25 +4,8 @@ It is recommended that you read through [The Technical Paper](https://github.com
 
 ## Install using [Cargo](https://doc.rust-lang.org/cargo/)
 
-### Node
-
 ```bash
 cargo install pea
-```
-
-### Wallet
-
-```bash
-cargo install pea-wallet
-```
-
-## Build
-
-```bash
-git clone https://github.com/peacash/pea
-cd pea
-rustup default nightly
-cargo build
 ```
 
 ### Dependencies

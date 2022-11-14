@@ -1,6 +1,6 @@
 [package]
 name = "pea-pay"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
@@ -11,16 +11,16 @@ repository = "https://github.com/peacash/peacash"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pea-address = { version = "0.2.0", path = "../address" }
-pea-api = { version = "0.2.0", path = "../api" }
-pea-amount = { version = "0.2.0", path = "../amount" }
-pea-core = { version = "0.2.0", path = "../core" }
-pea-pay-core = { version = "0.1.0", path = "../pay-core" }
-pea-pay-db = { version = "0.1.0", path = "../pay-db" }
-pea-key = { version = "0.2.0", path = "../key" }
-pea-logger = { version = "0.1.0", path = "../logger" }
-pea-transaction = { version = "0.2.0", path = "../transaction" }
-pea-wallet = { version = "0.3.0", path = "../wallet" }
+pea-address = { version = "0.2.1", path = "../address" }
+pea-api = { version = "0.2.1", path = "../api" }
+pea-amount = { version = "0.2.1", path = "../amount" }
+pea-core = { version = "0.2.1", path = "../core" }
+pea-pay-core = { version = "0.1.1", path = "../pay-core" }
+pea-pay-db = { version = "0.1.1", path = "../pay-db" }
+pea-key = { version = "0.2.1", path = "../key" }
+pea-logger = { version = "0.1.1", path = "../logger" }
+pea-transaction = { version = "0.2.1", path = "../transaction" }
+pea-wallet = { version = "0.3.1", path = "../wallet" }
 hex = "0.4.3"
 tokio = { version = "1.19.2", features = ["full"] }
 clap = { version = "3.2.6", features = ["derive"] }

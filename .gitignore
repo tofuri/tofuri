@@ -1,2 +1,4 @@
 /target
-/storage
+/peacash-db
+/peacash-pay-db
+/peacash-wallet

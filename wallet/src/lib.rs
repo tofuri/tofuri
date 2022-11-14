@@ -114,7 +114,7 @@ impl Wallet {
         Ok(())
     }
     fn default_path() -> &'static Path {
-        Path::new("./storage/wallet")
+        Path::new("./peacash-wallet")
     }
     fn encrypt(plaintext: &[u8]) -> Result<(Salt, Nonce, Ciphertext), Box<dyn Error>> {
         let passphrase = Wallet::new_passphrase();

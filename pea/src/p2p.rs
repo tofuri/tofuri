@@ -12,7 +12,7 @@ use libp2p::{
     ping::{self, Ping, PingEvent},
     relay::v2::relay::{self, Relay},
     swarm::{NetworkBehaviourEventProcess, SwarmEvent},
-    Multiaddr, NetworkBehaviour, PeerId, Swarm,
+    NetworkBehaviour, PeerId, Swarm,
 };
 use log::{debug, error, info};
 use pea_core::{constants::PROTOCOL_VERSION, types, util};
@@ -157,9 +157,7 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
                 event = swarm.select_next_some() => {
                     p2p_event("SwarmEvent", format!("{:?}", event));
                     if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
-                        if let ConnectedPoint::Dialer { address, .. } = endpoint {
-                            connection_established(address, swarm);
-                        }
+                        connection_established(endpoint, swarm);
                     };
                 },
             }
@@ -172,9 +170,7 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
                 event = swarm.select_next_some() => {
                     p2p_event("SwarmEvent", format!("{:?}", event));
                     if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
-                        if let ConnectedPoint::Dialer { address, .. } = endpoint {
-                            connection_established(address, swarm);
-                        }
+                        connection_established(endpoint, swarm);
                     };
                 },
             }
@@ -184,8 +180,10 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
 fn p2p_event(event_type: &str, event: String) {
     info!("{} {}", event_type.cyan(), event)
 }
-fn connection_established(address: Multiaddr, swarm: &mut Swarm<MyBehaviour>) {
-    let timestamp = util::timestamp();
-    let bytes = timestamp.to_le_bytes();
-    let _ = db::peer::put(&address.to_string(), &bytes, &swarm.behaviour().blockchain.db);
+fn connection_established(endpoint: ConnectedPoint, swarm: &mut Swarm<MyBehaviour>) {
+    if let ConnectedPoint::Dialer { address, .. } = endpoint {
+        let timestamp = util::timestamp();
+        let bytes = timestamp.to_le_bytes();
+        let _ = db::peer::put(&address.to_string(), &bytes, &swarm.behaviour().blockchain.db);
+    }
 }

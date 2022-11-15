@@ -17,7 +17,11 @@ use libp2p::{
 use log::{debug, error, info};
 use pea_core::{constants::PROTOCOL_VERSION, types, util};
 use pea_db as db;
-use std::{collections::HashSet, error::Error, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    time::Duration,
+};
 use tokio::net::TcpListener;
 #[derive(NetworkBehaviour)]
 #[behaviour(event_process = true)]
@@ -41,6 +45,8 @@ pub struct MyBehaviour {
     pub tps: f64,
     #[behaviour(ignore)]
     pub new_multiaddrs: HashSet<Multiaddr>,
+    #[behaviour(ignore)]
+    pub peers: HashMap<Multiaddr, PeerId>,
 }
 impl MyBehaviour {
     async fn new(local_key: identity::Keypair, blockchain: Blockchain, tps: f64) -> Result<Self, Box<dyn Error>> {
@@ -65,6 +71,7 @@ impl MyBehaviour {
             lag: 0.0,
             tps,
             new_multiaddrs: HashSet::new(),
+            peers: HashMap::new(),
         })
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
@@ -159,9 +166,11 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
                 _ = heartbeat::next(swarm.behaviour().tps).fuse() => heartbeat::handler(swarm),
                 event = swarm.select_next_some() => {
                     p2p_event("SwarmEvent", format!("{:?}", event));
-                    if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
-                        connection_established(endpoint, swarm);
-                    };
+                    if let SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } = event {
+                        connection_established(swarm, peer_id, endpoint);
+                    } else if let SwarmEvent::ConnectionClosed { endpoint, .. } = event {
+                        connection_closed(swarm, endpoint);
+                    }
                 },
             }
         }
@@ -172,9 +181,11 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
                 _ = heartbeat::next(swarm.behaviour().tps).fuse() => heartbeat::handler(swarm),
                 event = swarm.select_next_some() => {
                     p2p_event("SwarmEvent", format!("{:?}", event));
-                    if let SwarmEvent::ConnectionEstablished { endpoint, .. } = event {
-                        connection_established(endpoint, swarm);
-                    };
+                    if let SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } = event {
+                        connection_established(swarm, peer_id, endpoint);
+                    } else if let SwarmEvent::ConnectionClosed { endpoint, .. } = event {
+                        connection_closed(swarm, endpoint);
+                    }
                 },
             }
         }
@@ -183,20 +194,36 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
 fn p2p_event(event_type: &str, event: String) {
     info!("{} {}", event_type.cyan(), event);
 }
-fn connection_established(endpoint: ConnectedPoint, swarm: &mut Swarm<MyBehaviour>) {
+fn connection_established(swarm: &mut Swarm<MyBehaviour>, peer_id: PeerId, endpoint: ConnectedPoint) {
     let mut save = |multiaddr: Multiaddr| {
         if let Some(multiaddr) = multiaddr_ip(multiaddr) {
+            if let Some(peer_id) = swarm.behaviour_mut().peers.insert(multiaddr.clone(), peer_id) {
+                let _ = swarm.disconnect_peer_id(peer_id);
+            }
             let timestamp = util::timestamp();
             let bytes = timestamp.to_le_bytes();
-            let behaviour = swarm.behaviour_mut();
-            let _ = db::peer::put(&multiaddr.to_string(), &bytes, &behaviour.blockchain.db);
-            if behaviour.gossipsub.all_peers().count() == 0 {
+            let _ = db::peer::put(&multiaddr.to_string(), &bytes, &swarm.behaviour().blockchain.db);
+            if swarm.behaviour().gossipsub.all_peers().count() == 0 {
                 return;
             }
             let data = bincode::serialize(&multiaddr).unwrap();
-            if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("multiaddr"), data) {
+            if let Err(err) = swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("multiaddr"), data) {
                 error!("{}", err);
             }
+        }
+    };
+    if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
+        save(address);
+    }
+    if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
+        save(send_back_addr);
+    }
+}
+fn connection_closed(swarm: &mut Swarm<MyBehaviour>, endpoint: ConnectedPoint) {
+    let mut save = |multiaddr: Multiaddr| {
+        if let Some(multiaddr) = multiaddr_ip(multiaddr) {
+            let behaviour = swarm.behaviour_mut();
+            behaviour.peers.remove(&multiaddr);
         }
     };
     if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {

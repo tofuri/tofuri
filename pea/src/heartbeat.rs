@@ -25,6 +25,9 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) {
 fn dial_new_multiaddrs(swarm: &mut Swarm<MyBehaviour>) {
     let new_multiaddrs = swarm.behaviour().new_multiaddrs.clone();
     for mut multiaddr in new_multiaddrs {
+        if swarm.behaviour().peers.contains_key(&multiaddr) {
+            continue;
+        }
         multiaddr.push(Protocol::Tcp(9333));
         let _ = swarm.dial(multiaddr);
     }

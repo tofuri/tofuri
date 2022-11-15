@@ -12,7 +12,7 @@ use libp2p::{
     ping::{self, Ping, PingEvent},
     relay::v2::relay::{self, Relay},
     swarm::{NetworkBehaviourEventProcess, SwarmEvent},
-    NetworkBehaviour, PeerId, Swarm,
+    Multiaddr, NetworkBehaviour, PeerId, Swarm,
 };
 use log::{debug, error, info};
 use pea_core::{constants::PROTOCOL_VERSION, types, util};
@@ -181,9 +181,15 @@ fn p2p_event(event_type: &str, event: String) {
     info!("{} {}", event_type.cyan(), event)
 }
 fn connection_established(endpoint: ConnectedPoint, swarm: &mut Swarm<MyBehaviour>) {
-    if let ConnectedPoint::Dialer { address, .. } = endpoint {
+    let save = |address: Multiaddr| {
         let timestamp = util::timestamp();
         let bytes = timestamp.to_le_bytes();
         let _ = db::peer::put(&address.to_string(), &bytes, &swarm.behaviour().blockchain.db);
+    };
+    if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
+        save(address);
+    }
+    if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
+        save(send_back_addr);
     }
 }

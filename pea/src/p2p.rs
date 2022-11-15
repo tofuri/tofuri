@@ -181,20 +181,22 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
     }
 }
 fn p2p_event(event_type: &str, event: String) {
-    info!("{} {}", event_type.cyan(), event)
+    info!("{} {}", event_type.cyan(), event);
 }
 fn connection_established(endpoint: ConnectedPoint, swarm: &mut Swarm<MyBehaviour>) {
-    let mut save = |address: Multiaddr| {
-        let timestamp = util::timestamp();
-        let bytes = timestamp.to_le_bytes();
-        let behaviour = swarm.behaviour_mut();
-        let _ = db::peer::put(&address.to_string(), &bytes, &behaviour.blockchain.db);
-        if behaviour.gossipsub.all_peers().count() == 0 {
-            return;
-        }
-        let data = bincode::serialize(&address).unwrap();
-        if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("multiaddr"), data) {
-            error!("{}", err);
+    let mut save = |multiaddr: Multiaddr| {
+        if let Some(multiaddr) = multiaddr_ip(multiaddr) {
+            let timestamp = util::timestamp();
+            let bytes = timestamp.to_le_bytes();
+            let behaviour = swarm.behaviour_mut();
+            let _ = db::peer::put(&multiaddr.to_string(), &bytes, &behaviour.blockchain.db);
+            if behaviour.gossipsub.all_peers().count() == 0 {
+                return;
+            }
+            let data = bincode::serialize(&multiaddr).unwrap();
+            if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("multiaddr"), data) {
+                error!("{}", err);
+            }
         }
     };
     if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
@@ -202,5 +204,11 @@ fn connection_established(endpoint: ConnectedPoint, swarm: &mut Swarm<MyBehaviou
     }
     if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
         save(send_back_addr);
+    }
+}
+pub fn multiaddr_ip(multiaddr: Multiaddr) -> Option<Multiaddr> {
+    match multiaddr.iter().next() {
+        Some(ip) => Some(ip.to_string().parse().unwrap()),
+        None => None,
     }
 }

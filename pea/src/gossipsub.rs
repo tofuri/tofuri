@@ -1,4 +1,4 @@
-use crate::p2p::MyBehaviour;
+use crate::p2p::{self, MyBehaviour};
 use colored::*;
 use libp2p::{gossipsub::GossipsubMessage, Multiaddr};
 use log::info;
@@ -29,8 +29,10 @@ pub fn handler(behaviour: &mut MyBehaviour, message: GossipsubMessage) -> Result
         }
         "multiaddr" => {
             let multiaddr: Multiaddr = bincode::deserialize(&message.data)?;
-            info!("{} {}", "Multiaddr".cyan(), multiaddr.to_string().yellow());
-            behaviour.new_multiaddrs.insert(multiaddr);
+            if let Some(multiaddr) = p2p::multiaddr_ip(multiaddr) {
+                behaviour.new_multiaddrs.insert(multiaddr.clone());
+                info!("{} {} {}", "Multiaddr".cyan(), behaviour.new_multiaddrs.len().to_string().yellow(), multiaddr.to_string().magenta());
+            }
         }
         _ => {}
     };

@@ -1,6 +1,6 @@
 use clap::Parser;
 use colored::*;
-use libp2p::Multiaddr;
+use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::info;
 use pea::{blockchain::Blockchain, p2p};
 use pea_address as address;
@@ -84,7 +84,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     swarm.listen_on(args.host.parse()?)?;
     swarm.dial(args.peer.parse::<Multiaddr>()?)?;
     for peer in peers {
-        swarm.dial(peer.parse::<Multiaddr>()?)?;
+        let mut multiaddr = peer.parse::<Multiaddr>()?;
+        multiaddr.push(Protocol::Tcp(9333));
+        swarm.dial(multiaddr)?;
     }
     let tcp_listener_http_api = if !args.bind_http_api.is_empty() {
         Some(TcpListener::bind(args.bind_http_api).await?)

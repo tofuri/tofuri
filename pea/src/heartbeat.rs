@@ -1,6 +1,6 @@
 use crate::p2p::MyBehaviour;
 use colored::*;
-use libp2p::{gossipsub::IdentTopic, Swarm};
+use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol, Swarm};
 use log::{debug, error};
 use pea_core::{
     constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS_PER_TICK},
@@ -24,7 +24,8 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) {
 }
 fn dial_new_multiaddrs(swarm: &mut Swarm<MyBehaviour>) {
     let new_multiaddrs = swarm.behaviour().new_multiaddrs.clone();
-    for multiaddr in new_multiaddrs {
+    for mut multiaddr in new_multiaddrs {
+        multiaddr.push(Protocol::Tcp(9333));
         let _ = swarm.dial(multiaddr);
     }
     swarm.behaviour_mut().new_multiaddrs.clear();

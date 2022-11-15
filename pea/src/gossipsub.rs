@@ -1,6 +1,6 @@
 use crate::p2p::MyBehaviour;
 use colored::*;
-use libp2p::gossipsub::GossipsubMessage;
+use libp2p::{gossipsub::GossipsubMessage, Multiaddr};
 use log::info;
 use pea_block::Block;
 use pea_stake::Stake;
@@ -26,6 +26,11 @@ pub fn handler(behaviour: &mut MyBehaviour, message: GossipsubMessage) -> Result
         "transaction" => {
             let transaction: Transaction = bincode::deserialize(&message.data)?;
             behaviour.blockchain.pending_transactions_push(transaction)?;
+        }
+        "multiaddr" => {
+            let multiaddr: Multiaddr = bincode::deserialize(&message.data)?;
+            info!("{} {}", "Multiaddr".cyan(), multiaddr.to_string().yellow());
+            behaviour.new_multiaddrs.insert(multiaddr);
         }
         _ => {}
     };

@@ -17,7 +17,7 @@ use libp2p::{
 use log::{debug, error, info};
 use pea_core::{constants::PROTOCOL_VERSION, types, util};
 use pea_db as db;
-use std::{error::Error, time::Duration};
+use std::{collections::HashSet, error::Error, time::Duration};
 use tokio::net::TcpListener;
 #[derive(NetworkBehaviour)]
 #[behaviour(event_process = true)]
@@ -39,6 +39,8 @@ pub struct MyBehaviour {
     pub lag: f64,
     #[behaviour(ignore)]
     pub tps: f64,
+    #[behaviour(ignore)]
+    pub new_multiaddrs: HashSet<Multiaddr>,
 }
 impl MyBehaviour {
     async fn new(local_key: identity::Keypair, blockchain: Blockchain, tps: f64) -> Result<Self, Box<dyn Error>> {
@@ -62,6 +64,7 @@ impl MyBehaviour {
             heartbeats: 0,
             lag: 0.0,
             tps,
+            new_multiaddrs: HashSet::new(),
         })
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
@@ -140,7 +143,7 @@ pub async fn swarm(blockchain: Blockchain, tps: f64) -> Result<Swarm<MyBehaviour
     let local_peer_id = PeerId::from(local_key.public());
     let transport = libp2p::development_transport(local_key.clone()).await?;
     let mut behaviour = MyBehaviour::new(local_key, blockchain, tps).await?;
-    for ident_topic in [IdentTopic::new("block"), IdentTopic::new("stake"), IdentTopic::new("transaction")].iter() {
+    for ident_topic in [IdentTopic::new("block"), IdentTopic::new("stake"), IdentTopic::new("transaction"), IdentTopic::new("multiaddr")].iter() {
         behaviour.gossipsub.subscribe(ident_topic)?;
     }
     Ok(Swarm::new(transport, behaviour, local_peer_id))
@@ -181,10 +184,18 @@ fn p2p_event(event_type: &str, event: String) {
     info!("{} {}", event_type.cyan(), event)
 }
 fn connection_established(endpoint: ConnectedPoint, swarm: &mut Swarm<MyBehaviour>) {
-    let save = |address: Multiaddr| {
+    let mut save = |address: Multiaddr| {
         let timestamp = util::timestamp();
         let bytes = timestamp.to_le_bytes();
-        let _ = db::peer::put(&address.to_string(), &bytes, &swarm.behaviour().blockchain.db);
+        let behaviour = swarm.behaviour_mut();
+        let _ = db::peer::put(&address.to_string(), &bytes, &behaviour.blockchain.db);
+        if behaviour.gossipsub.all_peers().count() == 0 {
+            return;
+        }
+        let data = bincode::serialize(&address).unwrap();
+        if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("multiaddr"), data) {
+            error!("{}", err);
+        }
     };
     if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
         save(address);

@@ -12,6 +12,7 @@ pub async fn next(tps: f64) {
     tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
 }
 pub fn handler(swarm: &mut Swarm<MyBehaviour>) {
+    dial_new_multiaddrs(swarm);
     let behaviour = swarm.behaviour_mut();
     behaviour.heartbeats += 1;
     sync(behaviour);
@@ -20,6 +21,13 @@ pub fn handler(swarm: &mut Swarm<MyBehaviour>) {
     forge(behaviour);
     behaviour.blockchain.pending_blocks_accept();
     lag(behaviour);
+}
+fn dial_new_multiaddrs(swarm: &mut Swarm<MyBehaviour>) {
+    let new_multiaddrs = swarm.behaviour().new_multiaddrs.clone();
+    for multiaddr in new_multiaddrs {
+        let _ = swarm.dial(multiaddr);
+    }
+    swarm.behaviour_mut().new_multiaddrs.clear();
 }
 fn forge(behaviour: &mut MyBehaviour) {
     let states = &behaviour.blockchain.states;

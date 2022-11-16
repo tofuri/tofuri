@@ -18,7 +18,6 @@ use pea_db as db;
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
-    time::Duration,
 };
 use tokio::net::TcpListener;
 #[derive(NetworkBehaviour)]

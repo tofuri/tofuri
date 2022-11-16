@@ -4,13 +4,11 @@ use futures::{FutureExt, StreamExt};
 use libp2p::{
     autonat,
     core::connection::ConnectedPoint,
-    floodsub::{Floodsub, FloodsubEvent},
     gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, IdentTopic, MessageAuthenticity},
     identify::{Identify, IdentifyConfig, IdentifyEvent},
     identity,
     mdns::{Mdns, MdnsConfig, MdnsEvent},
     ping::{self, Ping, PingEvent},
-    relay::v2::relay::{self, Relay},
     swarm::{NetworkBehaviourEventProcess, SwarmEvent},
     Multiaddr, NetworkBehaviour, PeerId, Swarm,
 };
@@ -26,13 +24,11 @@ use tokio::net::TcpListener;
 #[derive(NetworkBehaviour)]
 #[behaviour(event_process = true)]
 pub struct MyBehaviour {
-    pub floodsub: Floodsub,
     pub mdns: Mdns,
     pub ping: Ping,
     pub identify: Identify,
     pub gossipsub: Gossipsub,
     pub autonat: autonat::Behaviour,
-    pub relay: Relay,
     #[behaviour(ignore)]
     pub blockchain: Blockchain,
     #[behaviour(ignore)]
@@ -50,21 +46,17 @@ pub struct MyBehaviour {
 }
 impl MyBehaviour {
     async fn new(local_key: identity::Keypair, blockchain: Blockchain, tps: f64) -> Result<Self, Box<dyn Error>> {
-        let local_public_key = local_key.public();
-        let local_peer_id = PeerId::from(local_public_key.clone());
         Ok(Self {
-            floodsub: Floodsub::new(PeerId::from(local_public_key.clone())),
             mdns: Mdns::new(MdnsConfig::default()).await?,
             ping: ping::Behaviour::new(ping::Config::new().with_keep_alive(true)),
-            identify: Identify::new(IdentifyConfig::new(PROTOCOL_VERSION.to_string(), local_public_key.clone())),
+            identify: Identify::new(IdentifyConfig::new(PROTOCOL_VERSION.to_string(), local_key.public())),
             gossipsub: Gossipsub::new(
                 MessageAuthenticity::Signed(local_key.clone()),
                 GossipsubConfigBuilder::default()
                     .heartbeat_interval(Duration::from_secs(10)) // This is set to aid debugging by not cluttering the log space
                     .build()?,
             )?,
-            autonat: autonat::Behaviour::new(local_public_key.to_peer_id(), autonat::Config::default()),
-            relay: Relay::new(local_peer_id, Default::default()),
+            autonat: autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default()),
             blockchain,
             message_data_hashes: vec![],
             heartbeats: 0,
@@ -85,46 +77,24 @@ impl MyBehaviour {
         false
     }
 }
-impl NetworkBehaviourEventProcess<FloodsubEvent> for MyBehaviour {
-    fn inject_event(&mut self, event: FloodsubEvent) {
-        // print::p2p_event("FloodsubEvent", format!("{:?}", event));
-        if let FloodsubEvent::Message(message) = event {
-            p2p_event("FloodsubEvent::Message", String::from_utf8_lossy(&message.data).green().to_string());
-        }
-    }
-}
 impl NetworkBehaviourEventProcess<MdnsEvent> for MyBehaviour {
     fn inject_event(&mut self, event: MdnsEvent) {
-        // print::p2p_event("MdnsEvent", format!("{:?}", event));
-        match event {
-            MdnsEvent::Discovered(list) => {
-                for (peer, _) in list {
-                    self.floodsub.add_node_to_partial_view(peer);
-                }
-            }
-            MdnsEvent::Expired(list) => {
-                for (peer, _) in list {
-                    if !self.mdns.has_node(&peer) {
-                        self.floodsub.remove_node_from_partial_view(&peer);
-                    }
-                }
-            }
-        }
+        debug!("{:?}", event);
     }
 }
 impl NetworkBehaviourEventProcess<PingEvent> for MyBehaviour {
-    fn inject_event(&mut self, _event: PingEvent) {
-        // print::p2p_event("PingEvent", format!("{:?}", event));
+    fn inject_event(&mut self, event: PingEvent) {
+        debug!("{:?}", event);
     }
 }
 impl NetworkBehaviourEventProcess<IdentifyEvent> for MyBehaviour {
-    fn inject_event(&mut self, _event: IdentifyEvent) {
-        // print::p2p_event("IdentifyEvent", format!("{:?}", event));
+    fn inject_event(&mut self, event: IdentifyEvent) {
+        debug!("{:?}", event);
     }
 }
 impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
     fn inject_event(&mut self, event: GossipsubEvent) {
-        // print::p2p_event("GossipsubEvent", format!("{:?}", event));
+        debug!("{:?}", event);
         if let GossipsubEvent::Message { message, .. } = event {
             if self.filter(&message.data, false) {
                 return;
@@ -137,12 +107,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
 }
 impl NetworkBehaviourEventProcess<autonat::Event> for MyBehaviour {
     fn inject_event(&mut self, event: autonat::Event) {
-        p2p_event("autonat::Event", format!("{:?}", event));
-    }
-}
-impl NetworkBehaviourEventProcess<relay::Event> for MyBehaviour {
-    fn inject_event(&mut self, event: relay::Event) {
-        p2p_event("relay::Event", format!("{:?}", event));
+        debug!("{:?}", event);
     }
 }
 pub async fn swarm(blockchain: Blockchain, tps: f64) -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
@@ -173,7 +138,7 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
                 },
                 _ = heartbeat::next(swarm.behaviour().tps).fuse() => heartbeat::handler(swarm),
                 event = swarm.select_next_some() => {
-                    p2p_event("SwarmEvent", format!("{:?}", event));
+                    debug!("{:?}", event);
                     if let SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } = event {
                         connection_established(swarm, peer_id, endpoint);
                     } else if let SwarmEvent::ConnectionClosed { endpoint, .. } = event {
@@ -188,7 +153,7 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
             tokio::select! {
                 _ = heartbeat::next(swarm.behaviour().tps).fuse() => heartbeat::handler(swarm),
                 event = swarm.select_next_some() => {
-                    p2p_event("SwarmEvent", format!("{:?}", event));
+                    debug!("{:?}", event);
                     if let SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } = event {
                         connection_established(swarm, peer_id, endpoint);
                     } else if let SwarmEvent::ConnectionClosed { endpoint, .. } = event {
@@ -198,9 +163,6 @@ pub async fn listen(swarm: &mut Swarm<MyBehaviour>, tcp_listener_http_api: Optio
             }
         }
     }
-}
-fn p2p_event(event_type: &str, event: String) {
-    info!("{} {}", event_type.cyan(), event);
 }
 fn connection_established(swarm: &mut Swarm<MyBehaviour>, peer_id: PeerId, endpoint: ConnectedPoint) {
     let mut save = |multiaddr: Multiaddr| {

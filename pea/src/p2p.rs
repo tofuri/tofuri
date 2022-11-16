@@ -71,6 +71,14 @@ impl MyBehaviour {
 impl NetworkBehaviourEventProcess<MdnsEvent> for MyBehaviour {
     fn inject_event(&mut self, event: MdnsEvent) {
         debug!("{:?}", event);
+        match event {
+            MdnsEvent::Discovered(list) => {
+                for (_, multiaddr) in list {
+                    self.new_multiaddrs.insert(multiaddr);
+                }
+            }
+            MdnsEvent::Expired(_) => {}
+        }
     }
 }
 impl NetworkBehaviourEventProcess<PingEvent> for MyBehaviour {

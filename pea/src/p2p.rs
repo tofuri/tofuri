@@ -77,7 +77,9 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for MyBehaviour {
         match event {
             MdnsEvent::Discovered(list) => {
                 for (_, multiaddr) in list {
-                    self.new_multiaddrs.insert(multiaddr);
+                    if let Some(multiaddr) = multiaddr_ip(multiaddr) {
+                        self.new_multiaddrs.insert(multiaddr);
+                    }
                 }
             }
             MdnsEvent::Expired(_) => {}

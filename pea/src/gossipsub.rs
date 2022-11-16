@@ -9,15 +9,10 @@ use std::error::Error;
 pub fn handler(behaviour: &mut MyBehaviour, message: GossipsubMessage) -> Result<(), Box<dyn Error>> {
     match message.topic.as_str() {
         "block" => {
-            let block: Block = bincode::deserialize(&message.data)?;
-            behaviour.blockchain.pending_blocks_push(block.clone())?;
-            let hash = behaviour.blockchain.block_accept(&block);
-            info!(
-                "{} {} {}",
-                "Accept".green(),
-                behaviour.blockchain.tree.height(&block.previous_hash).to_string().yellow(),
-                hex::encode(hash)
-            );
+            block(behaviour, &message.data)?;
+        }
+        "block sync" => {
+            block(behaviour, &message.data)?;
         }
         "stake" => {
             let stake: Stake = bincode::deserialize(&message.data)?;
@@ -36,5 +31,17 @@ pub fn handler(behaviour: &mut MyBehaviour, message: GossipsubMessage) -> Result
         }
         _ => {}
     };
+    Ok(())
+}
+fn block(behaviour: &mut MyBehaviour, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
+    let block: Block = bincode::deserialize(bytes)?;
+    behaviour.blockchain.pending_blocks_push(block.clone())?;
+    let hash = behaviour.blockchain.block_accept(&block);
+    info!(
+        "{} {} {}",
+        "Accept".green(),
+        behaviour.blockchain.tree.height(&block.previous_hash).to_string().yellow(),
+        hex::encode(hash)
+    );
     Ok(())
 }

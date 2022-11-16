@@ -150,7 +150,15 @@ pub async fn swarm(blockchain: Blockchain, tps: f64) -> Result<Swarm<MyBehaviour
     let local_peer_id = PeerId::from(local_key.public());
     let transport = libp2p::development_transport(local_key.clone()).await?;
     let mut behaviour = MyBehaviour::new(local_key, blockchain, tps).await?;
-    for ident_topic in [IdentTopic::new("block"), IdentTopic::new("stake"), IdentTopic::new("transaction"), IdentTopic::new("multiaddr")].iter() {
+    for ident_topic in [
+        IdentTopic::new("block"),
+        IdentTopic::new("block sync"),
+        IdentTopic::new("stake"),
+        IdentTopic::new("transaction"),
+        IdentTopic::new("multiaddr"),
+    ]
+    .iter()
+    {
         behaviour.gossipsub.subscribe(ident_topic)?;
     }
     Ok(Swarm::new(transport, behaviour, local_peer_id))

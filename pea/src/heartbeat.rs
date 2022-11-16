@@ -71,7 +71,7 @@ fn sync(behaviour: &mut MyBehaviour) {
     for _ in 0..SYNC_BLOCKS_PER_TICK {
         for block in behaviour.blockchain.sync_blocks() {
             let data = bincode::serialize(&block).unwrap();
-            if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("block"), data) {
+            if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("block sync"), data) {
                 error!("{}", err);
             }
         }

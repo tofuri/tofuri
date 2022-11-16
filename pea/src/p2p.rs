@@ -50,12 +50,7 @@ impl MyBehaviour {
             mdns: Mdns::new(MdnsConfig::default()).await?,
             ping: ping::Behaviour::new(ping::Config::new().with_keep_alive(true)),
             identify: Identify::new(IdentifyConfig::new(PROTOCOL_VERSION.to_string(), local_key.public())),
-            gossipsub: Gossipsub::new(
-                MessageAuthenticity::Signed(local_key.clone()),
-                GossipsubConfigBuilder::default()
-                    .heartbeat_interval(Duration::from_secs(10)) // This is set to aid debugging by not cluttering the log space
-                    .build()?,
-            )?,
+            gossipsub: Gossipsub::new(MessageAuthenticity::Signed(local_key.clone()), GossipsubConfigBuilder::default().build()?)?,
             autonat: autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default()),
             blockchain,
             message_data_hashes: vec![],

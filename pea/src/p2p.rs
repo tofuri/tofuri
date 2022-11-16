@@ -222,8 +222,8 @@ fn connection_established(swarm: &mut Swarm<MyBehaviour>, peer_id: PeerId, endpo
 fn connection_closed(swarm: &mut Swarm<MyBehaviour>, endpoint: ConnectedPoint) {
     let mut save = |multiaddr: Multiaddr| {
         if let Some(multiaddr) = multiaddr_ip(multiaddr) {
-            let behaviour = swarm.behaviour_mut();
-            behaviour.peers.remove(&multiaddr);
+            swarm.behaviour_mut().peers.remove(&multiaddr);
+            let _ = swarm.dial(multiaddr);
         }
     };
     if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {

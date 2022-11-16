@@ -2,6 +2,7 @@ use crate::{blockchain::Blockchain, gossipsub, heartbeat, http};
 use colored::*;
 use futures::{FutureExt, StreamExt};
 use libp2p::{
+    autonat,
     core::connection::ConnectedPoint,
     gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, IdentTopic, MessageAuthenticity},
     identify::{Identify, IdentifyConfig, IdentifyEvent},
@@ -26,6 +27,7 @@ pub struct MyBehaviour {
     pub ping: Ping,
     pub identify: Identify,
     pub gossipsub: Gossipsub,
+    pub autonat: autonat::Behaviour,
     #[behaviour(ignore)]
     pub blockchain: Blockchain,
     #[behaviour(ignore)]
@@ -48,6 +50,7 @@ impl MyBehaviour {
             ping: ping::Behaviour::new(ping::Config::new().with_keep_alive(true)),
             identify: Identify::new(IdentifyConfig::new(PROTOCOL_VERSION.to_string(), local_key.public())),
             gossipsub: Gossipsub::new(MessageAuthenticity::Signed(local_key.clone()), GossipsubConfigBuilder::default().build()?)?,
+            autonat: autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default()),
             blockchain,
             message_data_hashes: vec![],
             heartbeats: 0,
@@ -102,6 +105,11 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for MyBehaviour {
                 debug!("{}", err)
             }
         }
+    }
+}
+impl NetworkBehaviourEventProcess<autonat::Event> for MyBehaviour {
+    fn inject_event(&mut self, event: autonat::Event) {
+        debug!("{:?}", event);
     }
 }
 pub async fn swarm(blockchain: Blockchain, tps: f64) -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {

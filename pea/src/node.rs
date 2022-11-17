@@ -41,9 +41,23 @@ pub struct Node {
     pub known: HashSet<Multiaddr>,
     pub connections: HashMap<Multiaddr, PeerId>,
     pub bind_api: String,
+    pub dial_known: usize,
+    pub dial_unknown: usize,
 }
 impl Node {
-    pub async fn new(tempdb: bool, tempkey: bool, trust: usize, pending: usize, tps: f64, wallet: &str, passphrase: &str, peer: &str, bind_api: String) -> Node {
+    pub async fn new(
+        tempdb: bool,
+        tempkey: bool,
+        trust: usize,
+        pending: usize,
+        dial_known: usize,
+        dial_unknown: usize,
+        tps: f64,
+        wallet: &str,
+        passphrase: &str,
+        peer: &str,
+        bind_api: String,
+    ) -> Node {
         let db = Node::db(tempdb);
         let wallet = Node::wallet(tempkey, wallet, passphrase);
         info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
@@ -61,6 +75,8 @@ impl Node {
             known,
             connections: HashMap::new(),
             bind_api,
+            dial_known,
+            dial_unknown,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

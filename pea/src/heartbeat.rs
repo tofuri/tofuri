@@ -24,14 +24,14 @@ pub fn handler(node: &mut Node) {
     lag(node);
 }
 fn dial_known(node: &mut Node) {
-    if node.heartbeats % (node.tps * 10_f64) as usize != 0 {
+    if node.heartbeats % (node.tps * node.dial_known as f64) as usize != 0 {
         return;
     }
     let vec = node.known.clone().into_iter().collect();
     dial(node, vec, true);
 }
 fn dial_unknown(node: &mut Node) {
-    if node.heartbeats % (node.tps * 10_f64) as usize != 0 {
+    if node.heartbeats % (node.tps * node.dial_unknown as f64) as usize != 0 {
         return;
     }
     let vec = node.unknown.drain().collect();

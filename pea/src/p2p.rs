@@ -5,6 +5,7 @@ use libp2p::{
     identity,
     mdns::{Mdns, MdnsConfig, MdnsEvent},
     ping::{self, Ping, PingEvent},
+    swarm::SwarmBuilder,
     NetworkBehaviour, PeerId, Swarm,
 };
 use pea_core::constants::PROTOCOL_VERSION;
@@ -78,5 +79,9 @@ pub async fn swarm() -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
     {
         behaviour.gossipsub.subscribe(ident_topic)?;
     }
-    Ok(Swarm::new(transport, behaviour, local_peer_id))
+    Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
+        .executor(Box::new(|fut| {
+            tokio::spawn(fut);
+        }))
+        .build())
 }

@@ -1,5 +1,5 @@
 use libp2p::{multiaddr::Protocol, Multiaddr};
-pub fn filter_ip(multiaddr: Multiaddr) -> Option<Multiaddr> {
+pub fn filter_ip(multiaddr: &Multiaddr) -> Option<Multiaddr> {
     let components = multiaddr.iter().collect::<Vec<_>>();
     let mut multiaddr: Multiaddr = "".parse().unwrap();
     match components.get(0) {
@@ -9,7 +9,7 @@ pub fn filter_ip(multiaddr: Multiaddr) -> Option<Multiaddr> {
     };
     Some(multiaddr)
 }
-pub fn filter_ip_port(multiaddr: Multiaddr) -> Option<Multiaddr> {
+pub fn filter_ip_port(multiaddr: &Multiaddr) -> Option<Multiaddr> {
     let components = multiaddr.iter().collect::<Vec<_>>();
     let mut multiaddr: Multiaddr = "".parse().unwrap();
     match components.get(0) {

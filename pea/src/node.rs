@@ -120,12 +120,12 @@ impl Node {
     }
     fn known(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> HashSet<Multiaddr> {
         let mut known = HashSet::new();
-        if let Some(multiaddr) = multiaddr::filter_ip_port(peer.parse::<Multiaddr>().unwrap()) {
+        if let Some(multiaddr) = multiaddr::filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
             known.insert(multiaddr);
         }
         let peers = db::peer::get_all(db);
         for peer in peers {
-            if let Some(multiaddr) = multiaddr::filter_ip_port(peer.parse::<Multiaddr>().unwrap()) {
+            if let Some(multiaddr) = multiaddr::filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
                 known.insert(multiaddr);
             }
         }
@@ -161,7 +161,7 @@ impl Node {
             }
             SwarmEvent::Behaviour(Event::Mdns(MdnsEvent::Discovered(list))) => {
                 for (_, multiaddr) in list {
-                    if let Some(multiaddr) = multiaddr::filter_ip_port(multiaddr) {
+                    if let Some(multiaddr) = multiaddr::filter_ip_port(&multiaddr) {
                         self.unknown.insert(multiaddr);
                     }
                 }
@@ -220,19 +220,22 @@ impl Node {
         let mut save = |multiaddr: Multiaddr| {
             node.known.insert(multiaddr.clone());
             let _ = db::peer::put(&multiaddr.to_string(), &[], &node.blockchain.db);
-            if let Some(previous_peer_id) = node.connections.insert(multiaddr, peer_id) {
+            if let Some(previous_peer_id) = node
+                .connections
+                .insert(multiaddr::filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
+            {
                 if previous_peer_id != peer_id {
                     let _ = node.swarm.disconnect_peer_id(previous_peer_id);
                 }
             }
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = multiaddr::filter_ip_port(address) {
+            if let Some(multiaddr) = multiaddr::filter_ip_port(&address) {
                 save(multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = multiaddr::filter_ip(send_back_addr) {
+            if let Some(multiaddr) = multiaddr::filter_ip(&send_back_addr) {
                 save(multiaddr);
             }
         }
@@ -243,12 +246,12 @@ impl Node {
             let _ = node.swarm.dial(multiaddr);
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = multiaddr::filter_ip_port(address) {
+            if let Some(multiaddr) = multiaddr::filter_ip_port(&address) {
                 save(multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = multiaddr::filter_ip(send_back_addr) {
+            if let Some(multiaddr) = multiaddr::filter_ip(&send_back_addr) {
                 save(multiaddr);
             }
         }

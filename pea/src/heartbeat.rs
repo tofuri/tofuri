@@ -44,7 +44,10 @@ fn dial_unknown(node: &mut Node) {
 }
 fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     for mut multiaddr in vec {
-        if node.connections.contains_key(&multiaddr) {
+        if node
+            .connections
+            .contains_key(&multiaddr::filter_ip(&multiaddr).expect("multiaddr to include ip"))
+        {
             continue;
         }
         info!(

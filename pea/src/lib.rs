@@ -3,6 +3,7 @@ pub mod blockchain;
 pub mod gossipsub;
 pub mod heartbeat;
 pub mod http;
+pub mod multiaddr;
 pub mod node;
 pub mod state;
 pub mod states;

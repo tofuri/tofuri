@@ -1,7 +1,7 @@
 use crate::{
     behaviour::{Behaviour, Event},
     blockchain::Blockchain,
-    gossipsub, heartbeat, http,
+    gossipsub, heartbeat, http, multiaddr,
 };
 use colored::*;
 use futures::{FutureExt, StreamExt};
@@ -10,9 +10,7 @@ use libp2p::{
     gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic},
     identity,
     mdns::MdnsEvent,
-    mplex,
-    multiaddr::Protocol,
-    noise,
+    mplex, noise,
     ping::Failure,
     swarm::{ConnectionHandlerUpgrErr, SwarmBuilder, SwarmEvent},
     tcp::TokioTcpConfig,
@@ -109,12 +107,12 @@ impl Node {
     }
     fn known(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> HashSet<Multiaddr> {
         let mut known = HashSet::new();
-        if let Some(multiaddr) = Node::multiaddr_ip_port(peer.parse::<Multiaddr>().unwrap()) {
+        if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(peer.parse::<Multiaddr>().unwrap()) {
             known.insert(multiaddr);
         }
         let peers = db::peer::get_all(db);
         for peer in peers {
-            if let Some(multiaddr) = Node::multiaddr_ip_port(peer.parse::<Multiaddr>().unwrap()) {
+            if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(peer.parse::<Multiaddr>().unwrap()) {
                 known.insert(multiaddr);
             }
         }
@@ -144,7 +142,7 @@ impl Node {
             }
             SwarmEvent::Behaviour(Event::Mdns(MdnsEvent::Discovered(list))) => {
                 for (_, multiaddr) in list {
-                    if let Some(multiaddr) = Self::multiaddr_ip_port(multiaddr) {
+                    if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(multiaddr) {
                         self.unknown.insert(multiaddr);
                     }
                 }
@@ -196,12 +194,12 @@ impl Node {
             }
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = Node::multiaddr_ip_port(address) {
+            if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(address) {
                 save(multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = Node::multiaddr_ip(send_back_addr) {
+            if let Some(multiaddr) = multiaddr::filter_ip(send_back_addr) {
                 save(multiaddr);
             }
         }
@@ -212,50 +210,14 @@ impl Node {
             let _ = node.swarm.dial(multiaddr);
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = Node::multiaddr_ip_port(address) {
+            if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(address) {
                 save(multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = Node::multiaddr_ip(send_back_addr) {
+            if let Some(multiaddr) = multiaddr::filter_ip(send_back_addr) {
                 save(multiaddr);
             }
-        }
-    }
-    pub fn multiaddr_ip(multiaddr: Multiaddr) -> Option<Multiaddr> {
-        let components = multiaddr.iter().collect::<Vec<_>>();
-        let mut multiaddr: Multiaddr = "".parse().unwrap();
-        match components.get(0) {
-            Some(Protocol::Ip4(ip)) => multiaddr.push(Protocol::Ip4(*ip)),
-            Some(Protocol::Ip6(ip)) => multiaddr.push(Protocol::Ip6(*ip)),
-            _ => return None,
-        };
-        Some(multiaddr)
-    }
-    pub fn multiaddr_ip_port(multiaddr: Multiaddr) -> Option<Multiaddr> {
-        let components = multiaddr.iter().collect::<Vec<_>>();
-        let mut multiaddr: Multiaddr = "".parse().unwrap();
-        match components.get(0) {
-            Some(Protocol::Ip4(ip)) => multiaddr.push(Protocol::Ip4(*ip)),
-            Some(Protocol::Ip6(ip)) => multiaddr.push(Protocol::Ip6(*ip)),
-            _ => return None,
-        };
-        match components.get(1) {
-            Some(Protocol::Tcp(port)) => {
-                if port == &9333_u16 {
-                    return Some(multiaddr);
-                }
-                multiaddr.push(Protocol::Tcp(*port))
-            }
-            _ => return Some(multiaddr),
-        };
-        Some(multiaddr)
-    }
-    pub fn multiaddr_has_port(multiaddr: &Multiaddr) -> bool {
-        let components = multiaddr.iter().collect::<Vec<_>>();
-        match components.get(1) {
-            Some(Protocol::Tcp(_)) => true,
-            _ => false,
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::node::Node;
+use crate::{multiaddr, node::Node};
 use colored::*;
 use libp2p::{gossipsub::GossipsubMessage, Multiaddr};
 use log::info;
@@ -25,7 +25,7 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
         "multiaddr" => {
             let vec: Vec<Multiaddr> = bincode::deserialize(&message.data)?;
             for multiaddr in vec {
-                if let Some(multiaddr) = Node::multiaddr_ip_port(multiaddr) {
+                if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(multiaddr) {
                     node.unknown.insert(multiaddr);
                 }
             }

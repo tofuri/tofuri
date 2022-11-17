@@ -1,4 +1,4 @@
-use crate::node::Node;
+use crate::{multiaddr, node::Node};
 use colored::*;
 use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol, Multiaddr};
 use log::{debug, error, info};
@@ -43,7 +43,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
             continue;
         }
         info!("{} {} {}", "Dial".cyan(), if known { "known".green() } else { "unknown".red() }, multiaddr.to_string().magenta());
-        if !Node::multiaddr_has_port(&multiaddr) {
+        if !multiaddr::has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }
         let _ = node.swarm.dial(multiaddr);

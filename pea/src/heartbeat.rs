@@ -1,6 +1,6 @@
 use crate::node::Node;
 use colored::*;
-use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol};
+use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol, Multiaddr};
 use log::{debug, error};
 use pea_core::{
     constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS_PER_TICK},
@@ -12,8 +12,9 @@ pub async fn next(tps: f64) {
     tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
 }
 pub fn handler(node: &mut Node) {
-    dial_new_multiaddrs(node);
     node.heartbeats += 1;
+    share_peer_list(node);
+    dial_new_multiaddrs(node);
     sync(node);
     node.message_data_hashes.clear();
     node.blockchain.sync.handler();
@@ -24,13 +25,31 @@ pub fn handler(node: &mut Node) {
 fn dial_new_multiaddrs(node: &mut Node) {
     let new_multiaddrs = node.new_multiaddrs.clone();
     for mut multiaddr in new_multiaddrs {
-        if node.peers.contains_key(&multiaddr) {
+        if node.peer_list.contains_key(&multiaddr) {
             continue;
         }
         multiaddr.push(Protocol::Tcp(9333));
         let _ = node.swarm.dial(multiaddr);
     }
     node.new_multiaddrs.clear();
+}
+fn share_peer_list(node: &mut Node) {
+    if node.heartbeats % (node.tps * 10_f64) as usize != 0 {
+        return;
+    }
+    if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
+        return;
+    }
+    let peer_list = node.peer_list.clone();
+    for multiaddr in peer_list.keys() {
+        let data = bincode::serialize(&multiaddr).unwrap();
+        if node.filter(&data, true) {
+            return;
+        }
+        if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("multiaddr"), data) {
+            error!("{}", err);
+        }
+    }
 }
 fn forge(node: &mut Node) {
     let states = &node.blockchain.states;

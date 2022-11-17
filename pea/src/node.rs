@@ -29,7 +29,7 @@ pub struct Node {
     pub lag: f64,
     pub tps: f64,
     pub new_multiaddrs: HashSet<Multiaddr>,
-    pub peers: HashMap<Multiaddr, PeerId>,
+    pub peer_list: HashMap<Multiaddr, PeerId>,
 }
 impl Node {
     pub fn new(swarm: Swarm<MyBehaviour>, blockchain: Blockchain, tps: f64) -> Node {
@@ -41,7 +41,7 @@ impl Node {
             lag: 0.0,
             tps,
             new_multiaddrs: HashSet::new(),
-            peers: HashMap::new(),
+            peer_list: HashMap::new(),
         }
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
@@ -109,19 +109,12 @@ impl Node {
     fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {
             if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                if let Some(peer_id) = node.peers.insert(multiaddr.clone(), peer_id) {
+                if let Some(peer_id) = node.peer_list.insert(multiaddr.clone(), peer_id) {
                     let _ = node.swarm.disconnect_peer_id(peer_id);
                 }
                 let timestamp = util::timestamp();
                 let bytes = timestamp.to_le_bytes();
                 let _ = db::peer::put(&multiaddr.to_string(), &bytes, &node.blockchain.db);
-                if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
-                    return;
-                }
-                let data = bincode::serialize(&multiaddr).unwrap();
-                if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("multiaddr"), data) {
-                    error!("{}", err);
-                }
             }
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
@@ -134,7 +127,7 @@ impl Node {
     fn connection_closed(node: &mut Node, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {
             if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                node.peers.remove(&multiaddr);
+                node.peer_list.remove(&multiaddr);
                 let _ = node.swarm.dial(multiaddr);
             }
         };

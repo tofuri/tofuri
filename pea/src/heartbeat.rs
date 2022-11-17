@@ -22,7 +22,7 @@ pub fn handler(node: &mut Node) {
     if delay(node, 60) {
         dial_unknown(node);
     }
-    if delay(node, 60) {
+    if delay(node, 10) {
         share(node);
     }
     if delay(node, 2) {

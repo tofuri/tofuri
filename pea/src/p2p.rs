@@ -1,15 +1,11 @@
 use libp2p::{
     autonat,
-    core::upgrade,
-    gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, IdentTopic, MessageAuthenticity},
+    gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, MessageAuthenticity},
     identify::{Identify, IdentifyConfig, IdentifyEvent},
     identity,
     mdns::{Mdns, MdnsConfig, MdnsEvent},
-    mplex, noise,
     ping::{self, Ping, PingEvent},
-    swarm::SwarmBuilder,
-    tcp::TokioTcpConfig,
-    NetworkBehaviour, PeerId, Swarm, Transport,
+    NetworkBehaviour,
 };
 use pea_core::constants::PROTOCOL_VERSION;
 use std::error::Error;
@@ -23,7 +19,7 @@ pub struct MyBehaviour {
     pub autonat: autonat::Behaviour,
 }
 impl MyBehaviour {
-    async fn new(local_key: identity::Keypair) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(local_key: identity::Keypair) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             mdns: Mdns::new(MdnsConfig::default()).await?,
             ping: ping::Behaviour::new(ping::Config::new().with_keep_alive(true)),
@@ -65,34 +61,4 @@ impl From<autonat::Event> for MyBehaviourEvent {
     fn from(v: autonat::Event) -> Self {
         Self::Autonat(v)
     }
-}
-pub async fn swarm() -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
-    let local_key = identity::Keypair::generate_ed25519();
-    let local_peer_id = PeerId::from(local_key.public());
-    let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
-        .into_authentic(&local_key)
-        .expect("Signing libp2p-noise static DH keypair failed.");
-    let transport = TokioTcpConfig::new()
-        .nodelay(true)
-        .upgrade(upgrade::Version::V1)
-        .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-        .multiplex(mplex::MplexConfig::new())
-        .boxed();
-    let mut behaviour = MyBehaviour::new(local_key).await?;
-    for ident_topic in [
-        IdentTopic::new("block"),
-        IdentTopic::new("block sync"),
-        IdentTopic::new("stake"),
-        IdentTopic::new("transaction"),
-        IdentTopic::new("multiaddr"),
-    ]
-    .iter()
-    {
-        behaviour.gossipsub.subscribe(ident_topic)?;
-    }
-    Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
-        .executor(Box::new(|fut| {
-            tokio::spawn(fut);
-        }))
-        .build())
 }

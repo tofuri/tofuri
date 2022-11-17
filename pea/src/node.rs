@@ -6,21 +6,29 @@ use crate::{
 use colored::*;
 use futures::{FutureExt, StreamExt};
 use libp2p::{
-    core::{connection::ConnectedPoint, either::EitherError},
-    gossipsub::{error::GossipsubHandlerError, GossipsubEvent},
+    core::{connection::ConnectedPoint, either::EitherError, upgrade},
+    gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic},
+    identity,
     mdns::MdnsEvent,
+    mplex,
     multiaddr::Protocol,
+    noise,
     ping::Failure,
-    swarm::{ConnectionHandlerUpgrErr, SwarmEvent},
-    Multiaddr, PeerId, Swarm,
+    swarm::{ConnectionHandlerUpgrErr, SwarmBuilder, SwarmEvent},
+    tcp::TokioTcpConfig,
+    Multiaddr, PeerId, Swarm, Transport,
 };
 use log::{debug, error, info};
+use pea_address as address;
 use pea_core::{types, util};
 use pea_db as db;
+use pea_wallet::Wallet;
+use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
 };
+use tempdir::TempDir;
 use tokio::net::TcpListener;
 pub struct Node {
     pub swarm: Swarm<MyBehaviour>,
@@ -32,9 +40,16 @@ pub struct Node {
     pub unknown: HashSet<Multiaddr>,
     pub known: HashSet<Multiaddr>,
     pub connections: HashMap<Multiaddr, PeerId>,
+    pub bind_http_api: String,
 }
 impl Node {
-    pub fn new(swarm: Swarm<MyBehaviour>, blockchain: Blockchain, tps: f64, previous: HashSet<Multiaddr>) -> Node {
+    pub async fn new(tempdb: bool, tempkey: bool, trust: usize, pending: usize, tps: f64, wallet: &str, passphrase: &str, peer: &str, bind_http_api: String) -> Node {
+        let db = Node::db(tempdb);
+        let wallet = Node::wallet(tempkey, wallet, passphrase);
+        info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
+        let blockchain = Blockchain::new(db, wallet.key, trust, pending);
+        let swarm = Node::swarm().await.unwrap();
+        let known = Node::known(&blockchain.db, peer);
         Node {
             swarm,
             blockchain,
@@ -43,9 +58,67 @@ impl Node {
             lag: 0.0,
             tps,
             unknown: HashSet::new(),
-            known: previous,
+            known,
             connections: HashMap::new(),
+            bind_http_api,
         }
+    }
+    fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {
+        let tempdir = TempDir::new("peacash-db").unwrap();
+        let path: &str = match tempdb {
+            true => tempdir.path().to_str().unwrap(),
+            false => "./peacash-db",
+        };
+        db::open(path)
+    }
+    fn wallet(tempkey: bool, wallet: &str, passphrase: &str) -> Wallet {
+        match tempkey {
+            true => Wallet::new(),
+            false => Wallet::import(wallet, passphrase).unwrap(),
+        }
+    }
+    async fn swarm() -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
+        let local_key = identity::Keypair::generate_ed25519();
+        let local_peer_id = PeerId::from(local_key.public());
+        let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
+            .into_authentic(&local_key)
+            .expect("Signing libp2p-noise static DH keypair failed.");
+        let transport = TokioTcpConfig::new()
+            .nodelay(true)
+            .upgrade(upgrade::Version::V1)
+            .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
+            .multiplex(mplex::MplexConfig::new())
+            .boxed();
+        let mut behaviour = MyBehaviour::new(local_key).await?;
+        for ident_topic in [
+            IdentTopic::new("block"),
+            IdentTopic::new("block sync"),
+            IdentTopic::new("stake"),
+            IdentTopic::new("transaction"),
+            IdentTopic::new("multiaddr"),
+        ]
+        .iter()
+        {
+            behaviour.gossipsub.subscribe(ident_topic)?;
+        }
+        Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
+            .executor(Box::new(|fut| {
+                tokio::spawn(fut);
+            }))
+            .build())
+    }
+    fn known(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> HashSet<Multiaddr> {
+        let mut known = HashSet::new();
+        if let Some(multiaddr) = Node::multiaddr_ip_port(peer.parse::<Multiaddr>().unwrap()) {
+            known.insert(multiaddr);
+        }
+        let peers = db::peer::get_all(db);
+        for peer in peers {
+            if let Some(multiaddr) = Node::multiaddr_ip_port(peer.parse::<Multiaddr>().unwrap()) {
+                known.insert(multiaddr);
+            }
+        }
+        known
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
         let hash = util::hash(data);
@@ -87,9 +160,16 @@ impl Node {
             _ => {}
         }
     }
-    pub async fn listen(&mut self, tcp_listener_http_api: Option<TcpListener>) -> Result<(), Box<dyn Error>> {
+    pub async fn start(&mut self, host: &str) {
+        self.blockchain.load();
+        self.swarm.listen_on(host.parse().unwrap()).unwrap();
+        let tcp_listener_http_api = if !self.bind_http_api.is_empty() {
+            Some(TcpListener::bind(&self.bind_http_api).await.unwrap())
+        } else {
+            None
+        };
         if let Some(listener) = tcp_listener_http_api {
-            info!("{} {} http://{}", "Enabled".green(), "HTTP API".cyan(), listener.local_addr()?.to_string().green());
+            info!("{} {} http://{}", "Enabled".green(), "HTTP API".cyan(), listener.local_addr().unwrap().to_string().green());
             loop {
                 tokio::select! {
                     Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {

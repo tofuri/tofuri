@@ -109,8 +109,10 @@ impl Node {
     fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {
             if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                if let Some(peer_id) = node.peer_list.insert(multiaddr.clone(), peer_id) {
-                    let _ = node.swarm.disconnect_peer_id(peer_id);
+                if let Some(previous_peer_id) = node.peer_list.insert(multiaddr.clone(), peer_id) {
+                    if previous_peer_id != peer_id {
+                        let _ = node.swarm.disconnect_peer_id(previous_peer_id);
+                    }
                 }
                 let timestamp = util::timestamp();
                 let bytes = timestamp.to_le_bytes();

@@ -107,12 +107,12 @@ impl Node {
     }
     fn known(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> HashSet<Multiaddr> {
         let mut known = HashSet::new();
-        if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(peer.parse::<Multiaddr>().unwrap()) {
+        if let Some(multiaddr) = multiaddr::filter_ip_port(peer.parse::<Multiaddr>().unwrap()) {
             known.insert(multiaddr);
         }
         let peers = db::peer::get_all(db);
         for peer in peers {
-            if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(peer.parse::<Multiaddr>().unwrap()) {
+            if let Some(multiaddr) = multiaddr::filter_ip_port(peer.parse::<Multiaddr>().unwrap()) {
                 known.insert(multiaddr);
             }
         }
@@ -142,7 +142,7 @@ impl Node {
             }
             SwarmEvent::Behaviour(Event::Mdns(MdnsEvent::Discovered(list))) => {
                 for (_, multiaddr) in list {
-                    if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(multiaddr) {
+                    if let Some(multiaddr) = multiaddr::filter_ip_port(multiaddr) {
                         self.unknown.insert(multiaddr);
                     }
                 }
@@ -194,7 +194,7 @@ impl Node {
             }
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(address) {
+            if let Some(multiaddr) = multiaddr::filter_ip_port(address) {
                 save(multiaddr);
             }
         }
@@ -210,7 +210,7 @@ impl Node {
             let _ = node.swarm.dial(multiaddr);
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = multiaddr::filter_ip_port_multihash(address) {
+            if let Some(multiaddr) = multiaddr::filter_ip_port(address) {
                 save(multiaddr);
             }
         }

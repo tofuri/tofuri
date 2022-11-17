@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::info;
-use pea::{blockchain::Blockchain, p2p};
+use pea::{blockchain::Blockchain, node::Node, p2p};
 use pea_address as address;
 use pea_db as db;
 use pea_logger as logger;
@@ -80,7 +80,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let peers = db::peer::get_all(&blockchain.db);
     info!("{} {}", "Peers".cyan(), format!("{:?}", peers).yellow());
     blockchain.load();
-    let mut swarm = p2p::swarm(blockchain, args.tps).await?;
+    let mut swarm = p2p::swarm().await?;
     swarm.listen_on(args.host.parse()?)?;
     swarm.dial(args.peer.parse::<Multiaddr>()?)?;
     for peer in peers {
@@ -93,6 +93,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     } else {
         None
     };
-    p2p::listen(&mut swarm, tcp_listener_http_api).await?;
+    let mut node = Node::new(swarm, blockchain, args.tps);
+    node.listen(tcp_listener_http_api).await?;
     Ok(())
 }

@@ -1,6 +1,6 @@
-use crate::p2p::MyBehaviour;
+use crate::node::Node;
 use colored::*;
-use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol, Swarm};
+use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol};
 use log::{debug, error};
 use pea_core::{
     constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS_PER_TICK},
@@ -11,67 +11,66 @@ use std::time::{Duration, SystemTime};
 pub async fn next(tps: f64) {
     tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
 }
-pub fn handler(swarm: &mut Swarm<MyBehaviour>) {
-    dial_new_multiaddrs(swarm);
-    let behaviour = swarm.behaviour_mut();
-    behaviour.heartbeats += 1;
-    sync(behaviour);
-    behaviour.message_data_hashes.clear();
-    behaviour.blockchain.sync.handler();
-    forge(behaviour);
-    behaviour.blockchain.pending_blocks_accept();
-    lag(behaviour);
+pub fn handler(node: &mut Node) {
+    dial_new_multiaddrs(node);
+    node.heartbeats += 1;
+    sync(node);
+    node.message_data_hashes.clear();
+    node.blockchain.sync.handler();
+    forge(node);
+    node.blockchain.pending_blocks_accept();
+    lag(node);
 }
-fn dial_new_multiaddrs(swarm: &mut Swarm<MyBehaviour>) {
-    let new_multiaddrs = swarm.behaviour().new_multiaddrs.clone();
+fn dial_new_multiaddrs(node: &mut Node) {
+    let new_multiaddrs = node.new_multiaddrs.clone();
     for mut multiaddr in new_multiaddrs {
-        if swarm.behaviour().peers.contains_key(&multiaddr) {
+        if node.peers.contains_key(&multiaddr) {
             continue;
         }
         multiaddr.push(Protocol::Tcp(9333));
-        let _ = swarm.dial(multiaddr);
+        let _ = node.swarm.dial(multiaddr);
     }
-    swarm.behaviour_mut().new_multiaddrs.clear();
+    node.new_multiaddrs.clear();
 }
-fn forge(behaviour: &mut MyBehaviour) {
-    let states = &behaviour.blockchain.states;
-    if behaviour.blockchain.sync.syncing {
+fn forge(node: &mut Node) {
+    let states = &node.blockchain.states;
+    if node.blockchain.sync.syncing {
         return;
     }
     let timestamp = util::timestamp();
     if let Some(public_key) = states.dynamic.staker(timestamp, states.dynamic.latest_block.timestamp) {
-        if public_key != &behaviour.blockchain.key.public_key_bytes() || timestamp < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+        if public_key != &node.blockchain.key.public_key_bytes() || timestamp < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return;
         }
     } else {
         let mut stake = Stake::new(true, MIN_STAKE, 0);
-        stake.sign(&behaviour.blockchain.key);
-        behaviour.blockchain.set_cold_start_stake(stake);
+        stake.sign(&node.blockchain.key);
+        node.blockchain.set_cold_start_stake(stake);
     }
-    let block = behaviour.blockchain.forge_block().unwrap();
-    if behaviour.gossipsub.all_peers().count() == 0 {
+    let block = node.blockchain.forge_block().unwrap();
+    if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
         return;
     }
     let data = bincode::serialize(&block).unwrap();
-    if behaviour.filter(&data, true) {
+    if node.filter(&data, true) {
         return;
     }
-    if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("block"), data) {
+    if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("block"), data) {
         error!("{}", err);
     }
 }
-fn sync(behaviour: &mut MyBehaviour) {
-    if behaviour.blockchain.states.dynamic.hashes.is_empty() {
+fn sync(node: &mut Node) {
+    if node.blockchain.states.dynamic.hashes.is_empty() {
         return;
     }
-    if behaviour.gossipsub.all_peers().count() == 0 {
-        behaviour.blockchain.sync.index_0 = 0;
+    if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
+        node.blockchain.sync.index_0 = 0;
         return;
     }
     for _ in 0..SYNC_BLOCKS_PER_TICK {
-        for block in behaviour.blockchain.sync_blocks() {
+        for block in node.blockchain.sync_blocks() {
             let data = bincode::serialize(&block).unwrap();
-            if let Err(err) = behaviour.gossipsub.publish(IdentTopic::new("block sync"), data) {
+            if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("block sync"), data) {
                 error!("{}", err);
             }
         }
@@ -85,10 +84,10 @@ fn nanos(tps: f64) -> u64 {
     nanos -= secs * u;
     (u - nanos) as u64
 }
-fn lag(behaviour: &mut MyBehaviour) {
-    let f = 1_f64 / behaviour.tps;
+fn lag(node: &mut Node) {
+    let f = 1_f64 / node.tps;
     let u = (f * 1_000_000_000_f64) as u64;
-    let nanos = u - nanos(behaviour.tps);
-    behaviour.lag = (nanos / 1_000) as f64 / 1_000_f64;
-    debug!("{} {} {}", "Heartbeat".cyan(), behaviour.heartbeats, format!("{:?}", Duration::from_nanos(nanos)).yellow());
+    let nanos = u - nanos(node.tps);
+    node.lag = (nanos / 1_000) as f64 / 1_000_f64;
+    debug!("{} {} {}", "Heartbeat".cyan(), node.heartbeats, format!("{:?}", Duration::from_nanos(nanos)).yellow());
 }

@@ -42,9 +42,9 @@ pub struct Node {
 }
 impl Node {
     pub async fn new(tempdb: bool, tempkey: bool, trust: usize, pending: usize, tps: f64, wallet: &str, passphrase: &str, peer: &str, bind_api: String) -> Node {
-        let db = Node::db(tempdb);
         let wallet = Node::wallet(tempkey, wallet, passphrase);
         info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
+        let db = Node::db(tempdb);
         let blockchain = Blockchain::new(db, wallet.key, trust, pending);
         let swarm = Node::swarm().await.unwrap();
         let known = Node::known(&blockchain.db, peer);

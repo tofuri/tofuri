@@ -21,12 +21,6 @@ pub struct Args {
     /// Pending blocks limit
     #[clap(long, value_parser, default_value = "10")]
     pub pending: usize,
-    /// Dial known peers delay in seconds
-    #[clap(long, value_parser, default_value = "60")]
-    pub dial_known: usize,
-    /// Dial unknown peers delay in seconds
-    #[clap(long, value_parser, default_value = "60")]
-    pub dial_unknown: usize,
     /// Ticks per second
     #[clap(long, value_parser, default_value = "5")]
     pub tps: f64,
@@ -58,27 +52,12 @@ async fn main() {
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
     info!("{} {}", "--pending".cyan(), args.pending.to_string().magenta());
-    info!("{} {}", "--dial-known".cyan(), args.dial_known.to_string().magenta());
-    info!("{} {}", "--dial-unknown".cyan(), args.dial_unknown.to_string().magenta());
     info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
     info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
     info!("{} {}", "--host".cyan(), args.host.magenta());
-    let mut node = Node::new(
-        args.tempdb,
-        args.tempkey,
-        args.trust,
-        args.pending,
-        args.dial_known,
-        args.dial_unknown,
-        args.tps,
-        &args.wallet,
-        &args.passphrase,
-        &args.peer,
-        args.bind_api,
-    )
-    .await;
+    let mut node = Node::new(args.tempdb, args.tempkey, args.trust, args.pending, args.tps, &args.wallet, &args.passphrase, &args.peer, args.bind_api).await;
     node.start(&args.host).await;
 }

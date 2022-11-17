@@ -9,6 +9,7 @@ use libp2p::{
     core::{connection::ConnectedPoint, either::EitherError},
     gossipsub::{error::GossipsubHandlerError, GossipsubEvent},
     mdns::MdnsEvent,
+    multiaddr::Protocol,
     ping::Failure,
     swarm::{ConnectionHandlerUpgrErr, SwarmEvent},
     Multiaddr, PeerId, Swarm,
@@ -144,9 +145,27 @@ impl Node {
         }
     }
     pub fn multiaddr_ip(multiaddr: Multiaddr) -> Option<Multiaddr> {
-        match multiaddr.iter().next() {
-            Some(ip) => Some(ip.to_string().parse().unwrap()),
-            None => None,
-        }
+        let components = multiaddr.iter().collect::<Vec<_>>();
+        let mut multiaddr: Multiaddr = "".parse().unwrap();
+        match components.get(0) {
+            Some(Protocol::Ip4(ip)) => multiaddr.push(Protocol::Ip4(*ip)),
+            Some(Protocol::Ip6(ip)) => multiaddr.push(Protocol::Ip6(*ip)),
+            _ => return None,
+        };
+        Some(multiaddr)
+    }
+    pub fn multiaddr_ip_port(multiaddr: Multiaddr) -> Option<Multiaddr> {
+        let components = multiaddr.iter().collect::<Vec<_>>();
+        let mut multiaddr: Multiaddr = "".parse().unwrap();
+        match components.get(0) {
+            Some(Protocol::Ip4(ip)) => multiaddr.push(Protocol::Ip4(*ip)),
+            Some(Protocol::Ip6(ip)) => multiaddr.push(Protocol::Ip6(*ip)),
+            _ => return None,
+        };
+        match components.get(1) {
+            Some(Protocol::Tcp(port)) => multiaddr.push(Protocol::Tcp(*port)),
+            _ => return None,
+        };
+        Some(multiaddr)
     }
 }

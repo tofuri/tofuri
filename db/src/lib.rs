@@ -174,7 +174,13 @@ pub mod tree {
         }
         let previous_hash = [0; 32];
         let (_, (vec, timestamp)) = hashes.iter().find(|(&x, _)| x == previous_hash).unwrap();
-        fn recurse(tree: &mut Tree, hashes: &HashMap<types::Hash, (Vec<types::Hash>, u32)>, previous_hash: types::Hash, vec: &Vec<types::Hash>, timestamp: u32) {
+        fn recurse(
+            tree: &mut Tree,
+            hashes: &HashMap<types::Hash, (Vec<types::Hash>, u32)>,
+            previous_hash: types::Hash,
+            vec: &Vec<types::Hash>,
+            timestamp: u32,
+        ) {
             for hash in vec {
                 tree.insert(*hash, previous_hash, timestamp);
                 if let Some((vec, timestamp)) = hashes.get(hash) {

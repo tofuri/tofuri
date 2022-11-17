@@ -121,7 +121,11 @@ impl Blockchain {
         if self.pending_transactions.iter().any(|x| x.signature == transaction.signature) {
             return Err("transaction already pending".into());
         }
-        if let Some(index) = self.pending_transactions.iter().position(|s| s.public_key_input == transaction.public_key_input) {
+        if let Some(index) = self
+            .pending_transactions
+            .iter()
+            .position(|s| s.public_key_input == transaction.public_key_input)
+        {
             if transaction.fee <= self.pending_transactions[index].fee {
                 return Err("transaction fee too low to replace previous pending transaction".into());
             }
@@ -171,13 +175,23 @@ impl Blockchain {
         }
         block.sign(&self.key);
         self.pending_blocks_push(block.clone())?;
-        info!("{} {} {}", "Forged".magenta(), self.tree.height(&block.previous_hash).to_string().yellow(), hex::encode(block.hash()));
+        info!(
+            "{} {} {}",
+            "Forged".magenta(),
+            self.tree.height(&block.previous_hash).to_string().yellow(),
+            hex::encode(block.hash())
+        );
         Ok(block)
     }
     pub fn pending_blocks_accept(&mut self) {
         for block in self.pending_blocks.clone() {
             let hash = self.block_accept(&block);
-            info!("{} {} {}", "Accept".green(), self.tree.height(&block.previous_hash).to_string().yellow(), hex::encode(hash));
+            info!(
+                "{} {} {}",
+                "Accept".green(),
+                self.tree.height(&block.previous_hash).to_string().yellow(),
+                hex::encode(hash)
+            );
         }
     }
     pub fn block_accept(&mut self, block: &Block) -> types::Hash {
@@ -187,7 +201,8 @@ impl Blockchain {
             info!("{}", "Fork".cyan());
         }
         self.tree.sort_branches();
-        self.states.update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
+        self.states
+            .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
         if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
             self.pending_blocks.remove(index);
         }
@@ -202,7 +217,15 @@ impl Blockchain {
         let start = Instant::now();
         db::tree::reload(&mut self.tree, &self.db);
         info!("{} {}", "Tree load".cyan(), format!("{:?}", start.elapsed()).yellow());
-        info!("{} {}", "Tree height".cyan(), if let Some(main) = self.tree.main() { main.1.to_string().yellow() } else { "0".red() });
+        info!(
+            "{} {}",
+            "Tree height".cyan(),
+            if let Some(main) = self.tree.main() {
+                main.1.to_string().yellow()
+            } else {
+                "0".red()
+            }
+        );
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(self.trust_fork_after_blocks);
         self.states.trusted.load(&self.db, &hashes_trusted);
@@ -212,7 +235,11 @@ impl Blockchain {
             "{} {}",
             "States dynamic stakers".cyan(),
             if let Some(staker) = self.states.dynamic.stakers.get(0) {
-                format!("{} {}", self.states.dynamic.stakers.len().to_string().yellow(), address::public::encode(staker).green())
+                format!(
+                    "{} {}",
+                    self.states.dynamic.stakers.len().to_string().yellow(),
+                    address::public::encode(staker).green()
+                )
             } else {
                 "0".red().to_string()
             }
@@ -221,7 +248,11 @@ impl Blockchain {
             "{} {}",
             "States trusted stakers".cyan(),
             if let Some(staker) = self.states.trusted.stakers.get(0) {
-                format!("{} {}", self.states.trusted.stakers.len().to_string().yellow(), address::public::encode(staker).green())
+                format!(
+                    "{} {}",
+                    self.states.trusted.stakers.len().to_string().yellow(),
+                    address::public::encode(staker).green()
+                )
             } else {
                 "0".red().to_string()
             }

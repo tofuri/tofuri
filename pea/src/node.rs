@@ -42,7 +42,18 @@ pub struct Node {
     pub host: String,
 }
 impl Node {
-    pub async fn new(tempdb: bool, tempkey: bool, trust: usize, pending: usize, tps: f64, wallet: &str, passphrase: &str, peer: &str, bind_api: String, host: String) -> Node {
+    pub async fn new(
+        tempdb: bool,
+        tempkey: bool,
+        trust: usize,
+        pending: usize,
+        tps: f64,
+        wallet: &str,
+        passphrase: &str,
+        peer: &str,
+        bind_api: String,
+        host: String,
+    ) -> Node {
         let wallet = Node::wallet(tempkey, wallet, passphrase);
         info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
         let db = Node::db(tempdb);
@@ -132,7 +143,13 @@ impl Node {
     }
     fn handle_event(
         &mut self,
-        event: SwarmEvent<Event, EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>>,
+        event: SwarmEvent<
+            Event,
+            EitherError<
+                EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>,
+                ConnectionHandlerUpgrErr<std::io::Error>,
+            >,
+        >,
     ) {
         debug!("{:?}", event);
         match event {
@@ -165,7 +182,12 @@ impl Node {
         self.swarm.listen_on(self.host.parse().unwrap()).unwrap();
         if !self.bind_api.is_empty() {
             let listener = TcpListener::bind(&self.bind_api).await.unwrap();
-            info!("{} {} http://{}", "API".cyan(), "enabled".green(), listener.local_addr().unwrap().to_string().magenta());
+            info!(
+                "{} {} http://{}",
+                "API".cyan(),
+                "enabled".green(),
+                listener.local_addr().unwrap().to_string().magenta()
+            );
             loop {
                 tokio::select! {
                     Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {

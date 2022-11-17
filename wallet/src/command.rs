@@ -11,12 +11,26 @@ use pea_stake::Stake;
 use pea_transaction::Transaction;
 use std::process;
 pub async fn main(wallet: &Wallet, api: &str) {
-    match Select::new(">>", vec!["Search", "Address", "Secret key", "Data", "Balance", "Height", "Transaction", "Stake", "Validator", "Exit"])
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }) {
+    match Select::new(
+        ">>",
+        vec![
+            "Search",
+            "Address",
+            "Secret key",
+            "Data",
+            "Balance",
+            "Height",
+            "Transaction",
+            "Stake",
+            "Validator",
+            "Exit",
+        ],
+    )
+    .prompt()
+    .unwrap_or_else(|err| {
+        println!("{}", err.to_string().red());
+        process::exit(0)
+    }) {
         "Search" => search(api).await,
         "Address" => address(wallet),
         "Secret key" => key(wallet),
@@ -255,7 +269,12 @@ fn key(wallet: &Wallet) {
     }
 }
 fn data(wallet: &Wallet) {
-    println!("{}{}{}", hex::encode(&wallet.salt).red(), hex::encode(&wallet.nonce).red(), hex::encode(&wallet.ciphertext).red());
+    println!(
+        "{}{}{}",
+        hex::encode(&wallet.salt).red(),
+        hex::encode(&wallet.nonce).red(),
+        hex::encode(&wallet.ciphertext).red()
+    );
 }
 fn exit() {
     process::exit(0);

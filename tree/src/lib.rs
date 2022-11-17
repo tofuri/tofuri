@@ -126,8 +126,16 @@ impl fmt::Debug for Tree {
             f,
             "{:?}",
             Tree {
-                branches: self.branches.iter().map(|(hash, height, timestamp)| (hex::encode(hash), *height, *timestamp)).collect(),
-                hashes: self.hashes.iter().map(|(hash, previous_hash)| (hex::encode(hash), hex::encode(previous_hash))).collect(),
+                branches: self
+                    .branches
+                    .iter()
+                    .map(|(hash, height, timestamp)| (hex::encode(hash), *height, *timestamp))
+                    .collect(),
+                hashes: self
+                    .hashes
+                    .iter()
+                    .map(|(hash, previous_hash)| (hex::encode(hash), hex::encode(previous_hash)))
+                    .collect(),
             }
         )
     }

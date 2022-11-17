@@ -203,7 +203,15 @@ Content-Type: application/json
     Ok(())
 }
 async fn handler_get_json_balance_staked(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
-    let public_key = address::public::decode(BALANCE_STAKED.find(first).ok_or("GET BALANCE_STAKED 1")?.as_str().trim().get(16..).ok_or("GET BALANCE_STAKED 2")?)?;
+    let public_key = address::public::decode(
+        BALANCE_STAKED
+            .find(first)
+            .ok_or("GET BALANCE_STAKED 1")?
+            .as_str()
+            .trim()
+            .get(16..)
+            .ok_or("GET BALANCE_STAKED 2")?,
+    )?;
     let balance = node.blockchain.states.dynamic.balance_staked(&public_key);
     stream
         .write_all(
@@ -302,7 +310,15 @@ Content-Type: application/json
     Ok(())
 }
 async fn handler_get_json_block_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
-    let hash = hex::decode(BLOCK_BY_HASH.find(first).ok_or("GET BLOCK_BY_HASH 1")?.as_str().trim().get(7..).ok_or("GET BLOCK_BY_HASH 2")?)?;
+    let hash = hex::decode(
+        BLOCK_BY_HASH
+            .find(first)
+            .ok_or("GET BLOCK_BY_HASH 1")?
+            .as_str()
+            .trim()
+            .get(7..)
+            .ok_or("GET BLOCK_BY_HASH 2")?,
+    )?;
     let block = db::block::get(&node.blockchain.db, &hash)?;
     stream
         .write_all(
@@ -364,7 +380,15 @@ Content-Type: application/json
     Ok(())
 }
 async fn handler_get_json_stake_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
-    let hash = hex::decode(STAKE_BY_HASH.find(first).ok_or("GET STAKE_BY_HASH 1")?.as_str().trim().get(7..).ok_or("GET STAKE_BY_HASH 2")?)?;
+    let hash = hex::decode(
+        STAKE_BY_HASH
+            .find(first)
+            .ok_or("GET STAKE_BY_HASH 1")?
+            .as_str()
+            .trim()
+            .get(7..)
+            .ok_or("GET STAKE_BY_HASH 2")?,
+    )?;
     let stake = db::stake::get(&node.blockchain.db, &hash)?;
     stream
         .write_all(
@@ -410,7 +434,12 @@ Content-Type: application/json
 }
 async fn handler_post_json_transaction(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
     let compressed: transaction::Compressed = bincode::deserialize(&hex::decode(
-        buffer.lines().nth(5).ok_or("POST TRANSACTION 1")??.get(0..*TRANSACTION_SERIALIZED).ok_or("POST TRANSACTION 2")?,
+        buffer
+            .lines()
+            .nth(5)
+            .ok_or("POST TRANSACTION 1")??
+            .get(0..*TRANSACTION_SERIALIZED)
+            .ok_or("POST TRANSACTION 2")?,
     )?)?;
     let status = match node.blockchain.pending_transactions_push(Transaction {
         public_key_input: compressed.public_key_input,
@@ -443,7 +472,9 @@ Content-Type: application/json
     Ok(())
 }
 async fn handler_post_json_stake(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
-    let compressed: stake::Compressed = bincode::deserialize(&hex::decode(buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?)?)?;
+    let compressed: stake::Compressed = bincode::deserialize(&hex::decode(
+        buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
+    )?)?;
     let status = match node.blockchain.pending_stakes_push(Stake {
         public_key: compressed.public_key,
         amount: pea_amount::from_bytes(&compressed.amount),

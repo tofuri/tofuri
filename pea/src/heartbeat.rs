@@ -42,7 +42,12 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
         if node.connections.contains_key(&multiaddr) {
             continue;
         }
-        info!("{} {} {}", "Dial".cyan(), if known { "known".green() } else { "unknown".red() }, multiaddr.to_string().magenta());
+        info!(
+            "{} {} {}",
+            "Dial".cyan(),
+            if known { "known".green() } else { "unknown".red() },
+            multiaddr.to_string().magenta()
+        );
         if !multiaddr::has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }
@@ -119,5 +124,10 @@ fn lag(node: &mut Node) {
     let u = (f * 1_000_000_000_f64) as u64;
     let nanos = u - nanos(node.tps);
     node.lag = (nanos / 1_000) as f64 / 1_000_f64;
-    debug!("{} {} {}", "Heartbeat".cyan(), node.heartbeats, format!("{:?}", Duration::from_nanos(nanos)).yellow());
+    debug!(
+        "{} {} {}",
+        "Heartbeat".cyan(),
+        node.heartbeats,
+        format!("{:?}", Duration::from_nanos(nanos)).yellow()
+    );
 }

@@ -38,6 +38,11 @@ fn block(node: &mut Node, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
     let block: Block = bincode::deserialize(bytes)?;
     node.blockchain.pending_blocks_push(block.clone())?;
     let hash = node.blockchain.block_accept(&block);
-    info!("{} {} {}", "Accept".green(), node.blockchain.tree.height(&block.previous_hash).to_string().yellow(), hex::encode(hash));
+    info!(
+        "{} {} {}",
+        "Accept".green(),
+        node.blockchain.tree.height(&block.previous_hash).to_string().yellow(),
+        hex::encode(hash)
+    );
     Ok(())
 }

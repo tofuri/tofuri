@@ -158,7 +158,9 @@ impl PaymentProcessor {
         let mut previous_hash = latest_block.hash;
         loop {
             let block = get::block(&self.api, &previous_hash).await?;
-            if block.previous_hash == "0000000000000000000000000000000000000000000000000000000000000000" || block.timestamp < util::timestamp() - self.expires_after_secs {
+            if block.previous_hash == "0000000000000000000000000000000000000000000000000000000000000000"
+                || block.timestamp < util::timestamp() - self.expires_after_secs
+            {
                 break;
             }
             previous_hash = block.previous_hash.clone();
@@ -176,7 +178,12 @@ impl PaymentProcessor {
         tokio::time::sleep(Duration::from_nanos(nanos)).await
     }
     pub async fn listen(&mut self, listener: TcpListener, tps: f64) -> Result<(), Box<dyn Error>> {
-        info!("{} {} http://{}", "Enabled".green(), "HTTP API".cyan(), listener.local_addr()?.to_string().green());
+        info!(
+            "{} {} http://{}",
+            "Enabled".green(),
+            "HTTP API".cyan(),
+            listener.local_addr()?.to_string().green()
+        );
         loop {
             tokio::select! {
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {

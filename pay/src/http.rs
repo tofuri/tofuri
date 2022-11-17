@@ -108,7 +108,14 @@ Content-Type: application/json
     Ok(())
 }
 async fn handler_get_charge_new(stream: &mut tokio::net::TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
-    let amount: u128 = CHARGE_NEW.find(first).ok_or("GET CHARGE 1")?.as_str().trim().get(12..).ok_or("GET CHARGE 2")?.parse()?;
+    let amount: u128 = CHARGE_NEW
+        .find(first)
+        .ok_or("GET CHARGE 1")?
+        .as_str()
+        .trim()
+        .get(12..)
+        .ok_or("GET CHARGE 2")?
+        .parse()?;
     let (hash, payment) = payment_processor.charge(amount);
     stream
         .write_all(

@@ -23,11 +23,10 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
             node.blockchain.pending_transactions_push(transaction)?;
         }
         "multiaddr" => {
-            let peer_list: Vec<Multiaddr> = bincode::deserialize(&message.data)?;
-            for multiaddr in peer_list {
+            let vec: Vec<Multiaddr> = bincode::deserialize(&message.data)?;
+            for multiaddr in vec {
                 if let Some(multiaddr) = Node::multiaddr_ip(multiaddr) {
-                    node.new_multiaddrs.insert(multiaddr.clone());
-                    info!("{} {} {}", "Multiaddr".cyan(), node.new_multiaddrs.len().to_string().yellow(), multiaddr.to_string().magenta());
+                    node.received.insert(multiaddr.clone());
                 }
             }
         }

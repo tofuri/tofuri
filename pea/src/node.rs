@@ -28,8 +28,8 @@ pub struct Node {
     pub heartbeats: usize,
     pub lag: f64,
     pub tps: f64,
-    pub new_multiaddrs: HashSet<Multiaddr>,
-    pub peer_list: HashMap<Multiaddr, PeerId>,
+    pub received: HashSet<Multiaddr>,
+    pub connections: HashMap<Multiaddr, PeerId>,
 }
 impl Node {
     pub fn new(swarm: Swarm<MyBehaviour>, blockchain: Blockchain, tps: f64) -> Node {
@@ -40,8 +40,8 @@ impl Node {
             heartbeats: 0,
             lag: 0.0,
             tps,
-            new_multiaddrs: HashSet::new(),
-            peer_list: HashMap::new(),
+            received: HashSet::new(),
+            connections: HashMap::new(),
         }
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
@@ -69,7 +69,7 @@ impl Node {
             SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(MdnsEvent::Discovered(list))) => {
                 for (_, multiaddr) in list {
                     if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                        self.new_multiaddrs.insert(multiaddr);
+                        self.received.insert(multiaddr);
                     }
                 }
             }
@@ -109,7 +109,7 @@ impl Node {
     fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {
             if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                if let Some(previous_peer_id) = node.peer_list.insert(multiaddr.clone(), peer_id) {
+                if let Some(previous_peer_id) = node.connections.insert(multiaddr.clone(), peer_id) {
                     if previous_peer_id != peer_id {
                         let _ = node.swarm.disconnect_peer_id(previous_peer_id);
                     }
@@ -129,7 +129,7 @@ impl Node {
     fn connection_closed(node: &mut Node, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {
             if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                node.peer_list.remove(&multiaddr);
+                node.connections.remove(&multiaddr);
                 let _ = node.swarm.dial(multiaddr);
             }
         };

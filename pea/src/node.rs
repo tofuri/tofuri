@@ -58,6 +58,7 @@ impl Node {
         &mut self,
         event: SwarmEvent<MyBehaviourEvent, EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>>,
     ) {
+        debug!("{:?}", event);
         match event {
             SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
                 Self::connection_established(self, peer_id, endpoint);

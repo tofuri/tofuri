@@ -29,6 +29,7 @@ impl MyBehaviour {
         })
     }
 }
+#[derive(Debug)]
 pub enum MyBehaviourEvent {
     Gossipsub(GossipsubEvent),
     Mdns(MdnsEvent),

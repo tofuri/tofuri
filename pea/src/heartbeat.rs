@@ -40,12 +40,8 @@ fn share_peer_list(node: &mut Node) {
     if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
         return;
     }
-    let peer_list = node.peer_list.clone();
-    let peer_list: Vec<&Multiaddr> = peer_list.keys().collect();
-    let data = bincode::serialize(&peer_list).unwrap();
-    if node.filter(&data, true) {
-        return;
-    }
+    let vec: Vec<&Multiaddr> = node.peer_list.keys().collect();
+    let data = bincode::serialize(&vec).unwrap();
     if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("multiaddr"), data) {
         error!("{}", err);
     }

@@ -48,8 +48,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
             continue;
         }
         info!(
-            "{} {} {}",
-            "Dial".cyan(),
+            "Dialing {} peer {}",
             if known { "known".green() } else { "unknown".red() },
             multiaddr.to_string().magenta()
         );

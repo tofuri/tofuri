@@ -1,7 +1,7 @@
 use crate::{state::Dynamic, states::States, sync::Sync};
 use colored::*;
 use ed25519_dalek::PublicKey;
-use log::{debug, info};
+use log::{debug, info, warn};
 use pea_block::Block;
 use pea_core::util;
 use pea_core::{
@@ -197,7 +197,7 @@ impl Blockchain {
         db::block::put(block, &self.db).unwrap();
         let hash = block.hash();
         if self.tree.insert(hash, block.previous_hash, block.timestamp).unwrap() {
-            info!("{}", "Fork".cyan());
+            warn!("{}", "Fork");
         }
         self.tree.sort_branches();
         self.states

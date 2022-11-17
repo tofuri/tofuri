@@ -55,7 +55,7 @@ impl Node {
         host: String,
     ) -> Node {
         let wallet = Node::wallet(tempkey, wallet, passphrase);
-        info!("PubKey is {}.", address::public::encode(&wallet.key.public_key_bytes()).green());
+        info!("PubKey is {}", address::public::encode(&wallet.key.public_key_bytes()).green());
         let db = Node::db(tempdb);
         let blockchain = Blockchain::new(db, wallet.key, trust, pending);
         let swarm = Node::swarm().await.unwrap();
@@ -180,7 +180,7 @@ impl Node {
     pub async fn start(&mut self) {
         self.blockchain.load();
         info!(
-            "Blockchain height is {}.",
+            "Blockchain height is {}",
             if let Some(main) = self.blockchain.tree.main() {
                 main.1.to_string().yellow()
             } else {
@@ -189,11 +189,11 @@ impl Node {
         );
         let multiaddr: Multiaddr = self.host.parse().unwrap();
         self.swarm.listen_on(multiaddr.clone()).unwrap();
-        info!("Swarm is listening on {}.", multiaddr.to_string().magenta());
+        info!("Swarm is listening on {}", multiaddr.to_string().magenta());
         if !self.bind_api.is_empty() {
             let listener = TcpListener::bind(&self.bind_api).await.unwrap();
             info!(
-                "API is listening on {}{}.",
+                "API is listening on {}{}",
                 "http://".cyan(),
                 listener.local_addr().unwrap().to_string().magenta()
             );
@@ -207,7 +207,7 @@ impl Node {
                 }
             }
         } else {
-            info!("API is {}.", "disabled".red());
+            info!("API is {}", "disabled".red());
             loop {
                 tokio::select! {
                     _ = heartbeat::next(self.tps).fuse() => heartbeat::handler(self),

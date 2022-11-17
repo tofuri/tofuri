@@ -215,12 +215,12 @@ impl Blockchain {
     pub fn load(&mut self) {
         let start = Instant::now();
         db::tree::reload(&mut self.tree, &self.db);
-        info!("Loaded tree in {}.", format!("{:?}", start.elapsed()).yellow());
+        info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(self.trust_fork_after_blocks);
         self.states.trusted.load(&self.db, &hashes_trusted);
         self.states.dynamic = Dynamic::from(&self.db, &hashes_dynamic, &self.states.trusted);
-        info!("Loaded states in {}.", format!("{:?}", start.elapsed()).yellow());
+        info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
     }
     pub fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
         if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {

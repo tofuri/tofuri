@@ -19,11 +19,11 @@ pub fn handler(node: &mut Node) {
         dial_known(node);
     }
     node.heartbeats += 1;
-    if delay(node, 60) {
-        dial_unknown(node);
-    }
     if delay(node, 10) {
         share(node);
+    }
+    if delay(node, 5) {
+        dial_unknown(node);
     }
     if delay(node, 2) {
         node.message_data_hashes.clear();

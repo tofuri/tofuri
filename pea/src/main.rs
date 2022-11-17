@@ -58,6 +58,18 @@ async fn main() {
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
     info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
     info!("{} {}", "--host".cyan(), args.host.magenta());
-    let mut node = Node::new(args.tempdb, args.tempkey, args.trust, args.pending, args.tps, &args.wallet, &args.passphrase, &args.peer, args.bind_api).await;
-    node.start(&args.host).await;
+    let mut node = Node::new(
+        args.tempdb,
+        args.tempkey,
+        args.trust,
+        args.pending,
+        args.tps,
+        &args.wallet,
+        &args.passphrase,
+        &args.peer,
+        args.bind_api,
+        args.host,
+    )
+    .await;
+    node.start().await;
 }

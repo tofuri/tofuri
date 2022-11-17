@@ -39,9 +39,10 @@ pub struct Node {
     pub known: HashSet<Multiaddr>,
     pub connections: HashMap<Multiaddr, PeerId>,
     pub bind_api: String,
+    pub host: String,
 }
 impl Node {
-    pub async fn new(tempdb: bool, tempkey: bool, trust: usize, pending: usize, tps: f64, wallet: &str, passphrase: &str, peer: &str, bind_api: String) -> Node {
+    pub async fn new(tempdb: bool, tempkey: bool, trust: usize, pending: usize, tps: f64, wallet: &str, passphrase: &str, peer: &str, bind_api: String, host: String) -> Node {
         let wallet = Node::wallet(tempkey, wallet, passphrase);
         info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
         let db = Node::db(tempdb);
@@ -59,6 +60,7 @@ impl Node {
             known,
             connections: HashMap::new(),
             bind_api,
+            host,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {
@@ -158,9 +160,9 @@ impl Node {
             _ => {}
         }
     }
-    pub async fn start(&mut self, host: &str) {
+    pub async fn start(&mut self) {
         self.blockchain.load();
-        self.swarm.listen_on(host.parse().unwrap()).unwrap();
+        self.swarm.listen_on(self.host.parse().unwrap()).unwrap();
         if !self.bind_api.is_empty() {
             let listener = TcpListener::bind(&self.bind_api).await.unwrap();
             info!("{} {} http://{}", "API".cyan(), "enabled".green(), listener.local_addr().unwrap().to_string().magenta());

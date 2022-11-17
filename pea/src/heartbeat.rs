@@ -63,6 +63,9 @@ fn share(node: &mut Node) {
     }
     let vec: Vec<&Multiaddr> = node.connections.keys().collect();
     let data = bincode::serialize(&vec).unwrap();
+    if node.filter(&data, true) {
+        return;
+    }
     if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("multiaddr"), data) {
         error!("{}", err);
     }

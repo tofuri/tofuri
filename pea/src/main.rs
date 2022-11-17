@@ -89,9 +89,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "Peers".cyan(), format!("{:?}", peers).yellow());
     let mut set = HashSet::new();
     for peer in peers {
-        set.insert(peer.parse::<Multiaddr>()?);
+        let multiaddr = peer.parse::<Multiaddr>()?;
+        if let Some(multiaddr) = Node::multiaddr_ip_port(multiaddr) {
+            set.insert(multiaddr);
+        }
     }
-    set.insert(args.peer.parse::<Multiaddr>()?);
+    let multiaddr = args.peer.parse::<Multiaddr>()?;
+    if let Some(multiaddr) = Node::multiaddr_ip_port(multiaddr) {
+        set.insert(multiaddr);
+    }
     let mut node = Node::new(swarm, blockchain, args.tps, set);
     node.listen(tcp_listener_http_api).await?;
     Ok(())

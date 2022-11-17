@@ -43,7 +43,9 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
             continue;
         }
         info!("{} {} {}", "Dial".cyan(), if known { "known".green() } else { "unknown".red() }, multiaddr.to_string().magenta());
-        multiaddr.push(Protocol::Tcp(9333));
+        if !Node::multiaddr_has_port(&multiaddr) {
+            multiaddr.push(Protocol::Tcp(9333));
+        }
         let _ = node.swarm.dial(multiaddr);
     }
 }

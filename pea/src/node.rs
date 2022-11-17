@@ -71,7 +71,7 @@ impl Node {
             }
             SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(MdnsEvent::Discovered(list))) => {
                 for (_, multiaddr) in list {
-                    if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
+                    if let Some(multiaddr) = Self::multiaddr_ip_port(multiaddr) {
                         self.unknown.insert(multiaddr);
                     }
                 }
@@ -111,37 +111,39 @@ impl Node {
     }
     fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {
-            if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                if let Some(previous_peer_id) = node.connections.insert(multiaddr.clone(), peer_id) {
-                    if previous_peer_id != peer_id {
-                        let _ = node.swarm.disconnect_peer_id(previous_peer_id);
-                    }
+            node.known.insert(multiaddr.clone());
+            let _ = db::peer::put(&multiaddr.to_string(), &[], &node.blockchain.db);
+            if let Some(previous_peer_id) = node.connections.insert(multiaddr, peer_id) {
+                if previous_peer_id != peer_id {
+                    let _ = node.swarm.disconnect_peer_id(previous_peer_id);
                 }
-                let timestamp = util::timestamp();
-                let bytes = timestamp.to_le_bytes();
-                let _ = db::peer::put(&multiaddr.to_string(), &bytes, &node.blockchain.db);
-                node.known.insert(multiaddr);
             }
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            save(address);
+            if let Some(multiaddr) = Node::multiaddr_ip_port(address) {
+                save(multiaddr);
+            }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            save(send_back_addr);
+            if let Some(multiaddr) = Node::multiaddr_ip(send_back_addr) {
+                save(multiaddr);
+            }
         }
     }
     fn connection_closed(node: &mut Node, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {
-            if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                node.connections.remove(&multiaddr);
-                let _ = node.swarm.dial(multiaddr);
-            }
+            node.connections.remove(&multiaddr);
+            let _ = node.swarm.dial(multiaddr);
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            save(address);
+            if let Some(multiaddr) = Node::multiaddr_ip_port(address) {
+                save(multiaddr);
+            }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            save(send_back_addr);
+            if let Some(multiaddr) = Node::multiaddr_ip(send_back_addr) {
+                save(multiaddr);
+            }
         }
     }
     pub fn multiaddr_ip(multiaddr: Multiaddr) -> Option<Multiaddr> {
@@ -163,9 +165,21 @@ impl Node {
             _ => return None,
         };
         match components.get(1) {
-            Some(Protocol::Tcp(port)) => multiaddr.push(Protocol::Tcp(*port)),
-            _ => return None,
+            Some(Protocol::Tcp(port)) => {
+                if port == &9333_u16 {
+                    return Some(multiaddr);
+                }
+                multiaddr.push(Protocol::Tcp(*port))
+            }
+            _ => return Some(multiaddr),
         };
         Some(multiaddr)
+    }
+    pub fn multiaddr_has_port(multiaddr: &Multiaddr) -> bool {
+        let components = multiaddr.iter().collect::<Vec<_>>();
+        match components.get(1) {
+            Some(Protocol::Tcp(_)) => true,
+            _ => false,
+        }
     }
 }

@@ -25,8 +25,8 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
         "multiaddr" => {
             let vec: Vec<Multiaddr> = bincode::deserialize(&message.data)?;
             for multiaddr in vec {
-                if let Some(multiaddr) = Node::multiaddr_ip(multiaddr) {
-                    node.unknown.insert(multiaddr.clone());
+                if let Some(multiaddr) = Node::multiaddr_ip_port(multiaddr) {
+                    node.unknown.insert(multiaddr);
                 }
             }
         }

@@ -24,14 +24,14 @@ pub fn handler(node: &mut Node) {
     lag(node);
 }
 fn dial_known(node: &mut Node) {
-    if node.heartbeats % (node.tps * 10_f64) as usize != 0 {
+    if node.heartbeats % (node.tps * 60_f64) as usize != 0 {
         return;
     }
     let vec = node.known.clone().into_iter().collect();
     dial(node, vec, true);
 }
 fn dial_unknown(node: &mut Node) {
-    if node.heartbeats % (node.tps * 10_f64) as usize != 0 {
+    if node.heartbeats % (node.tps * 60_f64) as usize != 0 {
         return;
     }
     let vec = node.unknown.drain().collect();
@@ -50,7 +50,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     }
 }
 fn share(node: &mut Node) {
-    if node.heartbeats % (node.tps * 10_f64) as usize != 0 {
+    if node.heartbeats % (node.tps * 60_f64) as usize != 0 {
         return;
     }
     if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {

@@ -22,7 +22,7 @@ pub async fn handler(mut stream: tokio::net::TcpStream, payment_processor: &mut 
     let first = buffer.lines().next().ok_or("http request first line")??;
     info!(
         "{} {} {}",
-        "HTTP API".cyan(),
+        "API".cyan(),
         first.green(),
         match stream.peer_addr() {
             Ok(addr) => addr.to_string().yellow(),

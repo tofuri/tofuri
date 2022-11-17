@@ -178,12 +178,7 @@ impl PaymentProcessor {
         tokio::time::sleep(Duration::from_nanos(nanos)).await
     }
     pub async fn listen(&mut self, listener: TcpListener, tps: f64) -> Result<(), Box<dyn Error>> {
-        info!(
-            "{} {} http://{}",
-            "Enabled".green(),
-            "HTTP API".cyan(),
-            listener.local_addr()?.to_string().green()
-        );
+        info!("{} {} http://{}", "enabled".green(), "API".cyan(), listener.local_addr()?.to_string().green());
         loop {
             tokio::select! {
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {

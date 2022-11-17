@@ -6,10 +6,11 @@ use crate::{
 use colored::*;
 use futures::{FutureExt, StreamExt};
 use libp2p::{
-    core::connection::ConnectedPoint,
-    gossipsub::{GossipsubEvent, IdentTopic},
+    core::{connection::ConnectedPoint, either::EitherError},
+    gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic},
     mdns::MdnsEvent,
-    swarm::SwarmEvent,
+    ping::Failure,
+    swarm::{ConnectionHandlerUpgrErr, SwarmEvent},
     Multiaddr, PeerId, Swarm,
 };
 use log::{debug, error, info};
@@ -53,6 +54,35 @@ impl Node {
         }
         false
     }
+    fn handle_event(
+        &mut self,
+        event: SwarmEvent<MyBehaviourEvent, EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>>,
+    ) {
+        match event {
+            SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
+                Self::connection_established(self, peer_id, endpoint);
+            }
+            SwarmEvent::ConnectionClosed { endpoint, .. } => {
+                Self::connection_closed(self, endpoint);
+            }
+            SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(MdnsEvent::Discovered(list))) => {
+                for (_, multiaddr) in list {
+                    if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
+                        self.new_multiaddrs.insert(multiaddr);
+                    }
+                }
+            }
+            SwarmEvent::Behaviour(MyBehaviourEvent::Gossipsub(GossipsubEvent::Message { message, .. })) => {
+                if self.filter(&message.data, false) {
+                    return;
+                }
+                if let Err(err) = gossipsub::handler(self, message) {
+                    debug!("{}", err)
+                }
+            }
+            _ => {}
+        }
+    }
     pub async fn listen(&mut self, tcp_listener_http_api: Option<TcpListener>) -> Result<(), Box<dyn Error>> {
         if let Some(listener) = tcp_listener_http_api {
             info!("{} {} http://{}", "Enabled".green(), "HTTP API".cyan(), listener.local_addr()?.to_string().green());
@@ -62,32 +92,7 @@ impl Node {
                         error!("{}", err);
                     },
                     _ = heartbeat::next(self.tps).fuse() => heartbeat::handler(self),
-                    event = self.swarm.select_next_some() => {
-                        match event {
-                            SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
-                                Self::connection_established(self, peer_id, endpoint);
-                            }
-                            SwarmEvent::ConnectionClosed { endpoint, .. } => {
-                                Self::connection_closed(self, endpoint);
-                            }
-                            SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(MdnsEvent::Discovered(list))) => {
-                                for (_, multiaddr) in list {
-                                    if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                                        self.new_multiaddrs.insert(multiaddr);
-                                    }
-                                }
-                            },
-                            SwarmEvent::Behaviour(MyBehaviourEvent::Gossipsub(GossipsubEvent::Message { message, .. })) => {
-                                if self.filter(&message.data, false) {
-                                    continue;
-                                }
-                                if let Err(err) = gossipsub::handler(self, message) {
-                                    debug!("{}", err)
-                                }
-                            }
-                            _ => {}
-                        }
-                    },
+                    event = self.swarm.select_next_some() => self.handle_event(event),
                 }
             }
         } else {
@@ -95,25 +100,7 @@ impl Node {
             loop {
                 tokio::select! {
                     _ = heartbeat::next(self.tps).fuse() => heartbeat::handler(self),
-                    event = self.swarm.select_next_some() => {
-                        match event {
-                            SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
-                                Self::connection_established(self, peer_id, endpoint);
-                            }
-                            SwarmEvent::ConnectionClosed { endpoint, .. } => {
-                                Self::connection_closed(self, endpoint);
-                            }
-                            SwarmEvent::Behaviour(MyBehaviourEvent::Gossipsub(GossipsubEvent::Message { message, .. })) => {
-                                if self.filter(&message.data, false) {
-                                    continue;
-                                }
-                                if let Err(err) = gossipsub::handler(self, message) {
-                                    debug!("{}", err)
-                                }
-                            }
-                            _ => {}
-                        }
-                    },
+                    event = self.swarm.select_next_some() => self.handle_event(event),
                 }
             }
         }

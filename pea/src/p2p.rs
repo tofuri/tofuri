@@ -5,6 +5,7 @@ use libp2p::{
     identify, identity,
     mdns::{MdnsConfig, MdnsEvent, TokioMdns},
     mplex, noise, ping,
+    swarm::SwarmBuilder,
     tcp::TokioTcpTransport,
     NetworkBehaviour, PeerId, Swarm, Transport,
 };
@@ -83,5 +84,9 @@ pub async fn swarm() -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
     {
         behaviour.gossipsub.subscribe(ident_topic)?;
     }
-    Ok(Swarm::new(transport, behaviour, local_peer_id))
+    Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
+        .executor(Box::new(|fut| {
+            tokio::spawn(fut);
+        }))
+        .build())
 }

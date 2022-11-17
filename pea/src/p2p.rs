@@ -1,29 +1,30 @@
 use libp2p::{
     autonat,
+    core::upgrade,
     gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, IdentTopic, MessageAuthenticity},
-    identify::{Identify, IdentifyConfig, IdentifyEvent},
-    identity,
-    mdns::{Mdns, MdnsConfig, MdnsEvent},
-    ping::{self, Ping, PingEvent},
-    NetworkBehaviour, PeerId, Swarm,
+    identify, identity,
+    mdns::{MdnsConfig, MdnsEvent, TokioMdns},
+    mplex, noise, ping,
+    tcp::TokioTcpTransport,
+    NetworkBehaviour, PeerId, Swarm, Transport,
 };
 use pea_core::constants::PROTOCOL_VERSION;
 use std::error::Error;
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "MyBehaviourEvent")]
 pub struct MyBehaviour {
-    pub mdns: Mdns,
-    pub ping: Ping,
-    pub identify: Identify,
+    pub mdns: TokioMdns,
+    pub ping: ping::Behaviour,
+    pub identify: identify::Behaviour,
     pub gossipsub: Gossipsub,
     pub autonat: autonat::Behaviour,
 }
 impl MyBehaviour {
     async fn new(local_key: identity::Keypair) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
-            mdns: Mdns::new(MdnsConfig::default()).await?,
-            ping: ping::Behaviour::new(ping::Config::new().with_keep_alive(true)),
-            identify: Identify::new(IdentifyConfig::new(PROTOCOL_VERSION.to_string(), local_key.public())),
+            mdns: TokioMdns::new(MdnsConfig::default())?,
+            ping: ping::Behaviour::new(ping::Config::new()),
+            identify: identify::Behaviour::new(identify::Config::new(PROTOCOL_VERSION.to_string(), local_key.public())),
             gossipsub: Gossipsub::new(MessageAuthenticity::Signed(local_key.clone()), GossipsubConfigBuilder::default().build()?)?,
             autonat: autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default()),
         })
@@ -33,8 +34,8 @@ impl MyBehaviour {
 pub enum MyBehaviourEvent {
     Gossipsub(GossipsubEvent),
     Mdns(MdnsEvent),
-    Ping(PingEvent),
-    Identify(IdentifyEvent),
+    Ping(ping::Event),
+    Identify(identify::Event),
     Autonat(autonat::Event),
 }
 impl From<MdnsEvent> for MyBehaviourEvent {
@@ -47,13 +48,13 @@ impl From<GossipsubEvent> for MyBehaviourEvent {
         Self::Gossipsub(v)
     }
 }
-impl From<PingEvent> for MyBehaviourEvent {
-    fn from(v: PingEvent) -> Self {
+impl From<ping::Event> for MyBehaviourEvent {
+    fn from(v: ping::Event) -> Self {
         Self::Ping(v)
     }
 }
-impl From<IdentifyEvent> for MyBehaviourEvent {
-    fn from(v: IdentifyEvent) -> Self {
+impl From<identify::Event> for MyBehaviourEvent {
+    fn from(v: identify::Event) -> Self {
         Self::Identify(v)
     }
 }
@@ -65,7 +66,11 @@ impl From<autonat::Event> for MyBehaviourEvent {
 pub async fn swarm() -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
-    let transport = libp2p::development_transport(local_key.clone()).await?;
+    let transport = TokioTcpTransport::default()
+        .upgrade(upgrade::Version::V1)
+        .authenticate(noise::NoiseAuthenticated::xx(&local_key).expect("Signing libp2p-noise static DH keypair failed."))
+        .multiplex(mplex::MplexConfig::new())
+        .boxed();
     let mut behaviour = MyBehaviour::new(local_key).await?;
     for ident_topic in [
         IdentTopic::new("block"),

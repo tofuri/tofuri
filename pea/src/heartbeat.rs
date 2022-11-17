@@ -30,7 +30,7 @@ fn dial(node: &mut Node) {
         if node.connections.contains_key(&multiaddr) {
             continue;
         }
-        info!("{} {}", "Dial Received".cyan(), multiaddr.to_string().magenta());
+        info!("{} {}", "Dial unknown".cyan(), multiaddr.to_string().magenta());
         multiaddr.push(Protocol::Tcp(9333));
         let _ = node.swarm.dial(multiaddr);
     }
@@ -38,7 +38,7 @@ fn dial(node: &mut Node) {
         if node.connections.contains_key(&multiaddr) {
             continue;
         }
-        info!("{} {}", "Dial Previous".cyan(), multiaddr.to_string().magenta());
+        info!("{} {}", "Dial known".cyan(), multiaddr.to_string().magenta());
         multiaddr.push(Protocol::Tcp(9333));
         let _ = node.swarm.dial(multiaddr);
     }

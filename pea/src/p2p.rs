@@ -1,12 +1,15 @@
 use libp2p::{
     autonat,
+    core::upgrade,
     gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, IdentTopic, MessageAuthenticity},
     identify::{Identify, IdentifyConfig, IdentifyEvent},
     identity,
     mdns::{Mdns, MdnsConfig, MdnsEvent},
+    mplex, noise,
     ping::{self, Ping, PingEvent},
     swarm::SwarmBuilder,
-    NetworkBehaviour, PeerId, Swarm,
+    tcp::TokioTcpConfig,
+    NetworkBehaviour, PeerId, Swarm, Transport,
 };
 use pea_core::constants::PROTOCOL_VERSION;
 use std::error::Error;
@@ -66,7 +69,15 @@ impl From<autonat::Event> for MyBehaviourEvent {
 pub async fn swarm() -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
-    let transport = libp2p::development_transport(local_key.clone()).await?;
+    let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
+        .into_authentic(&local_key)
+        .expect("Signing libp2p-noise static DH keypair failed.");
+    let transport = TokioTcpConfig::new()
+        .nodelay(true)
+        .upgrade(upgrade::Version::V1)
+        .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
+        .multiplex(mplex::MplexConfig::new())
+        .boxed();
     let mut behaviour = MyBehaviour::new(local_key).await?;
     for ident_topic in [
         IdentTopic::new("block"),

@@ -12,9 +12,9 @@ pub async fn next(tps: f64) {
     tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
 }
 pub fn handler(node: &mut Node) {
+    dial(node);
     node.heartbeats += 1;
     share(node);
-    dial(node);
     sync(node);
     node.message_data_hashes.clear();
     node.blockchain.sync.handler();
@@ -23,11 +23,22 @@ pub fn handler(node: &mut Node) {
     lag(node);
 }
 fn dial(node: &mut Node) {
-    for mut multiaddr in node.received.drain() {
+    if node.heartbeats % (node.tps * 10_f64) as usize != 0 {
+        return;
+    }
+    for mut multiaddr in node.unknown.drain() {
         if node.connections.contains_key(&multiaddr) {
             continue;
         }
-        info!("{} {}", "Multiaddr".cyan(), multiaddr.to_string().magenta());
+        info!("{} {}", "Dial Received".cyan(), multiaddr.to_string().magenta());
+        multiaddr.push(Protocol::Tcp(9333));
+        let _ = node.swarm.dial(multiaddr);
+    }
+    for mut multiaddr in node.known.clone() {
+        if node.connections.contains_key(&multiaddr) {
+            continue;
+        }
+        info!("{} {}", "Dial Previous".cyan(), multiaddr.to_string().magenta());
         multiaddr.push(Protocol::Tcp(9333));
         let _ = node.swarm.dial(multiaddr);
     }

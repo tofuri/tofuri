@@ -28,11 +28,12 @@ pub struct Node {
     pub heartbeats: usize,
     pub lag: f64,
     pub tps: f64,
-    pub received: HashSet<Multiaddr>,
+    pub unknown: HashSet<Multiaddr>,
+    pub known: HashSet<Multiaddr>,
     pub connections: HashMap<Multiaddr, PeerId>,
 }
 impl Node {
-    pub fn new(swarm: Swarm<MyBehaviour>, blockchain: Blockchain, tps: f64) -> Node {
+    pub fn new(swarm: Swarm<MyBehaviour>, blockchain: Blockchain, tps: f64, previous: HashSet<Multiaddr>) -> Node {
         Node {
             swarm,
             blockchain,
@@ -40,7 +41,8 @@ impl Node {
             heartbeats: 0,
             lag: 0.0,
             tps,
-            received: HashSet::new(),
+            unknown: HashSet::new(),
+            known: previous,
             connections: HashMap::new(),
         }
     }
@@ -69,7 +71,7 @@ impl Node {
             SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(MdnsEvent::Discovered(list))) => {
                 for (_, multiaddr) in list {
                     if let Some(multiaddr) = Self::multiaddr_ip(multiaddr) {
-                        self.received.insert(multiaddr);
+                        self.unknown.insert(multiaddr);
                     }
                 }
             }
@@ -117,6 +119,7 @@ impl Node {
                 let timestamp = util::timestamp();
                 let bytes = timestamp.to_le_bytes();
                 let _ = db::peer::put(&multiaddr.to_string(), &bytes, &node.blockchain.db);
+                node.known.insert(multiaddr);
             }
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {

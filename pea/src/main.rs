@@ -1,13 +1,13 @@
 use clap::Parser;
 use colored::*;
-use libp2p::{multiaddr::Protocol, Multiaddr};
+use libp2p::Multiaddr;
 use log::info;
 use pea::{blockchain::Blockchain, node::Node, p2p};
 use pea_address as address;
 use pea_db as db;
 use pea_logger as logger;
 use pea_wallet::Wallet;
-use std::error::Error;
+use std::{collections::HashSet, error::Error};
 use tempdir::TempDir;
 use tokio::net::TcpListener;
 #[derive(Parser, Debug)]
@@ -77,23 +77,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
     info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
     let mut blockchain = Blockchain::new(db, wallet.key, args.trust, args.pending);
-    let peers = db::peer::get_all(&blockchain.db);
-    info!("{} {}", "Peers".cyan(), format!("{:?}", peers).yellow());
     blockchain.load();
     let mut swarm = p2p::swarm().await?;
     swarm.listen_on(args.host.parse()?)?;
-    swarm.dial(args.peer.parse::<Multiaddr>()?)?;
-    for peer in peers {
-        let mut multiaddr = peer.parse::<Multiaddr>()?;
-        multiaddr.push(Protocol::Tcp(9333));
-        swarm.dial(multiaddr)?;
-    }
     let tcp_listener_http_api = if !args.bind_http_api.is_empty() {
         Some(TcpListener::bind(args.bind_http_api).await?)
     } else {
         None
     };
-    let mut node = Node::new(swarm, blockchain, args.tps);
+    let peers = db::peer::get_all(&blockchain.db);
+    info!("{} {}", "Peers".cyan(), format!("{:?}", peers).yellow());
+    let mut set = HashSet::new();
+    for peer in peers {
+        set.insert(peer.parse::<Multiaddr>()?);
+    }
+    set.insert(args.peer.parse::<Multiaddr>()?);
+    let mut node = Node::new(swarm, blockchain, args.tps, set);
     node.listen(tcp_listener_http_api).await?;
     Ok(())
 }

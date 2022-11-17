@@ -197,7 +197,7 @@ impl Blockchain {
         db::block::put(block, &self.db).unwrap();
         let hash = block.hash();
         if self.tree.insert(hash, block.previous_hash, block.timestamp).unwrap() {
-            warn!("{}", "Fork");
+            warn!("{} {}", "Forked".red(), hex::encode(hash));
         }
         self.tree.sort_branches();
         self.states

@@ -12,8 +12,9 @@ pub async fn next(tps: f64) {
     tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
 }
 pub fn handler(node: &mut Node) {
-    dial(node);
+    dial_known(node);
     node.heartbeats += 1;
+    dial_unknown(node);
     share(node);
     sync(node);
     node.message_data_hashes.clear();
@@ -22,23 +23,26 @@ pub fn handler(node: &mut Node) {
     node.blockchain.pending_blocks_accept();
     lag(node);
 }
-fn dial(node: &mut Node) {
+fn dial_known(node: &mut Node) {
     if node.heartbeats % (node.tps * 10_f64) as usize != 0 {
         return;
     }
-    for mut multiaddr in node.unknown.drain() {
-        if node.connections.contains_key(&multiaddr) {
-            continue;
-        }
-        info!("{} {}", "Dial unknown".cyan(), multiaddr.to_string().magenta());
-        multiaddr.push(Protocol::Tcp(9333));
-        let _ = node.swarm.dial(multiaddr);
+    let vec = node.known.clone().into_iter().collect();
+    dial(node, vec, true);
+}
+fn dial_unknown(node: &mut Node) {
+    if node.heartbeats % (node.tps * 10_f64) as usize != 0 {
+        return;
     }
-    for mut multiaddr in node.known.clone() {
+    let vec = node.unknown.drain().collect();
+    dial(node, vec, false);
+}
+fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
+    for mut multiaddr in vec {
         if node.connections.contains_key(&multiaddr) {
             continue;
         }
-        info!("{} {}", "Dial known".cyan(), multiaddr.to_string().magenta());
+        info!("{} {} {}", "Dial".cyan(), if known { "known".green() } else { "unknown".red() }, multiaddr.to_string().magenta());
         multiaddr.push(Protocol::Tcp(9333));
         let _ = node.swarm.dial(multiaddr);
     }

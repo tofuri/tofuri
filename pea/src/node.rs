@@ -55,7 +55,7 @@ impl Node {
         host: String,
     ) -> Node {
         let wallet = Node::wallet(tempkey, wallet, passphrase);
-        info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
+        info!("PubKey is {}", address::public::encode(&wallet.key.public_key_bytes()));
         let db = Node::db(tempdb);
         let blockchain = Blockchain::new(db, wallet.key, trust, pending);
         let swarm = Node::swarm().await.unwrap();
@@ -179,6 +179,14 @@ impl Node {
     }
     pub async fn start(&mut self) {
         self.blockchain.load();
+        info!(
+            "Blockchain height is {}.",
+            if let Some(main) = self.blockchain.tree.main() {
+                main.1.to_string().yellow()
+            } else {
+                "0".red()
+            }
+        );
         self.swarm.listen_on(self.host.parse().unwrap()).unwrap();
         if !self.bind_api.is_empty() {
             let listener = TcpListener::bind(&self.bind_api).await.unwrap();

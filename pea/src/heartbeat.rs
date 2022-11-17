@@ -41,14 +41,13 @@ fn share_peer_list(node: &mut Node) {
         return;
     }
     let peer_list = node.peer_list.clone();
-    for multiaddr in peer_list.keys() {
-        let data = bincode::serialize(&multiaddr).unwrap();
-        if node.filter(&data, true) {
-            return;
-        }
-        if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("multiaddr"), data) {
-            error!("{}", err);
-        }
+    let peer_list: Vec<&Multiaddr> = peer_list.keys().collect();
+    let data = bincode::serialize(&peer_list).unwrap();
+    if node.filter(&data, true) {
+        return;
+    }
+    if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("multiaddr"), data) {
+        error!("{}", err);
     }
 }
 fn forge(node: &mut Node) {

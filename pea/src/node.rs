@@ -7,7 +7,7 @@ use colored::*;
 use futures::{FutureExt, StreamExt};
 use libp2p::{
     core::{connection::ConnectedPoint, either::EitherError},
-    gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic},
+    gossipsub::{error::GossipsubHandlerError, GossipsubEvent},
     mdns::MdnsEvent,
     ping::Failure,
     swarm::{ConnectionHandlerUpgrErr, SwarmEvent},

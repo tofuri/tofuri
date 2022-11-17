@@ -16,10 +16,10 @@ pub struct Args {
     pub debug: bool,
     /// TCP socket address to bind to
     #[clap(long, value_parser, default_value = ":::9331")]
-    pub bind_http_api: String,
+    pub bind_api: String,
     /// API Endpoint
     #[clap(long, value_parser, default_value = "http://localhost:9332")]
-    pub http_api: String,
+    pub api: String,
     /// Store blockchain in a temporary database
     #[clap(long, value_parser, default_value_t = false)]
     pub tempdb: bool,
@@ -47,8 +47,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "Commit".cyan(), env!("GIT_HASH").yellow());
     info!("{} {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY").yellow());
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
-    info!("{} {}", "--bind-http-api".cyan(), args.bind_http_api.magenta());
-    info!("{} {}", "--http-api".cyan(), args.http_api.magenta());
+    info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
+    info!("{} {}", "--api".cyan(), args.api.magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
@@ -60,9 +60,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
     let db = db::open(path);
     let wallet = Wallet::import(&args.wallet, &args.passphrase)?;
-    let mut payment_processor = PaymentProcessor::new(db, wallet, args.http_api.to_string(), args.confirmations, args.expires);
+    let mut payment_processor = PaymentProcessor::new(db, wallet, args.api.to_string(), args.confirmations, args.expires);
     payment_processor.load();
-    let listener = TcpListener::bind(args.bind_http_api).await?;
+    let listener = TcpListener::bind(args.bind_api).await?;
     payment_processor.listen(listener, args.tps).await?;
     Ok(())
 }

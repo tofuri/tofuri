@@ -35,7 +35,7 @@ pub struct Args {
     pub peer: String,
     /// TCP socket address to bind to
     #[clap(long, value_parser, default_value = ":::9332")]
-    pub bind_http_api: String,
+    pub bind_api: String,
     /// Multiaddr to listen on
     #[clap(short, long, value_parser, default_value = "/ip4/0.0.0.0/tcp/9333")]
     pub host: String,
@@ -56,19 +56,8 @@ async fn main() {
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
-    info!("{} {}", "--bind-http-api".cyan(), args.bind_http_api.magenta());
+    info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
     info!("{} {}", "--host".cyan(), args.host.magenta());
-    let mut node = Node::new(
-        args.tempdb,
-        args.tempkey,
-        args.trust,
-        args.pending,
-        args.tps,
-        &args.wallet,
-        &args.passphrase,
-        &args.peer,
-        args.bind_http_api,
-    )
-    .await;
+    let mut node = Node::new(args.tempdb, args.tempkey, args.trust, args.pending, args.tps, &args.wallet, &args.passphrase, &args.peer, args.bind_api).await;
     node.start(&args.host).await;
 }

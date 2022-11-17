@@ -40,10 +40,10 @@ pub struct Node {
     pub unknown: HashSet<Multiaddr>,
     pub known: HashSet<Multiaddr>,
     pub connections: HashMap<Multiaddr, PeerId>,
-    pub bind_http_api: String,
+    pub bind_api: String,
 }
 impl Node {
-    pub async fn new(tempdb: bool, tempkey: bool, trust: usize, pending: usize, tps: f64, wallet: &str, passphrase: &str, peer: &str, bind_http_api: String) -> Node {
+    pub async fn new(tempdb: bool, tempkey: bool, trust: usize, pending: usize, tps: f64, wallet: &str, passphrase: &str, peer: &str, bind_api: String) -> Node {
         let db = Node::db(tempdb);
         let wallet = Node::wallet(tempkey, wallet, passphrase);
         info!("{} {}", "PubKey".cyan(), address::public::encode(&wallet.key.public_key_bytes()).green());
@@ -60,7 +60,7 @@ impl Node {
             unknown: HashSet::new(),
             known,
             connections: HashMap::new(),
-            bind_http_api,
+            bind_api,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {
@@ -163,13 +163,9 @@ impl Node {
     pub async fn start(&mut self, host: &str) {
         self.blockchain.load();
         self.swarm.listen_on(host.parse().unwrap()).unwrap();
-        let tcp_listener_http_api = if !self.bind_http_api.is_empty() {
-            Some(TcpListener::bind(&self.bind_http_api).await.unwrap())
-        } else {
-            None
-        };
-        if let Some(listener) = tcp_listener_http_api {
-            info!("{} {} http://{}", "Enabled".green(), "HTTP API".cyan(), listener.local_addr().unwrap().to_string().green());
+        if !self.bind_api.is_empty() {
+            let listener = TcpListener::bind(&self.bind_api).await.unwrap();
+            info!("{} {} http://{}", "API".cyan(), "enabled".green(), listener.local_addr().unwrap().to_string().magenta());
             loop {
                 tokio::select! {
                     Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {
@@ -180,14 +176,14 @@ impl Node {
                 }
             }
         } else {
-            info!("{} {}", "HTTP API".cyan(), "Disabled".red());
+            info!("{} {}", "API".cyan(), "disabled".red());
             loop {
                 tokio::select! {
                     _ = heartbeat::next(self.tps).fuse() => heartbeat::handler(self),
                     event = self.swarm.select_next_some() => self.handle_event(event),
                 }
             }
-        }
+        };
     }
     fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {

@@ -11,29 +11,34 @@ use std::time::{Duration, SystemTime};
 pub async fn next(tps: f64) {
     tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
 }
+fn delay(node: &mut Node, seconds: usize) -> bool {
+    node.heartbeats % (node.tps * seconds as f64) as usize == 0
+}
 pub fn handler(node: &mut Node) {
-    dial_known(node);
+    if delay(node, 60) {
+        dial_known(node);
+    }
     node.heartbeats += 1;
-    dial_unknown(node);
-    share(node);
+    if delay(node, 60) {
+        dial_unknown(node);
+    }
+    if delay(node, 60) {
+        share(node);
+    }
+    if delay(node, 2) {
+        node.message_data_hashes.clear();
+    }
     sync(node);
-    node.message_data_hashes.clear();
     node.blockchain.sync.handler();
     forge(node);
     node.blockchain.pending_blocks_accept();
     lag(node);
 }
 fn dial_known(node: &mut Node) {
-    if node.heartbeats % (node.tps * 60_f64) as usize != 0 {
-        return;
-    }
     let vec = node.known.clone().into_iter().collect();
     dial(node, vec, true);
 }
 fn dial_unknown(node: &mut Node) {
-    if node.heartbeats % (node.tps * 60_f64) as usize != 0 {
-        return;
-    }
     let vec = node.unknown.drain().collect();
     dial(node, vec, false);
 }
@@ -55,9 +60,6 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     }
 }
 fn share(node: &mut Node) {
-    if node.heartbeats % (node.tps * 60_f64) as usize != 0 {
-        return;
-    }
     if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
         return;
     }

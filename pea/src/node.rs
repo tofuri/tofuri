@@ -1,7 +1,7 @@
 use crate::{
+    behaviour::{Behaviour, Event},
     blockchain::Blockchain,
     gossipsub, heartbeat, http,
-    p2p::{MyBehaviour, MyBehaviourEvent},
 };
 use colored::*;
 use futures::{FutureExt, StreamExt};
@@ -31,7 +31,7 @@ use std::{
 use tempdir::TempDir;
 use tokio::net::TcpListener;
 pub struct Node {
-    pub swarm: Swarm<MyBehaviour>,
+    pub swarm: Swarm<Behaviour>,
     pub blockchain: Blockchain,
     pub message_data_hashes: Vec<types::Hash>,
     pub heartbeats: usize,
@@ -77,7 +77,7 @@ impl Node {
             false => Wallet::import(wallet, passphrase).unwrap(),
         }
     }
-    async fn swarm() -> Result<Swarm<MyBehaviour>, Box<dyn Error>> {
+    async fn swarm() -> Result<Swarm<Behaviour>, Box<dyn Error>> {
         let local_key = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(local_key.public());
         let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
@@ -89,7 +89,7 @@ impl Node {
             .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
             .multiplex(mplex::MplexConfig::new())
             .boxed();
-        let mut behaviour = MyBehaviour::new(local_key).await?;
+        let mut behaviour = Behaviour::new(local_key).await?;
         for ident_topic in [
             IdentTopic::new("block"),
             IdentTopic::new("block sync"),
@@ -132,7 +132,7 @@ impl Node {
     }
     fn handle_event(
         &mut self,
-        event: SwarmEvent<MyBehaviourEvent, EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>>,
+        event: SwarmEvent<Event, EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>>,
     ) {
         debug!("{:?}", event);
         match event {
@@ -142,14 +142,14 @@ impl Node {
             SwarmEvent::ConnectionClosed { endpoint, .. } => {
                 Self::connection_closed(self, endpoint);
             }
-            SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(MdnsEvent::Discovered(list))) => {
+            SwarmEvent::Behaviour(Event::Mdns(MdnsEvent::Discovered(list))) => {
                 for (_, multiaddr) in list {
                     if let Some(multiaddr) = Self::multiaddr_ip_port(multiaddr) {
                         self.unknown.insert(multiaddr);
                     }
                 }
             }
-            SwarmEvent::Behaviour(MyBehaviourEvent::Gossipsub(GossipsubEvent::Message { message, .. })) => {
+            SwarmEvent::Behaviour(Event::Gossipsub(GossipsubEvent::Message { message, .. })) => {
                 if self.filter(&message.data, false) {
                     return;
                 }

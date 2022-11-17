@@ -10,15 +10,15 @@ use libp2p::{
 use pea_core::constants::PROTOCOL_VERSION;
 use std::error::Error;
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "MyBehaviourEvent")]
-pub struct MyBehaviour {
+#[behaviour(out_event = "Event")]
+pub struct Behaviour {
     pub mdns: Mdns,
     pub ping: Ping,
     pub identify: Identify,
     pub gossipsub: Gossipsub,
     pub autonat: autonat::Behaviour,
 }
-impl MyBehaviour {
+impl Behaviour {
     pub async fn new(local_key: identity::Keypair) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             mdns: Mdns::new(MdnsConfig::default()).await?,
@@ -30,34 +30,34 @@ impl MyBehaviour {
     }
 }
 #[derive(Debug)]
-pub enum MyBehaviourEvent {
+pub enum Event {
     Gossipsub(GossipsubEvent),
     Mdns(MdnsEvent),
     Ping(PingEvent),
     Identify(IdentifyEvent),
     Autonat(autonat::Event),
 }
-impl From<MdnsEvent> for MyBehaviourEvent {
+impl From<MdnsEvent> for Event {
     fn from(v: MdnsEvent) -> Self {
         Self::Mdns(v)
     }
 }
-impl From<GossipsubEvent> for MyBehaviourEvent {
+impl From<GossipsubEvent> for Event {
     fn from(v: GossipsubEvent) -> Self {
         Self::Gossipsub(v)
     }
 }
-impl From<PingEvent> for MyBehaviourEvent {
+impl From<PingEvent> for Event {
     fn from(v: PingEvent) -> Self {
         Self::Ping(v)
     }
 }
-impl From<IdentifyEvent> for MyBehaviourEvent {
+impl From<IdentifyEvent> for Event {
     fn from(v: IdentifyEvent) -> Self {
         Self::Identify(v)
     }
 }
-impl From<autonat::Event> for MyBehaviourEvent {
+impl From<autonat::Event> for Event {
     fn from(v: autonat::Event) -> Self {
         Self::Autonat(v)
     }

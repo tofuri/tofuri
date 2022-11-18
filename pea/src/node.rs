@@ -230,8 +230,8 @@ impl Node {
             info!(
                 "Connection {} {} {}",
                 "established".green(),
-                num_established.to_string().yellow(),
-                multiaddr.to_string().magenta()
+                multiaddr.to_string().magenta(),
+                num_established.to_string().yellow()
             );
             node.known.insert(multiaddr.clone());
             let _ = db::peer::put(&multiaddr.to_string(), &[], &node.blockchain.db);
@@ -260,8 +260,8 @@ impl Node {
             info!(
                 "Connection {} {} {}",
                 "closed".red(),
-                num_established.to_string().yellow(),
-                multiaddr.to_string().magenta()
+                multiaddr.to_string().magenta(),
+                num_established.to_string().yellow()
             );
             node.connections.remove(&multiaddr);
             let _ = node.swarm.dial(multiaddr);

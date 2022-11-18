@@ -21,6 +21,9 @@ pub struct Args {
     /// Pending blocks limit
     #[clap(long, value_parser, default_value = "10")]
     pub pending: usize,
+    /// Swarm connection limits
+    #[clap(long, value_parser)]
+    pub max_established: Option<u32>,
     /// Ticks per second
     #[clap(long, value_parser, default_value = "5")]
     pub tps: f64,
@@ -53,6 +56,7 @@ async fn main() {
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
     info!("{} {}", "--pending".cyan(), args.pending.to_string().magenta());
+    info!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
     info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
@@ -64,6 +68,7 @@ async fn main() {
         args.tempkey,
         args.trust,
         args.pending,
+        args.max_established,
         args.tps,
         &args.wallet,
         &args.passphrase,

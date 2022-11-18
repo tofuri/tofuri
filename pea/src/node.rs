@@ -48,6 +48,7 @@ impl Node {
         tempkey: bool,
         trust: usize,
         pending: usize,
+        max_established: Option<u32>,
         tps: f64,
         wallet: &str,
         passphrase: &str,
@@ -59,7 +60,7 @@ impl Node {
         info!("PubKey is {}", address::public::encode(&wallet.key.public_key_bytes()).green());
         let db = Node::db(tempdb);
         let blockchain = Blockchain::new(db, wallet.key, trust, pending);
-        let swarm = Node::swarm().await.unwrap();
+        let swarm = Node::swarm(max_established).await.unwrap();
         let known = Node::known(&blockchain.db, peer);
         Node {
             swarm,
@@ -89,7 +90,7 @@ impl Node {
             false => Wallet::import(wallet, passphrase).unwrap(),
         }
     }
-    async fn swarm() -> Result<Swarm<Behaviour>, Box<dyn Error>> {
+    async fn swarm(max_established: Option<u32>) -> Result<Swarm<Behaviour>, Box<dyn Error>> {
         let local_key = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(local_key.public());
         let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
@@ -115,6 +116,7 @@ impl Node {
         }
         let mut limits = ConnectionLimits::default();
         limits = limits.with_max_established_per_peer(Some(2));
+        limits = limits.with_max_established(max_established);
         Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
             .executor(Box::new(|fut| {
                 tokio::spawn(fut);

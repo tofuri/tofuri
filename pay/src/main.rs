@@ -41,6 +41,7 @@ pub struct Args {
 async fn main() {
     let args = Args::parse();
     logger::init(args.debug);
+    info!("{} {}", "Crate".cyan(), env!("CARGO_PKG_NAME").yellow());
     info!("{} {}", "Version".cyan(), env!("CARGO_PKG_VERSION").yellow());
     info!("{} {}", "Commit".cyan(), env!("GIT_HASH").yellow());
     info!("{} {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY").yellow());

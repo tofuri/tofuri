@@ -25,6 +25,7 @@ use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
+    num::NonZeroU32,
 };
 use tempdir::TempDir;
 use tokio::net::TcpListener;
@@ -153,11 +154,16 @@ impl Node {
     ) {
         debug!("{:?}", event);
         match event {
-            SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
-                Self::connection_established(self, peer_id, endpoint);
+            SwarmEvent::ConnectionEstablished {
+                peer_id,
+                endpoint,
+                num_established,
+                ..
+            } => {
+                Self::connection_established(self, peer_id, endpoint, num_established);
             }
-            SwarmEvent::ConnectionClosed { endpoint, .. } => {
-                Self::connection_closed(self, endpoint);
+            SwarmEvent::ConnectionClosed { endpoint, num_established, .. } => {
+                Self::connection_closed(self, endpoint, num_established);
             }
             SwarmEvent::Behaviour(Event::Mdns(MdnsEvent::Discovered(list))) => {
                 for (_, multiaddr) in list {
@@ -216,9 +222,14 @@ impl Node {
             }
         };
     }
-    fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint) {
+    fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
         let mut save = |multiaddr: Multiaddr| {
-            info!("Connection {} {}", "established".green(), multiaddr.to_string().magenta());
+            info!(
+                "Connection {} {} {}",
+                "established".green(),
+                num_established.to_string().yellow(),
+                multiaddr.to_string().magenta()
+            );
             node.known.insert(multiaddr.clone());
             let _ = db::peer::put(&multiaddr.to_string(), &[], &node.blockchain.db);
             if let Some(previous_peer_id) = node
@@ -241,9 +252,14 @@ impl Node {
             }
         }
     }
-    fn connection_closed(node: &mut Node, endpoint: ConnectedPoint) {
+    fn connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_established: u32) {
         let mut save = |multiaddr: Multiaddr| {
-            info!("Connection {} {}", "closed".red(), multiaddr.to_string().magenta());
+            info!(
+                "Connection {} {} {}",
+                "closed".red(),
+                num_established.to_string().yellow(),
+                multiaddr.to_string().magenta()
+            );
             node.connections.remove(&multiaddr);
             let _ = node.swarm.dial(multiaddr);
         };

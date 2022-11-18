@@ -207,9 +207,9 @@ impl PaymentProcessor {
         let nanos = (u - nanos) as u64;
         tokio::time::sleep(Duration::from_nanos(nanos)).await
     }
-    pub async fn start(&mut self) -> Result<(), Box<dyn Error>> {
+    pub async fn start(&mut self) {
         self.load();
-        let listener = TcpListener::bind(&self.bind_api).await?;
+        let listener = TcpListener::bind(&self.bind_api).await.unwrap();
         info!(
             "API is listening on {}{}",
             "http://".cyan(),

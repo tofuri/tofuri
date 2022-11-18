@@ -3,7 +3,6 @@ use colored::*;
 use log::info;
 use pea_logger as logger;
 use pea_pay::processor::PaymentProcessor;
-use std::error::Error;
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
@@ -39,7 +38,7 @@ pub struct Args {
     pub bind_api: String,
 }
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() {
     let args = Args::parse();
     logger::init(args.debug);
     info!("{} {}", "Version".cyan(), env!("CARGO_PKG_VERSION").yellow());
@@ -66,6 +65,5 @@ async fn main() -> Result<(), Box<dyn Error>> {
         args.api,
         args.bind_api,
     );
-    payment_processor.start().await?;
-    Ok(())
+    payment_processor.start().await;
 }

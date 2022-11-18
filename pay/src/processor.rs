@@ -19,29 +19,61 @@ use std::{
     error::Error,
     time::{Duration, Instant, SystemTime},
 };
+use tempdir::TempDir;
 use tokio::net::TcpListener;
 pub struct PaymentProcessor {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub wallet: Wallet,
     pub api: String,
+    pub bind_api: String,
     pub confirmations: usize,
-    pub expires_after_secs: u32,
+    pub expires: u32,
+    pub tps: f64,
     // charges: HashMap<usize, Charge>,
     charges: HashMap<types::Hash, Charge>,
     chain: Vec<Block>,
     subkey: usize,
 }
 impl PaymentProcessor {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, wallet: Wallet, api: String, confirmations: usize, expires_after_secs: u32) -> Self {
+    pub fn new(
+        tempdb: bool,
+        tempkey: bool,
+        confirmations: usize,
+        expires: u32,
+        tps: f64,
+        wallet: &str,
+        passphrase: &str,
+        api: String,
+        bind_api: String,
+    ) -> Self {
+        let wallet = PaymentProcessor::wallet(tempkey, wallet, passphrase);
+        info!("PubKey is {}", address::public::encode(&wallet.key.public_key_bytes()).green());
+        let db = PaymentProcessor::db(tempdb);
         Self {
             db,
             wallet,
             api,
+            bind_api,
             confirmations,
-            expires_after_secs,
+            expires,
+            tps,
             chain: vec![],
             charges: HashMap::new(),
             subkey: 0,
+        }
+    }
+    fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {
+        let tempdir = TempDir::new("peacash-pay-db").unwrap();
+        let path: &str = match tempdb {
+            true => tempdir.path().to_str().unwrap(),
+            false => "./peacash-pay-db",
+        };
+        db::open(path)
+    }
+    fn wallet(tempkey: bool, wallet: &str, passphrase: &str) -> Wallet {
+        match tempkey {
+            true => Wallet::new(),
+            false => Wallet::import(wallet, passphrase).unwrap(),
         }
     }
     pub fn get_charges(&self) -> Vec<(String, Payment)> {
@@ -117,7 +149,7 @@ impl PaymentProcessor {
                 charge.status = ChargeStatus::Completed;
                 db::charge::put(&self.db, charge).unwrap();
                 charges.push(charge);
-            } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < util::timestamp() - self.expires_after_secs {
+            } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < util::timestamp() - self.expires {
                 charge.status = ChargeStatus::Expired;
                 db::charge::put(&self.db, charge).unwrap();
             }
@@ -145,7 +177,7 @@ impl PaymentProcessor {
             self.reload_chain().await?;
         }
         while match self.chain.first() {
-            Some(block) => block.timestamp < util::timestamp() - self.expires_after_secs,
+            Some(block) => block.timestamp < util::timestamp() - self.expires,
             None => false,
         } {
             self.chain.remove(0);
@@ -158,9 +190,7 @@ impl PaymentProcessor {
         let mut previous_hash = latest_block.hash;
         loop {
             let block = get::block(&self.api, &previous_hash).await?;
-            if block.previous_hash == "0000000000000000000000000000000000000000000000000000000000000000"
-                || block.timestamp < util::timestamp() - self.expires_after_secs
-            {
+            if block.previous_hash == "0000000000000000000000000000000000000000000000000000000000000000" || block.timestamp < util::timestamp() - self.expires {
                 break;
             }
             previous_hash = block.previous_hash.clone();
@@ -177,14 +207,20 @@ impl PaymentProcessor {
         let nanos = (u - nanos) as u64;
         tokio::time::sleep(Duration::from_nanos(nanos)).await
     }
-    pub async fn listen(&mut self, listener: TcpListener, tps: f64) -> Result<(), Box<dyn Error>> {
-        info!("{} {} http://{}", "enabled".green(), "API".cyan(), listener.local_addr()?.to_string().green());
+    pub async fn start(&mut self) -> Result<(), Box<dyn Error>> {
+        self.load();
+        let listener = TcpListener::bind(&self.bind_api).await?;
+        info!(
+            "API is listening on {}{}",
+            "http://".cyan(),
+            listener.local_addr().unwrap().to_string().magenta()
+        );
         loop {
             tokio::select! {
                 Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {
                     error!("{}", err);
                 },
-                _ = Self::next(tps).fuse() => match self.check().await {
+                _ = Self::next(self.tps).fuse() => match self.check().await {
                     Ok(vec) => if !vec.is_empty() {
                         info!("{:?}", vec);
                     },

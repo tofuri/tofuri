@@ -60,7 +60,7 @@ pub async fn handler(mut stream: tokio::net::TcpStream, node: &mut Node) -> Resu
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
-    info!("{} {} {}", "API".cyan(), stream.peer_addr()?.to_string().magenta(), first,);
+    info!("{} {} {}", "API".cyan(), stream.peer_addr()?.to_string().magenta(), first);
     if GET.is_match(&first) {
         handler_get(&mut stream, node, &first).await?;
     } else if POST.is_match(&first) {

@@ -20,15 +20,7 @@ pub async fn handler(mut stream: tokio::net::TcpStream, payment_processor: &mut 
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
-    info!(
-        "{} {} {}",
-        "API".cyan(),
-        first.green(),
-        match stream.peer_addr() {
-            Ok(addr) => addr.to_string().yellow(),
-            Err(err) => err.to_string().red(),
-        }
-    );
+    info!("{} {} {}", "API".cyan(), stream.peer_addr()?.to_string().magenta(), first);
     if GET.is_match(&first) {
         handler_get(&mut stream, payment_processor, &first).await?;
     } else {

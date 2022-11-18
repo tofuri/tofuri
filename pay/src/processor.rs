@@ -240,6 +240,6 @@ impl PaymentProcessor {
                 self.charges.insert(hash, charge);
             }
         }
-        info!("{} {}", "Charges load".cyan(), format!("{:?}", start.elapsed()).yellow());
+        info!("Loaded charges in {}", format!("{:?}", start.elapsed()).yellow());
     }
 }

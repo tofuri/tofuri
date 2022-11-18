@@ -12,7 +12,7 @@ use libp2p::{
     mdns::MdnsEvent,
     mplex, noise,
     ping::Failure,
-    swarm::{ConnectionHandlerUpgrErr, SwarmBuilder, SwarmEvent},
+    swarm::{ConnectionHandlerUpgrErr, ConnectionLimits, SwarmBuilder, SwarmEvent},
     tcp::TokioTcpConfig,
     Multiaddr, PeerId, Swarm, Transport,
 };
@@ -113,10 +113,13 @@ impl Node {
         {
             behaviour.gossipsub.subscribe(ident_topic)?;
         }
+        let mut limits = ConnectionLimits::default();
+        limits = limits.with_max_established_per_peer(Some(2));
         Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
             .executor(Box::new(|fut| {
                 tokio::spawn(fut);
             }))
+            .connection_limits(limits)
             .build())
     }
     fn known(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> HashSet<Multiaddr> {

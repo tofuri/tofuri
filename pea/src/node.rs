@@ -218,6 +218,7 @@ impl Node {
     }
     fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {
+            info!("Connection {} {}", "established".green(), multiaddr.to_string().magenta());
             node.known.insert(multiaddr.clone());
             let _ = db::peer::put(&multiaddr.to_string(), &[], &node.blockchain.db);
             if let Some(previous_peer_id) = node
@@ -242,6 +243,7 @@ impl Node {
     }
     fn connection_closed(node: &mut Node, endpoint: ConnectedPoint) {
         let mut save = |multiaddr: Multiaddr| {
+            info!("Connection {} {}", "closed".red(), multiaddr.to_string().magenta());
             node.connections.remove(&multiaddr);
             let _ = node.swarm.dial(multiaddr);
         };

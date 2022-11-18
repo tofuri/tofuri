@@ -1,7 +1,7 @@
 use crate::{multiaddr, node::Node};
 use colored::*;
 use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol, Multiaddr};
-use log::{debug, error, info};
+use log::{debug, error};
 use pea_core::{
     constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS_PER_TICK},
     util,
@@ -50,7 +50,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
         {
             continue;
         }
-        info!(
+        debug!(
             "Dialing {} peer {}",
             if known { "known".green() } else { "unknown".red() },
             multiaddr.to_string().magenta()

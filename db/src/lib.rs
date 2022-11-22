@@ -35,19 +35,18 @@ pub mod block {
     use super::block_metadata_lean;
     use super::stake;
     use super::transaction;
-    use pea_block::{self as block, Block};
+    use pea_block::Block;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
     pub fn put(block: &Block, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        let block_metadata = block::Metadata::from(block);
-        let block_metadata_lean = block::MetadataLean::from(&block_metadata);
+        let metadata = block.metadata();
         for transaction in block.transactions.iter() {
             transaction::put(transaction, db)?;
         }
         for stake in block.stakes.iter() {
             stake::put(stake, db)?;
         }
-        block_metadata_lean::put(db, &block.hash(), &block_metadata_lean)?;
+        block_metadata_lean::put(db, &block.hash(), &metadata)?;
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block, Box<dyn Error>> {
@@ -71,15 +70,15 @@ pub mod block {
     }
 }
 pub mod block_metadata_lean {
-    use pea_block::MetadataLean;
+    use pea_block::Metadata;
     use pea_core::types;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(db: &DBWithThreadMode<SingleThreaded>, hash: &types::Hash, block_metadata_lean: &MetadataLean) -> Result<(), Box<dyn Error>> {
+    pub fn put(db: &DBWithThreadMode<SingleThreaded>, hash: &types::Hash, block_metadata_lean: &Metadata) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::blocks(db), hash, bincode::serialize(block_metadata_lean)?)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<MetadataLean, Box<dyn Error>> {
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Metadata, Box<dyn Error>> {
         Ok(bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?)
     }
 }
@@ -146,7 +145,7 @@ pub mod stake {
     }
 }
 pub mod tree {
-    use pea_block::MetadataLean;
+    use pea_block::Metadata;
     use pea_core::types;
     use pea_tree::Tree;
     use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
@@ -157,7 +156,7 @@ pub mod tree {
         for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
-            let block: MetadataLean = bincode::deserialize(&bytes).unwrap();
+            let block: Metadata = bincode::deserialize(&bytes).unwrap();
             match hashes.get(&block.previous_hash) {
                 Some((vec, _)) => {
                     let mut vec = vec.clone();

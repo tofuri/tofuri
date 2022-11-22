@@ -5,6 +5,23 @@ use pea_transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::{error::Error, fmt};
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Header {
+    pub previous_hash: types::Hash,
+    pub transaction_merkle_root: types::MerkleRoot,
+    pub stake_merkle_root: types::MerkleRoot,
+    pub timestamp: u32,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Metadata {
+    pub previous_hash: types::Hash,
+    pub timestamp: u32,
+    pub public_key: types::PublicKeyBytes,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
+    pub transaction_hashes: Vec<types::Hash>,
+    pub stake_hashes: Vec<types::Hash>,
+}
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Block {
     pub previous_hash: types::Hash,
@@ -72,8 +89,7 @@ impl Block {
         Key::verify(&self.public_key, &self.hash(), &self.signature)
     }
     pub fn hash(&self) -> types::Hash {
-        let block_metadata = Metadata::from(self);
-        util::hash(&bincode::serialize(&Header::from(&block_metadata)).unwrap())
+        util::hash(&bincode::serialize(&self.header()).unwrap())
     }
     pub fn fees(&self) -> u128 {
         let mut fees = 0;
@@ -88,87 +104,39 @@ impl Block {
     pub fn reward(&self, balance_staked: u128) -> u128 {
         self.fees() + util::reward(balance_staked)
     }
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Header {
-    pub previous_hash: types::Hash,
-    pub transaction_merkle_root: types::MerkleRoot,
-    pub stake_merkle_root: types::MerkleRoot,
-    pub timestamp: u32,
-}
-impl Header {
-    pub fn from(block: &Metadata) -> Header {
-        Header {
-            previous_hash: block.previous_hash,
-            transaction_merkle_root: block.transaction_merkle_root,
-            stake_merkle_root: block.stake_merkle_root,
-            timestamp: block.timestamp,
-        }
-    }
-}
-#[derive(Debug)]
-pub struct Metadata {
-    pub previous_hash: types::Hash,
-    pub timestamp: u32,
-    pub public_key: types::PublicKeyBytes,
-    pub signature: types::SignatureBytes,
-    pub transaction_hashes: Vec<types::Hash>,
-    pub transaction_merkle_root: types::MerkleRoot,
-    pub stake_hashes: Vec<types::Hash>,
-    pub stake_merkle_root: types::MerkleRoot,
-}
-impl Metadata {
-    pub fn from(block: &Block) -> Metadata {
-        let transaction_hashes = Metadata::transaction_hashes(&block.transactions);
-        let stake_hashes = Metadata::stake_hashes(&block.stakes);
-        Metadata {
-            previous_hash: block.previous_hash,
-            timestamp: block.timestamp,
-            public_key: block.public_key,
-            signature: block.signature,
-            transaction_merkle_root: Metadata::merkle_root(&transaction_hashes),
-            transaction_hashes,
-            stake_merkle_root: Metadata::merkle_root(&stake_hashes),
-            stake_hashes,
-        }
-    }
-    fn transaction_hashes(transactions: &Vec<Transaction>) -> Vec<types::Hash> {
+    pub fn transaction_hashes(&self) -> Vec<types::Hash> {
         let mut transaction_hashes = vec![];
-        for transaction in transactions {
+        for transaction in self.transactions.iter() {
             transaction_hashes.push(transaction.hash());
         }
         transaction_hashes
     }
-    fn stake_hashes(stakes: &Vec<Stake>) -> Vec<types::Hash> {
+    pub fn stake_hashes(&self) -> Vec<types::Hash> {
         let mut stake_hashes = vec![];
-        for stake in stakes {
+        for stake in self.stakes.iter() {
             stake_hashes.push(stake.hash());
         }
         stake_hashes
     }
-    fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
+    pub fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
         types::CBMT::build_merkle_root(hashes)
     }
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct MetadataLean {
-    pub previous_hash: types::Hash,
-    pub timestamp: u32,
-    pub public_key: types::PublicKeyBytes,
-    #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
-    pub transaction_hashes: Vec<types::Hash>,
-    pub stake_hashes: Vec<types::Hash>,
-}
-impl MetadataLean {
-    pub fn from(block_metadata: &Metadata) -> MetadataLean {
-        MetadataLean {
-            previous_hash: block_metadata.previous_hash,
-            timestamp: block_metadata.timestamp,
-            public_key: block_metadata.public_key,
-            signature: block_metadata.signature,
-            transaction_hashes: block_metadata.transaction_hashes.to_vec(),
-            stake_hashes: block_metadata.stake_hashes.to_vec(),
+    pub fn header(&self) -> Header {
+        Header {
+            previous_hash: self.previous_hash,
+            transaction_merkle_root: Block::merkle_root(&self.transaction_hashes()),
+            stake_merkle_root: Block::merkle_root(&self.stake_hashes()),
+            timestamp: self.timestamp,
+        }
+    }
+    pub fn metadata(&self) -> Metadata {
+        Metadata {
+            previous_hash: self.previous_hash,
+            timestamp: self.timestamp,
+            public_key: self.public_key,
+            signature: self.signature,
+            transaction_hashes: self.transaction_hashes(),
+            stake_hashes: self.stake_hashes(),
         }
     }
 }

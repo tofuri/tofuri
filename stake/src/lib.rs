@@ -3,6 +3,14 @@ use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::error::Error;
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Header {
+    pub public_key: types::PublicKeyBytes,
+    pub amount: u128,
+    pub deposit: bool,
+    pub fee: u128,
+    pub timestamp: u32,
+}
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Stake {
     pub public_key: types::PublicKeyBytes,
@@ -25,7 +33,7 @@ impl Stake {
         }
     }
     pub fn hash(&self) -> types::Hash {
-        util::hash(&bincode::serialize(&Header::from(self)).unwrap())
+        util::hash(&bincode::serialize(&self.header()).unwrap())
     }
     pub fn sign(&mut self, key: &Key) {
         self.public_key = key.public_key_bytes();
@@ -34,21 +42,13 @@ impl Stake {
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
         Key::verify(&self.public_key, &self.hash(), &self.signature)
     }
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Header {
-    pub public_key: types::PublicKeyBytes,
-    pub amount: u128,
-    pub fee: u128,
-    pub timestamp: u32,
-}
-impl Header {
-    pub fn from(stake: &Stake) -> Header {
+    pub fn header(&self) -> Header {
         Header {
-            public_key: stake.public_key,
-            amount: stake.amount,
-            fee: stake.fee,
-            timestamp: stake.timestamp,
+            public_key: self.public_key,
+            amount: self.amount,
+            deposit: self.deposit,
+            fee: self.fee,
+            timestamp: self.timestamp,
         }
     }
 }

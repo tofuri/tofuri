@@ -3,6 +3,14 @@ use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::error::Error;
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Header {
+    pub public_key_input: types::PublicKeyBytes,
+    pub public_key_output: types::PublicKeyBytes,
+    pub amount: u128,
+    pub fee: u128,
+    pub timestamp: u32,
+}
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
     pub public_key_input: types::PublicKeyBytes,
@@ -25,7 +33,7 @@ impl Transaction {
         }
     }
     pub fn hash(&self) -> types::Hash {
-        util::hash(&bincode::serialize(&Header::from(self)).unwrap())
+        util::hash(&bincode::serialize(&self.header()).unwrap())
     }
     pub fn sign(&mut self, key: &Key) {
         self.public_key_input = key.public_key_bytes();
@@ -34,23 +42,13 @@ impl Transaction {
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
         Key::verify(&self.public_key_input, &self.hash(), &self.signature)
     }
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Header {
-    pub public_key_input: types::PublicKeyBytes,
-    pub public_key_output: types::PublicKeyBytes,
-    pub amount: u128,
-    pub fee: u128,
-    pub timestamp: u32,
-}
-impl Header {
-    pub fn from(transaction: &Transaction) -> Header {
+    pub fn header(&self) -> Header {
         Header {
-            public_key_input: transaction.public_key_input,
-            public_key_output: transaction.public_key_output,
-            amount: transaction.amount,
-            fee: transaction.fee,
-            timestamp: transaction.timestamp,
+            public_key_input: self.public_key_input,
+            public_key_output: self.public_key_output,
+            amount: self.amount,
+            fee: self.fee,
+            timestamp: self.timestamp,
         }
     }
 }

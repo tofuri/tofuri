@@ -39,12 +39,14 @@ pub struct Args {
 }
 #[tokio::main]
 async fn main() {
+    println!(
+        "{} = {{ version = \"{}\" }}",
+        env!("CARGO_PKG_NAME").yellow(),
+        env!("CARGO_PKG_VERSION").magenta()
+    );
+    println!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), env!("GIT_HASH").magenta());
     let args = Args::parse();
     logger::init(args.debug);
-    info!("{} {}", "Crate".cyan(), env!("CARGO_PKG_NAME").yellow());
-    info!("{} {}", "Version".cyan(), env!("CARGO_PKG_VERSION").yellow());
-    info!("{} {}", "Commit".cyan(), env!("GIT_HASH").yellow());
-    info!("{} {}", "Repository".cyan(), env!("CARGO_PKG_REPOSITORY").yellow());
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());

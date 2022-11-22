@@ -22,7 +22,7 @@ pub async fn main(wallet: &Wallet, api: &str) {
             "Height",
             "Transaction",
             "Stake",
-            "Info",
+            "API",
             "Exit",
         ],
     )
@@ -39,7 +39,7 @@ pub async fn main(wallet: &Wallet, api: &str) {
         "Height" => height(api).await,
         "Transaction" => transaction(api, wallet).await,
         "Stake" => stake(api, wallet).await,
-        "Info" => info(api).await,
+        "API" => info(api).await,
         "Exit" => exit(),
         _ => {}
     }

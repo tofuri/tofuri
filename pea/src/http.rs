@@ -14,7 +14,7 @@ lazy_static! {
     static ref GET: Regex = Regex::new(r"^GET [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
     static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();
-    static ref JSON: Regex = Regex::new(r" /json ").unwrap();
+    static ref INFO: Regex = Regex::new(r" /info ").unwrap();
     static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref BALANCE_STAKED: Regex = Regex::new(r" /balance_staked/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
@@ -38,54 +38,54 @@ pub async fn handler(mut stream: tokio::net::TcpStream, node: &mut Node) -> Resu
     let first = buffer.lines().next().ok_or("http request first line")??;
     info!("{} {} {}", "API".cyan(), stream.peer_addr()?.to_string().magenta(), first);
     if GET.is_match(&first) {
-        handler_get(&mut stream, node, &first).await?;
+        get(&mut stream, node, &first).await?;
     } else if POST.is_match(&first) {
-        handler_post(&mut stream, node, &first, &buffer).await?;
+        post(&mut stream, node, &first, &buffer).await?;
     } else {
-        handler_404(&mut stream).await?;
+        c405(&mut stream).await?;
     };
     stream.flush().await?;
     Ok(())
 }
-async fn handler_get(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
     if INDEX.is_match(first) {
-        handler_get_index(stream).await?;
-    } else if JSON.is_match(first) {
-        handler_get_json(stream, node).await?;
+        get_index(stream).await?;
+    } else if INFO.is_match(first) {
+        get_info(stream, node).await?;
     } else if BALANCE.is_match(first) {
-        handler_get_json_balance(stream, node, first).await?;
+        get_balance(stream, node, first).await?;
     } else if BALANCE_STAKED.is_match(first) {
-        handler_get_json_balance_staked(stream, node, first).await?;
+        get_staked_balance(stream, node, first).await?;
     } else if HEIGHT.is_match(first) {
-        handler_get_json_height(stream, node).await?;
+        get_height(stream, node).await?;
     } else if BLOCK_LATEST.is_match(first) {
-        handler_get_json_block_latest(stream, node).await?;
+        get_block_latest(stream, node).await?;
     } else if HASH_BY_HEIGHT.is_match(first) {
-        handler_get_json_hash_by_height(stream, node, first).await?;
+        get_hash_by_height(stream, node, first).await?;
     } else if BLOCK_BY_HASH.is_match(first) {
-        handler_get_json_block_by_hash(stream, node, first).await?;
+        get_block_by_hash(stream, node, first).await?;
     } else if TRANSACTION_BY_HASH.is_match(first) {
-        handler_get_json_transaction_by_hash(stream, node, first).await?;
+        get_transaction_by_hash(stream, node, first).await?;
     } else if STAKE_BY_HASH.is_match(first) {
-        handler_get_json_stake_by_hash(stream, node, first).await?;
+        get_stake_by_hash(stream, node, first).await?;
     } else if PEERS.is_match(first) {
-        handler_get_json_peers(stream, node).await?;
+        get_peers(stream, node).await?;
     } else {
-        handler_404(stream).await?;
+        c404(stream).await?;
     };
     Ok(())
 }
-async fn handler_post(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
+async fn post(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
     if TRANSACTION.is_match(first) {
-        handler_post_json_transaction(stream, node, buffer).await?;
+        post_transaction(stream, node, buffer).await?;
     } else if STAKE.is_match(first) {
-        handler_post_json_stake(stream, node, buffer).await?;
+        post_stake(stream, node, buffer).await?;
     } else {
-        handler_404(stream).await?;
+        c404(stream).await?;
     };
     Ok(())
 }
-async fn handler_get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+async fn get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
     stream
         .write_all(
             format!(
@@ -105,7 +105,7 @@ Access-Control-Allow-Origin: *
         .await?;
     Ok(())
 }
-async fn handler_get_json(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+async fn get_info(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
     let states = &node.blockchain.states;
     stream
         .write_all(
@@ -151,7 +151,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_balance(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_balance(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
     let public_key = address::public::decode(BALANCE.find(first).ok_or("GET BALANCE 1")?.as_str().trim().get(9..).ok_or("GET BALANCE 2")?)?;
     let balance = node.blockchain.states.dynamic.balance(&public_key);
     stream
@@ -170,7 +170,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_balance_staked(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_staked_balance(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
     let public_key = address::public::decode(
         BALANCE_STAKED
             .find(first)
@@ -197,7 +197,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_height(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+async fn get_height(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
     let height = node.blockchain.height();
     stream
         .write_all(
@@ -215,7 +215,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_block_latest(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+async fn get_block_latest(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
     let block = node.blockchain.latest_block();
     stream
         .write_all(
@@ -241,7 +241,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_hash_by_height(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_hash_by_height(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
     let height = HASH_BY_HEIGHT
         .find(first)
         .ok_or("GET HASH_BY_HEIGHT 1")?
@@ -277,7 +277,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_block_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_block_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
     let hash = hex::decode(
         BLOCK_BY_HASH
             .find(first)
@@ -312,7 +312,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_transaction_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_transaction_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
     let hash = hex::decode(
         TRANSACTION_BY_HASH
             .find(first)
@@ -347,7 +347,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_stake_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_stake_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
     let hash = hex::decode(
         STAKE_BY_HASH
             .find(first)
@@ -382,7 +382,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_json_peers(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+async fn get_peers(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
     let peers = db::peer::get_all(&node.blockchain.db);
     stream
         .write_all(
@@ -400,7 +400,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_post_json_transaction(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
+async fn post_transaction(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
     let transaction: Transaction = bincode::deserialize(&hex::decode(
         buffer
             .lines()
@@ -432,7 +432,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_post_json_stake(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
+async fn post_stake(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
     let stake: Stake = bincode::deserialize(&hex::decode(
         buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
@@ -459,7 +459,11 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
-    stream.write_all("HTTP/1.1 404 NOT FOUND".as_bytes()).await?;
+async fn c404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+    stream.write_all("HTTP/1.1 404 Not Found".as_bytes()).await?;
+    Ok(())
+}
+async fn c405(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+    stream.write_all("HTTP/1.1 405 Method Not Allowed".as_bytes()).await?;
     Ok(())
 }

@@ -12,16 +12,6 @@ pub struct Header {
     pub stake_merkle_root: types::MerkleRoot,
     pub timestamp: u32,
 }
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Metadata {
-    pub previous_hash: types::Hash,
-    pub timestamp: u32,
-    pub public_key: types::PublicKeyBytes,
-    #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
-    pub transaction_hashes: Vec<types::Hash>,
-    pub stake_hashes: Vec<types::Hash>,
-}
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Block {
     pub previous_hash: types::Hash,
@@ -127,16 +117,6 @@ impl Block {
             transaction_merkle_root: Block::merkle_root(&self.transaction_hashes()),
             stake_merkle_root: Block::merkle_root(&self.stake_hashes()),
             timestamp: self.timestamp,
-        }
-    }
-    pub fn metadata(&self) -> Metadata {
-        Metadata {
-            previous_hash: self.previous_hash,
-            timestamp: self.timestamp,
-            public_key: self.public_key,
-            signature: self.signature,
-            transaction_hashes: self.transaction_hashes(),
-            stake_hashes: self.stake_hashes(),
         }
     }
 }

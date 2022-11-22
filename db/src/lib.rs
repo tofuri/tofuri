@@ -32,54 +32,62 @@ pub fn peers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("peers").unwrap()
 }
 pub mod block {
-    use super::block_metadata_lean;
-    use super::stake;
-    use super::transaction;
+    use super::{stake, transaction};
     use pea_block::Block;
+    use pea_core::types;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use serde::{Deserialize, Serialize};
+    use serde_big_array::BigArray;
     use std::error::Error;
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct Metadata {
+        pub previous_hash: types::Hash,
+        pub timestamp: u32,
+        pub public_key: types::PublicKeyBytes,
+        #[serde(with = "BigArray")]
+        pub signature: types::SignatureBytes,
+        pub transaction_hashes: Vec<types::Hash>,
+        pub stake_hashes: Vec<types::Hash>,
+    }
     pub fn put(block: &Block, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        let metadata = block.metadata();
         for transaction in block.transactions.iter() {
             transaction::put(transaction, db)?;
         }
         for stake in block.stakes.iter() {
             stake::put(stake, db)?;
         }
-        block_metadata_lean::put(db, &block.hash(), &metadata)?;
+        db.put_cf(
+            super::blocks(db),
+            &block.hash(),
+            bincode::serialize(&Metadata {
+                previous_hash: block.previous_hash,
+                timestamp: block.timestamp,
+                public_key: block.public_key,
+                signature: block.signature,
+                transaction_hashes: block.transaction_hashes(),
+                stake_hashes: block.stake_hashes(),
+            })?,
+        )?;
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block, Box<dyn Error>> {
-        let block_metadata_lean = block_metadata_lean::get(db, hash)?;
+        let metadata: Metadata = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
         let mut transactions = vec![];
-        for hash in block_metadata_lean.transaction_hashes {
+        for hash in metadata.transaction_hashes {
             transactions.push(transaction::get(db, &hash)?);
         }
         let mut stakes = vec![];
-        for hash in block_metadata_lean.stake_hashes {
+        for hash in metadata.stake_hashes {
             stakes.push(stake::get(db, &hash)?);
         }
         Ok(Block {
-            previous_hash: block_metadata_lean.previous_hash,
-            timestamp: block_metadata_lean.timestamp,
-            public_key: block_metadata_lean.public_key,
-            signature: block_metadata_lean.signature,
+            previous_hash: metadata.previous_hash,
+            timestamp: metadata.timestamp,
+            public_key: metadata.public_key,
+            signature: metadata.signature,
             transactions,
             stakes,
         })
-    }
-}
-pub mod block_metadata_lean {
-    use pea_block::Metadata;
-    use pea_core::types;
-    use rocksdb::{DBWithThreadMode, SingleThreaded};
-    use std::error::Error;
-    pub fn put(db: &DBWithThreadMode<SingleThreaded>, hash: &types::Hash, block_metadata_lean: &Metadata) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::blocks(db), hash, bincode::serialize(block_metadata_lean)?)?;
-        Ok(())
-    }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Metadata, Box<dyn Error>> {
-        Ok(bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?)
     }
 }
 pub mod transaction {
@@ -145,7 +153,7 @@ pub mod stake {
     }
 }
 pub mod tree {
-    use pea_block::Metadata;
+    use super::block;
     use pea_core::types;
     use pea_tree::Tree;
     use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
@@ -156,7 +164,7 @@ pub mod tree {
         for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
-            let block: Metadata = bincode::deserialize(&bytes).unwrap();
+            let block: block::Metadata = bincode::deserialize(&bytes).unwrap();
             match hashes.get(&block.previous_hash) {
                 Some((vec, _)) => {
                     let mut vec = vec.clone();

@@ -15,7 +15,7 @@ pub struct Header {
 pub struct Stake {
     pub public_key: types::PublicKeyBytes,
     pub amount: u128,
-    pub deposit: bool, // false -> withdraw
+    pub deposit: bool,
     pub fee: u128,
     pub timestamp: u32,
     #[serde(with = "BigArray")]

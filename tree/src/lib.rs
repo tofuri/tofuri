@@ -154,6 +154,7 @@ mod tests {
         tree.insert([0x11; 32], [0x00; 32], 1);
         tree.insert([0x22; 32], [0x11; 32], 1);
         tree.insert([0x33; 32], [0x22; 32], 1);
+        assert_eq!(tree.size(), 3);
         tree.insert([0x44; 32], [0x33; 32], 1);
         tree.insert([0x55; 32], [0x22; 32], 1);
         tree.insert([0x66; 32], [0x00; 32], 1);
@@ -161,5 +162,6 @@ mod tests {
         assert_eq!(tree.main(), Some(&([0x44; 32], 3, 1)));
         tree.sort_branches();
         assert_eq!(tree.main(), Some(&([0x77; 32], 3, 0)));
+        assert_eq!(tree.size(), 7);
     }
 }

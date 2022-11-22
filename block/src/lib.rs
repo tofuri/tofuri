@@ -44,28 +44,25 @@ impl fmt::Debug for Block {
     }
 }
 impl Block {
-    pub fn from(
-        previous_hash: types::Hash,
-        timestamp: u32,
-        public_key: types::PublicKeyBytes,
-        signature: types::SignatureBytes,
-        transactions: Vec<Transaction>,
-        stakes: Vec<Stake>,
-    ) -> Block {
+    pub fn new(previous_hash: types::Hash) -> Block {
         Block {
             previous_hash,
-            timestamp,
-            public_key,
-            signature,
-            transactions,
-            stakes,
+            timestamp: util::timestamp(),
+            public_key: [0; 32],
+            signature: [0; 64],
+            transactions: vec![],
+            stakes: vec![],
         }
     }
-    pub fn new(previous_hash: types::Hash) -> Block {
-        Block::from(previous_hash, util::timestamp(), [0; 32], [0; 64], vec![], vec![])
-    }
-    pub fn new_timestamp_0(previous_hash: types::Hash) -> Block {
-        Block::from(previous_hash, 0, [0; 32], [0; 64], vec![], vec![])
+    pub fn genesis(previous_hash: types::Hash) -> Block {
+        Block {
+            previous_hash,
+            timestamp: 0,
+            public_key: [0; 32],
+            signature: [0; 64],
+            transactions: vec![],
+            stakes: vec![],
+        }
     }
     pub fn sign(&mut self, key: &Key) {
         self.public_key = key.public_key_bytes();
@@ -180,7 +177,14 @@ mod tests {
     use super::*;
     #[test]
     fn test_hash() {
-        let block = Block::from([0; 32], 0, [0; 32], [0; 64], vec![], vec![]);
+        let block = Block {
+            previous_hash: [0; 32],
+            timestamp: 0,
+            public_key: [0; 32],
+            signature: [0; 64],
+            transactions: vec![],
+            stakes: vec![],
+        };
         println!("{:x?}", block.hash());
         assert_eq!(
             [

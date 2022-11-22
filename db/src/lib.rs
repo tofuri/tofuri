@@ -60,14 +60,14 @@ pub mod block {
         for hash in block_metadata_lean.stake_hashes {
             stakes.push(stake::get(db, &hash)?);
         }
-        Ok(Block::from(
-            block_metadata_lean.previous_hash,
-            block_metadata_lean.timestamp,
-            block_metadata_lean.public_key,
-            block_metadata_lean.signature,
+        Ok(Block {
+            previous_hash: block_metadata_lean.previous_hash,
+            timestamp: block_metadata_lean.timestamp,
+            public_key: block_metadata_lean.public_key,
+            signature: block_metadata_lean.signature,
             transactions,
             stakes,
-        ))
+        })
     }
 }
 pub mod block_metadata_lean {

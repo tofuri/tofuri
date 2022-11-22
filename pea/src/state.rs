@@ -141,7 +141,7 @@ impl Dynamic {
             stakers: trusted.stakers.clone(),
             balance: trusted.balance.clone(),
             balance_staked: trusted.balance_staked.clone(),
-            latest_block: Block::new_timestamp_0([0; 32]),
+            latest_block: Block::genesis([0; 32]),
         };
         dynamic.load(db, hashes);
         if let Some(hash) = hashes.last() {
@@ -163,7 +163,7 @@ impl Default for Dynamic {
             stakers: VecDeque::new(),
             balance: HashMap::new(),
             balance_staked: HashMap::new(),
-            latest_block: Block::new_timestamp_0([0; 32]),
+            latest_block: Block::genesis([0; 32]),
         }
     }
 }

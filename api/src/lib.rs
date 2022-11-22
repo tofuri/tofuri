@@ -59,8 +59,8 @@ pub mod get {
         pub timestamp: u32,
         pub signature: String,
     }
-    pub async fn data(api: &str) -> Result<Data, Box<dyn Error>> {
-        Ok(reqwest::get(format!("{}/json", api)).await?.json().await?)
+    pub async fn info(api: &str) -> Result<Data, Box<dyn Error>> {
+        Ok(reqwest::get(format!("{}/info", api)).await?.json().await?)
     }
     pub async fn height(api: &str) -> Result<usize, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/height", api)).await?.json().await?)

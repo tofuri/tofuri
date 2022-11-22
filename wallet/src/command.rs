@@ -9,7 +9,7 @@ use pea_api::{get, post};
 use pea_core::constants::DECIMAL_PRECISION;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
-use std::process;
+use std::{process, time::Duration};
 pub async fn main(wallet: &Wallet, api: &str) {
     match Select::new(
         ">>",
@@ -46,6 +46,21 @@ pub fn clear() {
 async fn info(api: &str) {
     match get::index(api).await {
         Ok(info) => println!("{}", info.green()),
+        Err(err) => println!("{}", err.to_string().red()),
+    };
+    match get::info(api).await {
+        Ok(info) => {
+            if info.syncing {
+                println!("{}", "Downloading blockchain!".yellow());
+            } else {
+                println!("Blockchain synchronized.");
+            }
+            println!("Latest block height is {}", info.height.to_string().yellow());
+            println!("Tree size {}", info.tree_size.to_string().yellow());
+            println!("Gossipsub peers {}", info.gossipsub_peers.to_string().yellow());
+            println!("Heartbeats {}", info.heartbeats.to_string().yellow());
+            println!("Lag {}", format!("{:?}", Duration::from_micros((info.lag * 1000_f64) as u64)).yellow());
+        }
         Err(err) => println!("{}", err.to_string().red()),
     };
 }

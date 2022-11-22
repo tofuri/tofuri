@@ -52,16 +52,6 @@ impl Transaction {
         }
     }
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Compressed {
-    pub public_key_input: types::PublicKeyBytes,
-    pub public_key_output: types::PublicKeyBytes,
-    pub amount: types::CompressedAmount,
-    pub fee: types::CompressedAmount,
-    pub timestamp: u32,
-    #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
-}
 #[cfg(test)]
 mod tests {
     use super::*;

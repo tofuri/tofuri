@@ -5,8 +5,8 @@ use log::{error, info};
 use pea_address as address;
 use pea_api::get;
 use pea_db as db;
-use pea_stake::{self as stake, Stake};
-use pea_transaction::{self as transaction, Transaction};
+use pea_stake::Stake;
+use pea_transaction::Transaction;
 use regex::Regex;
 use std::{error::Error, io::BufRead};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -24,33 +24,9 @@ lazy_static! {
     static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
     static ref STAKE_BY_HASH: Regex = Regex::new(r" /stake/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
-    static ref TRANSACTION_SERIALIZED: usize = hex::encode({
-        let transaction = Transaction::new([0; 32], 0, 0);
-        bincode::serialize(&transaction::Compressed {
-            public_key_input: transaction.public_key_input,
-            public_key_output: transaction.public_key_output,
-            amount: pea_amount::to_bytes(&transaction.amount),
-            fee: pea_amount::to_bytes(&transaction.fee),
-            timestamp: transaction.timestamp,
-            signature: transaction.signature,
-        })
-        .unwrap()
-    })
-    .len();
+    static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&Transaction::new([0; 32], 0, 0)).unwrap()).len();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
-    static ref STAKE_SERIALIZED: usize = hex::encode({
-        let stake = Stake::new(false, 0, 0);
-        bincode::serialize(&stake::Compressed {
-            public_key: stake.public_key,
-            amount: pea_amount::to_bytes(&stake.amount),
-            fee: pea_amount::to_bytes(&stake.fee),
-            deposit: stake.deposit,
-            timestamp: stake.timestamp,
-            signature: stake.signature,
-        })
-        .unwrap()
-    })
-    .len();
+    static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&Stake::new(false, 0, 0)).unwrap()).len();
     static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
 }
 pub async fn next(listener: &tokio::net::TcpListener) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
@@ -425,7 +401,7 @@ Content-Type: application/json
     Ok(())
 }
 async fn handler_post_json_transaction(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
-    let compressed: transaction::Compressed = bincode::deserialize(&hex::decode(
+    let transaction: Transaction = bincode::deserialize(&hex::decode(
         buffer
             .lines()
             .nth(5)
@@ -433,14 +409,7 @@ async fn handler_post_json_transaction(stream: &mut tokio::net::TcpStream, node:
             .get(0..*TRANSACTION_SERIALIZED)
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
-    let status = match node.blockchain.pending_transactions_push(Transaction {
-        public_key_input: compressed.public_key_input,
-        public_key_output: compressed.public_key_output,
-        amount: pea_amount::from_bytes(&compressed.amount),
-        fee: pea_amount::from_bytes(&compressed.fee),
-        timestamp: compressed.timestamp,
-        signature: compressed.signature,
-    }) {
+    let status = match node.blockchain.pending_transactions_push(transaction) {
         Ok(()) => "success".to_string(),
         Err(err) => {
             error!("{}", err);
@@ -464,17 +433,10 @@ Content-Type: application/json
     Ok(())
 }
 async fn handler_post_json_stake(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
-    let compressed: stake::Compressed = bincode::deserialize(&hex::decode(
+    let stake: Stake = bincode::deserialize(&hex::decode(
         buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
-    let status = match node.blockchain.pending_stakes_push(Stake {
-        public_key: compressed.public_key,
-        amount: pea_amount::from_bytes(&compressed.amount),
-        fee: pea_amount::from_bytes(&compressed.fee),
-        deposit: compressed.deposit,
-        timestamp: compressed.timestamp,
-        signature: compressed.signature,
-    }) {
+    let status = match node.blockchain.pending_stakes_push(stake) {
         Ok(()) => "success".to_string(),
         Err(err) => {
             error!("{}", err);

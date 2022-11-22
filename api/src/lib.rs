@@ -91,20 +91,13 @@ pub mod get {
     }
 }
 pub mod post {
-    use pea_stake::{self as stake, Stake};
-    use pea_transaction::{self as transaction, Transaction};
+    use pea_stake::Stake;
+    use pea_transaction::Transaction;
     use std::error::Error;
     pub async fn transaction(api: &str, transaction: &Transaction) -> Result<String, Box<dyn Error>> {
         Ok(reqwest::Client::new()
             .post(format!("{}/transaction", api))
-            .body(hex::encode(bincode::serialize(&transaction::Compressed {
-                public_key_input: transaction.public_key_input,
-                public_key_output: transaction.public_key_output,
-                amount: pea_amount::to_bytes(&transaction.amount),
-                fee: pea_amount::to_bytes(&transaction.fee),
-                timestamp: transaction.timestamp,
-                signature: transaction.signature,
-            })?))
+            .body(hex::encode(bincode::serialize(transaction)?))
             .send()
             .await?
             .json()
@@ -113,14 +106,7 @@ pub mod post {
     pub async fn stake(api: &str, stake: &Stake) -> Result<String, Box<dyn Error>> {
         Ok(reqwest::Client::new()
             .post(format!("{}/stake", api))
-            .body(hex::encode(bincode::serialize(&stake::Compressed {
-                public_key: stake.public_key,
-                amount: pea_amount::to_bytes(&stake.amount),
-                fee: pea_amount::to_bytes(&stake.fee),
-                deposit: stake.deposit,
-                timestamp: stake.timestamp,
-                signature: stake.signature,
-            })?))
+            .body(hex::encode(bincode::serialize(stake)?))
             .send()
             .await?
             .json()

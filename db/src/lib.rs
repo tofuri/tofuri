@@ -91,14 +91,27 @@ pub mod block {
     }
 }
 pub mod transaction {
-    use pea_transaction::{self as transaction, Transaction};
+    use pea_core::types;
+    use pea_transaction::Transaction;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use serde::{Deserialize, Serialize};
+    use serde_big_array::BigArray;
     use std::error::Error;
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Metadata {
+        pub public_key_input: types::PublicKeyBytes,
+        pub public_key_output: types::PublicKeyBytes,
+        pub amount: types::CompressedAmount,
+        pub fee: types::CompressedAmount,
+        pub timestamp: u32,
+        #[serde(with = "BigArray")]
+        pub signature: types::SignatureBytes,
+    }
     pub fn put(transaction: &Transaction, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(
             super::transactions(db),
             transaction.hash(),
-            bincode::serialize(&transaction::Compressed {
+            bincode::serialize(&Metadata {
                 public_key_input: transaction.public_key_input,
                 public_key_output: transaction.public_key_output,
                 amount: pea_amount::to_bytes(&transaction.amount),
@@ -110,26 +123,39 @@ pub mod transaction {
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Transaction, Box<dyn Error>> {
-        let compressed: transaction::Compressed = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
+        let metadata: Metadata = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
         Ok(Transaction {
-            public_key_input: compressed.public_key_input,
-            public_key_output: compressed.public_key_output,
-            amount: pea_amount::from_bytes(&compressed.amount),
-            fee: pea_amount::from_bytes(&compressed.fee),
-            timestamp: compressed.timestamp,
-            signature: compressed.signature,
+            public_key_input: metadata.public_key_input,
+            public_key_output: metadata.public_key_output,
+            amount: pea_amount::from_bytes(&metadata.amount),
+            fee: pea_amount::from_bytes(&metadata.fee),
+            timestamp: metadata.timestamp,
+            signature: metadata.signature,
         })
     }
 }
 pub mod stake {
-    use pea_stake::{self as stake, Stake};
+    use pea_core::types;
+    use pea_stake::Stake;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use serde::{Deserialize, Serialize};
+    use serde_big_array::BigArray;
     use std::error::Error;
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Metadata {
+        pub public_key: types::PublicKeyBytes,
+        pub amount: types::CompressedAmount,
+        pub fee: types::CompressedAmount,
+        pub deposit: bool,
+        pub timestamp: u32,
+        #[serde(with = "BigArray")]
+        pub signature: types::SignatureBytes,
+    }
     pub fn put(stake: &Stake, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(
             super::stakes(db),
             stake.hash(),
-            bincode::serialize(&stake::Compressed {
+            bincode::serialize(&Metadata {
                 public_key: stake.public_key,
                 amount: pea_amount::to_bytes(&stake.amount),
                 fee: pea_amount::to_bytes(&stake.fee),
@@ -141,14 +167,14 @@ pub mod stake {
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Stake, Box<dyn Error>> {
-        let compressed: stake::Compressed = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
+        let metadata: Metadata = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
         Ok(Stake {
-            public_key: compressed.public_key,
-            amount: pea_amount::from_bytes(&compressed.amount),
-            fee: pea_amount::from_bytes(&compressed.fee),
-            deposit: compressed.deposit,
-            timestamp: compressed.timestamp,
-            signature: compressed.signature,
+            public_key: metadata.public_key,
+            amount: pea_amount::from_bytes(&metadata.amount),
+            fee: pea_amount::from_bytes(&metadata.fee),
+            deposit: metadata.deposit,
+            timestamp: metadata.timestamp,
+            signature: metadata.signature,
         })
     }
 }

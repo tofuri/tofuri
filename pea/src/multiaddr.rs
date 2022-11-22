@@ -32,3 +32,40 @@ pub fn has_port(multiaddr: &Multiaddr) -> bool {
     let components = multiaddr.iter().collect::<Vec<_>>();
     matches!(components.get(1), Some(Protocol::Tcp(_)))
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_filter_ip() {
+        assert_eq!(filter_ip(&"".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(filter_ip(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(
+            filter_ip(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
+            "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
+        );
+    }
+    #[test]
+    fn test_filter_ip_port() {
+        assert_eq!(filter_ip_port(&"".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(filter_ip_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(
+            filter_ip_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()).unwrap(),
+            "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
+        );
+        assert_eq!(
+            filter_ip_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
+            "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
+        );
+        assert_eq!(
+            filter_ip_port(&"/ip4/0.0.0.0/tcp/9334".parse::<Multiaddr>().unwrap()).unwrap(),
+            "/ip4/0.0.0.0/tcp/9334".parse::<Multiaddr>().unwrap()
+        );
+    }
+    #[test]
+    fn test_has_port() {
+        assert_eq!(has_port(&"".parse::<Multiaddr>().unwrap()), false);
+        assert_eq!(has_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()), false);
+        assert_eq!(has_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), false);
+        assert_eq!(has_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()), true);
+    }
+}

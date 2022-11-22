@@ -24,7 +24,7 @@ pub async fn handler(mut stream: tokio::net::TcpStream, payment_processor: &mut 
     if GET.is_match(&first) {
         get(&mut stream, payment_processor, &first).await?;
     } else {
-        c404(&mut stream).await?;
+        c405(&mut stream).await?;
     };
     stream.flush().await?;
     Ok(())
@@ -127,5 +127,9 @@ Content-Type: application/json
 }
 async fn c404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
     stream.write_all("HTTP/1.1 404 Not Found".as_bytes()).await?;
+    Ok(())
+}
+async fn c405(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+    stream.write_all("HTTP/1.1 405 Method Not Allowed".as_bytes()).await?;
     Ok(())
 }

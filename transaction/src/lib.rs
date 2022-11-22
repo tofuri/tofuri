@@ -64,3 +64,25 @@ pub struct Compressed {
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
+#[cfg(test)]
+mod tests {
+    use crate::Transaction;
+    #[test]
+    fn test_hash() {
+        let transaction = Transaction {
+            public_key_input: [0; 32],
+            public_key_output: [0; 32],
+            amount: 0,
+            fee: 0,
+            timestamp: 0,
+            signature: [0; 64],
+        };
+        assert_eq!(
+            transaction.hash(),
+            [
+                172, 111, 134, 255, 246, 48, 165, 106, 33, 245, 157, 58, 12, 28, 105, 7, 254, 63, 124, 175, 213, 250, 145, 111, 155, 114, 32, 50, 246, 5, 158,
+                217
+            ]
+        );
+    }
+}

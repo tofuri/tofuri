@@ -1,7 +1,7 @@
 pub mod public {
     use pea_core::{constants::PREFIX_ADDRESS, types, util};
     use std::error::Error;
-    fn checksum(public_key: &types::PublicKeyBytes) -> types::Checksum {
+    pub fn checksum(public_key: &types::PublicKeyBytes) -> types::Checksum {
         util::hash(public_key).get(0..4).unwrap().try_into().unwrap()
     }
     pub fn encode(public_key: &types::PublicKeyBytes) -> String {
@@ -39,7 +39,7 @@ pub mod public {
 pub mod secret {
     use pea_core::{constants::PREFIX_ADDRESS_KEY, types, util};
     use std::error::Error;
-    fn checksum(secret_key: &types::SecretKeyBytes) -> types::Checksum {
+    pub fn checksum(secret_key: &types::SecretKeyBytes) -> types::Checksum {
         util::hash(secret_key).get(4..8).unwrap().try_into().unwrap()
     }
     pub fn encode(secret_key: &types::SecretKeyBytes) -> String {
@@ -70,6 +70,10 @@ pub mod secret {
                 [0; 32],
                 decode("SECRETx0000000000000000000000000000000000000000000000000000000000000000819a5372").unwrap()
             );
+        }
+        #[test]
+        fn test_cecksum() {
+            assert_eq!(vec![129, 154, 83, 114], checksum(&[0; 32]));
         }
     }
 }

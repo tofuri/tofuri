@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
 use log::info;
-use pea::node::Node;
+use pea::node::{Node, Options};
 use pea_logger as logger;
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
@@ -63,19 +63,19 @@ async fn main() {
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
     info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
     info!("{} {}", "--host".cyan(), args.host.magenta());
-    let mut node = Node::new(
-        args.tempdb,
-        args.tempkey,
-        args.trust,
-        args.pending,
-        args.max_established,
-        args.tps,
-        &args.wallet,
-        &args.passphrase,
-        &args.peer,
-        args.bind_api,
-        args.host,
-    )
+    let mut node = Node::new(Options {
+        tempdb: args.tempdb,
+        tempkey: args.tempkey,
+        trust: args.trust,
+        pending: args.pending,
+        max_established: args.max_established,
+        tps: args.tps,
+        wallet: &args.wallet,
+        passphrase: &args.passphrase,
+        peer: &args.peer,
+        bind_api: args.bind_api,
+        host: args.host,
+    })
     .await;
     node.start().await;
 }

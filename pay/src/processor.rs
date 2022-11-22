@@ -21,6 +21,17 @@ use std::{
 };
 use tempdir::TempDir;
 use tokio::net::TcpListener;
+pub struct Options<'a> {
+    pub tempdb: bool,
+    pub tempkey: bool,
+    pub confirmations: usize,
+    pub expires: u32,
+    pub tps: f64,
+    pub wallet: &'a str,
+    pub passphrase: &'a str,
+    pub api: String,
+    pub bind_api: String,
+}
 pub struct PaymentProcessor {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub wallet: Wallet,
@@ -35,28 +46,18 @@ pub struct PaymentProcessor {
     subkey: usize,
 }
 impl PaymentProcessor {
-    pub fn new(
-        tempdb: bool,
-        tempkey: bool,
-        confirmations: usize,
-        expires: u32,
-        tps: f64,
-        wallet: &str,
-        passphrase: &str,
-        api: String,
-        bind_api: String,
-    ) -> Self {
-        let wallet = PaymentProcessor::wallet(tempkey, wallet, passphrase);
+    pub fn new(options: Options) -> Self {
+        let wallet = PaymentProcessor::wallet(options.tempkey, options.wallet, options.passphrase);
         info!("PubKey is {}", address::public::encode(&wallet.key.public_key_bytes()).green());
-        let db = PaymentProcessor::db(tempdb);
+        let db = PaymentProcessor::db(options.tempdb);
         Self {
             db,
             wallet,
-            api,
-            bind_api,
-            confirmations,
-            expires,
-            tps,
+            api: options.api,
+            bind_api: options.bind_api,
+            confirmations: options.confirmations,
+            expires: options.expires,
+            tps: options.tps,
             chain: vec![],
             charges: HashMap::new(),
             subkey: 0,

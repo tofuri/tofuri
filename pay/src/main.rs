@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use log::info;
 use pea_logger as logger;
-use pea_pay::processor::PaymentProcessor;
+use pea_pay::processor::{Options, PaymentProcessor};
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
@@ -55,16 +55,16 @@ async fn main() {
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     info!("{} {}", "--api".cyan(), args.api.magenta());
     info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
-    let mut payment_processor = PaymentProcessor::new(
-        args.tempdb,
-        args.tempkey,
-        args.confirmations,
-        args.expires,
-        args.tps,
-        &args.wallet,
-        &args.passphrase,
-        args.api,
-        args.bind_api,
-    );
+    let mut payment_processor = PaymentProcessor::new(Options {
+        tempdb: args.tempdb,
+        tempkey: args.tempkey,
+        confirmations: args.confirmations,
+        expires: args.expires,
+        tps: args.tps,
+        wallet: &args.wallet,
+        passphrase: &args.passphrase,
+        api: args.api,
+        bind_api: args.bind_api,
+    });
     payment_processor.start().await;
 }

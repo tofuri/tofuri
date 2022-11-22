@@ -31,6 +31,19 @@ use tempdir::TempDir;
 use tokio::net::TcpListener;
 type HandlerErr =
     EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>;
+pub struct Options<'a> {
+    pub tempdb: bool,
+    pub tempkey: bool,
+    pub trust: usize,
+    pub pending: usize,
+    pub max_established: Option<u32>,
+    pub tps: f64,
+    pub wallet: &'a str,
+    pub passphrase: &'a str,
+    pub peer: &'a str,
+    pub bind_api: String,
+    pub host: String,
+}
 pub struct Node {
     pub swarm: Swarm<Behaviour>,
     pub blockchain: Blockchain,
@@ -45,37 +58,25 @@ pub struct Node {
     pub host: String,
 }
 impl Node {
-    pub async fn new(
-        tempdb: bool,
-        tempkey: bool,
-        trust: usize,
-        pending: usize,
-        max_established: Option<u32>,
-        tps: f64,
-        wallet: &str,
-        passphrase: &str,
-        peer: &str,
-        bind_api: String,
-        host: String,
-    ) -> Node {
-        let wallet = Node::wallet(tempkey, wallet, passphrase);
+    pub async fn new(options: Options<'_>) -> Node {
+        let wallet = Node::wallet(options.tempkey, options.wallet, options.passphrase);
         info!("PubKey is {}", address::public::encode(&wallet.key.public_key_bytes()).green());
-        let db = Node::db(tempdb);
-        let blockchain = Blockchain::new(db, wallet.key, trust, pending);
-        let swarm = Node::swarm(max_established).await.unwrap();
-        let known = Node::known(&blockchain.db, peer);
+        let db = Node::db(options.tempdb);
+        let blockchain = Blockchain::new(db, wallet.key, options.trust, options.pending);
+        let swarm = Node::swarm(options.max_established).await.unwrap();
+        let known = Node::known(&blockchain.db, options.peer);
         Node {
             swarm,
             blockchain,
             message_data_hashes: vec![],
             heartbeats: 0,
             lag: 0.0,
-            tps,
+            tps: options.tps,
             unknown: HashSet::new(),
             known,
             connections: HashMap::new(),
-            bind_api,
-            host,
+            bind_api: options.bind_api,
+            host: options.host,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

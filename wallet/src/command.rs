@@ -13,31 +13,20 @@ use std::process;
 pub async fn main(wallet: &Wallet, api: &str) {
     match Select::new(
         ">>",
-        vec![
-            "Search",
-            "Address",
-            "Secret key",
-            "Data",
-            "Balance",
-            "Height",
-            "Transaction",
-            "Stake",
-            "API",
-            "Exit",
-        ],
+        vec!["Address", "Balance", "Search", "Send", "Height", "Secret", "Encrypted", "Stake", "API", "Exit"],
     )
     .prompt()
     .unwrap_or_else(|err| {
         println!("{}", err.to_string().red());
         process::exit(0)
     }) {
-        "Search" => search(api).await,
         "Address" => address(wallet),
-        "Secret key" => key(wallet),
-        "Data" => data(wallet),
         "Balance" => balance(api, &wallet.key.public()).await,
+        "Search" => search(api).await,
+        "Send" => transaction(api, wallet).await,
         "Height" => height(api).await,
-        "Transaction" => transaction(api, wallet).await,
+        "Secret" => key(wallet),
+        "Encrypted" => data(wallet),
         "Stake" => stake(api, wallet).await,
         "API" => info(api).await,
         "Exit" => exit(),

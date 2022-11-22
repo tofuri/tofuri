@@ -66,7 +66,7 @@ pub struct Compressed {
 }
 #[cfg(test)]
 mod tests {
-    use crate::Transaction;
+    use super::*;
     #[test]
     fn test_hash() {
         let transaction = Transaction {

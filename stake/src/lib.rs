@@ -62,3 +62,25 @@ pub struct Compressed {
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_hash() {
+        let stake = Stake {
+            public_key: [0; 32],
+            amount: 0,
+            deposit: false,
+            fee: 0,
+            timestamp: 0,
+            signature: [0; 64],
+        };
+        assert_eq!(
+            stake.hash(),
+            [
+                21, 94, 12, 116, 214, 170, 54, 153, 102, 153, 156, 138, 151, 46, 61, 146, 230, 38, 102, 86, 253, 116, 8, 127, 164, 101, 49, 219, 69, 41, 101,
+                245
+            ]
+        );
+    }
+}

@@ -22,7 +22,7 @@ pub async fn main(wallet: &Wallet, api: &str) {
             "Height",
             "Transaction",
             "Stake",
-            "Validator",
+            "Info",
             "Exit",
         ],
     )
@@ -39,7 +39,7 @@ pub async fn main(wallet: &Wallet, api: &str) {
         "Height" => height(api).await,
         "Transaction" => transaction(api, wallet).await,
         "Stake" => stake(api, wallet).await,
-        "Validator" => validator(api).await,
+        "Info" => info(api).await,
         "Exit" => exit(),
         _ => {}
     }
@@ -54,7 +54,7 @@ pub fn press_any_key_to_continue() {
 pub fn clear() {
     print!("\x1B[2J\x1B[1;1H");
 }
-async fn validator(api: &str) {
+async fn info(api: &str) {
     match get::index(api).await {
         Ok(info) => println!("{}", info.green()),
         Err(err) => println!("{}", err.to_string().red()),

@@ -1,4 +1,5 @@
 use clap::Parser;
+use colored::*;
 use pea_wallet::{command, Wallet};
 use std::error::Error;
 #[derive(Parser, Debug)]
@@ -16,6 +17,12 @@ pub struct Args {
 }
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    println!(
+        "{} = {{ version = \"{}\" }}",
+        env!("CARGO_PKG_NAME").yellow(),
+        env!("CARGO_PKG_VERSION").magenta()
+    );
+    println!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), env!("GIT_HASH").magenta());
     let args = Args::parse();
     let wallet = Wallet::import(&args.wallet, &args.passphrase)?;
     command::clear();

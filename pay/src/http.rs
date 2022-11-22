@@ -51,7 +51,7 @@ async fn get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Err
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 
-{} {}
+{} = {{ version = \"{}\" }}
 {}/tree/{}",
                 env!("CARGO_PKG_NAME"),
                 env!("CARGO_PKG_VERSION"),

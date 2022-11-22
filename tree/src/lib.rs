@@ -145,3 +145,21 @@ impl Default for Tree {
         Self::new()
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test() {
+        let mut tree = Tree::new();
+        tree.insert([0x11; 32], [0x00; 32], 1);
+        tree.insert([0x22; 32], [0x11; 32], 1);
+        tree.insert([0x33; 32], [0x22; 32], 1);
+        tree.insert([0x44; 32], [0x33; 32], 1);
+        tree.insert([0x55; 32], [0x22; 32], 1);
+        tree.insert([0x66; 32], [0x00; 32], 1);
+        tree.insert([0x77; 32], [0x55; 32], 0);
+        assert_eq!(tree.main(), Some(&([0x44; 32], 3, 1)));
+        tree.sort_branches();
+        assert_eq!(tree.main(), Some(&([0x77; 32], 3, 0)));
+    }
+}

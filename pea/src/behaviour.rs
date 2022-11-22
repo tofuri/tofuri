@@ -10,7 +10,7 @@ use libp2p::{
 use pea_core::constants::PROTOCOL_VERSION;
 use std::error::Error;
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "Event")]
+#[behaviour(out_event = "OutEvent")]
 pub struct Behaviour {
     pub mdns: Mdns,
     pub ping: Ping,
@@ -30,34 +30,34 @@ impl Behaviour {
     }
 }
 #[derive(Debug)]
-pub enum Event {
+pub enum OutEvent {
     Gossipsub(GossipsubEvent),
     Mdns(MdnsEvent),
     Ping(PingEvent),
     Identify(IdentifyEvent),
     Autonat(autonat::Event),
 }
-impl From<MdnsEvent> for Event {
+impl From<MdnsEvent> for OutEvent {
     fn from(v: MdnsEvent) -> Self {
         Self::Mdns(v)
     }
 }
-impl From<GossipsubEvent> for Event {
+impl From<GossipsubEvent> for OutEvent {
     fn from(v: GossipsubEvent) -> Self {
         Self::Gossipsub(v)
     }
 }
-impl From<PingEvent> for Event {
+impl From<PingEvent> for OutEvent {
     fn from(v: PingEvent) -> Self {
         Self::Ping(v)
     }
 }
-impl From<IdentifyEvent> for Event {
+impl From<IdentifyEvent> for OutEvent {
     fn from(v: IdentifyEvent) -> Self {
         Self::Identify(v)
     }
 }
-impl From<autonat::Event> for Event {
+impl From<autonat::Event> for OutEvent {
     fn from(v: autonat::Event) -> Self {
         Self::Autonat(v)
     }

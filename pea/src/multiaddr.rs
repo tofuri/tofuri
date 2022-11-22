@@ -30,8 +30,5 @@ pub fn filter_ip_port(multiaddr: &Multiaddr) -> Option<Multiaddr> {
 }
 pub fn has_port(multiaddr: &Multiaddr) -> bool {
     let components = multiaddr.iter().collect::<Vec<_>>();
-    match components.get(1) {
-        Some(Protocol::Tcp(_)) => true,
-        _ => false,
-    }
+    matches!(components.get(1), Some(Protocol::Tcp(_)))
 }

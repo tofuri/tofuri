@@ -1,5 +1,5 @@
 use crate::{
-    behaviour::{Behaviour, Event},
+    behaviour::{Behaviour, OutEvent},
     blockchain::Blockchain,
     gossipsub, heartbeat, http, multiaddr,
 };
@@ -29,6 +29,8 @@ use std::{
 };
 use tempdir::TempDir;
 use tokio::net::TcpListener;
+type HandlerErr =
+    EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>;
 pub struct Node {
     pub swarm: Swarm<Behaviour>,
     pub blockchain: Blockchain,
@@ -147,16 +149,7 @@ impl Node {
         }
         false
     }
-    fn handle_event(
-        &mut self,
-        event: SwarmEvent<
-            Event,
-            EitherError<
-                EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>,
-                ConnectionHandlerUpgrErr<std::io::Error>,
-            >,
-        >,
-    ) {
+    fn handle_event(&mut self, event: SwarmEvent<OutEvent, HandlerErr>) {
         debug!("{:?}", event);
         match event {
             SwarmEvent::ConnectionEstablished {
@@ -170,14 +163,14 @@ impl Node {
             SwarmEvent::ConnectionClosed { endpoint, num_established, .. } => {
                 Self::connection_closed(self, endpoint, num_established);
             }
-            SwarmEvent::Behaviour(Event::Mdns(MdnsEvent::Discovered(list))) => {
+            SwarmEvent::Behaviour(OutEvent::Mdns(MdnsEvent::Discovered(list))) => {
                 for (_, multiaddr) in list {
                     if let Some(multiaddr) = multiaddr::filter_ip_port(&multiaddr) {
                         self.unknown.insert(multiaddr);
                     }
                 }
             }
-            SwarmEvent::Behaviour(Event::Gossipsub(GossipsubEvent::Message { message, .. })) => {
+            SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message { message, .. })) => {
                 if self.filter(&message.data, false) {
                     return;
                 }

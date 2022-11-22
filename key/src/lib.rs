@@ -49,3 +49,14 @@ impl Key {
         Key::from_secret_key_bytes(&hash)
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_sign_verify() {
+        let key = Key::generate();
+        let message = [0; 128];
+        let signature_bytes = key.sign(&message);
+        assert!(Key::verify(&key.public_key_bytes(), &message, &signature_bytes).is_ok());
+    }
+}

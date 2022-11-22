@@ -22,28 +22,28 @@ pub async fn handler(mut stream: tokio::net::TcpStream, payment_processor: &mut 
     let first = buffer.lines().next().ok_or("http request first line")??;
     info!("{} {} {}", "API".cyan(), stream.peer_addr()?.to_string().magenta(), first);
     if GET.is_match(&first) {
-        handler_get(&mut stream, payment_processor, &first).await?;
+        get(&mut stream, payment_processor, &first).await?;
     } else {
-        handler_404(&mut stream).await?;
+        c404(&mut stream).await?;
     };
     stream.flush().await?;
     Ok(())
 }
-async fn handler_get(stream: &mut tokio::net::TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get(stream: &mut tokio::net::TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
     if INDEX.is_match(first) {
-        handler_get_index(stream).await?;
+        get_index(stream).await?;
     } else if CHARGES.is_match(first) {
-        handler_get_charges(stream, payment_processor).await?;
+        get_charges(stream, payment_processor).await?;
     } else if CHARGE.is_match(first) {
-        handler_get_charge(stream, payment_processor, first).await?;
+        get_charge(stream, payment_processor, first).await?;
     } else if CHARGE_NEW.is_match(first) {
-        handler_get_charge_new(stream, payment_processor, first).await?;
+        get_charge_new(stream, payment_processor, first).await?;
     } else {
-        handler_404(stream).await?;
+        c404(stream).await?;
     };
     Ok(())
 }
-async fn handler_get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+async fn get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
     stream
         .write_all(
             format!(
@@ -63,7 +63,7 @@ Access-Control-Allow-Origin: *
         .await?;
     Ok(())
 }
-async fn handler_get_charges(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor) -> Result<(), Box<dyn Error>> {
+async fn get_charges(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor) -> Result<(), Box<dyn Error>> {
     stream
         .write_all(
             format!(
@@ -80,7 +80,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_charge(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_charge(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
     let hash = hex::decode(CHARGE.find(first).ok_or("GET CHARGE 1")?.as_str().trim().get(8..).ok_or("GET CHARGE 2")?)?;
     let payment = payment_processor.get_charge(&hash);
     stream
@@ -99,7 +99,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_get_charge_new(stream: &mut tokio::net::TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_charge_new(stream: &mut tokio::net::TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
     let amount: u128 = CHARGE_NEW
         .find(first)
         .ok_or("GET CHARGE 1")?
@@ -125,7 +125,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn handler_404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
-    stream.write_all("HTTP/1.1 404 NOT FOUND".as_bytes()).await?;
+async fn c404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+    stream.write_all("HTTP/1.1 404 Not Found".as_bytes()).await?;
     Ok(())
 }

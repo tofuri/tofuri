@@ -1,7 +1,7 @@
 use crate::{multiaddr, node::Node};
 use colored::*;
 use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol, Multiaddr};
-use log::{debug, error};
+use log::{debug, error, info};
 use pea_core::{
     constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS_PER_TICK},
     util,
@@ -18,7 +18,6 @@ pub fn handler(node: &mut Node) {
     if delay(node, 60) {
         dial_known(node);
     }
-    node.heartbeats += 1;
     if delay(node, 10) {
         share(node);
     }
@@ -33,6 +32,7 @@ pub fn handler(node: &mut Node) {
     forge(node);
     node.blockchain.pending_blocks_accept();
     lag(node);
+    node.heartbeats += 1;
 }
 fn dial_known(node: &mut Node) {
     let vec = node.known.clone().into_iter().collect();
@@ -75,10 +75,19 @@ fn share(node: &mut Node) {
     }
 }
 fn forge(node: &mut Node) {
-    let states = &node.blockchain.states;
     if node.blockchain.sync.syncing {
         return;
     }
+    if !node.genesis && node.blockchain.height() == 0 {
+        if delay(node, 3) {
+            info!(
+                "Waiting for synchronization to start... Currently connected to {} peers.",
+                node.swarm.behaviour().gossipsub.all_mesh_peers().count().to_string().yellow()
+            );
+        }
+        return;
+    }
+    let states = &node.blockchain.states;
     let timestamp = util::timestamp();
     if let Some(public_key) = states.dynamic.staker(timestamp, states.dynamic.latest_block.timestamp) {
         if public_key != &node.blockchain.key.public_key_bytes() || timestamp < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {

@@ -34,6 +34,7 @@ type HandlerErr =
 pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,
+    pub genesis: bool,
     pub trust: usize,
     pub pending: usize,
     pub max_established: Option<u32>,
@@ -56,6 +57,7 @@ pub struct Node {
     pub connections: HashMap<Multiaddr, PeerId>,
     pub bind_api: String,
     pub host: String,
+    pub genesis: bool,
 }
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
@@ -77,6 +79,7 @@ impl Node {
             connections: HashMap::new(),
             bind_api: options.bind_api,
             host: options.host,
+            genesis: options.genesis,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

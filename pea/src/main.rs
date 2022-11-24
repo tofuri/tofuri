@@ -15,6 +15,9 @@ pub struct Args {
     /// Use temporary random keypair
     #[clap(long, value_parser, default_value_t = false)]
     pub tempkey: bool,
+    /// Generate genesis block
+    #[clap(long, value_parser, default_value_t = false)]
+    pub genesis: bool,
     /// Trust fork after blocks
     #[clap(long, value_parser, default_value = "128")]
     pub trust: usize,
@@ -56,6 +59,7 @@ async fn main() {
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
+    info!("{} {}", "--genesis".cyan(), args.genesis.to_string().magenta());
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
     info!("{} {}", "--pending".cyan(), args.pending.to_string().magenta());
     info!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
@@ -68,6 +72,7 @@ async fn main() {
     let mut node = Node::new(Options {
         tempdb: args.tempdb,
         tempkey: args.tempkey,
+        genesis: args.genesis,
         trust: args.trust,
         pending: args.pending,
         max_established: args.max_established,

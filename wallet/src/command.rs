@@ -145,9 +145,9 @@ impl Command {
                         println!("{}", "Insufficient balance".red());
                         continue;
                     }
-                    let amount = balance - fee;
+                    let amount = pea_amount::floor(&(balance - fee));
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee);
+                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee).unwrap();
                     transaction.sign(&subkey);
                     println!("{:?}", transaction);
                     match post::transaction(&self.api, &transaction).await {
@@ -269,7 +269,7 @@ impl Command {
         } {
             return;
         }
-        let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee);
+        let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee).unwrap();
         transaction.sign(&wallet.key);
         println!("Hash: {}", hex::encode(transaction.hash()).cyan());
         match post::transaction(api, &transaction).await {
@@ -294,7 +294,7 @@ impl Command {
         if !send {
             return;
         }
-        let mut stake = Stake::new(deposit, amount, fee);
+        let mut stake = Stake::new(deposit, amount, fee).unwrap();
         stake.sign(&wallet.key);
         println!("Hash: {}", hex::encode(stake.hash()).cyan());
         match post::stake(api, &stake).await {

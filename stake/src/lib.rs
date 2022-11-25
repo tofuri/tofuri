@@ -50,15 +50,21 @@ impl fmt::Debug for Stake {
     }
 }
 impl Stake {
-    pub fn new(deposit: bool, amount: u128, fee: u128) -> Stake {
-        Stake {
+    pub fn new(deposit: bool, amount: u128, fee: u128) -> Result<Stake, Box<dyn Error>> {
+        if amount != pea_amount::floor(&amount) {
+            return Err("Invalid amount".into());
+        }
+        if fee != pea_amount::floor(&fee) {
+            return Err("Invalid fee".into());
+        }
+        Ok(Stake {
             public_key: [0; 32],
             amount,
             deposit,
             fee,
             timestamp: util::timestamp(),
             signature: [0; 64],
-        }
+        })
     }
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&self.header()).unwrap())

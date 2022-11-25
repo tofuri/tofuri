@@ -50,15 +50,21 @@ impl fmt::Debug for Transaction {
     }
 }
 impl Transaction {
-    pub fn new(public_key_output: types::PublicKeyBytes, amount: u128, fee: u128) -> Transaction {
-        Transaction {
+    pub fn new(public_key_output: types::PublicKeyBytes, amount: u128, fee: u128) -> Result<Transaction, Box<dyn Error>> {
+        if amount != pea_amount::floor(&amount) {
+            return Err("Invalid amount".into());
+        }
+        if fee != pea_amount::floor(&fee) {
+            return Err("Invalid fee".into());
+        }
+        Ok(Transaction {
             public_key_input: [0; 32],
             public_key_output,
             amount,
             fee,
             timestamp: util::timestamp(),
             signature: [0; 64],
-        }
+        })
     }
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&self.header()).unwrap())

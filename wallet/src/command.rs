@@ -68,10 +68,7 @@ impl Command {
                 Self::data(self.wallet.as_ref().unwrap());
                 true
             }
-            "Subkeys" => {
-                self.subkeys().await;
-                true
-            }
+            "Subkeys" => self.subkeys().await,
             _ => {
                 process::exit(0);
             }
@@ -89,16 +86,22 @@ impl Command {
     fn decrypt(&mut self) {
         self.wallet = Some(Wallet::import("", "").unwrap());
     }
-    async fn subkeys(&mut self) {
+    async fn subkeys(&mut self) -> bool {
         match Select::new(">>", vec!["Balance", "Withdraw", "Back"]).prompt().unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {
-            "Balance" => self.subkeys_balance().await,
-            "Withdraw" => self.subkeys_withdraw().await,
-            "Back" => {}
+            "Balance" => {
+                self.subkeys_balance().await;
+                true
+            }
+            "Withdraw" => {
+                self.subkeys_withdraw().await;
+                true
+            }
+            "Back" => false,
             _ => process::exit(0),
-        };
+        }
     }
     fn inquire_subkeys_range() -> Range<usize> {
         let start = CustomType::<usize>::new("Range Start:")

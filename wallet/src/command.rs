@@ -50,7 +50,7 @@ impl Command {
                 true
             }
             "Balance" => {
-                Self::balance(&self.wallet.as_ref().unwrap().key.public(), &self.api).await;
+                Self::balance(&self.api, &self.wallet.as_ref().unwrap().key.public()).await;
                 true
             }
             "Send" => {
@@ -247,7 +247,7 @@ impl Command {
                 process::exit(0)
             });
         if address::public::decode(&search).is_ok() {
-            Self::balance(&search, api).await;
+            Self::balance(api, &search).await;
             return;
         } else if search.len() == 64 {
             if let Ok(block) = get::block(api, &search).await {

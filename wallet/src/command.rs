@@ -18,7 +18,7 @@ impl Command {
         Command { api, wallet: None }
     }
     pub async fn select(&mut self) -> bool {
-        let mut vec = vec!["Decrypt", "Search", "Height", "API", "Exit"];
+        let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
         if self.wallet.is_some() {
             let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Encrypted"];
             v.append(&mut vec);
@@ -28,7 +28,7 @@ impl Command {
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {
-            "Decrypt" => {
+            "Wallet" => {
                 self.decrypt();
                 false
             }

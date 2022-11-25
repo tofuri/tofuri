@@ -129,15 +129,7 @@ impl Command {
         }
     }
     async fn subkeys_withdraw(&self) {
-        let fee = CustomType::<u128>::new("Fee:")
-            .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
-            .with_error_message("Please type a valid number")
-            .with_help_message("Type the amount in satoshis using a decimal point as a separator")
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            });
+        let fee = Self::prompt_fee();
         let key = &self.wallet.as_ref().unwrap().key;
         for n in Self::subkeys_range() {
             let subkey = key.subkey(n);
@@ -200,8 +192,8 @@ impl Command {
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    async fn transaction(wallet: &Wallet, api: &str) {
-        let address = CustomType::<String>::new("Address:")
+    fn prompt_address() -> String {
+        CustomType::<String>::new("Address:")
             .with_error_message("Please enter a valid address")
             .with_help_message("Type the hex encoded address with 0x as prefix")
             .with_parser(&|x| match address::public::decode(x) {
@@ -212,11 +204,13 @@ impl Command {
             .unwrap_or_else(|err| {
                 println!("{}", err.to_string().red());
                 process::exit(0)
-            });
-        let amount = (CustomType::<f64>::new("Amount:")
-            .with_formatter(&|i| format!("{:.18} pea", i)) // DECIMAL_PRECISION
+            })
+    }
+    fn prompt_amount() -> u128 {
+        (CustomType::<f64>::new("Amount:")
+            .with_formatter(&|i| format!("{:.18} pea", i))
             .with_error_message("Please type a valid number")
-            .with_help_message("Type the amount in pea using a decimal point as a separator")
+            .with_help_message("Type the amount to send using a decimal point as a separator")
             .with_parser(&|x| match x.parse::<f64>() {
                 Ok(f) => Ok(amount::round(&((f * DECIMAL_PRECISION as f64) as u128)) as f64 / DECIMAL_PRECISION as f64),
                 Err(_) => Err(()),
@@ -226,16 +220,33 @@ impl Command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             })
-            * DECIMAL_PRECISION as f64) as u128;
-        let fee = CustomType::<u128>::new("Fee:")
+            * DECIMAL_PRECISION as f64) as u128
+    }
+    fn prompt_fee() -> u128 {
+        CustomType::<u128>::new("Fee:")
             .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
             .with_error_message("Please type a valid number")
-            .with_help_message("Type the amount in satoshis using a decimal point as a separator")
+            .with_help_message("Type the fee to use in satoshis")
             .prompt()
             .unwrap_or_else(|err| {
                 println!("{}", err.to_string().red());
                 process::exit(0)
-            });
+            })
+    }
+    fn prompt_deposit() -> bool {
+        match Select::new(">>", vec!["deposit", "withdraw"]).prompt().unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        }) {
+            "deposit" => true,
+            "withdraw" => false,
+            _ => false,
+        }
+    }
+    async fn transaction(wallet: &Wallet, api: &str) {
+        let address = Self::prompt_address();
+        let amount = Self::prompt_amount();
+        let fee = Self::prompt_fee();
         if !match Confirm::new("Send?").prompt() {
             Ok(b) => b,
             Err(err) => {
@@ -253,45 +264,21 @@ impl Command {
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    async fn stake(wallet: &Wallet, api: &str) {
-        let deposit = match Select::new(">>", vec!["deposit", "withdraw"]).prompt().unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }) {
-            "deposit" => true,
-            "withdraw" => false,
-            _ => false,
-        };
-        let amount = (CustomType::<f64>::new("Amount:")
-            .with_formatter(&|i| format!("{:.18} pea", i)) // DECIMAL_PRECISION
-            .with_error_message("Please type a valid number")
-            .with_help_message("Type the amount in pea using a decimal point as a separator")
-            .with_parser(&|x| match x.parse::<f64>() {
-                Ok(f) => Ok(amount::round(&((f * DECIMAL_PRECISION as f64) as u128)) as f64 / DECIMAL_PRECISION as f64),
-                Err(_) => Err(()),
-            })
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            })
-            * DECIMAL_PRECISION as f64) as u128;
-        let fee = CustomType::<u128>::new("Fee:")
-            .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
-            .with_error_message("Please type a valid number")
-            .with_help_message("Type the amount in satoshis using a decimal point as a separator")
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            });
-        if !match Confirm::new("Send?").prompt() {
+    fn prompt_send() -> bool {
+        match Confirm::new("Send?").prompt() {
             Ok(b) => b,
             Err(err) => {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             }
-        } {
+        }
+    }
+    async fn stake(wallet: &Wallet, api: &str) {
+        let deposit = Self::prompt_deposit();
+        let amount = Self::prompt_amount();
+        let fee = Self::prompt_fee();
+        let send = Self::prompt_send();
+        if !send {
             return;
         }
         let mut stake = Stake::new(deposit, amount, fee);

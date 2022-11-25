@@ -11,9 +11,12 @@ fn main() {
         100000000000000000000000000000000000000,
     ];
     for int in ints.iter() {
-        println!("{}", amount::round(int));
+        println!("{}", amount::floor(int));
     }
     for int in ints.iter() {
-        println!("{:x}", amount::round(int));
+        println!("{:x}", amount::floor(int));
+    }
+    for i in 100000000..1000000000 {
+        println!("{} {}", i, amount::floor(&i) <= i);
     }
 }

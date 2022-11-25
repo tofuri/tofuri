@@ -6,9 +6,9 @@ use std::error::Error;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Header {
     pub public_key: types::PublicKeyBytes,
-    pub amount: u128,
+    pub amount: types::CompressedAmount,
     pub deposit: bool,
-    pub fee: u128,
+    pub fee: types::CompressedAmount,
     pub timestamp: u32,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -45,9 +45,9 @@ impl Stake {
     pub fn header(&self) -> Header {
         Header {
             public_key: self.public_key,
-            amount: self.amount,
+            amount: pea_amount::to_bytes(&self.amount),
             deposit: self.deposit,
-            fee: self.fee,
+            fee: pea_amount::to_bytes(&self.fee),
             timestamp: self.timestamp,
         }
     }

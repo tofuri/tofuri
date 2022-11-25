@@ -7,8 +7,8 @@ use std::error::Error;
 pub struct Header {
     pub public_key_input: types::PublicKeyBytes,
     pub public_key_output: types::PublicKeyBytes,
-    pub amount: u128,
-    pub fee: u128,
+    pub amount: types::CompressedAmount,
+    pub fee: types::CompressedAmount,
     pub timestamp: u32,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -46,8 +46,8 @@ impl Transaction {
         Header {
             public_key_input: self.public_key_input,
             public_key_output: self.public_key_output,
-            amount: self.amount,
-            fee: self.fee,
+            amount: pea_amount::to_bytes(&self.amount),
+            fee: pea_amount::to_bytes(&self.fee),
             timestamp: self.timestamp,
         }
     }

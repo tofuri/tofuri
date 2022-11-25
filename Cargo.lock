@@ -2891,6 +2891,7 @@ name = "pea-stake"
 version = "0.2.1"
 dependencies = [
  "bincode",
+ "pea-amount",
  "pea-core",
  "pea-key",
  "serde",
@@ -2902,6 +2903,7 @@ name = "pea-transaction"
 version = "0.2.1"
 dependencies = [
  "bincode",
+ "pea-amount",
  "pea-core",
  "pea-key",
  "serde",

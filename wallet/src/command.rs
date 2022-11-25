@@ -140,7 +140,7 @@ impl Command {
                     if balance <= fee {
                         continue;
                     }
-                    let amount = pea_amount::round(&(balance - fee));
+                    let amount = balance - fee;
                     let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee);
                     transaction.sign(&subkey);
                     println!("{:?}", transaction);
@@ -180,9 +180,11 @@ impl Command {
         match get::balance(api, address).await {
             Ok(balance) => match get::balance_staked(api, address).await {
                 Ok(balance_staked) => println!(
-                    "Account balance: {}, locked: {}.",
-                    (balance as f64 / DECIMAL_PRECISION as f64).to_string().yellow(),
-                    (balance_staked as f64 / DECIMAL_PRECISION as f64).to_string().yellow()
+                    "Account balance: {} | {}, locked: {} | {}.",
+                    (balance as f64 / DECIMAL_PRECISION as f64).to_string().yellow(), // rounding error
+                    balance,
+                    (balance_staked as f64 / DECIMAL_PRECISION as f64).to_string().yellow(), // rounding error
+                    balance_staked
                 ),
                 Err(err) => println!("{}", err.to_string().red()),
             },
@@ -215,7 +217,7 @@ impl Command {
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount to send using a decimal point as a separator")
             .with_parser(&|x| match x.parse::<f64>() {
-                Ok(f) => Ok(amount::round(&((f * DECIMAL_PRECISION as f64) as u128)) as f64 / DECIMAL_PRECISION as f64),
+                Ok(f) => Ok(amount::floor(&((f * DECIMAL_PRECISION as f64) as u128)) as f64 / DECIMAL_PRECISION as f64),
                 Err(_) => Err(()),
             })
             .prompt()
@@ -231,7 +233,7 @@ impl Command {
             .with_error_message("Please type a valid number")
             .with_help_message("Type the fee to use in satoshis")
             .with_parser(&|x| match x.parse::<u128>() {
-                Ok(u) => Ok(amount::round(&u)),
+                Ok(u) => Ok(amount::floor(&u)),
                 Err(_) => Err(()),
             })
             .prompt()

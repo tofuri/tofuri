@@ -20,10 +20,6 @@ pub fn to_bytes(input: &u128) -> [u8; AMOUNT_BYTES] {
         }
         *v = bytes[k];
     }
-    // rounding
-    if output[AMOUNT_BYTES - 1] & 0x0f >= 8 {
-        output = (u32::from_be_bytes(output) + 8).to_be_bytes();
-    }
     output[AMOUNT_BYTES - 1] = (output[AMOUNT_BYTES - 1] & 0xf0) | size as u8;
     output
 }
@@ -43,7 +39,7 @@ pub fn from_bytes(input: &[u8; AMOUNT_BYTES]) -> u128 {
     }
     u128::from_be_bytes(bytes)
 }
-pub fn round(input: &u128) -> u128 {
+pub fn floor(input: &u128) -> u128 {
     from_bytes(&to_bytes(input))
 }
 #[cfg(test)]

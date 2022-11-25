@@ -95,7 +95,7 @@ impl Command {
             process::exit(0)
         }) {
             "Balance" => self.subkeys_balance().await,
-            "Withdraw" => self.subkeys_withdraw(),
+            "Withdraw" => self.subkeys_withdraw().await,
             "Back" => {}
             _ => process::exit(0),
         };
@@ -123,11 +123,43 @@ impl Command {
         let key = &self.wallet.as_ref().unwrap().key;
         for n in Self::subkeys_range() {
             let subkey = key.subkey(n);
-            println!("{} {}", n.to_string().red(), subkey.public().green());
-            Self::balance(&self.api, &subkey.public()).await;
+            let address = subkey.public();
+            println!("{} {}", n.to_string().red(), address.green());
+            Self::balance(&self.api, &address).await;
         }
     }
-    fn subkeys_withdraw(&self) {}
+    async fn subkeys_withdraw(&self) {
+        let fee = CustomType::<u128>::new("Fee:")
+            .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
+            .with_error_message("Please type a valid number")
+            .with_help_message("Type the amount in satoshis using a decimal point as a separator")
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
+        let key = &self.wallet.as_ref().unwrap().key;
+        for n in Self::subkeys_range() {
+            let subkey = key.subkey(n);
+            let address = subkey.public();
+            println!("{} {}", n.to_string().red(), address.green());
+            match get::balance(&self.api, &address).await {
+                Ok(balance) => {
+                    if balance <= fee {
+                        continue;
+                    }
+                    let mut transaction = Transaction::new(key.public_key_bytes(), balance, fee);
+                    transaction.sign(&subkey);
+                    println!("Hash: {}", hex::encode(transaction.hash()).cyan());
+                    match post::transaction(&self.api, &transaction).await {
+                        Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
+                        Err(err) => println!("{}", err.to_string().red()),
+                    };
+                }
+                Err(err) => println!("{}", err.to_string().red()),
+            };
+        }
+    }
     async fn info(api: &str) {
         match get::index(api).await {
             Ok(info) => println!("{}", info.green()),

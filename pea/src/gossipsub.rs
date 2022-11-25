@@ -14,11 +14,11 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
         }
         "stake" => {
             let stake: Stake = bincode::deserialize(&message.data)?;
-            node.blockchain.pending_stakes_push(stake)?;
+            node.blockchain.try_add_stake(stake)?;
         }
         "transaction" => {
             let transaction: Transaction = bincode::deserialize(&message.data)?;
-            node.blockchain.pending_transactions_push(transaction)?;
+            node.blockchain.try_add_transaction(transaction)?;
         }
         "multiaddr" => {
             let vec: Vec<Multiaddr> = bincode::deserialize(&message.data)?;
@@ -34,7 +34,7 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
 }
 fn block(node: &mut Node, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
     let block: Block = bincode::deserialize(bytes)?;
-    node.blockchain.pending_blocks_push(block.clone())?;
+    node.blockchain.try_add_block(block.clone())?;
     node.blockchain.accept_block(&block, false);
     Ok(())
 }

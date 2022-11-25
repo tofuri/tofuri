@@ -104,7 +104,7 @@ impl Blockchain {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
     }
-    pub fn pending_blocks_push(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
+    pub fn try_add_block(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
         if self.pending_blocks.iter().any(|b| b.signature == block.signature) {
             return Err("block already pending".into());
         }
@@ -113,7 +113,7 @@ impl Blockchain {
         self.limit_pending_blocks();
         Ok(())
     }
-    pub fn pending_transactions_push(&mut self, transaction: Transaction) -> Result<(), Box<dyn Error>> {
+    pub fn try_add_transaction(&mut self, transaction: Transaction) -> Result<(), Box<dyn Error>> {
         if self.pending_transactions.iter().any(|x| x.signature == transaction.signature) {
             return Err("transaction already pending".into());
         }
@@ -133,7 +133,7 @@ impl Blockchain {
         self.limit_pending_transactions();
         Ok(())
     }
-    pub fn pending_stakes_push(&mut self, stake: Stake) -> Result<(), Box<dyn Error>> {
+    pub fn try_add_stake(&mut self, stake: Stake) -> Result<(), Box<dyn Error>> {
         if self.pending_stakes.iter().any(|x| x.signature == stake.signature) {
             return Err("stake already pending".into());
         }
@@ -221,7 +221,7 @@ impl Blockchain {
         self.states.dynamic = Dynamic::from(&self.db, &hashes_dynamic, &self.states.trusted);
         info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
     }
-    pub fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
+    fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
         if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {
             return Err("block doesn't extend chain".into());
         }
@@ -295,7 +295,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_transaction(&self, transaction: &Transaction, balance: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_transaction(&self, transaction: &Transaction, balance: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if PublicKey::from_bytes(&transaction.public_key_output).is_err() {
             return Err("transaction has invalid public_key_output".into());
         }
@@ -325,7 +325,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_stake(&self, stake: &Stake, balance: u128, balance_staked: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_stake(&self, stake: &Stake, balance: u128, balance_staked: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if stake.verify().is_err() {
             return Err("stake has invalid signature".into());
         }

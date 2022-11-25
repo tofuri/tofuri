@@ -409,7 +409,7 @@ async fn post_transaction(stream: &mut tokio::net::TcpStream, node: &mut Node, b
             .get(0..*TRANSACTION_SERIALIZED)
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
-    let status = match node.blockchain.pending_transactions_push(transaction) {
+    let status = match node.blockchain.try_add_transaction(transaction) {
         Ok(()) => "success".to_string(),
         Err(err) => {
             error!("{}", err);
@@ -436,7 +436,7 @@ async fn post_stake(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer:
     let stake: Stake = bincode::deserialize(&hex::decode(
         buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
-    let status = match node.blockchain.pending_stakes_push(stake) {
+    let status = match node.blockchain.try_add_stake(stake) {
         Ok(()) => "success".to_string(),
         Err(err) => {
             error!("{}", err);

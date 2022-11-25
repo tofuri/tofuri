@@ -2,7 +2,7 @@ use pea_core::{types, util};
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
-use std::error::Error;
+use std::{error::Error, fmt};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Header {
     pub public_key: types::PublicKeyBytes,
@@ -11,7 +11,7 @@ pub struct Header {
     pub fee: types::CompressedAmount,
     pub timestamp: u32,
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Stake {
     pub public_key: types::PublicKeyBytes,
     pub amount: u128,
@@ -20,6 +20,34 @@ pub struct Stake {
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
+}
+impl fmt::Debug for Stake {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #![allow(dead_code)]
+        #[derive(Debug)]
+        struct Stake {
+            hash: String,
+            public_key: String,
+            amount: u128,
+            deposit: bool,
+            fee: u128,
+            timestamp: u32,
+            signature: String,
+        }
+        write!(
+            f,
+            "{:?}",
+            Stake {
+                hash: hex::encode(self.hash()),
+                public_key: pea_address::public::encode(&self.public_key),
+                amount: self.amount,
+                deposit: self.deposit,
+                fee: self.fee,
+                timestamp: self.timestamp,
+                signature: hex::encode(self.signature),
+            }
+        )
+    }
 }
 impl Stake {
     pub fn new(deposit: bool, amount: u128, fee: u128) -> Stake {

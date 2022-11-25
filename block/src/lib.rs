@@ -42,7 +42,7 @@ impl fmt::Debug for Block {
                 hash: hex::encode(self.hash()),
                 previous_hash: hex::encode(self.previous_hash),
                 timestamp: self.timestamp,
-                public_key: hex::encode(self.public_key),
+                public_key: pea_address::public::encode(&self.public_key),
                 signature: hex::encode(self.signature),
                 transactions: self.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
                 stakes: self.stakes.iter().map(|x| hex::encode(x.hash())).collect(),

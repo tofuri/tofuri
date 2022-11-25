@@ -216,7 +216,7 @@ Content-Type: application/json
     Ok(())
 }
 async fn get_block_latest(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
-    let block = node.blockchain.latest_block();
+    let block = &node.blockchain.states.dynamic.latest_block;
     stream
         .write_all(
             format!(

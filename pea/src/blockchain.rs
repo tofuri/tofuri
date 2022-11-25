@@ -173,27 +173,15 @@ impl Blockchain {
             }
         }
         block.sign(&self.key);
-        self.pending_blocks_push(block.clone())?;
-        info!(
-            "{} {} {}",
-            "Forged".magenta(),
-            self.tree.height(&block.previous_hash).to_string().yellow(),
-            hex::encode(block.hash())
-        );
+        self.accept_block(&block, true);
         Ok(block)
     }
-    pub fn pending_blocks_accept(&mut self) {
+    pub fn accept_pending_blocks(&mut self) {
         for block in self.pending_blocks.clone() {
-            let hash = self.block_accept(&block);
-            info!(
-                "{} {} {}",
-                "Accept".green(),
-                self.tree.height(&block.previous_hash).to_string().yellow(),
-                hex::encode(hash)
-            );
+            self.accept_block(&block, false);
         }
     }
-    pub fn block_accept(&mut self, block: &Block) -> types::Hash {
+    pub fn accept_block(&mut self, block: &Block, forged: bool) {
         db::block::put(block, &self.db).unwrap();
         let hash = block.hash();
         if self.tree.insert(hash, block.previous_hash, block.timestamp).unwrap() {
@@ -210,7 +198,12 @@ impl Blockchain {
         if block.hash() == self.states.dynamic.latest_block.hash() {
             self.sync.new += 1;
         }
-        hash
+        info!(
+            "{} {} {}",
+            if forged { "Forged".magenta() } else { "Accept".green() },
+            self.tree.height(&block.previous_hash).to_string().yellow(),
+            hex::encode(hash)
+        );
     }
     pub fn load(&mut self) {
         let start = Instant::now();

@@ -30,7 +30,7 @@ pub fn handler(node: &mut Node) {
     sync(node);
     node.blockchain.sync.handler();
     forge(node);
-    node.blockchain.pending_blocks_accept();
+    node.blockchain.accept_pending_blocks();
     lag(node);
     node.heartbeats += 1;
 }

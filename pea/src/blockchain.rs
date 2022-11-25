@@ -53,7 +53,7 @@ impl Blockchain {
             0
         }
     }
-    pub fn sync_block_0(&mut self) -> Block {
+    fn sync_block_0(&mut self) -> Block {
         let hashes_trusted = &self.states.trusted.hashes;
         let hashes_dynamic = &self.states.dynamic.hashes;
         if self.sync.index_0 >= hashes_trusted.len() + hashes_dynamic.len() {
@@ -69,7 +69,7 @@ impl Blockchain {
         self.sync.index_0 += 1;
         block
     }
-    pub fn sync_block_1(&mut self) -> Block {
+    fn sync_block_1(&mut self) -> Block {
         let hashes_dynamic = &self.states.dynamic.hashes;
         if self.sync.index_1 >= hashes_dynamic.len() {
             self.sync.index_1 = 0;
@@ -82,9 +82,6 @@ impl Blockchain {
     }
     pub fn sync_blocks(&mut self) -> [Block; 2] {
         [self.sync_block_0(), self.sync_block_1()]
-    }
-    pub fn set_cold_start_stake(&mut self, stake: Stake) {
-        self.pending_stakes = vec![stake];
     }
     fn sort_pending_transactions(&mut self) {
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -153,13 +150,22 @@ impl Blockchain {
         self.limit_pending_stakes();
         Ok(())
     }
-    pub fn forge_block(&mut self) -> Result<Block, Box<dyn Error>> {
-        let mut block;
-        if let Some(main) = self.tree.main() {
-            block = Block::new(main.0);
+    pub fn forge_block(&mut self) -> Option<Block> {
+        let timestamp = util::timestamp();
+        if let Some(public_key) = self.states.dynamic.staker(timestamp, self.states.dynamic.latest_block.timestamp) {
+            if public_key != &self.key.public_key_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+                return None;
+            }
         } else {
-            block = Block::new([0; 32]);
+            let mut stake = Stake::new(true, MIN_STAKE, 0);
+            stake.sign(&self.key);
+            self.pending_stakes = vec![stake];
         }
+        let mut block = if let Some(main) = self.tree.main() {
+            Block::new(main.0)
+        } else {
+            Block::new([0; 32])
+        };
         self.sort_pending_transactions();
         for transaction in self.pending_transactions.iter() {
             if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
@@ -174,7 +180,7 @@ impl Blockchain {
         }
         block.sign(&self.key);
         self.accept_block(&block, true);
-        Ok(block)
+        Some(block)
     }
     pub fn accept_pending_blocks(&mut self) {
         for block in self.pending_blocks.clone() {

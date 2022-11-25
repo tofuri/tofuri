@@ -2,11 +2,7 @@ use crate::{multiaddr, node::Node};
 use colored::*;
 use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol, Multiaddr};
 use log::{debug, error, info};
-use pea_core::{
-    constants::{BLOCK_TIME_MIN, MIN_STAKE, SYNC_BLOCKS_PER_TICK},
-    util,
-};
-use pea_stake::Stake;
+use pea_core::constants::SYNC_BLOCKS_PER_TICK;
 use std::time::{Duration, SystemTime};
 pub async fn next(tps: f64) {
     tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
@@ -29,7 +25,7 @@ pub fn handler(node: &mut Node) {
     }
     sync(node);
     node.blockchain.sync.handler();
-    forge(node);
+    grow(node);
     node.blockchain.accept_pending_blocks();
     lag(node);
     node.heartbeats += 1;
@@ -74,7 +70,7 @@ fn share(node: &mut Node) {
         error!("{}", err);
     }
 }
-fn forge(node: &mut Node) {
+fn grow(node: &mut Node) {
     if node.blockchain.sync.syncing {
         return;
     }
@@ -87,27 +83,17 @@ fn forge(node: &mut Node) {
         }
         return;
     }
-    let states = &node.blockchain.states;
-    let timestamp = util::timestamp();
-    if let Some(public_key) = states.dynamic.staker(timestamp, states.dynamic.latest_block.timestamp) {
-        if public_key != &node.blockchain.key.public_key_bytes() || timestamp < states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+    if let Some(block) = node.blockchain.forge_block() {
+        if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
             return;
         }
-    } else {
-        let mut stake = Stake::new(true, MIN_STAKE, 0);
-        stake.sign(&node.blockchain.key);
-        node.blockchain.set_cold_start_stake(stake);
-    }
-    let block = node.blockchain.forge_block().unwrap();
-    if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
-        return;
-    }
-    let data = bincode::serialize(&block).unwrap();
-    if node.filter(&data, true) {
-        return;
-    }
-    if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("block"), data) {
-        error!("{}", err);
+        let data = bincode::serialize(&block).unwrap();
+        if node.filter(&data, true) {
+            return;
+        }
+        if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("block"), data) {
+            error!("{}", err);
+        }
     }
 }
 fn sync(node: &mut Node) {

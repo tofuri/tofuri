@@ -140,9 +140,12 @@ impl Command {
                     if balance <= fee {
                         continue;
                     }
-                    let mut transaction = Transaction::new(key.public_key_bytes(), balance, fee);
+                    let amount = pea_amount::round(&(balance - fee));
+                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee);
                     transaction.sign(&subkey);
+                    println!("{:?}", transaction);
                     println!("Hash: {}", hex::encode(transaction.hash()).cyan());
+                    println!("Withdraw {}", amount.to_string().yellow());
                     match post::transaction(&self.api, &transaction).await {
                         Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
                         Err(err) => println!("{}", err.to_string().red()),
@@ -227,6 +230,10 @@ impl Command {
             .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
             .with_error_message("Please type a valid number")
             .with_help_message("Type the fee to use in satoshis")
+            .with_parser(&|x| match x.parse::<u128>() {
+                Ok(u) => Ok(amount::round(&u)),
+                Err(_) => Err(()),
+            })
             .prompt()
             .unwrap_or_else(|err| {
                 println!("{}", err.to_string().red());

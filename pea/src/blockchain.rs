@@ -291,10 +291,10 @@ impl Blockchain {
         if transaction.public_key_input == transaction.public_key_output {
             return Err("transaction public_key_input == public_key_output".into());
         }
-        if transaction.amount == 0 {
+        if transaction.amount == 0 || transaction.amount != pea_amount::from_bytes(&pea_amount::to_bytes(&transaction.amount)) {
             return Err("transaction has invalid amount".into());
         }
-        if transaction.fee == 0 {
+        if transaction.fee == 0 || transaction.fee != pea_amount::from_bytes(&pea_amount::to_bytes(&transaction.fee)) {
             return Err("transaction invalid fee".into());
         }
         if db::transaction::get(&self.db, &transaction.hash()).is_ok() {
@@ -312,10 +312,10 @@ impl Blockchain {
         if stake.verify().is_err() {
             return Err("stake has invalid signature".into());
         }
-        if stake.amount == 0 {
+        if stake.amount == 0 || stake.amount != pea_amount::from_bytes(&pea_amount::to_bytes(&stake.amount)) {
             return Err("stake has invalid amount".into());
         }
-        if stake.fee == 0 {
+        if stake.fee == 0 || stake.fee != pea_amount::from_bytes(&pea_amount::to_bytes(&stake.fee)) {
             return Err("stake invalid fee".into());
         }
         if stake.timestamp > util::timestamp() {

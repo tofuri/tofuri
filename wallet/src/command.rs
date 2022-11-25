@@ -1,5 +1,4 @@
 use crate::Wallet;
-use chrono::{Local, TimeZone};
 use colored::*;
 use crossterm::{event, terminal};
 use inquire::{Confirm, CustomType, Select};
@@ -251,54 +250,27 @@ impl Command {
             return;
         } else if search.len() == 64 {
             if let Ok(block) = get::block(api, &search).await {
-                print_block(&block, &search);
+                println!("{:?}", block);
                 return;
             };
             if let Ok(transaction) = get::transaction(api, &search).await {
-                println!("{} {}", "Hash".cyan(), search);
-                println!("{} {}", "Input PubKey".cyan(), transaction.public_key_input);
-                println!("{} {}", "Output PubKey".cyan(), transaction.public_key_output);
-                println!("{} {}", "Amount".cyan(), transaction.amount.to_string().yellow());
-                println!("{} {}", "Fee".cyan(), transaction.fee.to_string().yellow());
-                println!("{} {}", "Timestamp".cyan(), Local.timestamp(transaction.timestamp as i64, 0).format("%H:%M:%S"));
-                println!("{} {}", "Signature".cyan(), transaction.signature);
+                println!("{:?}", transaction);
                 return;
             };
             if let Ok(stake) = get::stake(api, &search).await {
-                println!("{} {}", "Hash".cyan(), search);
-                println!("{} {}", "PubKey".cyan(), stake.public_key);
-                println!("{} {}", "Amount".cyan(), stake.amount.to_string().yellow());
-                println!("{}", if stake.deposit { "Deposit".magenta() } else { "Withdraw".magenta() });
-                println!("{} {}", "Fee".cyan(), stake.fee.to_string().yellow());
-                println!("{} {}", "Timestamp".cyan(), Local.timestamp(stake.timestamp as i64, 0).format("%H:%M:%S"));
-                println!("{} {}", "Signature".cyan(), stake.signature);
+                println!("{:?}", stake);
                 return;
             };
         } else if search.parse::<usize>().is_ok() {
             if let Ok(hash) = get::hash(api, &search.parse::<usize>().unwrap()).await {
                 if let Ok(block) = get::block(api, &hash).await {
-                    print_block(&block, &hash);
+                    println!("{:?}", block);
                     return;
                 };
                 return;
             };
         }
         println!("{}", "Nothing found".red());
-        fn print_block(block: &get::Block, hash: &String) {
-            println!("{} {}", "Hash".cyan(), hash);
-            println!("{} {}", "PreviousHash".cyan(), block.previous_hash);
-            println!("{} {}", "Timestamp".cyan(), Local.timestamp(block.timestamp as i64, 0).format("%H:%M:%S"));
-            println!("{} {}", "Forger".cyan(), block.public_key);
-            println!("{} {}", "Signature".cyan(), block.signature);
-            println!("{} {}", "Transactions".cyan(), block.transactions.len().to_string().yellow());
-            for (i, hash) in block.transactions.iter().enumerate() {
-                println!("{} {}", format!("#{}", i).magenta(), hash)
-            }
-            println!("{} {}", "Stakes".cyan(), block.stakes.len().to_string().yellow());
-            for (i, hash) in block.stakes.iter().enumerate() {
-                println!("{} {}", format!("#{}", i).magenta(), hash)
-            }
-        }
     }
     fn key(wallet: &Wallet) {
         println!("{}", "Are you being watched?".yellow());

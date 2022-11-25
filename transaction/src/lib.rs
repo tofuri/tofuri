@@ -85,6 +85,30 @@ impl Transaction {
             timestamp: self.timestamp,
         }
     }
+    pub fn validate(&self) -> Result<(), Box<dyn Error>> {
+        if self.verify().is_err() {
+            return Err("transaction signature".into());
+        }
+        if self.public_key_input == self.public_key_output {
+            return Err("transaction input output".into());
+        }
+        if self.amount == 0 {
+            return Err("transaction amount zero".into());
+        }
+        if self.fee == 0 {
+            return Err("transaction fee zero".into());
+        }
+        if self.amount != pea_amount::floor(&self.amount) {
+            return Err("transaction floor amount".into());
+        }
+        if self.fee != pea_amount::floor(&self.fee) {
+            return Err("transaction floor fee".into());
+        }
+        if self.timestamp > util::timestamp() {
+            return Err("transaction timestamp future".into());
+        }
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod tests {

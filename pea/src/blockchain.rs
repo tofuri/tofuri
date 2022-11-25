@@ -279,32 +279,15 @@ impl Blockchain {
         Ok(())
     }
     fn validate_transaction(&self, transaction: &Transaction, balance: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if PublicKey::from_bytes(&transaction.public_key_output).is_err() {
-            return Err("transaction has invalid public_key_output".into());
-        }
-        if transaction.verify().is_err() {
-            return Err("transaction has invalid signature".into());
-        }
-        if transaction.timestamp > util::timestamp() {
-            return Err("transaction has invalid timestamp (transaction is from the future)".into());
-        }
-        if transaction.public_key_input == transaction.public_key_output {
-            return Err("transaction public_key_input == public_key_output".into());
-        }
-        if transaction.amount == 0 || transaction.amount != pea_amount::floor(&transaction.amount) {
-            return Err("transaction has invalid amount".into());
-        }
-        if transaction.fee == 0 || transaction.fee != pea_amount::floor(&transaction.fee) {
-            return Err("transaction invalid fee".into());
-        }
-        if db::transaction::get(&self.db, &transaction.hash()).is_ok() {
-            return Err("transaction already in chain".into());
+        transaction.validate()?;
+        if transaction.timestamp < timestamp {
+            return Err("transaction timestamp ancient".into());
         }
         if transaction.amount + transaction.fee > balance {
             return Err("transaction too expensive".into());
         }
-        if transaction.timestamp < timestamp {
-            return Err("transaction too old".into());
+        if db::transaction::get(&self.db, &transaction.hash()).is_ok() {
+            return Err("transaction in chain".into());
         }
         Ok(())
     }

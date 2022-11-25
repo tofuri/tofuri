@@ -2716,7 +2716,6 @@ dependencies = [
  "bincode",
  "clap",
  "colored",
- "ed25519-dalek",
  "futures",
  "hex",
  "lazy_static",

@@ -43,6 +43,16 @@ impl Blockchain {
             pending_blocks_limit,
         }
     }
+    pub fn load(&mut self) {
+        let start = Instant::now();
+        db::tree::reload(&mut self.tree, &self.db);
+        info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
+        let start = Instant::now();
+        let (hashes_trusted, hashes_dynamic) = self.tree.hashes(self.trust_fork_after_blocks);
+        self.states.trusted.load(&self.db, &hashes_trusted);
+        self.states.dynamic = Dynamic::from(&self.db, &hashes_dynamic, &self.states.trusted);
+        info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
+    }
     pub fn height(&self) -> usize {
         if let Some(main) = self.tree.main() {
             main.1
@@ -50,55 +60,65 @@ impl Blockchain {
             0
         }
     }
-    fn sync_block_0(&mut self) -> Block {
-        let hashes_trusted = &self.states.trusted.hashes;
-        let hashes_dynamic = &self.states.dynamic.hashes;
-        if self.sync.index_0 >= hashes_trusted.len() + hashes_dynamic.len() {
-            self.sync.index_0 = 0;
-        }
-        let hash = if self.sync.index_0 < hashes_trusted.len() {
-            hashes_trusted[self.sync.index_0]
+    pub fn forge_block(&mut self) -> Option<Block> {
+        let timestamp = util::timestamp();
+        if let Some(public_key) = self.states.dynamic.staker(timestamp, self.states.dynamic.latest_block.timestamp) {
+            if public_key != &self.key.public_key_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+                return None;
+            }
         } else {
-            hashes_dynamic[self.sync.index_0 - hashes_trusted.len()]
+            let mut stake = Stake::new(true, MIN_STAKE, 0);
+            stake.sign(&self.key);
+            self.pending_stakes = vec![stake];
+        }
+        let mut block = if let Some(main) = self.tree.main() {
+            Block::new(main.0)
+        } else {
+            Block::new([0; 32])
         };
-        debug!("{} {} {}", "Sync 0".cyan(), self.sync.index_0.to_string().yellow(), hex::encode(hash));
-        let block = db::block::get(&self.db, &hash).unwrap();
-        self.sync.index_0 += 1;
-        block
-    }
-    fn sync_block_1(&mut self) -> Block {
-        let hashes_dynamic = &self.states.dynamic.hashes;
-        if self.sync.index_1 >= hashes_dynamic.len() {
-            self.sync.index_1 = 0;
+        self.sort_pending_transactions();
+        for transaction in self.pending_transactions.iter() {
+            if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
+                block.transactions.push(transaction.clone());
+            }
         }
-        let hash = hashes_dynamic[self.sync.index_1];
-        debug!("{} {} {}", "Sync 1".cyan(), self.sync.index_1.to_string().yellow(), hex::encode(hash));
-        let block = db::block::get(&self.db, &hash).unwrap();
-        self.sync.index_1 += 1;
-        block
-    }
-    pub fn sync_blocks(&mut self) -> [Block; 2] {
-        [self.sync_block_0(), self.sync_block_1()]
-    }
-    fn sort_pending_transactions(&mut self) {
-        self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
-    }
-    fn sort_pending_stakes(&mut self) {
-        self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
-    }
-    fn limit_pending_blocks(&mut self) {
-        while self.pending_blocks.len() > self.pending_blocks_limit {
-            self.pending_blocks.remove(0);
+        self.sort_pending_stakes();
+        for stake in self.pending_stakes.iter() {
+            if block.stakes.len() < BLOCK_STAKES_LIMIT {
+                block.stakes.push(stake.clone());
+            }
         }
+        block.sign(&self.key);
+        self.accept_block(&block, true);
+        Some(block)
     }
-    fn limit_pending_transactions(&mut self) {
-        while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
-            self.pending_transactions.remove(self.pending_transactions.len() - 1);
+    pub fn accept_block(&mut self, block: &Block, forged: bool) {
+        db::block::put(block, &self.db).unwrap();
+        let hash = block.hash();
+        if self.tree.insert(hash, block.previous_hash, block.timestamp).unwrap() {
+            warn!("{} {}", "Forked".red(), hex::encode(hash));
         }
+        self.tree.sort_branches();
+        self.states
+            .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
+        if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
+            self.pending_blocks.remove(index);
+        }
+        self.pending_transactions.clear();
+        self.pending_stakes.clear();
+        if block.hash() == self.states.dynamic.latest_block.hash() {
+            self.sync.new += 1;
+        }
+        info!(
+            "{} {} {}",
+            if forged { "Forged".magenta() } else { "Accept".green() },
+            self.tree.height(&block.previous_hash).to_string().yellow(),
+            hex::encode(hash)
+        );
     }
-    fn limit_pending_stakes(&mut self) {
-        while self.pending_stakes.len() > PENDING_STAKES_LIMIT {
-            self.pending_stakes.remove(self.pending_stakes.len() - 1);
+    pub fn accept_pending_blocks(&mut self) {
+        for block in self.pending_blocks.clone() {
+            self.accept_block(&block, false);
         }
     }
     pub fn try_add_block(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
@@ -147,76 +167,56 @@ impl Blockchain {
         self.limit_pending_stakes();
         Ok(())
     }
-    pub fn forge_block(&mut self) -> Option<Block> {
-        let timestamp = util::timestamp();
-        if let Some(public_key) = self.states.dynamic.staker(timestamp, self.states.dynamic.latest_block.timestamp) {
-            if public_key != &self.key.public_key_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
-                return None;
-            }
-        } else {
-            let mut stake = Stake::new(true, MIN_STAKE, 0);
-            stake.sign(&self.key);
-            self.pending_stakes = vec![stake];
+    pub fn sync_blocks(&mut self) -> [Block; 2] {
+        [self.sync_block_0(), self.sync_block_1()]
+    }
+    fn sync_block_0(&mut self) -> Block {
+        let hashes_trusted = &self.states.trusted.hashes;
+        let hashes_dynamic = &self.states.dynamic.hashes;
+        if self.sync.index_0 >= hashes_trusted.len() + hashes_dynamic.len() {
+            self.sync.index_0 = 0;
         }
-        let mut block = if let Some(main) = self.tree.main() {
-            Block::new(main.0)
+        let hash = if self.sync.index_0 < hashes_trusted.len() {
+            hashes_trusted[self.sync.index_0]
         } else {
-            Block::new([0; 32])
+            hashes_dynamic[self.sync.index_0 - hashes_trusted.len()]
         };
-        self.sort_pending_transactions();
-        for transaction in self.pending_transactions.iter() {
-            if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
-                block.transactions.push(transaction.clone());
-            }
-        }
-        self.sort_pending_stakes();
-        for stake in self.pending_stakes.iter() {
-            if block.stakes.len() < BLOCK_STAKES_LIMIT {
-                block.stakes.push(stake.clone());
-            }
-        }
-        block.sign(&self.key);
-        self.accept_block(&block, true);
-        Some(block)
+        debug!("{} {} {}", "Sync 0".cyan(), self.sync.index_0.to_string().yellow(), hex::encode(hash));
+        let block = db::block::get(&self.db, &hash).unwrap();
+        self.sync.index_0 += 1;
+        block
     }
-    pub fn accept_pending_blocks(&mut self) {
-        for block in self.pending_blocks.clone() {
-            self.accept_block(&block, false);
+    fn sync_block_1(&mut self) -> Block {
+        let hashes_dynamic = &self.states.dynamic.hashes;
+        if self.sync.index_1 >= hashes_dynamic.len() {
+            self.sync.index_1 = 0;
+        }
+        let hash = hashes_dynamic[self.sync.index_1];
+        debug!("{} {} {}", "Sync 1".cyan(), self.sync.index_1.to_string().yellow(), hex::encode(hash));
+        let block = db::block::get(&self.db, &hash).unwrap();
+        self.sync.index_1 += 1;
+        block
+    }
+    fn sort_pending_transactions(&mut self) {
+        self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
+    }
+    fn sort_pending_stakes(&mut self) {
+        self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
+    }
+    fn limit_pending_blocks(&mut self) {
+        while self.pending_blocks.len() > self.pending_blocks_limit {
+            self.pending_blocks.remove(0);
         }
     }
-    pub fn accept_block(&mut self, block: &Block, forged: bool) {
-        db::block::put(block, &self.db).unwrap();
-        let hash = block.hash();
-        if self.tree.insert(hash, block.previous_hash, block.timestamp).unwrap() {
-            warn!("{} {}", "Forked".red(), hex::encode(hash));
+    fn limit_pending_transactions(&mut self) {
+        while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
+            self.pending_transactions.remove(self.pending_transactions.len() - 1);
         }
-        self.tree.sort_branches();
-        self.states
-            .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
-        if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
-            self.pending_blocks.remove(index);
-        }
-        self.pending_transactions.clear();
-        self.pending_stakes.clear();
-        if block.hash() == self.states.dynamic.latest_block.hash() {
-            self.sync.new += 1;
-        }
-        info!(
-            "{} {} {}",
-            if forged { "Forged".magenta() } else { "Accept".green() },
-            self.tree.height(&block.previous_hash).to_string().yellow(),
-            hex::encode(hash)
-        );
     }
-    pub fn load(&mut self) {
-        let start = Instant::now();
-        db::tree::reload(&mut self.tree, &self.db);
-        info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
-        let start = Instant::now();
-        let (hashes_trusted, hashes_dynamic) = self.tree.hashes(self.trust_fork_after_blocks);
-        self.states.trusted.load(&self.db, &hashes_trusted);
-        self.states.dynamic = Dynamic::from(&self.db, &hashes_dynamic, &self.states.trusted);
-        info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
+    fn limit_pending_stakes(&mut self) {
+        while self.pending_stakes.len() > PENDING_STAKES_LIMIT {
+            self.pending_stakes.remove(self.pending_stakes.len() - 1);
+        }
     }
     fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
         if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {

@@ -70,7 +70,7 @@ impl Wallet {
         Ok(wallet)
     }
     fn import_attempt(filename: &str, passphrase: &str) -> Result<Wallet, Box<dyn Error>> {
-        let mut path = Wallet::default_path().join(filename);
+        let path = Wallet::default_path().join(filename);
         let data = match Wallet::read_exact(path) {
             Ok(data) => data,
             Err(err) => {

@@ -8,7 +8,7 @@ use pea_api::{get, post};
 use pea_core::constants::DECIMAL_PRECISION;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
-use std::{process, time::Duration};
+use std::{ops::Range, process, time::Duration};
 pub struct Command {
     api: String,
     wallet: Option<Wallet>,
@@ -20,7 +20,7 @@ impl Command {
     pub async fn select(&mut self) -> bool {
         let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
         if self.wallet.is_some() {
-            let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Encrypted"];
+            let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Encrypted", "Subkeys"];
             v.append(&mut vec);
             vec = v;
         };
@@ -68,6 +68,10 @@ impl Command {
                 Self::data(self.wallet.as_ref().unwrap());
                 true
             }
+            "Subkeys" => {
+                self.subkeys().await;
+                true
+            }
             _ => {
                 process::exit(0);
             }
@@ -85,6 +89,45 @@ impl Command {
     fn decrypt(&mut self) {
         self.wallet = Some(Wallet::import("", "").unwrap());
     }
+    async fn subkeys(&mut self) {
+        match Select::new(">>", vec!["Balance", "Withdraw", "Back"]).prompt().unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        }) {
+            "Balance" => self.subkeys_balance().await,
+            "Withdraw" => self.subkeys_withdraw(),
+            "Back" => {}
+            _ => process::exit(0),
+        };
+    }
+    fn subkeys_range() -> Range<usize> {
+        let start = CustomType::<usize>::new("Range Start:")
+            .with_error_message("Please type a valid number")
+            .with_help_message("The start of the range of subkeys to check")
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
+        let end = CustomType::<usize>::new("Range End:")
+            .with_error_message("Please type a valid number")
+            .with_help_message("The end of the range of subkeys to check")
+            .prompt()
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string().red());
+                process::exit(0)
+            });
+        start..end
+    }
+    async fn subkeys_balance(&self) {
+        let key = &self.wallet.as_ref().unwrap().key;
+        for n in Self::subkeys_range() {
+            let subkey = key.subkey(n);
+            println!("{} {}", n.to_string().red(), subkey.public().green());
+            Self::balance(&self.api, &subkey.public()).await;
+        }
+    }
+    fn subkeys_withdraw(&self) {}
     async fn info(api: &str) {
         match get::index(api).await {
             Ok(info) => println!("{}", info.green()),

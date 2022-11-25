@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     let mut command = Command::new(args.api);
     loop {
-        if command.main().await {
+        if command.select().await {
             Command::press_any_key_to_continue();
         }
         Command::clear();

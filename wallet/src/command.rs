@@ -100,7 +100,7 @@ impl Command {
             _ => process::exit(0),
         };
     }
-    fn subkeys_range() -> Range<usize> {
+    fn inquire_subkeys_range() -> Range<usize> {
         let start = CustomType::<usize>::new("Range Start:")
             .with_error_message("Please type a valid number")
             .with_help_message("The start of the range of subkeys to check")
@@ -121,7 +121,7 @@ impl Command {
     }
     async fn subkeys_balance(&self) {
         let key = &self.wallet.as_ref().unwrap().key;
-        for n in Self::subkeys_range() {
+        for n in Self::inquire_subkeys_range() {
             let subkey = key.subkey(n);
             let address = subkey.public();
             println!("{} {}", n.to_string().red(), address.green());
@@ -129,9 +129,9 @@ impl Command {
         }
     }
     async fn subkeys_withdraw(&self) {
-        let fee = Self::prompt_fee();
+        let fee = Self::inquire_fee();
         let key = &self.wallet.as_ref().unwrap().key;
-        for n in Self::subkeys_range() {
+        for n in Self::inquire_subkeys_range() {
             let subkey = key.subkey(n);
             let address = subkey.public();
             println!("{} {}", n.to_string().red(), address.green());
@@ -192,7 +192,7 @@ impl Command {
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    fn prompt_address() -> String {
+    fn inquire_address() -> String {
         CustomType::<String>::new("Address:")
             .with_error_message("Please enter a valid address")
             .with_help_message("Type the hex encoded address with 0x as prefix")
@@ -206,7 +206,7 @@ impl Command {
                 process::exit(0)
             })
     }
-    fn prompt_amount() -> u128 {
+    fn inquire_amount() -> u128 {
         (CustomType::<f64>::new("Amount:")
             .with_formatter(&|i| format!("{:.18} pea", i))
             .with_error_message("Please type a valid number")
@@ -222,7 +222,7 @@ impl Command {
             })
             * DECIMAL_PRECISION as f64) as u128
     }
-    fn prompt_fee() -> u128 {
+    fn inquire_fee() -> u128 {
         CustomType::<u128>::new("Fee:")
             .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
             .with_error_message("Please type a valid number")
@@ -233,7 +233,7 @@ impl Command {
                 process::exit(0)
             })
     }
-    fn prompt_deposit() -> bool {
+    fn inquire_deposit() -> bool {
         match Select::new(">>", vec!["deposit", "withdraw"]).prompt().unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
@@ -244,9 +244,9 @@ impl Command {
         }
     }
     async fn transaction(wallet: &Wallet, api: &str) {
-        let address = Self::prompt_address();
-        let amount = Self::prompt_amount();
-        let fee = Self::prompt_fee();
+        let address = Self::inquire_address();
+        let amount = Self::inquire_amount();
+        let fee = Self::inquire_fee();
         if !match Confirm::new("Send?").prompt() {
             Ok(b) => b,
             Err(err) => {
@@ -264,7 +264,7 @@ impl Command {
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    fn prompt_send() -> bool {
+    fn inquire_send() -> bool {
         match Confirm::new("Send?").prompt() {
             Ok(b) => b,
             Err(err) => {
@@ -274,10 +274,10 @@ impl Command {
         }
     }
     async fn stake(wallet: &Wallet, api: &str) {
-        let deposit = Self::prompt_deposit();
-        let amount = Self::prompt_amount();
-        let fee = Self::prompt_fee();
-        let send = Self::prompt_send();
+        let deposit = Self::inquire_deposit();
+        let amount = Self::inquire_amount();
+        let fee = Self::inquire_fee();
+        let send = Self::inquire_send();
         if !send {
             return;
         }
@@ -292,8 +292,8 @@ impl Command {
     fn address(wallet: &Wallet) {
         println!("{}", wallet.key.public().green());
     }
-    async fn search(api: &str) {
-        let search = CustomType::<String>::new("Search:")
+    fn inquire_search() -> String {
+        CustomType::<String>::new("Search:")
             .with_error_message("Please enter a valid Address, Hash or Number.")
             .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
             .with_parser(&|x| {
@@ -306,7 +306,10 @@ impl Command {
             .unwrap_or_else(|err| {
                 println!("{}", err.to_string().red());
                 process::exit(0)
-            });
+            })
+    }
+    async fn search(api: &str) {
+        let search = Self::inquire_search();
         if address::public::decode(&search).is_ok() {
             Self::balance(api, &search).await;
             return;

@@ -19,7 +19,7 @@ impl Command {
         Command { api, wallet: None }
     }
     pub async fn main(&mut self) -> bool {
-        let mut vec = vec!["Open", "Search", "Height", "API", "Exit"];
+        let mut vec = vec!["Decrypt", "Search", "Height", "API", "Exit"];
         if self.wallet.is_some() {
             let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Encrypted"];
             v.append(&mut vec);
@@ -29,8 +29,8 @@ impl Command {
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {
-            "Open" => {
-                self.open();
+            "Decrypt" => {
+                self.decrypt();
                 false
             }
             "Search" => {
@@ -83,7 +83,7 @@ impl Command {
     pub fn clear() {
         print!("\x1B[2J\x1B[1;1H");
     }
-    pub fn open(&mut self) {
+    pub fn decrypt(&mut self) {
         self.wallet = Some(Wallet::import("", "").unwrap());
     }
     async fn info(api: &str) {

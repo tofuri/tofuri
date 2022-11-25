@@ -137,15 +137,19 @@ impl Command {
             println!("{} {}", n.to_string().red(), address.green());
             match get::balance(&self.api, &address).await {
                 Ok(balance) => {
+                    if balance == 0 {
+                        continue;
+                    }
+                    println!("Balance: {}", balance.to_string().yellow());
                     if balance <= fee {
+                        println!("{}", "Insufficient balance".red());
                         continue;
                     }
                     let amount = balance - fee;
+                    println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
                     let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee);
                     transaction.sign(&subkey);
                     println!("{:?}", transaction);
-                    println!("Hash: {}", hex::encode(transaction.hash()).cyan());
-                    println!("Withdraw {}", amount.to_string().yellow());
                     match post::transaction(&self.api, &transaction).await {
                         Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
                         Err(err) => println!("{}", err.to_string().red()),

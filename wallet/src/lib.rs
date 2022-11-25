@@ -104,13 +104,14 @@ impl Wallet {
     }
     fn read_exact(path: impl AsRef<Path>) -> Result<[u8; 92], Box<dyn Error>> {
         let mut file = File::open(path)?;
-        let mut buf = [0; 92];
+        let mut buf = [0; 184];
         file.read_exact(&mut buf)?;
-        Ok(buf)
+        let vec = hex::decode(buf).unwrap();
+        Ok(vec.try_into().unwrap())
     }
     fn write_all(path: impl AsRef<Path>, buf: &[u8]) -> Result<(), Box<dyn Error>> {
         let mut file = File::create(path)?;
-        file.write_all(buf)?;
+        file.write_all(hex::encode(buf).as_bytes())?;
         Ok(())
     }
     fn default_path() -> &'static Path {

@@ -76,13 +76,11 @@ impl Blockchain {
         } else {
             Block::new([0; 32])
         };
-        self.sort_pending_transactions();
         for transaction in self.pending_transactions.iter() {
             if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
                 block.transactions.push(transaction.clone());
             }
         }
-        self.sort_pending_stakes();
         for stake in self.pending_stakes.iter() {
             if block.stakes.len() < BLOCK_STAKES_LIMIT {
                 block.stakes.push(stake.clone());
@@ -127,7 +125,10 @@ impl Blockchain {
         }
         self.validate_block(&block)?;
         self.pending_blocks.push(block);
-        self.limit_pending_blocks();
+        self.pending_blocks.sort_by(|a, b| b.fees().cmp(&a.fees()));
+        while self.pending_blocks.len() > self.pending_blocks_limit {
+            self.pending_blocks.remove(self.pending_blocks.len() - 1);
+        }
         Ok(())
     }
     pub fn try_add_transaction(&mut self, transaction: Transaction) -> Result<(), Box<dyn Error>> {
@@ -147,7 +148,10 @@ impl Blockchain {
         let balance = self.states.dynamic.balance(&transaction.public_key_input);
         self.validate_transaction(&transaction, balance, self.states.dynamic.latest_block.timestamp)?;
         self.pending_transactions.push(transaction);
-        self.limit_pending_transactions();
+        self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
+        while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
+            self.pending_transactions.remove(self.pending_transactions.len() - 1);
+        }
         Ok(())
     }
     pub fn try_add_stake(&mut self, stake: Stake) -> Result<(), Box<dyn Error>> {
@@ -164,7 +168,10 @@ impl Blockchain {
         let balance_staked = self.states.dynamic.balance_staked(&stake.public_key);
         self.validate_stake(&stake, balance, balance_staked, self.states.dynamic.latest_block.timestamp)?;
         self.pending_stakes.push(stake);
-        self.limit_pending_stakes();
+        self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
+        while self.pending_stakes.len() > PENDING_STAKES_LIMIT {
+            self.pending_stakes.remove(self.pending_stakes.len() - 1);
+        }
         Ok(())
     }
     pub fn sync_blocks(&mut self) -> [Block; 2] {
@@ -196,27 +203,6 @@ impl Blockchain {
         let block = db::block::get(&self.db, &hash).unwrap();
         self.sync.index_1 += 1;
         block
-    }
-    fn sort_pending_transactions(&mut self) {
-        self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
-    }
-    fn sort_pending_stakes(&mut self) {
-        self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
-    }
-    fn limit_pending_blocks(&mut self) {
-        while self.pending_blocks.len() > self.pending_blocks_limit {
-            self.pending_blocks.remove(0);
-        }
-    }
-    fn limit_pending_transactions(&mut self) {
-        while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
-            self.pending_transactions.remove(self.pending_transactions.len() - 1);
-        }
-    }
-    fn limit_pending_stakes(&mut self) {
-        while self.pending_stakes.len() > PENDING_STAKES_LIMIT {
-            self.pending_stakes.remove(self.pending_stakes.len() - 1);
-        }
     }
     fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
         if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {

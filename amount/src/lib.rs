@@ -1,4 +1,4 @@
-use pea_core::constants::AMOUNT_BYTES;
+use pea_core::constants::{AMOUNT_BYTES, DECIMAL_PLACES};
 pub fn to_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
     if input == 0 {
         return [0; AMOUNT_BYTES];
@@ -41,6 +41,17 @@ pub fn from_bytes(input: &[u8; AMOUNT_BYTES]) -> u128 {
 }
 pub fn floor(input: u128) -> u128 {
     from_bytes(&to_bytes(input))
+}
+pub fn to_string(num: u128) -> String {
+    let mut string = format!("{}{}", "0".repeat(DECIMAL_PLACES as usize), num);
+    string.insert(string.len() - DECIMAL_PLACES as usize, '.');
+    string = string.trim_start_matches('0').to_string();
+    if string.starts_with('.') {
+        let mut s = "0".to_string();
+        s.push_str(&string);
+        string = s;
+    }
+    string
 }
 #[cfg(test)]
 mod tests {

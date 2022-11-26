@@ -5,7 +5,7 @@ use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
 use pea_amount as amount;
 use pea_api::{get, post};
-use pea_core::constants::DECIMAL_PRECISION;
+use pea_core::constants::COIN;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
 use std::{ops::Range, process, time::Duration};
@@ -143,7 +143,7 @@ impl Command {
                     if balance == 0 {
                         continue;
                     }
-                    println!("Balance: {}", balance.to_string().yellow());
+                    println!("Account balance: {}", pea_amount::to_string(balance).yellow());
                     if balance <= fee {
                         println!("{}", "Insufficient balance".red());
                         continue;
@@ -187,11 +187,9 @@ impl Command {
         match get::balance(api, address).await {
             Ok(balance) => match get::balance_staked(api, address).await {
                 Ok(balance_staked) => println!(
-                    "Account balance: {} | {}, locked: {} | {}.",
-                    (balance as f64 / DECIMAL_PRECISION as f64).to_string().yellow(), // rounding error
-                    balance,
-                    (balance_staked as f64 / DECIMAL_PRECISION as f64).to_string().yellow(), // rounding error
-                    balance_staked
+                    "Account balance: {}, locked: {}",
+                    pea_amount::to_string(balance).yellow(),
+                    pea_amount::to_string(balance_staked).yellow()
                 ),
                 Err(err) => println!("{}", err.to_string().red()),
             },
@@ -224,7 +222,7 @@ impl Command {
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount to send using a decimal point as a separator")
             .with_parser(&|x| match x.parse::<f64>() {
-                Ok(f) => Ok(amount::floor((f * DECIMAL_PRECISION as f64) as u128) as f64 / DECIMAL_PRECISION as f64),
+                Ok(f) => Ok(amount::floor((f * COIN as f64) as u128) as f64 / COIN as f64),
                 Err(_) => Err(()),
             })
             .prompt()
@@ -232,7 +230,7 @@ impl Command {
                 println!("{}", err.to_string().red());
                 process::exit(0)
             })
-            * DECIMAL_PRECISION as f64) as u128
+            * COIN as f64) as u128
     }
     fn inquire_fee() -> u128 {
         CustomType::<u128>::new("Fee:")

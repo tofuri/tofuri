@@ -1,5 +1,5 @@
 use crate::{
-    constants::{DECIMAL_PRECISION, MIN_STAKE_MULTIPLIER},
+    constants::{COIN, MIN_STAKE_MULTIPLIER},
     types,
 };
 use std::{
@@ -21,7 +21,7 @@ pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>>
     Ok(buf.lines().map(|l| l.expect("Could not parse line")).collect())
 }
 pub fn reward(balance_staked: u128) -> u128 {
-    ((2f64.powf((balance_staked as f64 / DECIMAL_PRECISION as f64) / MIN_STAKE_MULTIPLIER as f64) - 1f64) * DECIMAL_PRECISION as f64) as u128
+    ((2f64.powf((balance_staked as f64 / COIN as f64) / MIN_STAKE_MULTIPLIER as f64) - 1f64) * COIN as f64) as u128
 }
 #[cfg(test)]
 mod tests {

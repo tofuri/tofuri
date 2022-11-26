@@ -21,9 +21,9 @@ pub fn handler(node: &mut Node) {
         dial_unknown(node);
     }
     if delay(node, 1) {
-        grow(node);
-        node.blockchain.sync.handler();
         node.blockchain.accept_pending_blocks();
+        node.blockchain.sync.handler();
+        grow(node);
     }
     node.message_data_hashes.clear();
     sync(node);

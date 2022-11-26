@@ -1,4 +1,4 @@
-use pea_core::{constants::MIN_STAKE, types, util};
+use pea_core::{types, util};
 use pea_key::Key;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
@@ -131,31 +131,25 @@ impl Block {
         if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
             return Err("block includes multiple stakes from same public_key".into());
         }
-        if !self.stakes.is_empty() {
-            let stake = self.stakes.get(0).unwrap();
-            if stake.fee == 0 {
-                if self.stakes.len() != 1 {
-                    return Err("only allowed to mint 1 stake".into());
-                }
-                if stake.verify().is_err() {
-                    return Err("mint stake has invalid signature".into());
-                }
-                if stake.timestamp > util::timestamp() {
-                    return Err("mint stake has invalid timestamp (mint stake is from the future)".into());
-                }
-                if stake.timestamp < self.timestamp {
-                    return Err("mint stake too old".into());
-                }
-                if !stake.deposit {
-                    return Err("mint stake must be deposit".into());
-                }
-                if stake.amount != MIN_STAKE {
-                    return Err("mint stake invalid amount".into());
-                }
-                if stake.fee != 0 {
-                    return Err("mint stake invalid fee".into());
-                }
-            }
+        Ok(())
+    }
+    pub fn validate_mint(&self) -> Result<(), Box<dyn Error>> {
+        if self.verify().is_err() {
+            return Err("block signature".into());
+        }
+        if !self.transactions.is_empty() {
+            return Err("block mint transactions".into());
+        }
+        if self.stakes.len() != 1 {
+            return Err("block mint stakes".into());
+        }
+        let stake = self.stakes.first().unwrap();
+        stake.validate_mint()?;
+        if stake.timestamp > util::timestamp() {
+            return Err("stake mint timestamp future".into());
+        }
+        if stake.timestamp < self.timestamp {
+            return Err("stake mint timestamp ancient".into());
         }
         Ok(())
     }

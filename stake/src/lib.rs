@@ -1,4 +1,4 @@
-use pea_core::{types, util};
+use pea_core::{constants::MIN_STAKE, types, util};
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -94,6 +94,21 @@ impl Stake {
         }
         if self.fee != pea_int::floor(self.fee) {
             return Err("stake fee floor".into());
+        }
+        Ok(())
+    }
+    pub fn validate_mint(&self) -> Result<(), Box<dyn Error>> {
+        if self.verify().is_err() {
+            return Err("stake mint signature".into());
+        }
+        if self.amount != MIN_STAKE {
+            return Err("stake mint amount not MIN_STAKE".into());
+        }
+        if self.fee != 0 {
+            return Err("stake mint fee not zero".into());
+        }
+        if !self.deposit {
+            return Err("stake mint deposit".into());
         }
         Ok(())
     }

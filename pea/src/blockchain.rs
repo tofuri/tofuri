@@ -205,39 +205,36 @@ impl Blockchain {
         block
     }
     fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
-        block.validate()?;
-        if block.timestamp > util::timestamp() + self.time_delta {
-            return Err("block timestamp future".into());
-        }
-        if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {
-            return Err("block does not extend chain".into());
-        }
-        let dynamic = self.states.dynamic_fork(self, &block.previous_hash)?;
-        let latest_block = &dynamic.latest_block;
-        if block.previous_hash != [0; 32] {
-            if block.previous_hash != latest_block.hash() {
-                return Err("fork_state latest_block hash".into());
-            }
-            if let Some(public_key) = dynamic.staker(block.timestamp, latest_block.timestamp) {
-                if public_key != &block.public_key {
-                    return Err("block isn't signed by the staker first in queue".into());
-                }
-            }
-        }
-        if block.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
-            return Err("block timestamp early".into());
-        }
         if self.tree.get(&block.hash()).is_some() {
             return Err("block hash in tree".into());
         }
-        if !block.stakes.is_empty() {
-            if block.stakes.get(0).unwrap().fee != 0 {
-                for stake in block.stakes.iter() {
-                    let balance = dynamic.balance(&stake.public_key);
-                    let balance_staked = dynamic.balance_staked(&stake.public_key);
-                    self.validate_stake(stake, balance, balance_staked, latest_block.timestamp)?;
-                }
+        if block.timestamp > util::timestamp() + self.time_delta {
+            return Err("block timestamp future".into());
+        }
+        let dynamic = self.states.dynamic_fork(self, &block.previous_hash)?;
+        let latest_block = &dynamic.latest_block;
+        if block.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+            return Err("block timestamp early".into());
+        }
+        if let Some(public_key) = dynamic.staker(block.timestamp, latest_block.timestamp) {
+            if public_key != &block.public_key {
+                return Err("block staker public_key".into());
             }
+        } else {
+            block.validate_mint()?;
+            return Ok(());
+        }
+        block.validate()?;
+        if block.previous_hash != latest_block.hash() {
+            return Err("block previous_hash not latest hash".into());
+        }
+        if self.tree.get(&block.previous_hash).is_none() {
+            return Err("block previous_hash not in tree".into());
+        }
+        for stake in block.stakes.iter() {
+            let balance = dynamic.balance(&stake.public_key);
+            let balance_staked = dynamic.balance_staked(&stake.public_key);
+            self.validate_stake(stake, balance, balance_staked, latest_block.timestamp)?;
         }
         for transaction in block.transactions.iter() {
             let balance = dynamic.balance(&transaction.public_key_input);

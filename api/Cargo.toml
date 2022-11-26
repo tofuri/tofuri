@@ -1,6 +1,6 @@
 [package]
 name = "pea-api"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
@@ -10,9 +10,9 @@ repository = "https://github.com/peacash/peacash"
 
 [dependencies]
 pea-int = { version = "0.1.0", path = "../int" }
-pea-core = { version = "0.2.1", path = "../core" }
-pea-stake = { version = "0.2.1", path = "../stake" }
-pea-transaction = { version = "0.2.1", path = "../transaction" }
+pea-core = { version = "0.3.0", path = "../core" }
+pea-stake = { version = "0.3.0", path = "../stake" }
+pea-transaction = { version = "0.3.0", path = "../transaction" }
 serde = { version = "1.0.137", features = ["derive"] }
 reqwest = { version = "0.11.11", features = ["json"] }
 hex = "0.4.3"

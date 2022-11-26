@@ -1,6 +1,6 @@
 [package]
 name = "pea-wallet"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
@@ -11,13 +11,13 @@ repository = "https://github.com/peacash/peacash"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pea-core = { version = "0.2.1", path = "../core" }
-pea-address = { version = "0.2.1", path = "../address" }
+pea-core = { version = "0.3.0", path = "../core" }
+pea-address = { version = "0.3.0", path = "../address" }
 pea-int = { version = "0.1.0", path = "../int" }
-pea-api = { version = "0.2.1", path = "../api" }
-pea-key = { version = "0.2.1", path = "../key" }
-pea-stake = { version = "0.2.1", path = "../stake" }
-pea-transaction = { version = "0.2.1", path = "../transaction" }
+pea-api = { version = "0.3.0", path = "../api" }
+pea-key = { version = "0.2.2", path = "../key" }
+pea-stake = { version = "0.3.0", path = "../stake" }
+pea-transaction = { version = "0.3.0", path = "../transaction" }
 chacha20poly1305 = "0.10.1"
 inquire = "0.3.0"
 colored = "2.0.0"

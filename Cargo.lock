@@ -2711,7 +2711,7 @@ checksum = "0c520e05135d6e763148b6426a837e239041653ba7becd2e538c076c738025fc"
 
 [[package]]
 name = "pea"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "bincode",
  "clap",
@@ -2744,7 +2744,7 @@ dependencies = [
 
 [[package]]
 name = "pea-address"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "hex",
  "pea-core",
@@ -2752,7 +2752,7 @@ dependencies = [
 
 [[package]]
 name = "pea-api"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "bincode",
  "hex",
@@ -2767,7 +2767,7 @@ dependencies = [
 
 [[package]]
 name = "pea-block"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "bincode",
  "hex",
@@ -2782,7 +2782,7 @@ dependencies = [
 
 [[package]]
 name = "pea-core"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "bincode",
  "blake3",
@@ -2795,7 +2795,7 @@ dependencies = [
 
 [[package]]
 name = "pea-db"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "bincode",
  "pea-block",
@@ -2819,7 +2819,7 @@ dependencies = [
 
 [[package]]
 name = "pea-key"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "ed25519",
  "ed25519-dalek",
@@ -2840,7 +2840,7 @@ dependencies = [
 
 [[package]]
 name = "pea-pay"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bincode",
  "clap",
@@ -2888,7 +2888,7 @@ dependencies = [
 
 [[package]]
 name = "pea-stake"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "bincode",
  "hex",
@@ -2902,7 +2902,7 @@ dependencies = [
 
 [[package]]
 name = "pea-transaction"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "bincode",
  "hex",
@@ -2916,7 +2916,7 @@ dependencies = [
 
 [[package]]
 name = "pea-tree"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bincode",
  "hex",
@@ -2925,7 +2925,7 @@ dependencies = [
 
 [[package]]
 name = "pea-wallet"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "argon2",
  "chacha20poly1305 0.10.1",

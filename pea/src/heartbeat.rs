@@ -23,12 +23,14 @@ pub fn handler(node: &mut Node) {
     if delay(node, 2) {
         node.message_data_hashes.clear();
     }
+    if delay(node, 1) {
+        grow(node);
+        node.blockchain.sync.handler();
+        node.blockchain.accept_pending_blocks();
+    }
     sync(node);
-    node.blockchain.sync.handler();
-    grow(node);
-    node.blockchain.accept_pending_blocks();
-    lag(node);
     node.heartbeats += 1;
+    lag(node);
 }
 fn dial_known(node: &mut Node) {
     let vec = node.known.clone().into_iter().collect();

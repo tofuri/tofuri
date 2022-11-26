@@ -25,7 +25,7 @@ impl Default for Sync {
             index_0: 0,
             index_1: 0,
             new: 0,
-            history: [0; BLOCK_TIME_MIN],
+            history: [1; BLOCK_TIME_MIN],
             syncing: true,
         }
     }

@@ -121,7 +121,7 @@ impl Blockchain {
     }
     pub fn try_add_block(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
         if self.pending_blocks.iter().any(|b| b.signature == block.signature) {
-            return Err("block already pending".into());
+            return Err("block pending".into());
         }
         self.validate_block(&block)?;
         self.pending_blocks.push(block);
@@ -133,7 +133,7 @@ impl Blockchain {
     }
     pub fn try_add_transaction(&mut self, transaction: Transaction) -> Result<(), Box<dyn Error>> {
         if self.pending_transactions.iter().any(|x| x.signature == transaction.signature) {
-            return Err("transaction already pending".into());
+            return Err("transaction pending".into());
         }
         if let Some(index) = self
             .pending_transactions
@@ -156,11 +156,11 @@ impl Blockchain {
     }
     pub fn try_add_stake(&mut self, stake: Stake) -> Result<(), Box<dyn Error>> {
         if self.pending_stakes.iter().any(|x| x.signature == stake.signature) {
-            return Err("stake already pending".into());
+            return Err("stake pending".into());
         }
         if let Some(index) = self.pending_stakes.iter().position(|s| s.public_key == stake.public_key) {
             if stake.fee <= self.pending_stakes[index].fee {
-                return Err("stake fee too low to replace previous pending stake".into());
+                return Err("stake fee too low".into());
             }
             self.pending_stakes.remove(index);
         }

@@ -73,9 +73,6 @@ fn share(node: &mut Node) {
     }
 }
 fn grow(node: &mut Node) {
-    if node.blockchain.sync.syncing {
-        return;
-    }
     if !node.genesis && node.blockchain.height() == 0 {
         if delay(node, 3) {
             info!(
@@ -83,6 +80,9 @@ fn grow(node: &mut Node) {
                 node.swarm.behaviour().gossipsub.all_peers().count().to_string().yellow()
             );
         }
+        node.blockchain.sync.syncing = true;
+    }
+    if node.blockchain.sync.syncing {
         return;
     }
     if let Some(block) = node.blockchain.forge_block() {

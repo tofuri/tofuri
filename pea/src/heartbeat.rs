@@ -22,10 +22,10 @@ pub fn handler(node: &mut Node) {
     }
     if delay(node, 1) {
         grow(node);
-        node.message_data_hashes.clear();
         node.blockchain.sync.handler();
         node.blockchain.accept_pending_blocks();
     }
+    node.message_data_hashes.clear();
     sync(node);
     node.heartbeats += 1;
     lag(node);

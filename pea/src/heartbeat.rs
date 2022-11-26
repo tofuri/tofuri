@@ -1,7 +1,11 @@
 use crate::{multiaddr, node::Node};
 use colored::*;
-use libp2p::{gossipsub::IdentTopic, multiaddr::Protocol, Multiaddr};
-use log::{debug, error, info};
+use libp2p::{
+    gossipsub::{IdentTopic, TopicHash},
+    multiaddr::Protocol,
+    Multiaddr,
+};
+use log::{debug, error, info, warn};
 use pea_core::constants::SYNC_BLOCKS_PER_TICK;
 use std::time::{Duration, SystemTime};
 pub async fn next(tps: f64) {
@@ -26,11 +30,31 @@ pub fn handler(node: &mut Node) {
     if delay(node, 1) {
         node.blockchain.sync.handler();
     }
+    offline_staker(node);
     node.blockchain.accept_pending_blocks();
     grow(node);
     sync(node);
     node.heartbeats += 1;
     lag(node);
+}
+fn offline_staker(node: &mut Node) {
+    if node.blockchain.sync.syncing {
+        return;
+    }
+    let behaviour = node.swarm.behaviour();
+    if behaviour.gossipsub.mesh_peers(&TopicHash::from_raw("block")).count() == 0 {
+        return;
+    }
+    let dynamic = &node.blockchain.states.dynamic;
+    if let Some(public_key) = dynamic.offline_staker() {
+        let latest_hash = dynamic.latest_block.hash();
+        if let Some(hash) = node.blockchain.offline.insert(public_key.clone(), latest_hash) {
+            if hash == latest_hash {
+                return;
+            }
+        }
+        warn!("Banned offline staker {}", pea_address::public::encode(&public_key).green());
+    }
 }
 fn dial_known(node: &mut Node) {
     let vec = node.known.clone().into_iter().collect();

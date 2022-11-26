@@ -2,7 +2,7 @@ use colored::*;
 use log::debug;
 use pea_address as address;
 use pea_block::Block;
-use pea_core::{constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
+use pea_core::{constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types, util};
 use pea_db as db;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
@@ -149,10 +149,23 @@ impl Dynamic {
         };
         dynamic
     }
-    pub fn staker(&self, timestamp: u32, previous_timestamp: u32) -> Option<&types::PublicKeyBytes> {
+    fn staker_index(timestamp: u32, previous_timestamp: u32) -> usize {
         let diff = timestamp.saturating_sub(previous_timestamp + 1);
         let index = diff / BLOCK_TIME_MAX as u32;
-        self.stakers.get(index as usize)
+        index as usize
+    }
+    pub fn staker(&self, timestamp: u32, previous_timestamp: u32) -> Option<&types::PublicKeyBytes> {
+        self.stakers.get(Self::staker_index(timestamp, previous_timestamp))
+    }
+    pub fn current_staker(&self) -> Option<&types::PublicKeyBytes> {
+        self.staker(util::timestamp(), self.latest_block.timestamp)
+    }
+    pub fn offline_staker(&self) -> Option<&types::PublicKeyBytes> {
+        let index = Self::staker_index(util::timestamp(), self.latest_block.timestamp);
+        if index == 0 {
+            return None;
+        }
+        self.stakers.get(index - 1)
     }
 }
 impl Default for Dynamic {

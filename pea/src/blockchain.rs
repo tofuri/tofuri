@@ -5,13 +5,14 @@ use pea_block::Block;
 use pea_core::constants::{
     BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
 };
-use pea_core::util;
+use pea_core::{types, util};
 use pea_db as db;
 use pea_key::Key;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
 use pea_tree::Tree;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
+use std::collections::HashMap;
 use std::{error::Error, time::Instant};
 #[derive(Debug)]
 pub struct Blockchain {
@@ -26,6 +27,7 @@ pub struct Blockchain {
     pub trust_fork_after_blocks: usize,
     pub pending_blocks_limit: usize,
     pub time_delta: u32,
+    pub offline: HashMap<types::PublicKeyBytes, types::Hash>,
 }
 impl Blockchain {
     pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize, pending_blocks_limit: usize, time_delta: u32) -> Self {
@@ -41,6 +43,7 @@ impl Blockchain {
             trust_fork_after_blocks,
             pending_blocks_limit,
             time_delta,
+            offline: HashMap::new(),
         }
     }
     pub fn load(&mut self) {
@@ -62,7 +65,7 @@ impl Blockchain {
     }
     pub fn forge_block(&mut self) -> Option<Block> {
         let timestamp = util::timestamp();
-        if let Some(public_key) = self.states.dynamic.staker(timestamp, self.states.dynamic.latest_block.timestamp) {
+        if let Some(public_key) = self.states.dynamic.current_staker() {
             if public_key != &self.key.public_key_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
                 return None;
             }
@@ -205,11 +208,19 @@ impl Blockchain {
         block
     }
     fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
+        if let Some(hash) = self.offline.get(&block.public_key) {
+            if hash == &block.previous_hash {
+                return Err("block staker banned".into());
+            }
+        }
         if self.tree.get(&block.hash()).is_some() {
             return Err("block hash in tree".into());
         }
         if block.timestamp > util::timestamp() + self.time_delta {
             return Err("block timestamp future".into());
+        }
+        if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {
+            return Err("block previous_hash not in tree".into());
         }
         let dynamic = self.states.dynamic_fork(self, &block.previous_hash)?;
         let latest_block = &dynamic.latest_block;
@@ -227,9 +238,6 @@ impl Blockchain {
         block.validate()?;
         if block.previous_hash != latest_block.hash() {
             return Err("block previous_hash not latest hash".into());
-        }
-        if self.tree.get(&block.previous_hash).is_none() {
-            return Err("block previous_hash not in tree".into());
         }
         for stake in block.stakes.iter() {
             let balance = dynamic.balance(&stake.public_key);

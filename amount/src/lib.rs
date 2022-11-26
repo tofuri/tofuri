@@ -1,6 +1,6 @@
 use pea_core::constants::AMOUNT_BYTES;
-pub fn to_bytes(input: &u128) -> [u8; AMOUNT_BYTES] {
-    if input == &0 {
+pub fn to_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
+    if input == 0 {
         return [0; AMOUNT_BYTES];
     }
     let bytes = input.to_be_bytes();
@@ -39,7 +39,7 @@ pub fn from_bytes(input: &[u8; AMOUNT_BYTES]) -> u128 {
     }
     u128::from_be_bytes(bytes)
 }
-pub fn floor(input: &u128) -> u128 {
+pub fn floor(input: u128) -> u128 {
     from_bytes(&to_bytes(input))
 }
 #[cfg(test)]
@@ -47,7 +47,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_encode() {
-        assert_eq!([1, 0, 0, 8], to_bytes(&0x10000000000000000));
+        assert_eq!([1, 0, 0, 8], to_bytes(0x10000000000000000));
     }
     #[test]
     fn test_decode() {

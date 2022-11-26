@@ -148,9 +148,9 @@ impl Command {
                         println!("{}", "Insufficient balance".red());
                         continue;
                     }
-                    let amount = pea_amount::floor(&(balance - fee));
+                    let amount = balance - fee;
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee).unwrap();
+                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee);
                     transaction.sign(&subkey);
                     println!("{:?}", transaction);
                     match post::transaction(&self.api, &transaction).await {
@@ -224,7 +224,7 @@ impl Command {
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount to send using a decimal point as a separator")
             .with_parser(&|x| match x.parse::<f64>() {
-                Ok(f) => Ok(amount::floor(&((f * DECIMAL_PRECISION as f64) as u128)) as f64 / DECIMAL_PRECISION as f64),
+                Ok(f) => Ok(amount::floor((f * DECIMAL_PRECISION as f64) as u128) as f64 / DECIMAL_PRECISION as f64),
                 Err(_) => Err(()),
             })
             .prompt()
@@ -240,7 +240,7 @@ impl Command {
             .with_error_message("Please type a valid number")
             .with_help_message("Type the fee to use in satoshis")
             .with_parser(&|x| match x.parse::<u128>() {
-                Ok(u) => Ok(amount::floor(&u)),
+                Ok(u) => Ok(amount::floor(u)),
                 Err(_) => Err(()),
             })
             .prompt()
@@ -272,7 +272,7 @@ impl Command {
         } {
             return;
         }
-        let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee).unwrap();
+        let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee);
         transaction.sign(&wallet.key);
         println!("Hash: {}", hex::encode(transaction.hash()).cyan());
         match post::transaction(api, &transaction).await {
@@ -297,7 +297,7 @@ impl Command {
         if !send {
             return;
         }
-        let mut stake = Stake::new(deposit, amount, fee).unwrap();
+        let mut stake = Stake::new(deposit, amount, fee);
         stake.sign(&wallet.key);
         println!("Hash: {}", hex::encode(stake.hash()).cyan());
         match post::stake(api, &stake).await {

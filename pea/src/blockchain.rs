@@ -66,7 +66,7 @@ impl Blockchain {
                 return None;
             }
         } else {
-            let mut stake = Stake::new(true, MIN_STAKE, 0).unwrap();
+            let mut stake = Stake::new(true, MIN_STAKE, 0);
             stake.sign(&self.key);
             self.pending_stakes = vec![stake];
         }

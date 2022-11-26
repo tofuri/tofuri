@@ -114,8 +114,8 @@ pub mod transaction {
             bincode::serialize(&Metadata {
                 public_key_input: transaction.public_key_input,
                 public_key_output: transaction.public_key_output,
-                amount: pea_amount::to_bytes(&transaction.amount),
-                fee: pea_amount::to_bytes(&transaction.fee),
+                amount: pea_amount::to_bytes(transaction.amount),
+                fee: pea_amount::to_bytes(transaction.fee),
                 timestamp: transaction.timestamp,
                 signature: transaction.signature,
             })?,
@@ -157,8 +157,8 @@ pub mod stake {
             stake.hash(),
             bincode::serialize(&Metadata {
                 public_key: stake.public_key,
-                amount: pea_amount::to_bytes(&stake.amount),
-                fee: pea_amount::to_bytes(&stake.fee),
+                amount: pea_amount::to_bytes(stake.amount),
+                fee: pea_amount::to_bytes(stake.fee),
                 deposit: stake.deposit,
                 timestamp: stake.timestamp,
                 signature: stake.signature,

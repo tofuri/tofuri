@@ -10,7 +10,7 @@ fn main() {
         0xff0000000000000000000000000000,
         0xff000000000000000000000000000000,
     ];
-    for int in ints.iter() {
+    for int in ints {
         println!("{}", int);
         let bytes = amount::to_bytes(int);
         println!("{:x?}", bytes);

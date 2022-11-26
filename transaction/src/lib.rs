@@ -50,21 +50,15 @@ impl fmt::Debug for Transaction {
     }
 }
 impl Transaction {
-    pub fn new(public_key_output: types::PublicKeyBytes, amount: u128, fee: u128) -> Result<Transaction, Box<dyn Error>> {
-        if amount != pea_amount::floor(&amount) {
-            return Err("Invalid amount".into());
-        }
-        if fee != pea_amount::floor(&fee) {
-            return Err("Invalid fee".into());
-        }
-        Ok(Transaction {
+    pub fn new(public_key_output: types::PublicKeyBytes, amount: u128, fee: u128) -> Transaction {
+        Transaction {
             public_key_input: [0; 32],
             public_key_output,
-            amount,
-            fee,
+            amount: pea_amount::floor(amount),
+            fee: pea_amount::floor(fee),
             timestamp: util::timestamp(),
             signature: [0; 64],
-        })
+        }
     }
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&self.header()).unwrap())
@@ -80,8 +74,8 @@ impl Transaction {
         Header {
             public_key_input: self.public_key_input,
             public_key_output: self.public_key_output,
-            amount: pea_amount::to_bytes(&self.amount),
-            fee: pea_amount::to_bytes(&self.fee),
+            amount: pea_amount::to_bytes(self.amount),
+            fee: pea_amount::to_bytes(self.fee),
             timestamp: self.timestamp,
         }
     }
@@ -95,10 +89,10 @@ impl Transaction {
         if self.fee == 0 {
             return Err("transaction fee zero".into());
         }
-        if self.amount != pea_amount::floor(&self.amount) {
+        if self.amount != pea_amount::floor(self.amount) {
             return Err("transaction amount floor".into());
         }
-        if self.fee != pea_amount::floor(&self.fee) {
+        if self.fee != pea_amount::floor(self.fee) {
             return Err("transaction fee floor".into());
         }
         if self.timestamp > util::timestamp() {

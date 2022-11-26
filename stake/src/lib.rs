@@ -14,8 +14,8 @@ pub struct Header {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Stake {
     pub public_key: types::PublicKeyBytes,
-    pub amount: u128,
     pub deposit: bool,
+    pub amount: u128,
     pub fee: u128,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
@@ -28,8 +28,8 @@ impl fmt::Debug for Stake {
         struct Stake {
             hash: String,
             public_key: String,
-            amount: u128,
             deposit: bool,
+            amount: u128,
             fee: u128,
             timestamp: u32,
             signature: String,
@@ -40,8 +40,8 @@ impl fmt::Debug for Stake {
             Stake {
                 hash: hex::encode(self.hash()),
                 public_key: pea_address::public::encode(&self.public_key),
-                amount: self.amount,
                 deposit: self.deposit,
+                amount: self.amount,
                 fee: self.fee,
                 timestamp: self.timestamp,
                 signature: hex::encode(self.signature),
@@ -50,21 +50,15 @@ impl fmt::Debug for Stake {
     }
 }
 impl Stake {
-    pub fn new(deposit: bool, amount: u128, fee: u128) -> Result<Stake, Box<dyn Error>> {
-        if amount != pea_amount::floor(&amount) {
-            return Err("Invalid amount".into());
-        }
-        if fee != pea_amount::floor(&fee) {
-            return Err("Invalid fee".into());
-        }
-        Ok(Stake {
+    pub fn new(deposit: bool, amount: u128, fee: u128) -> Stake {
+        Stake {
             public_key: [0; 32],
-            amount,
             deposit,
-            fee,
+            amount: pea_amount::floor(amount),
+            fee: pea_amount::floor(fee),
             timestamp: util::timestamp(),
             signature: [0; 64],
-        })
+        }
     }
     pub fn hash(&self) -> types::Hash {
         util::hash(&bincode::serialize(&self.header()).unwrap())
@@ -79,9 +73,9 @@ impl Stake {
     pub fn header(&self) -> Header {
         Header {
             public_key: self.public_key,
-            amount: pea_amount::to_bytes(&self.amount),
             deposit: self.deposit,
-            fee: pea_amount::to_bytes(&self.fee),
+            amount: pea_amount::to_bytes(self.amount),
+            fee: pea_amount::to_bytes(self.fee),
             timestamp: self.timestamp,
         }
     }
@@ -95,10 +89,10 @@ impl Stake {
         if self.fee == 0 {
             return Err("stake fee zero".into());
         }
-        if self.amount != pea_amount::floor(&self.amount) {
+        if self.amount != pea_amount::floor(self.amount) {
             return Err("stake amount floor".into());
         }
-        if self.fee != pea_amount::floor(&self.fee) {
+        if self.fee != pea_amount::floor(self.fee) {
             return Err("stake fee floor".into());
         }
         if self.timestamp > util::timestamp() {
@@ -114,8 +108,8 @@ mod tests {
     fn test_hash() {
         let stake = Stake {
             public_key: [0; 32],
-            amount: 0,
             deposit: false,
+            amount: 0,
             fee: 0,
             timestamp: 0,
             signature: [0; 64],

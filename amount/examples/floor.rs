@@ -11,10 +11,10 @@ fn main() {
         10000000000000000000000000,
         100000000000000000000000000000000000000,
     ];
-    for int in ints.iter() {
+    for int in ints.clone() {
         println!("{}", amount::floor(int));
     }
-    for int in ints.iter() {
+    for int in ints {
         println!("{:x}", amount::floor(int));
     }
 }

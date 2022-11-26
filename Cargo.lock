@@ -2722,11 +2722,11 @@ dependencies = [
  "libp2p",
  "log",
  "pea-address",
- "pea-amount",
  "pea-api",
  "pea-block",
  "pea-core",
  "pea-db",
+ "pea-int",
  "pea-key",
  "pea-logger",
  "pea-stake",
@@ -2751,20 +2751,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "pea-amount"
-version = "0.2.1"
-dependencies = [
- "pea-core",
-]
-
-[[package]]
 name = "pea-api"
 version = "0.2.1"
 dependencies = [
  "bincode",
  "hex",
- "pea-amount",
  "pea-core",
+ "pea-int",
  "pea-stake",
  "pea-transaction",
  "reqwest",
@@ -2805,9 +2798,9 @@ name = "pea-db"
 version = "0.3.1"
 dependencies = [
  "bincode",
- "pea-amount",
  "pea-block",
  "pea-core",
+ "pea-int",
  "pea-stake",
  "pea-transaction",
  "pea-tree",
@@ -2815,6 +2808,13 @@ dependencies = [
  "serde",
  "serde-big-array",
  "tempdir",
+]
+
+[[package]]
+name = "pea-int"
+version = "0.1.0"
+dependencies = [
+ "pea-core",
 ]
 
 [[package]]
@@ -2850,9 +2850,9 @@ dependencies = [
  "lazy_static",
  "log",
  "pea-address",
- "pea-amount",
  "pea-api",
  "pea-core",
+ "pea-int",
  "pea-key",
  "pea-logger",
  "pea-pay-core",
@@ -2893,8 +2893,8 @@ dependencies = [
  "bincode",
  "hex",
  "pea-address",
- "pea-amount",
  "pea-core",
+ "pea-int",
  "pea-key",
  "serde",
  "serde-big-array",
@@ -2907,8 +2907,8 @@ dependencies = [
  "bincode",
  "hex",
  "pea-address",
- "pea-amount",
  "pea-core",
+ "pea-int",
  "pea-key",
  "serde",
  "serde-big-array",
@@ -2938,9 +2938,9 @@ dependencies = [
  "inquire",
  "log",
  "pea-address",
- "pea-amount",
  "pea-api",
  "pea-core",
+ "pea-int",
  "pea-key",
  "pea-stake",
  "pea-transaction",

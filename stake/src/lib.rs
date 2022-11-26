@@ -54,8 +54,8 @@ impl Stake {
         Stake {
             public_key: [0; 32],
             deposit,
-            amount: pea_amount::floor(amount),
-            fee: pea_amount::floor(fee),
+            amount: pea_int::floor(amount),
+            fee: pea_int::floor(fee),
             timestamp: util::timestamp(),
             signature: [0; 64],
         }
@@ -74,8 +74,8 @@ impl Stake {
         Header {
             public_key: self.public_key,
             deposit: self.deposit,
-            amount: pea_amount::to_bytes(self.amount),
-            fee: pea_amount::to_bytes(self.fee),
+            amount: pea_int::to_bytes(self.amount),
+            fee: pea_int::to_bytes(self.fee),
             timestamp: self.timestamp,
         }
     }
@@ -89,10 +89,10 @@ impl Stake {
         if self.fee == 0 {
             return Err("stake fee zero".into());
         }
-        if self.amount != pea_amount::floor(self.amount) {
+        if self.amount != pea_int::floor(self.amount) {
             return Err("stake amount floor".into());
         }
-        if self.fee != pea_amount::floor(self.fee) {
+        if self.fee != pea_int::floor(self.fee) {
             return Err("stake fee floor".into());
         }
         if self.timestamp > util::timestamp() {

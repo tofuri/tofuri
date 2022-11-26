@@ -114,8 +114,8 @@ pub mod transaction {
             bincode::serialize(&Metadata {
                 public_key_input: transaction.public_key_input,
                 public_key_output: transaction.public_key_output,
-                amount: pea_amount::to_bytes(transaction.amount),
-                fee: pea_amount::to_bytes(transaction.fee),
+                amount: pea_int::to_bytes(transaction.amount),
+                fee: pea_int::to_bytes(transaction.fee),
                 timestamp: transaction.timestamp,
                 signature: transaction.signature,
             })?,
@@ -127,8 +127,8 @@ pub mod transaction {
         Ok(Transaction {
             public_key_input: metadata.public_key_input,
             public_key_output: metadata.public_key_output,
-            amount: pea_amount::from_bytes(&metadata.amount),
-            fee: pea_amount::from_bytes(&metadata.fee),
+            amount: pea_int::from_bytes(&metadata.amount),
+            fee: pea_int::from_bytes(&metadata.fee),
             timestamp: metadata.timestamp,
             signature: metadata.signature,
         })
@@ -157,8 +157,8 @@ pub mod stake {
             stake.hash(),
             bincode::serialize(&Metadata {
                 public_key: stake.public_key,
-                amount: pea_amount::to_bytes(stake.amount),
-                fee: pea_amount::to_bytes(stake.fee),
+                amount: pea_int::to_bytes(stake.amount),
+                fee: pea_int::to_bytes(stake.fee),
                 deposit: stake.deposit,
                 timestamp: stake.timestamp,
                 signature: stake.signature,
@@ -170,8 +170,8 @@ pub mod stake {
         let metadata: Metadata = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
         Ok(Stake {
             public_key: metadata.public_key,
-            amount: pea_amount::from_bytes(&metadata.amount),
-            fee: pea_amount::from_bytes(&metadata.fee),
+            amount: pea_int::from_bytes(&metadata.amount),
+            fee: pea_int::from_bytes(&metadata.fee),
             deposit: metadata.deposit,
             timestamp: metadata.timestamp,
             signature: metadata.signature,

@@ -3,7 +3,6 @@ use colored::*;
 use crossterm::{event, terminal};
 use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
-use pea_amount as amount;
 use pea_api::{get, post};
 use pea_core::constants::COIN;
 use pea_stake::Stake;
@@ -143,7 +142,7 @@ impl Command {
                     if balance == 0 {
                         continue;
                     }
-                    println!("Account balance: {}", pea_amount::to_string(balance).yellow());
+                    println!("Account balance: {}", pea_int::to_string(balance).yellow());
                     if balance <= fee {
                         println!("{}", "Insufficient balance".red());
                         continue;
@@ -188,8 +187,8 @@ impl Command {
             Ok(balance) => match get::balance_staked(api, address).await {
                 Ok(balance_staked) => println!(
                     "Account balance: {}, locked: {}",
-                    pea_amount::to_string(balance).yellow(),
-                    pea_amount::to_string(balance_staked).yellow()
+                    pea_int::to_string(balance).yellow(),
+                    pea_int::to_string(balance_staked).yellow()
                 ),
                 Err(err) => println!("{}", err.to_string().red()),
             },
@@ -222,7 +221,7 @@ impl Command {
             .with_error_message("Please type a valid number")
             .with_help_message("Type the amount to send using a decimal point as a separator")
             .with_parser(&|x| match x.parse::<f64>() {
-                Ok(f) => Ok(amount::floor((f * COIN as f64) as u128) as f64 / COIN as f64),
+                Ok(f) => Ok(pea_int::floor((f * COIN as f64) as u128) as f64 / COIN as f64),
                 Err(_) => Err(()),
             })
             .prompt()
@@ -238,7 +237,7 @@ impl Command {
             .with_error_message("Please type a valid number")
             .with_help_message("Type the fee to use in satoshis")
             .with_parser(&|x| match x.parse::<u128>() {
-                Ok(u) => Ok(amount::floor(u)),
+                Ok(u) => Ok(pea_int::floor(u)),
                 Err(_) => Err(()),
             })
             .prompt()

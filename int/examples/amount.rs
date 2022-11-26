@@ -1,4 +1,4 @@
-use pea_amount as amount;
+use pea_int as int;
 fn main() {
     let ints = vec![
         0,
@@ -12,9 +12,9 @@ fn main() {
     ];
     for int in ints {
         println!("{}", int);
-        let bytes = amount::to_bytes(int);
+        let bytes = int::to_bytes(int);
         println!("{:x?}", bytes);
-        println!("{}", amount::from_bytes(&bytes));
+        println!("{}", int::from_bytes(&bytes));
         println!()
     }
 }

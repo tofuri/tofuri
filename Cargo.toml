@@ -1,11 +1,11 @@
 [workspace]
 members = [
     "address",
-    "amount",
     "api",
     "block",
     "core",
     "db",
+    "int",
     "key",
     "pay",
     "pea",

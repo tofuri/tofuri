@@ -1,4 +1,4 @@
-use pea_amount as amount;
+use pea_int as int;
 fn main() {
     let ints = vec![
         0,
@@ -12,9 +12,9 @@ fn main() {
         100000000000000000000000000000000000000,
     ];
     for int in ints.clone() {
-        println!("{}", amount::floor(int));
+        println!("{}", int::floor(int));
     }
     for int in ints {
-        println!("{:x}", amount::floor(int));
+        println!("{:x}", int::floor(int));
     }
 }

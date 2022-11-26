@@ -80,7 +80,7 @@ fn grow(node: &mut Node) {
         if delay(node, 3) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",
-                node.swarm.behaviour().gossipsub.all_mesh_peers().count().to_string().yellow()
+                node.swarm.behaviour().gossipsub.all_peers().count().to_string().yellow()
             );
         }
         return;

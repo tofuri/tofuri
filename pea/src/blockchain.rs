@@ -2,11 +2,10 @@ use crate::{state::Dynamic, states::States, sync::Sync};
 use colored::*;
 use log::{debug, info, warn};
 use pea_block::Block;
-use pea_core::util;
-use pea_core::{
-    constants::{BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT},
-    types,
+use pea_core::constants::{
+    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
 };
+use pea_core::util;
 use pea_db as db;
 use pea_key::Key;
 use pea_stake::Stake;
@@ -204,8 +203,9 @@ impl Blockchain {
         block
     }
     fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
+        block.validate()?;
         if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {
-            return Err("block doesn't extend chain".into());
+            return Err("block does not extend chain".into());
         }
         let dynamic = self.states.dynamic_fork(self, &block.previous_hash)?;
         let latest_block = &dynamic.latest_block;
@@ -220,50 +220,13 @@ impl Blockchain {
             }
         }
         if block.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
-            return Err("block created too early".into());
-        }
-        let public_key_inputs = block.transactions.iter().map(|t| t.public_key_input).collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_key_inputs.len()).any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1])) {
-            return Err("block includes multiple transactions from same public_key_input".into());
-        }
-        let public_keys = block.stakes.iter().map(|s| s.public_key).collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
-            return Err("block includes multiple stakes from same public_key".into());
-        }
-        if block.verify().is_err() {
-            return Err("block has invalid signature".into());
-        }
-        if block.timestamp > util::timestamp() {
-            return Err("block has invalid timestamp (block is from the future)".into());
+            return Err("block timestamp early".into());
         }
         if self.tree.get(&block.hash()).is_some() {
-            return Err("block hash already in tree".into());
+            return Err("block hash in tree".into());
         }
         if !block.stakes.is_empty() {
-            let stake = block.stakes.get(0).unwrap();
-            if stake.fee == 0 {
-                if block.stakes.len() != 1 {
-                    return Err("only allowed to mint 1 stake".into());
-                }
-                if stake.verify().is_err() {
-                    return Err("mint stake has invalid signature".into());
-                }
-                if stake.timestamp > util::timestamp() {
-                    return Err("mint stake has invalid timestamp (mint stake is from the future)".into());
-                }
-                if stake.timestamp < block.timestamp {
-                    return Err("mint stake too old".into());
-                }
-                if !stake.deposit {
-                    return Err("mint stake must be deposit".into());
-                }
-                if stake.amount != MIN_STAKE {
-                    return Err("mint stake invalid amount".into());
-                }
-                if stake.fee != 0 {
-                    return Err("mint stake invalid fee".into());
-                }
-            } else {
+            if block.stakes.get(0).unwrap().fee != 0 {
                 for stake in block.stakes.iter() {
                     let balance = dynamic.balance(&stake.public_key);
                     let balance_staked = dynamic.balance_staked(&stake.public_key);

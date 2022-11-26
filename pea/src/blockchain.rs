@@ -141,7 +141,7 @@ impl Blockchain {
             .position(|s| s.public_key_input == transaction.public_key_input)
         {
             if transaction.fee <= self.pending_transactions[index].fee {
-                return Err("transaction fee too low to replace previous pending transaction".into());
+                return Err("transaction fee too low".into());
             }
             self.pending_transactions.remove(index);
         }

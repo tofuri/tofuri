@@ -88,7 +88,9 @@ fn grow(node: &mut Node) {
             return;
         }
         let data = bincode::serialize(&block).unwrap();
-        node.filter(&data, true);
+        if node.filter(&data, true) {
+            return;
+        }
         if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("block"), data) {
             error!("{}", err);
         }

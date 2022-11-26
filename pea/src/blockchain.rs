@@ -25,9 +25,10 @@ pub struct Blockchain {
     pub sync: Sync,
     pub trust_fork_after_blocks: usize,
     pub pending_blocks_limit: usize,
+    pub time_delta: u32,
 }
 impl Blockchain {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize, pending_blocks_limit: usize) -> Self {
+    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize, pending_blocks_limit: usize, time_delta: u32) -> Self {
         Self {
             db,
             key,
@@ -39,6 +40,7 @@ impl Blockchain {
             sync: Sync::default(),
             trust_fork_after_blocks,
             pending_blocks_limit,
+            time_delta,
         }
     }
     pub fn load(&mut self) {
@@ -204,6 +206,9 @@ impl Blockchain {
     }
     fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
         block.validate()?;
+        if block.timestamp > util::timestamp() + self.time_delta {
+            return Err("block timestamp future".into());
+        }
         if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {
             return Err("block does not extend chain".into());
         }
@@ -242,6 +247,9 @@ impl Blockchain {
     }
     fn validate_transaction(&self, transaction: &Transaction, balance: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
         transaction.validate()?;
+        if transaction.timestamp > util::timestamp() + self.time_delta {
+            return Err("transaction timestamp future".into());
+        }
         if transaction.timestamp < timestamp {
             return Err("transaction timestamp ancient".into());
         }
@@ -255,6 +263,9 @@ impl Blockchain {
     }
     fn validate_stake(&self, stake: &Stake, balance: u128, balance_staked: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
         stake.validate()?;
+        if stake.timestamp > util::timestamp() + self.time_delta {
+            return Err("stake timestamp future".into());
+        }
         if stake.timestamp < timestamp {
             return Err("stake timestamp ancient".into());
         }

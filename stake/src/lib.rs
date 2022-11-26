@@ -95,9 +95,6 @@ impl Stake {
         if self.fee != pea_int::floor(self.fee) {
             return Err("stake fee floor".into());
         }
-        if self.timestamp > util::timestamp() {
-            return Err("stake timestamp future".into());
-        }
         Ok(())
     }
 }

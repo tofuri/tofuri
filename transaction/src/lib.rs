@@ -95,9 +95,6 @@ impl Transaction {
         if self.fee != pea_int::floor(self.fee) {
             return Err("transaction fee floor".into());
         }
-        if self.timestamp > util::timestamp() {
-            return Err("transaction timestamp future".into());
-        }
         if self.public_key_input == self.public_key_output {
             return Err("transaction input output".into());
         }

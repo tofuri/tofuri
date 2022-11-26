@@ -37,6 +37,7 @@ pub struct Options<'a> {
     pub genesis: bool,
     pub trust: usize,
     pub pending: usize,
+    pub time_delta: u32,
     pub max_established: Option<u32>,
     pub tps: f64,
     pub wallet: &'a str,
@@ -64,7 +65,7 @@ impl Node {
         let wallet = Node::wallet(options.tempkey, options.wallet, options.passphrase);
         info!("PubKey is {}", address::public::encode(&wallet.key.public_key_bytes()).green());
         let db = Node::db(options.tempdb);
-        let blockchain = Blockchain::new(db, wallet.key, options.trust, options.pending);
+        let blockchain = Blockchain::new(db, wallet.key, options.trust, options.pending, options.time_delta);
         let swarm = Node::swarm(options.max_established).await.unwrap();
         let known = Node::known(&blockchain.db, options.peer);
         Node {

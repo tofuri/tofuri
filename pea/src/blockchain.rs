@@ -291,20 +291,9 @@ impl Blockchain {
         Ok(())
     }
     fn validate_stake(&self, stake: &Stake, balance: u128, balance_staked: u128, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if stake.verify().is_err() {
-            return Err("stake has invalid signature".into());
-        }
-        if stake.amount == 0 || stake.amount != pea_amount::floor(&stake.amount) {
-            return Err("stake has invalid amount".into());
-        }
-        if stake.fee == 0 || stake.fee != pea_amount::floor(&stake.fee) {
-            return Err("stake invalid fee".into());
-        }
-        if stake.timestamp > util::timestamp() {
-            return Err("stake has invalid timestamp (stake is from the future)".into());
-        }
-        if db::stake::get(&self.db, &stake.hash()).is_ok() {
-            return Err("stake already in chain".into());
+        stake.validate()?;
+        if stake.timestamp < timestamp {
+            return Err("stake timestamp ancient".into());
         }
         if stake.deposit {
             if stake.amount + stake.fee > balance {
@@ -315,14 +304,14 @@ impl Blockchain {
             }
         } else {
             if stake.fee > balance {
-                return Err("stake withdraw insufficient funds".into());
+                return Err("stake withdraw fee too expensive".into());
             }
             if stake.amount > balance_staked {
                 return Err("stake withdraw too expensive".into());
             }
         }
-        if stake.timestamp < timestamp {
-            return Err("stake too old".into());
+        if db::stake::get(&self.db, &stake.hash()).is_ok() {
+            return Err("stake in chain".into());
         }
         Ok(())
     }

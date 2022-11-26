@@ -89,9 +89,6 @@ impl Transaction {
         if self.verify().is_err() {
             return Err("transaction signature".into());
         }
-        if self.public_key_input == self.public_key_output {
-            return Err("transaction input output".into());
-        }
         if self.amount == 0 {
             return Err("transaction amount zero".into());
         }
@@ -99,13 +96,16 @@ impl Transaction {
             return Err("transaction fee zero".into());
         }
         if self.amount != pea_amount::floor(&self.amount) {
-            return Err("transaction floor amount".into());
+            return Err("transaction amount floor".into());
         }
         if self.fee != pea_amount::floor(&self.fee) {
-            return Err("transaction floor fee".into());
+            return Err("transaction fee floor".into());
         }
         if self.timestamp > util::timestamp() {
             return Err("transaction timestamp future".into());
+        }
+        if self.public_key_input == self.public_key_output {
+            return Err("transaction input output".into());
         }
         Ok(())
     }

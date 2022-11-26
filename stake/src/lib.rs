@@ -85,6 +85,27 @@ impl Stake {
             timestamp: self.timestamp,
         }
     }
+    pub fn validate(&self) -> Result<(), Box<dyn Error>> {
+        if self.verify().is_err() {
+            return Err("stake signature".into());
+        }
+        if self.amount == 0 {
+            return Err("stake amount zero".into());
+        }
+        if self.fee == 0 {
+            return Err("stake fee zero".into());
+        }
+        if self.amount != pea_amount::floor(&self.amount) {
+            return Err("stake amount floor".into());
+        }
+        if self.fee != pea_amount::floor(&self.fee) {
+            return Err("stake fee floor".into());
+        }
+        if self.timestamp > util::timestamp() {
+            return Err("stake timestamp future".into());
+        }
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod tests {

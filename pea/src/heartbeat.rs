@@ -21,11 +21,11 @@ pub fn handler(node: &mut Node) {
         dial_unknown(node);
     }
     if delay(node, 1) {
-        node.blockchain.accept_pending_blocks();
+        node.message_data_hashes.clear();
         node.blockchain.sync.handler();
-        grow(node);
     }
-    node.message_data_hashes.clear();
+    node.blockchain.accept_pending_blocks();
+    grow(node);
     sync(node);
     node.heartbeats += 1;
     lag(node);

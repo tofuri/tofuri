@@ -24,7 +24,7 @@ pub struct Args {
     /// Pending blocks limit
     #[clap(long, value_parser, default_value = "10")]
     pub pending: usize,
-    /// Connections required to ban offline stakers
+    /// Mesh peers required to ban stakers that failed to show up
     #[clap(long, value_parser, default_value = "1")]
     pub ban_offline: usize,
     /// Max time delta allowed

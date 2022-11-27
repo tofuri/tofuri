@@ -28,15 +28,7 @@ pub fn init(log_path: bool) {
             )
         });
     } else {
-        builder.format(|buf, record| {
-            writeln!(
-                buf,
-                "[{} {}] {}",
-                Local::now().format("%H:%M:%S %f"),
-                colored_level(record.level()),
-                record.args()
-            )
-        });
+        builder.format(|buf, record| writeln!(buf, "[{} {}] {}", Local::now().format("%H:%M:%S"), colored_level(record.level()), record.args()));
     }
     builder.init();
 }

@@ -38,11 +38,14 @@ pub fn handler(node: &mut Node) {
     lag(node);
 }
 fn offline_staker(node: &mut Node) {
+    if node.ban_offline == 0 {
+        return;
+    }
     if node.blockchain.sync.syncing {
         return;
     }
     let behaviour = node.swarm.behaviour();
-    if behaviour.gossipsub.mesh_peers(&TopicHash::from_raw("block")).count() == 0 {
+    if behaviour.gossipsub.mesh_peers(&TopicHash::from_raw("block")).count() < node.ban_offline {
         return;
     }
     let dynamic = &node.blockchain.states.dynamic;

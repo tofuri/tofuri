@@ -24,6 +24,9 @@ pub struct Args {
     /// Pending blocks limit
     #[clap(long, value_parser, default_value = "10")]
     pub pending: usize,
+    /// Connections required to ban offline stakers
+    #[clap(long, value_parser, default_value = "1")]
+    pub ban_offline: usize,
     /// Max time delta allowed
     #[clap(long, value_parser, default_value = "0")]
     pub time_delta: u32, // ping delay & perception of time
@@ -65,6 +68,7 @@ async fn main() {
     info!("{} {}", "--genesis".cyan(), args.genesis.to_string().magenta());
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
     info!("{} {}", "--pending".cyan(), args.pending.to_string().magenta());
+    info!("{} {}", "--ban-offline".cyan(), args.ban_offline.to_string().magenta());
     info!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());
     info!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
     info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
@@ -79,6 +83,7 @@ async fn main() {
         genesis: args.genesis,
         trust: args.trust,
         pending: args.pending,
+        ban_offline: args.ban_offline,
         time_delta: args.time_delta,
         max_established: args.max_established,
         tps: args.tps,

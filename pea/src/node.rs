@@ -37,6 +37,7 @@ pub struct Options<'a> {
     pub genesis: bool,
     pub trust: usize,
     pub pending: usize,
+    pub ban_offline: usize,
     pub time_delta: u32,
     pub max_established: Option<u32>,
     pub tps: f64,
@@ -59,6 +60,7 @@ pub struct Node {
     pub bind_api: String,
     pub host: String,
     pub genesis: bool,
+    pub ban_offline: usize,
 }
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
@@ -81,6 +83,7 @@ impl Node {
             bind_api: options.bind_api,
             host: options.host,
             genesis: options.genesis,
+            ban_offline: options.ban_offline,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

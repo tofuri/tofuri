@@ -107,7 +107,7 @@ impl Blockchain {
         }
         self.pending_transactions.clear();
         self.pending_stakes.clear();
-        if block.hash() == self.states.dynamic.latest_block.hash() {
+        if !forged && block.hash() == self.states.dynamic.latest_block.hash() {
             self.sync.new += 1;
         }
         info!(

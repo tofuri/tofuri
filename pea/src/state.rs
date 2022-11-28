@@ -87,13 +87,17 @@ macro_rules! impl_State {
                 }
                 self.balance.insert(block.public_key, balance);
             }
+            fn staker_index(timestamp: u32, previous_timestamp: u32) -> usize {
+                let diff = timestamp.saturating_sub(previous_timestamp + 1);
+                let index = diff / BLOCK_TIME_MAX as u32;
+                index as usize
+            }
             fn update_penalty(
                 &mut self,
-                timestamp: &u32,
-                previous_timestamp: &u32,
+                timestamp: u32,
+                previous_timestamp: u32,
             ) {
-                let diff = timestamp.saturating_sub(previous_timestamp + 1);
-                for _ in 0..diff / BLOCK_TIME_MAX as u32 {
+                for _ in 0..Self::staker_index(timestamp, previous_timestamp) {
                     if self.stakers.is_empty() {
                         break;
                     }
@@ -103,7 +107,7 @@ macro_rules! impl_State {
             }
             pub fn update(&mut self, block: &Block, previous_timestamp: u32) {
                 self.hashes.push(block.hash());
-                self.update_penalty(&block.timestamp, &previous_timestamp);
+                self.update_penalty(block.timestamp, previous_timestamp);
                 self.update_reward(block);
                 self.update_balances(block);
                 self.update_stakers(block);
@@ -145,11 +149,6 @@ impl Dynamic {
             dynamic.latest_block = db::block::get(db, hash).unwrap()
         };
         dynamic
-    }
-    fn staker_index(timestamp: u32, previous_timestamp: u32) -> usize {
-        let diff = timestamp.saturating_sub(previous_timestamp + 1);
-        let index = diff / BLOCK_TIME_MAX as u32;
-        index as usize
     }
     pub fn staker(&self, timestamp: u32, previous_timestamp: u32) -> Option<&types::PublicKeyBytes> {
         self.stakers.get(Self::staker_index(timestamp, previous_timestamp))

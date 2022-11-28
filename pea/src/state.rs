@@ -92,10 +92,7 @@ macro_rules! impl_State {
                 timestamp: &u32,
                 previous_timestamp: &u32,
             ) {
-                let mut diff = timestamp - previous_timestamp;
-                if diff > 0 {
-                    diff -= 1;
-                }
+                let diff = timestamp.saturating_sub(previous_timestamp + 1);
                 for _ in 0..diff / BLOCK_TIME_MAX as u32 {
                     if self.stakers.is_empty() {
                         break;

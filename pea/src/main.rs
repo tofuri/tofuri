@@ -25,10 +25,10 @@ pub struct Args {
     #[clap(long, value_parser, default_value = "10")]
     pub pending: usize,
     /// Mesh peers required to ban stakers that failed to show up
-    #[clap(long, value_parser, default_value = "1")]
+    #[clap(long, value_parser, default_value = "10")]
     pub ban_offline: usize,
     /// Max time delta allowed
-    #[clap(long, value_parser, default_value = "0")]
+    #[clap(long, value_parser, default_value = "1")]
     pub time_delta: u32, // ping delay & perception of time
     /// Swarm connection limits
     #[clap(long, value_parser)]

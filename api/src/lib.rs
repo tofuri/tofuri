@@ -5,9 +5,8 @@ pub mod get {
     pub struct Data {
         pub public_key: String,
         pub height: usize,
-        pub latest_block_seen: String,
-        pub avg: f32,
-        pub estimated_sync_time: String,
+        pub last: String,
+        pub sync: String,
         pub tree_size: usize,
         pub heartbeats: usize,
         pub lag: f64,
@@ -16,8 +15,6 @@ pub mod get {
         pub pending_transactions: Vec<String>,
         pub pending_stakes: Vec<String>,
         pub pending_blocks: Vec<String>,
-        pub sync_index: usize,
-        pub syncing: bool,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct States {

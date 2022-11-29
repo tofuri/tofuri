@@ -107,8 +107,8 @@ Access-Control-Allow-Origin: *
 }
 async fn get_info(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
     let states = &node.blockchain.states;
-    let latest_block_seen = node.latest_block_seen();
-    let estimated_sync_time = node.estimated_sync_time();
+    let last = node.last();
+    let sync = node.sync();
     stream
         .write_all(
             format!(
@@ -121,9 +121,8 @@ Content-Type: application/json
                 serde_json::to_string(&get::Data {
                     public_key: node.blockchain.key.public(),
                     height: node.blockchain.height(),
-                    latest_block_seen,
-                    avg: node.blockchain.sync.avg,
-                    estimated_sync_time,
+                    last,
+                    sync,
                     tree_size: node.blockchain.tree.size(),
                     heartbeats: node.heartbeats,
                     gossipsub_peers: node.swarm.behaviour().gossipsub.all_peers().count(),
@@ -146,9 +145,7 @@ Content-Type: application/json
                     lag: node.lag,
                     pending_transactions: node.blockchain.pending_transactions.iter().map(|x| hex::encode(x.hash())).collect(),
                     pending_stakes: node.blockchain.pending_stakes.iter().map(|x| hex::encode(x.hash())).collect(),
-                    pending_blocks: node.blockchain.pending_blocks.iter().map(|x| hex::encode(x.hash())).collect(),
-                    sync_index: node.blockchain.sync.index_0,
-                    syncing: node.blockchain.sync.syncing,
+                    pending_blocks: node.blockchain.pending_blocks.iter().map(|x| hex::encode(x.hash())).collect()
                 })?
             )
             .as_bytes(),

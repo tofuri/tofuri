@@ -168,11 +168,7 @@ impl Command {
         };
         match get::info(api).await {
             Ok(info) => {
-                if info.syncing {
-                    println!("{}", "Downloading blockchain!".yellow());
-                } else {
-                    println!("Blockchain synchronized.");
-                }
+                println!("Sync {}", info.sync.yellow());
                 println!("Latest block height is {}", info.height.to_string().yellow());
                 println!("Tree size {}", info.tree_size.to_string().yellow());
                 println!("Gossipsub peers {}", info.gossipsub_peers.to_string().yellow());

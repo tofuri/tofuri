@@ -189,33 +189,6 @@ impl Node {
             _ => {}
         }
     }
-    pub fn latest_block_seen(&self) -> String {
-        if self.blockchain.states.dynamic.latest_block.timestamp == 0 {
-            return "never".to_string();
-        }
-        let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let diff = util::timestamp().saturating_sub(timestamp);
-        let now = "now";
-        let mut string = util::duration_to_string(diff, now);
-        if string != now {
-            string.push_str(" ago");
-        }
-        string
-    }
-    pub fn estimated_sync_time(&self) -> String {
-        if self.blockchain.states.dynamic.latest_block.timestamp == 0 {
-            return "unknown".to_string();
-        }
-        if !self.blockchain.sync.syncing {
-            return "done".to_string();
-        }
-        let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let mut diff = util::timestamp().saturating_sub(timestamp) as f32;
-        diff /= BLOCK_TIME_MIN as f32;
-        diff /= self.blockchain.sync.avg;
-        let now = "now";
-        util::duration_to_string(diff as u32, now)
-    }
     pub async fn start(&mut self) {
         self.blockchain.load();
         info!(
@@ -226,7 +199,7 @@ impl Node {
                 "0".red()
             }
         );
-        info!("Latest block seen {}", self.latest_block_seen().yellow());
+        info!("Latest block seen {}", self.last().yellow());
         let multiaddr: Multiaddr = self.host.parse().unwrap();
         self.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());
@@ -316,5 +289,32 @@ impl Node {
         if let Err(err) = self.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
             error!("{}", err);
         }
+    }
+    pub fn last(&self) -> String {
+        if self.blockchain.states.dynamic.latest_block.timestamp == 0 {
+            return "never".to_string();
+        }
+        let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
+        let diff = util::timestamp().saturating_sub(timestamp);
+        let now = "just now";
+        let mut string = util::duration_to_string(diff, now);
+        if string != now {
+            string.push_str(" ago");
+        }
+        string
+    }
+    pub fn sync(&self) -> String {
+        let completed = "completed";
+        if !self.blockchain.sync.syncing {
+            return completed.to_string();
+        }
+        if self.blockchain.sync.avg < 1_f32 {
+            return "waiting to start".to_string();
+        }
+        let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
+        let mut diff = util::timestamp().saturating_sub(timestamp) as f32;
+        diff /= BLOCK_TIME_MIN as f32;
+        diff /= self.blockchain.sync.avg;
+        util::duration_to_string(diff as u32, completed)
     }
 }

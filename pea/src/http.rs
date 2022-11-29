@@ -17,6 +17,8 @@ lazy_static! {
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();
     static ref INFO: Regex = Regex::new(r" /info ").unwrap();
     static ref SYNC: Regex = Regex::new(r" /sync ").unwrap();
+    static ref DYNAMIC: Regex = Regex::new(r" /dynamic ").unwrap();
+    static ref TRUSTED: Regex = Regex::new(r" /trusted ").unwrap();
     static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref BALANCE_STAKED: Regex = Regex::new(r" /balance_staked/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
@@ -56,6 +58,10 @@ async fn get(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -
         get_info(stream, node).await?;
     } else if SYNC.is_match(first) {
         get_sync(stream, node).await?;
+    } else if DYNAMIC.is_match(first) {
+        get_dynamic(stream, node).await?;
+    } else if TRUSTED.is_match(first) {
+        get_trusted(stream, node).await?;
     } else if BALANCE.is_match(first) {
         get_balance(stream, node, first).await?;
     } else if BALANCE_STAKED.is_match(first) {
@@ -110,9 +116,6 @@ Access-Control-Allow-Origin: *
     Ok(())
 }
 async fn get_info(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
-    let states = &node.blockchain.states;
-    let last = node.last();
-    let sync = node.sync();
     stream
         .write_all(
             format!(
@@ -124,32 +127,9 @@ Content-Type: application/json
 {}",
                 serde_json::to_string(&get::Data {
                     public_key: node.blockchain.key.public(),
-                    height: node.blockchain.height(),
-                    last,
-                    sync,
                     tree_size: node.blockchain.tree.size(),
                     heartbeats: node.heartbeats,
-                    gossipsub_peers: node.swarm.behaviour().gossipsub.all_peers().count(),
-                    states: get::States {
-                        dynamic: get::State {
-                            balance: states.dynamic.balance(&node.blockchain.key.public_key_bytes()),
-                            balance_staked: states.dynamic.balance_staked(&node.blockchain.key.public_key_bytes()),
-                            hashes: states.dynamic.hashes.len(),
-                            latest_hashes: states.dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
-                            stakers: states.dynamic.stakers.iter().map(address::public::encode).collect(),
-                        },
-                        trusted: get::State {
-                            balance: states.trusted.balance(&node.blockchain.key.public_key_bytes()),
-                            balance_staked: states.trusted.balance_staked(&node.blockchain.key.public_key_bytes()),
-                            stakers: states.trusted.stakers.iter().map(address::public::encode).collect(),
-                            hashes: states.trusted.hashes.len(),
-                            latest_hashes: states.trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
-                        },
-                    },
                     lag: node.lag,
-                    pending_transactions: node.blockchain.pending_transactions.iter().map(|x| hex::encode(x.hash())).collect(),
-                    pending_stakes: node.blockchain.pending_stakes.iter().map(|x| hex::encode(x.hash())).collect(),
-                    pending_blocks: node.blockchain.pending_blocks.iter().map(|x| hex::encode(x.hash())).collect()
                 })?
             )
             .as_bytes(),
@@ -176,6 +156,64 @@ Content-Type: application/json
                     peers: node.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw("block sync")).count(),
                     index_0: node.blockchain.sync.index_0,
                     index_1: node.blockchain.sync.index_1,
+                })?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn get_dynamic(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+    let dynamic = &node.blockchain.states.dynamic;
+    let block = &dynamic.latest_block;
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&get::Dynamic {
+                    balance: dynamic.balance(&node.blockchain.key.public_key_bytes()),
+                    balance_staked: dynamic.balance_staked(&node.blockchain.key.public_key_bytes()),
+                    hashes: dynamic.hashes.len(),
+                    latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
+                    stakers: dynamic.stakers.iter().map(address::public::encode).collect(),
+                    latest_block: get::Block {
+                        hash: hex::encode(block.hash()),
+                        previous_hash: hex::encode(block.previous_hash),
+                        timestamp: block.timestamp,
+                        public_key: address::public::encode(&block.public_key),
+                        signature: hex::encode(block.signature),
+                        transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
+                        stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
+                    }
+                })?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn get_trusted(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+    let trusted = &node.blockchain.states.trusted;
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&get::Trusted {
+                    balance: trusted.balance(&node.blockchain.key.public_key_bytes()),
+                    balance_staked: trusted.balance_staked(&node.blockchain.key.public_key_bytes()),
+                    hashes: trusted.hashes.len(),
+                    latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
+                    stakers: trusted.stakers.iter().map(address::public::encode).collect(),
                 })?
             )
             .as_bytes(),

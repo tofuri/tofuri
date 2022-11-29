@@ -11,32 +11,28 @@ pub mod get {
         pub index_1: usize,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct Data {
-        pub public_key: String,
-        pub height: usize,
-        pub last: String,
-        pub sync: String,
-        pub tree_size: usize,
-        pub heartbeats: usize,
-        pub lag: f64,
-        pub gossipsub_peers: usize,
-        pub states: States,
-        pub pending_transactions: Vec<String>,
-        pub pending_stakes: Vec<String>,
-        pub pending_blocks: Vec<String>,
-    }
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct States {
-        pub dynamic: State,
-        pub trusted: State,
-    }
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct State {
+    pub struct Dynamic {
         pub balance: u128,
         pub balance_staked: u128,
         pub hashes: usize,
         pub latest_hashes: Vec<String>,
         pub stakers: Vec<String>,
+        pub latest_block: Block,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Trusted {
+        pub balance: u128,
+        pub balance_staked: u128,
+        pub hashes: usize,
+        pub latest_hashes: Vec<String>,
+        pub stakers: Vec<String>,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Data {
+        pub public_key: String,
+        pub tree_size: usize,
+        pub heartbeats: usize,
+        pub lag: f64,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Block {

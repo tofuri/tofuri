@@ -315,6 +315,10 @@ impl Node {
         let mut diff = util::timestamp().saturating_sub(timestamp) as f32;
         diff /= BLOCK_TIME_MIN as f32;
         diff /= self.blockchain.sync.avg;
-        util::duration_to_string(diff as u32, completed)
+        let mut string = util::duration_to_string(diff as u32, completed);
+        if string != completed {
+            string.push_str(" remaining");
+        }
+        string
     }
 }

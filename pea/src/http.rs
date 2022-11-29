@@ -1,6 +1,7 @@
 use crate::node::Node;
 use colored::*;
 use lazy_static::lazy_static;
+use libp2p::gossipsub::TopicHash;
 use log::{error, info};
 use pea_address as address;
 use pea_api::get;
@@ -15,6 +16,7 @@ lazy_static! {
     static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();
     static ref INFO: Regex = Regex::new(r" /info ").unwrap();
+    static ref SYNC: Regex = Regex::new(r" /sync ").unwrap();
     static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref BALANCE_STAKED: Regex = Regex::new(r" /balance_staked/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
@@ -52,6 +54,8 @@ async fn get(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -
         get_index(stream).await?;
     } else if INFO.is_match(first) {
         get_info(stream, node).await?;
+    } else if SYNC.is_match(first) {
+        get_sync(stream, node).await?;
     } else if BALANCE.is_match(first) {
         get_balance(stream, node, first).await?;
     } else if BALANCE_STAKED.is_match(first) {
@@ -146,6 +150,32 @@ Content-Type: application/json
                     pending_transactions: node.blockchain.pending_transactions.iter().map(|x| hex::encode(x.hash())).collect(),
                     pending_stakes: node.blockchain.pending_stakes.iter().map(|x| hex::encode(x.hash())).collect(),
                     pending_blocks: node.blockchain.pending_blocks.iter().map(|x| hex::encode(x.hash())).collect()
+                })?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn get_sync(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+    let last = node.last();
+    let sync = node.sync();
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&get::Sync {
+                    sync,
+                    last,
+                    height: node.blockchain.height(),
+                    peers: node.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw("block sync")).count(),
+                    index_0: node.blockchain.sync.index_0,
+                    index_1: node.blockchain.sync.index_1,
                 })?
             )
             .as_bytes(),

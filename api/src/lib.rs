@@ -2,6 +2,15 @@ pub mod get {
     use serde::{Deserialize, Serialize};
     use std::error::Error;
     #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Sync {
+        pub sync: String,
+        pub last: String,
+        pub height: usize,
+        pub peers: usize,
+        pub index_0: usize,
+        pub index_1: usize,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Data {
         pub public_key: String,
         pub height: usize,
@@ -61,6 +70,9 @@ pub mod get {
     }
     pub async fn info(api: &str) -> Result<Data, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/info", api)).await?.json().await?)
+    }
+    pub async fn sync(api: &str) -> Result<Sync, Box<dyn Error>> {
+        Ok(reqwest::get(format!("{}/sync", api)).await?.json().await?)
     }
     pub async fn height(api: &str) -> Result<usize, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/height", api)).await?.json().await?)

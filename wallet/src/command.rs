@@ -40,7 +40,7 @@ impl Command {
                 true
             }
             "API" => {
-                Self::info(&self.api).await;
+                Self::api(&self.api).await;
                 true
             }
             "Address" => {
@@ -161,19 +161,19 @@ impl Command {
             };
         }
     }
-    async fn info(api: &str) {
+    async fn api(api: &str) {
         match get::index(api).await {
             Ok(info) => println!("{}", info.green()),
             Err(err) => println!("{}", err.to_string().red()),
         };
-        match get::info(api).await {
+        match get::sync(api).await {
             Ok(info) => {
-                println!("Sync {}", info.sync.yellow());
-                println!("Latest block height is {}", info.height.to_string().yellow());
-                println!("Tree size {}", info.tree_size.to_string().yellow());
-                println!("Gossipsub peers {}", info.gossipsub_peers.to_string().yellow());
-                println!("Heartbeats {}", info.heartbeats.to_string().yellow());
-                println!("Lag {}", format!("{:?}", Duration::from_micros((info.lag * 1000_f64) as u64)).yellow());
+                if info.sync != "completed" {
+                    println!("Sync {}", info.sync.yellow());
+                }
+                println!("Last block seen {}", info.last.yellow());
+                println!("Height {}", info.height.to_string().yellow());
+                println!("Peers {}", info.peers.to_string().yellow());
             }
             Err(err) => println!("{}", err.to_string().red()),
         };

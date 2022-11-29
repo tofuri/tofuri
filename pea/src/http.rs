@@ -421,8 +421,12 @@ async fn post_transaction(stream: &mut tokio::net::TcpStream, node: &mut Node, b
             .get(0..*TRANSACTION_SERIALIZED)
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
+    let data = bincode::serialize(&transaction).unwrap();
     let status = match node.blockchain.try_add_transaction(transaction) {
-        Ok(()) => "success".to_string(),
+        Ok(()) => {
+            node.gossipsub_publish("transaction", data);
+            "success".to_string()
+        }
         Err(err) => {
             error!("{}", err);
             err.to_string()
@@ -448,8 +452,12 @@ async fn post_stake(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer:
     let stake: Stake = bincode::deserialize(&hex::decode(
         buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
+    let data = bincode::serialize(&stake).unwrap();
     let status = match node.blockchain.try_add_stake(stake) {
-        Ok(()) => "success".to_string(),
+        Ok(()) => {
+            node.gossipsub_publish("stake", data);
+            "success".to_string()
+        }
         Err(err) => {
             error!("{}", err);
             err.to_string()

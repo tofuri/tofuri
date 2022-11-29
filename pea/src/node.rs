@@ -281,4 +281,13 @@ impl Node {
             }
         }
     }
+    pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) {
+        if self.swarm.behaviour().gossipsub.all_peers().count() == 0 {
+            return;
+        }
+        self.filter(&data, true);
+        if let Err(err) = self.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
+            error!("{}", err);
+        }
+    }
 }

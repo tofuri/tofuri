@@ -1,11 +1,7 @@
 use crate::{multiaddr, node::Node};
 use colored::*;
-use libp2p::{
-    gossipsub::{IdentTopic, TopicHash},
-    multiaddr::Protocol,
-    Multiaddr,
-};
-use log::{debug, error, info, warn};
+use libp2p::{gossipsub::TopicHash, multiaddr::Protocol, Multiaddr};
+use log::{debug, info, warn};
 use pea_core::constants::SYNC_BLOCKS_PER_TICK;
 use std::time::{Duration, SystemTime};
 pub async fn next(tps: f64) {
@@ -91,13 +87,7 @@ fn share(node: &mut Node) {
         return;
     }
     let vec: Vec<&Multiaddr> = node.connections.keys().collect();
-    let data = bincode::serialize(&vec).unwrap();
-    if node.filter(&data, true) {
-        return;
-    }
-    if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("multiaddr"), data) {
-        error!("{}", err);
-    }
+    node.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
 }
 fn grow(node: &mut Node) {
     if !node.blockchain.sync.syncing && !node.mint && node.blockchain.states.dynamic.current_staker().is_none() {
@@ -116,13 +106,7 @@ fn grow(node: &mut Node) {
         if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
             return;
         }
-        let data = bincode::serialize(&block).unwrap();
-        if node.filter(&data, true) {
-            return;
-        }
-        if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("block"), data) {
-            error!("{}", err);
-        }
+        node.gossipsub_publish("block", bincode::serialize(&block).unwrap());
     }
 }
 fn sync(node: &mut Node) {
@@ -135,10 +119,7 @@ fn sync(node: &mut Node) {
     }
     for _ in 0..SYNC_BLOCKS_PER_TICK {
         for block in node.blockchain.sync_blocks() {
-            let data = bincode::serialize(&block).unwrap();
-            if let Err(err) = node.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new("block sync"), data) {
-                error!("{}", err);
-            }
+            node.gossipsub_publish("block sync", bincode::serialize(&block).unwrap())
         }
     }
 }

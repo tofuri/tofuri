@@ -189,6 +189,17 @@ impl Node {
             _ => {}
         }
     }
+    pub fn latest_block_seen(&self) -> String {
+        if self.blockchain.states.dynamic.latest_block.timestamp == 0 {
+            return "never".to_string();
+        }
+        let now = "just now";
+        let mut string = util::duration_to_string(util::timestamp().saturating_sub(self.blockchain.states.dynamic.latest_block.timestamp), now);
+        if string != now {
+            string.push_str(" ago");
+        }
+        string
+    }
     pub async fn start(&mut self) {
         self.blockchain.load();
         info!(
@@ -199,7 +210,7 @@ impl Node {
                 "0".red()
             }
         );
-        info!("Latest block seen {}", self.blockchain.latest_block_seen().yellow());
+        info!("Latest block seen {}", self.latest_block_seen().yellow());
         let multiaddr: Multiaddr = self.host.parse().unwrap();
         self.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());

@@ -63,14 +63,6 @@ impl Blockchain {
             0
         }
     }
-    pub fn latest_block_seen(&self) -> String {
-        let now = "just now";
-        let mut string = util::duration_to_string(util::timestamp().saturating_sub(self.states.dynamic.latest_block.timestamp), now);
-        if string != now {
-            string.push_str(" ago");
-        }
-        string
-    }
     pub fn forge_block(&mut self) -> Option<Block> {
         let timestamp = util::timestamp();
         if let Some(public_key) = self.states.dynamic.current_staker() {

@@ -16,7 +16,6 @@ pub mod get {
         pub pending_blocks: Vec<String>,
         pub sync_index: usize,
         pub syncing: bool,
-        pub status: String,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct States {

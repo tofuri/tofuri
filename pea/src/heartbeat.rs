@@ -101,7 +101,7 @@ fn share(node: &mut Node) {
 }
 fn grow(node: &mut Node) {
     if !node.mint && node.blockchain.states.dynamic.current_staker().is_none() {
-        if delay(node, 3) {
+        if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",
                 node.swarm.behaviour().gossipsub.all_peers().count().to_string().yellow()

@@ -5,7 +5,7 @@ pub mod get {
     pub struct Data {
         pub public_key: String,
         pub height: usize,
-        pub latest_block: String,
+        pub latest_block_seen: String,
         pub tree_size: usize,
         pub heartbeats: usize,
         pub lag: f64,

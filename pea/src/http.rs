@@ -108,11 +108,7 @@ Access-Control-Allow-Origin: *
 }
 async fn get_info(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
     let states = &node.blockchain.states;
-    let now = "Just now";
-    let mut latest_block_seen = util::duration_to_string(util::timestamp().saturating_sub(node.blockchain.states.dynamic.latest_block.timestamp), now);
-    if latest_block_seen != now {
-        latest_block_seen.push_str(" ago");
-    }
+    let latest_block_seen = node.blockchain.latest_block_seen();
     let synchronized = "Synchronized";
     let mut status = util::duration_to_string(
         util::timestamp().saturating_sub(node.blockchain.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32),

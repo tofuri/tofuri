@@ -199,12 +199,7 @@ impl Node {
                 "0".red()
             }
         );
-        let now = "just now";
-        let mut latest_block = util::duration_to_string(util::timestamp().saturating_sub(self.blockchain.states.dynamic.latest_block.timestamp), now);
-        if latest_block != now {
-            latest_block.push_str(" ago");
-        }
-        info!("Latest block created {}", latest_block.yellow());
+        info!("Latest block seen {}", self.blockchain.latest_block_seen().yellow());
         let multiaddr: Multiaddr = self.host.parse().unwrap();
         self.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());

@@ -158,6 +158,7 @@ impl Blockchain {
         }
         let balance = self.states.dynamic.balance(&transaction.public_key_input);
         self.validate_transaction(&transaction, balance, self.states.dynamic.latest_block.timestamp)?;
+        info!("Transaction {}", hex::encode(&transaction.hash()).green());
         self.pending_transactions.push(transaction);
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
         while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
@@ -178,6 +179,7 @@ impl Blockchain {
         let balance = self.states.dynamic.balance(&stake.public_key);
         let balance_staked = self.states.dynamic.balance_staked(&stake.public_key);
         self.validate_stake(&stake, balance, balance_staked, self.states.dynamic.latest_block.timestamp)?;
+        info!("Stake {}", hex::encode(&stake.hash()).green());
         self.pending_stakes.push(stake);
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
         while self.pending_stakes.len() > PENDING_STAKES_LIMIT {

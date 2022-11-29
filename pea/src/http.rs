@@ -165,7 +165,6 @@ Content-Type: application/json
 }
 async fn get_dynamic(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
-    let block = &dynamic.latest_block;
     stream
         .write_all(
             format!(
@@ -175,21 +174,12 @@ Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&get::Dynamic {
+                serde_json::to_string(&get::State {
                     balance: dynamic.balance(&node.blockchain.key.public_key_bytes()),
                     balance_staked: dynamic.balance_staked(&node.blockchain.key.public_key_bytes()),
                     hashes: dynamic.hashes.len(),
                     latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
                     stakers: dynamic.stakers.iter().map(address::public::encode).collect(),
-                    latest_block: get::Block {
-                        hash: hex::encode(block.hash()),
-                        previous_hash: hex::encode(block.previous_hash),
-                        timestamp: block.timestamp,
-                        public_key: address::public::encode(&block.public_key),
-                        signature: hex::encode(block.signature),
-                        transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
-                        stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
-                    }
                 })?
             )
             .as_bytes(),
@@ -208,7 +198,7 @@ Access-Control-Allow-Origin: *
 Content-Type: application/json
 
 {}",
-                serde_json::to_string(&get::Trusted {
+                serde_json::to_string(&get::State {
                     balance: trusted.balance(&node.blockchain.key.public_key_bytes()),
                     balance_staked: trusted.balance_staked(&node.blockchain.key.public_key_bytes()),
                     hashes: trusted.hashes.len(),

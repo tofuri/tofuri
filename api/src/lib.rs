@@ -11,16 +11,7 @@ pub mod get {
         pub index_1: usize,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct Dynamic {
-        pub balance: u128,
-        pub balance_staked: u128,
-        pub hashes: usize,
-        pub latest_hashes: Vec<String>,
-        pub stakers: Vec<String>,
-        pub latest_block: Block,
-    }
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct Trusted {
+    pub struct State {
         pub balance: u128,
         pub balance_staked: u128,
         pub hashes: usize,

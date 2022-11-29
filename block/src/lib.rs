@@ -61,16 +61,6 @@ impl Block {
             stakes: vec![],
         }
     }
-    pub fn genesis(previous_hash: types::Hash) -> Block {
-        Block {
-            previous_hash,
-            timestamp: 0,
-            public_key: [0; 32],
-            signature: [0; 64],
-            transactions: vec![],
-            stakes: vec![],
-        }
-    }
     pub fn sign(&mut self, key: &Key) {
         self.public_key = key.public_key_bytes();
         self.signature = key.sign(&self.hash());
@@ -152,6 +142,18 @@ impl Block {
             return Err("stake mint timestamp ancient".into());
         }
         Ok(())
+    }
+}
+impl Default for Block {
+    fn default() -> Self {
+        Block {
+            previous_hash: [0; 32],
+            timestamp: 0,
+            public_key: [0; 32],
+            signature: [0; 64],
+            transactions: vec![],
+            stakes: vec![],
+        }
     }
 }
 #[cfg(test)]

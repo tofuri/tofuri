@@ -6,6 +6,7 @@ pub mod get {
         pub public_key: String,
         pub height: usize,
         pub latest_block_seen: String,
+        pub avg: f32,
         pub estimated_sync_time: String,
         pub tree_size: usize,
         pub heartbeats: usize,

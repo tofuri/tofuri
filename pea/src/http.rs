@@ -122,6 +122,7 @@ Content-Type: application/json
                     public_key: node.blockchain.key.public(),
                     height: node.blockchain.height(),
                     latest_block_seen,
+                    avg: node.blockchain.sync.avg,
                     estimated_sync_time,
                     tree_size: node.blockchain.tree.size(),
                     heartbeats: node.heartbeats,

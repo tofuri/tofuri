@@ -193,8 +193,10 @@ impl Node {
         if self.blockchain.states.dynamic.latest_block.timestamp == 0 {
             return "never".to_string();
         }
-        let now = "just now";
-        let mut string = util::duration_to_string(util::timestamp().saturating_sub(self.blockchain.states.dynamic.latest_block.timestamp), now);
+        let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
+        let diff = util::timestamp().saturating_sub(timestamp);
+        let now = "now";
+        let mut string = util::duration_to_string(diff, now);
         if string != now {
             string.push_str(" ago");
         }
@@ -204,9 +206,14 @@ impl Node {
         if self.blockchain.states.dynamic.latest_block.timestamp == 0 {
             return "unknown".to_string();
         }
+        if !self.blockchain.sync.syncing {
+            return "done".to_string();
+        }
+        let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
+        let mut diff = util::timestamp().saturating_sub(timestamp) as f32;
+        diff /= BLOCK_TIME_MIN as f32;
+        diff /= self.blockchain.sync.avg;
         let now = "now";
-        let diff =
-            util::timestamp().saturating_sub(self.blockchain.states.dynamic.latest_block.timestamp) as f32 / BLOCK_TIME_MIN as f32 / self.blockchain.sync.avg;
         util::duration_to_string(diff as u32, now)
     }
     pub async fn start(&mut self) {

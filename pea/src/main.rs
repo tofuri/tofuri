@@ -17,7 +17,7 @@ pub struct Args {
     pub tempkey: bool,
     /// Generate genesis block
     #[clap(long, value_parser, default_value_t = false)]
-    pub genesis: bool,
+    pub mint: bool,
     /// Trust fork after blocks
     #[clap(long, value_parser, default_value = "128")]
     pub trust: usize,
@@ -65,7 +65,7 @@ async fn main() {
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
-    info!("{} {}", "--genesis".cyan(), args.genesis.to_string().magenta());
+    info!("{} {}", "--genesis".cyan(), args.mint.to_string().magenta());
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
     info!("{} {}", "--pending".cyan(), args.pending.to_string().magenta());
     info!("{} {}", "--ban-offline".cyan(), args.ban_offline.to_string().magenta());
@@ -80,7 +80,7 @@ async fn main() {
     let mut node = Node::new(Options {
         tempdb: args.tempdb,
         tempkey: args.tempkey,
-        genesis: args.genesis,
+        mint: args.mint,
         trust: args.trust,
         pending: args.pending,
         ban_offline: args.ban_offline,

@@ -34,7 +34,7 @@ type HandlerErr =
 pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,
-    pub genesis: bool,
+    pub mint: bool,
     pub trust: usize,
     pub pending: usize,
     pub ban_offline: usize,
@@ -59,7 +59,7 @@ pub struct Node {
     pub connections: HashMap<Multiaddr, PeerId>,
     pub bind_api: String,
     pub host: String,
-    pub genesis: bool,
+    pub mint: bool,
     pub ban_offline: usize,
 }
 impl Node {
@@ -82,7 +82,7 @@ impl Node {
             connections: HashMap::new(),
             bind_api: options.bind_api,
             host: options.host,
-            genesis: options.genesis,
+            mint: options.mint,
             ban_offline: options.ban_offline,
         }
     }

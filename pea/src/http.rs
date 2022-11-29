@@ -108,6 +108,7 @@ Access-Control-Allow-Origin: *
 async fn get_info(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
     let states = &node.blockchain.states;
     let latest_block_seen = node.latest_block_seen();
+    let estimated_sync_time = node.estimated_sync_time();
     stream
         .write_all(
             format!(
@@ -121,6 +122,7 @@ Content-Type: application/json
                     public_key: node.blockchain.key.public(),
                     height: node.blockchain.height(),
                     latest_block_seen,
+                    estimated_sync_time,
                     tree_size: node.blockchain.tree.size(),
                     heartbeats: node.heartbeats,
                     gossipsub_peers: node.swarm.behaviour().gossipsub.all_peers().count(),

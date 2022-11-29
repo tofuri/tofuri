@@ -18,7 +18,7 @@ use libp2p::{
 };
 use log::{debug, error, info};
 use pea_address as address;
-use pea_core::{types, util};
+use pea_core::{constants::BLOCK_TIME_MIN, types, util};
 use pea_db as db;
 use pea_wallet::Wallet;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -199,6 +199,15 @@ impl Node {
             string.push_str(" ago");
         }
         string
+    }
+    pub fn estimated_sync_time(&self) -> String {
+        if self.blockchain.states.dynamic.latest_block.timestamp == 0 {
+            return "unknown".to_string();
+        }
+        let now = "now";
+        let diff =
+            util::timestamp().saturating_sub(self.blockchain.states.dynamic.latest_block.timestamp) as f32 / BLOCK_TIME_MIN as f32 / self.blockchain.sync.avg;
+        util::duration_to_string(diff as u32, now)
     }
     pub async fn start(&mut self) {
         self.blockchain.load();

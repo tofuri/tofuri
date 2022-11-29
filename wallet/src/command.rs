@@ -7,7 +7,7 @@ use pea_api::{get, post};
 use pea_core::constants::COIN;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
-use std::{ops::Range, process, time::Duration};
+use std::{ops::Range, process};
 pub struct Command {
     api: String,
     wallet: Option<Wallet>,

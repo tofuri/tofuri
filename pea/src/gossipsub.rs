@@ -7,10 +7,18 @@ use std::error::Error;
 pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn Error>> {
     match message.topic.as_str() {
         "block" => {
-            block(node, &message.data)?;
+            let block: Block = bincode::deserialize(&message.data)?;
+            node.blockchain.try_add_block(block.clone())?;
+            node.blockchain.accept_block(&block, false);
         }
-        "block sync" => {
-            block(node, &message.data)?;
+        "blocks" => {
+            let vec: Vec<Block> = bincode::deserialize(&message.data)?;
+            for block in vec {
+                if node.blockchain.try_add_block(block.clone()).is_err() {
+                    continue;
+                }
+                node.blockchain.accept_block(&block, false);
+            }
         }
         "stake" => {
             let stake: Stake = bincode::deserialize(&message.data)?;
@@ -30,11 +38,5 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
         }
         _ => {}
     };
-    Ok(())
-}
-fn block(node: &mut Node, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
-    let block: Block = bincode::deserialize(bytes)?;
-    node.blockchain.try_add_block(block.clone())?;
-    node.blockchain.accept_block(&block, false);
     Ok(())
 }

@@ -159,9 +159,8 @@ Content-Type: application/json
                     sync,
                     last,
                     height: node.blockchain.height(),
-                    peers: node.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw("block sync")).count(),
-                    index_0: node.blockchain.sync.index_0,
-                    index_1: node.blockchain.sync.index_1,
+                    peers: node.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw("blocks")).count(),
+                    index: node.blockchain.sync.index,
                 })?
             )
             .as_bytes(),

@@ -114,14 +114,14 @@ fn sync(node: &mut Node) {
         return;
     }
     if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
-        node.blockchain.sync.index_0 = 0;
+        node.blockchain.sync.index = 0;
         return;
     }
+    let mut vec = vec![];
     for _ in 0..SYNC_BLOCKS_PER_TICK {
-        for block in node.blockchain.sync_blocks() {
-            node.gossipsub_publish("block sync", bincode::serialize(&block).unwrap())
-        }
+        vec.push(node.blockchain.sync_block());
     }
+    node.gossipsub_publish("blocks", bincode::serialize(&vec).unwrap())
 }
 fn nanos(tps: f64) -> u64 {
     let f = 1_f64 / tps;

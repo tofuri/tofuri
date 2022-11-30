@@ -19,7 +19,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value_t = false)]
     pub mint: bool,
     /// Trust fork after blocks
-    #[clap(long, value_parser, default_value = "128")]
+    #[clap(long, value_parser, default_value = "16")]
     pub trust: usize,
     /// Pending blocks limit
     #[clap(long, value_parser, default_value = "10")]

@@ -179,34 +179,20 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn sync_blocks(&mut self) -> [Block; 2] {
-        [self.sync_block_0(), self.sync_block_1()]
-    }
-    fn sync_block_0(&mut self) -> Block {
+    pub fn sync_block(&mut self) -> Block {
         let hashes_trusted = &self.states.trusted.hashes;
         let hashes_dynamic = &self.states.dynamic.hashes;
-        if self.sync.index_0 >= hashes_trusted.len() + hashes_dynamic.len() {
-            self.sync.index_0 = 0;
+        if self.sync.index >= hashes_trusted.len() + hashes_dynamic.len() {
+            self.sync.index = 0;
         }
-        let hash = if self.sync.index_0 < hashes_trusted.len() {
-            hashes_trusted[self.sync.index_0]
+        let hash = if self.sync.index < hashes_trusted.len() {
+            hashes_trusted[self.sync.index]
         } else {
-            hashes_dynamic[self.sync.index_0 - hashes_trusted.len()]
+            hashes_dynamic[self.sync.index - hashes_trusted.len()]
         };
-        debug!("{} {} {}", "Sync 0".cyan(), self.sync.index_0.to_string().yellow(), hex::encode(hash));
+        debug!("{} {} {}", "Sync 0".cyan(), self.sync.index.to_string().yellow(), hex::encode(hash));
         let block = db::block::get(&self.db, &hash).unwrap();
-        self.sync.index_0 += 1;
-        block
-    }
-    fn sync_block_1(&mut self) -> Block {
-        let hashes_dynamic = &self.states.dynamic.hashes;
-        if self.sync.index_1 >= hashes_dynamic.len() {
-            self.sync.index_1 = 0;
-        }
-        let hash = hashes_dynamic[self.sync.index_1];
-        debug!("{} {} {}", "Sync 1".cyan(), self.sync.index_1.to_string().yellow(), hex::encode(hash));
-        let block = db::block::get(&self.db, &hash).unwrap();
-        self.sync.index_1 += 1;
+        self.sync.index += 1;
         block
     }
     fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {

@@ -7,8 +7,7 @@ pub mod get {
         pub last: String,
         pub height: usize,
         pub peers: usize,
-        pub index_0: usize,
-        pub index_1: usize,
+        pub index: usize,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct State {

@@ -1,7 +1,6 @@
 #[derive(Debug)]
 pub struct Sync {
-    pub index_0: usize,
-    pub index_1: usize,
+    pub index: usize,
     pub avg: f32,
     pub new: usize,
     pub syncing: bool,
@@ -17,8 +16,7 @@ impl Sync {
 impl Default for Sync {
     fn default() -> Self {
         Self {
-            index_0: 0,
-            index_1: 0,
+            index: 0,
             avg: 0.0,
             new: 0,
             syncing: false,

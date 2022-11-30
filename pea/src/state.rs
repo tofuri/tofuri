@@ -1,6 +1,3 @@
-use colored::*;
-use log::debug;
-use pea_address as address;
 use pea_block::Block;
 use pea_core::{constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types, util};
 use pea_db as db;
@@ -61,11 +58,6 @@ macro_rules! impl_State {
                             .position(|x| x == &stake.public_key)
                             .unwrap();
                         self.stakers.remove(index).unwrap();
-                        debug!(
-                            "{} {}",
-                            "Burned low balance".red(),
-                            address::public::encode(&stake.public_key),
-                        );
                     }
                 }
             }
@@ -76,13 +68,6 @@ macro_rules! impl_State {
                 if let Some(stake) = block.stakes.first() {
                     if stake.fee == 0 {
                         balance += MIN_STAKE;
-                        debug!(
-                            "{} {} {} {}",
-                            "Minted".cyan(),
-                            MIN_STAKE.to_string().yellow(),
-                            address::public::encode(&block.public_key).green(),
-                            hex::encode(block.hash())
-                        );
                     }
                 }
                 self.balance.insert(block.public_key, balance);

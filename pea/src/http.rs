@@ -43,228 +43,162 @@ pub async fn handler(mut stream: tokio::net::TcpStream, node: &mut Node) -> Resu
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
     info!("{} {} {}", "API".cyan(), stream.peer_addr()?.to_string().magenta(), first);
-    if GET.is_match(&first) {
-        get(&mut stream, node, &first).await?;
-    } else if POST.is_match(&first) {
-        post(&mut stream, node, &first, &buffer).await?;
-    } else {
-        c405(&mut stream).await?;
-    };
+    write(
+        &mut stream,
+        if GET.is_match(&first) {
+            get(node, &first)
+        } else if POST.is_match(&first) {
+            post(node, &first, &buffer)
+        } else {
+            c405()
+        }?,
+    )
+    .await?;
     stream.flush().await?;
     Ok(())
 }
-async fn get(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+fn get(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     if INDEX.is_match(first) {
-        get_index(stream).await?;
+        get_index()
     } else if INFO.is_match(first) {
-        get_info(stream, node).await?;
+        get_info(node)
     } else if SYNC.is_match(first) {
-        get_sync(stream, node).await?;
+        get_sync(node)
     } else if DYNAMIC.is_match(first) {
-        get_dynamic(stream, node).await?;
+        get_dynamic(node)
     } else if TRUSTED.is_match(first) {
-        get_trusted(stream, node).await?;
+        get_trusted(node)
     } else if OPTIONS.is_match(first) {
-        get_options(stream, node).await?;
+        get_options(node)
     } else if BALANCE.is_match(first) {
-        get_balance(stream, node, first).await?;
+        get_balance(node, first)
     } else if BALANCE_STAKED.is_match(first) {
-        get_staked_balance(stream, node, first).await?;
+        get_staked_balance(node, first)
     } else if HEIGHT.is_match(first) {
-        get_height(stream, node).await?;
+        get_height(node)
     } else if HEIGHT_BY_HASH.is_match(first) {
-        get_height_by_hash(stream, node, first).await?;
+        get_height_by_hash(node, first)
     } else if BLOCK_LATEST.is_match(first) {
-        get_block_latest(stream, node).await?;
+        get_block_latest(node)
     } else if HASH_BY_HEIGHT.is_match(first) {
-        get_hash_by_height(stream, node, first).await?;
+        get_hash_by_height(node, first)
     } else if BLOCK_BY_HASH.is_match(first) {
-        get_block_by_hash(stream, node, first).await?;
+        get_block_by_hash(node, first)
     } else if TRANSACTION_BY_HASH.is_match(first) {
-        get_transaction_by_hash(stream, node, first).await?;
+        get_transaction_by_hash(node, first)
     } else if STAKE_BY_HASH.is_match(first) {
-        get_stake_by_hash(stream, node, first).await?;
+        get_stake_by_hash(node, first)
     } else if PEERS.is_match(first) {
-        get_peers(stream, node).await?;
+        get_peers(node)
     } else {
-        c404(stream).await?;
-    };
-    Ok(())
+        c404()
+    }
 }
-async fn post(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
+fn post(node: &mut Node, first: &str, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
     if TRANSACTION.is_match(first) {
-        post_transaction(stream, node, buffer).await?;
+        post_transaction(node, buffer)
     } else if STAKE.is_match(first) {
-        post_stake(stream, node, buffer).await?;
+        post_stake(node, buffer)
     } else {
-        c404(stream).await?;
-    };
+        c404()
+    }
+}
+async fn write(stream: &mut tokio::net::TcpStream, string: String) -> Result<(), Box<dyn Error>> {
+    stream.write_all(string.as_bytes()).await?;
     Ok(())
 }
-async fn get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
-    stream
-        .write_all(
-            format!(
-                "\
+fn json(string: String) -> String {
+    format!(
+        "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+        string
+    )
+}
+fn text(string: String) -> String {
+    format!(
+        "\
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 
+{}",
+        string
+    )
+}
+fn get_index() -> Result<String, Box<dyn Error>> {
+    Ok(text(format!(
+        "\
 {} = {{ version = \"{}\" }}
 {}/tree/{}",
-                env!("CARGO_PKG_NAME"),
-                env!("CARGO_PKG_VERSION"),
-                env!("CARGO_PKG_REPOSITORY"),
-                env!("GIT_HASH"),
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+        env!("CARGO_PKG_REPOSITORY"),
+        env!("GIT_HASH"),
+    )))
 }
-async fn get_info(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&get::Data {
-                    public_key: node.blockchain.key.public(),
-                    tree_size: node.blockchain.tree.size(),
-                    heartbeats: node.heartbeats,
-                    lag: node.lag,
-                })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
+    Ok(json(serde_json::to_string(&get::Data {
+        public_key: node.blockchain.key.public(),
+        tree_size: node.blockchain.tree.size(),
+        heartbeats: node.heartbeats,
+        lag: node.lag,
+    })?))
 }
-async fn get_sync(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let last = node.last();
     let sync = node.sync();
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&get::Sync {
-                    sync,
-                    last,
-                    height: node.blockchain.height(),
-                    peers: node.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw("blocks")).count(),
-                    index: node.blockchain.sync.index,
-                })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&get::Sync {
+        sync,
+        last,
+        height: node.blockchain.height(),
+        peers: node.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw("blocks")).count(),
+        index: node.blockchain.sync.index,
+    })?))
 }
-async fn get_dynamic(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&get::State {
-                    balance: dynamic.balance(&node.blockchain.key.public_key_bytes()),
-                    balance_staked: dynamic.balance_staked(&node.blockchain.key.public_key_bytes()),
-                    hashes: dynamic.hashes.len(),
-                    latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
-                    stakers: dynamic.stakers.iter().map(address::public::encode).collect(),
-                })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&get::State {
+        balance: dynamic.balance(&node.blockchain.key.public_key_bytes()),
+        balance_staked: dynamic.balance_staked(&node.blockchain.key.public_key_bytes()),
+        hashes: dynamic.hashes.len(),
+        latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
+        stakers: dynamic.stakers.iter().map(address::public::encode).collect(),
+    })?))
 }
-async fn get_trusted(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&get::State {
-                    balance: trusted.balance(&node.blockchain.key.public_key_bytes()),
-                    balance_staked: trusted.balance_staked(&node.blockchain.key.public_key_bytes()),
-                    hashes: trusted.hashes.len(),
-                    latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
-                    stakers: trusted.stakers.iter().map(address::public::encode).collect(),
-                })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&get::State {
+        balance: trusted.balance(&node.blockchain.key.public_key_bytes()),
+        balance_staked: trusted.balance_staked(&node.blockchain.key.public_key_bytes()),
+        hashes: trusted.hashes.len(),
+        latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
+        stakers: trusted.stakers.iter().map(address::public::encode).collect(),
+    })?))
 }
-async fn get_options(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&get::Options {
-                    mint: node.mint,
-                    trust: node.blockchain.trust_fork_after_blocks,
-                    pending: node.blockchain.pending_blocks_limit,
-                    ban_offline: node.ban_offline,
-                    time_delta: node.blockchain.time_delta,
-                    max_established: node.max_established,
-                    tps: node.tps,
-                    bind_api: node.bind_api.clone(),
-                    host: node.host.clone(),
-                    tempdb: node.tempdb,
-                    tempkey: node.tempkey
-                })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
+    Ok(json(serde_json::to_string(&get::Options {
+        mint: node.mint,
+        trust: node.blockchain.trust_fork_after_blocks,
+        pending: node.blockchain.pending_blocks_limit,
+        ban_offline: node.ban_offline,
+        time_delta: node.blockchain.time_delta,
+        max_established: node.max_established,
+        tps: node.tps,
+        bind_api: node.bind_api.clone(),
+        host: node.host.clone(),
+        tempdb: node.tempdb,
+        tempkey: node.tempkey,
+    })?))
 }
-async fn get_balance(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+fn get_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     let public_key = address::public::decode(BALANCE.find(first).ok_or("GET BALANCE 1")?.as_str().trim().get(9..).ok_or("GET BALANCE 2")?)?;
     let balance = node.blockchain.states.dynamic.balance(&public_key);
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&balance)?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&balance)?))
 }
-async fn get_staked_balance(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+fn get_staked_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     let public_key = address::public::decode(
         BALANCE_STAKED
             .find(first)
@@ -275,41 +209,13 @@ async fn get_staked_balance(stream: &mut tokio::net::TcpStream, node: &mut Node,
             .ok_or("GET BALANCE_STAKED 2")?,
     )?;
     let balance = node.blockchain.states.dynamic.balance_staked(&public_key);
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&balance)?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&balance)?))
 }
-async fn get_height(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+fn get_height(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let height = node.blockchain.height();
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&height)?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&height)?))
 }
-async fn get_height_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+fn get_height_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     let hash = hex::decode(
         HEIGHT_BY_HASH
             .find(first)
@@ -321,49 +227,21 @@ async fn get_height_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node,
     )?;
     let block = db::block::get(&node.blockchain.db, &hash)?;
     let height = node.blockchain.tree.height(&block.previous_hash);
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&height)?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&height)?))
 }
-async fn get_block_latest(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let block = &node.blockchain.states.dynamic.latest_block;
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&get::Block {
-                    hash: hex::encode(block.hash()),
-                    previous_hash: hex::encode(block.previous_hash),
-                    timestamp: block.timestamp,
-                    public_key: address::public::encode(&block.public_key),
-                    signature: hex::encode(block.signature),
-                    transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
-                    stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
-                })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&get::Block {
+        hash: hex::encode(block.hash()),
+        previous_hash: hex::encode(block.previous_hash),
+        timestamp: block.timestamp,
+        public_key: address::public::encode(&block.public_key),
+        signature: hex::encode(block.signature),
+        transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
+        stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
+    })?))
 }
-async fn get_hash_by_height(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+fn get_hash_by_height(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     let height = HASH_BY_HEIGHT
         .find(first)
         .ok_or("GET HASH_BY_HEIGHT 1")?
@@ -383,23 +261,9 @@ async fn get_hash_by_height(stream: &mut tokio::net::TcpStream, node: &mut Node,
     } else {
         hashes_dynamic[height - hashes_trusted.len()]
     };
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&hex::encode(hash))?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&hex::encode(hash))?))
 }
-async fn get_block_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+fn get_block_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     let hash = hex::decode(
         BLOCK_BY_HASH
             .find(first)
@@ -410,31 +274,17 @@ async fn get_block_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, 
             .ok_or("GET BLOCK_BY_HASH 2")?,
     )?;
     let block = db::block::get(&node.blockchain.db, &hash)?;
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&get::Block {
-                    hash: hex::encode(block.hash()),
-                    previous_hash: hex::encode(block.previous_hash),
-                    timestamp: block.timestamp,
-                    public_key: address::public::encode(&block.public_key),
-                    signature: hex::encode(block.signature),
-                    transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
-                    stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
-                })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&get::Block {
+        hash: hex::encode(block.hash()),
+        previous_hash: hex::encode(block.previous_hash),
+        timestamp: block.timestamp,
+        public_key: address::public::encode(&block.public_key),
+        signature: hex::encode(block.signature),
+        transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
+        stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
+    })?))
 }
-async fn get_transaction_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     let hash = hex::decode(
         TRANSACTION_BY_HASH
             .find(first)
@@ -445,31 +295,17 @@ async fn get_transaction_by_hash(stream: &mut tokio::net::TcpStream, node: &mut 
             .ok_or("GET TRANSACTION_BY_HASH 2")?,
     )?;
     let transaction = db::transaction::get(&node.blockchain.db, &hash)?;
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&get::Transaction {
-                    hash: hex::encode(transaction.hash()),
-                    public_key_input: address::public::encode(&transaction.public_key_input),
-                    public_key_output: address::public::encode(&transaction.public_key_output),
-                    amount: transaction.amount,
-                    fee: transaction.fee,
-                    timestamp: transaction.timestamp,
-                    signature: hex::encode(transaction.signature)
-                })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&get::Transaction {
+        hash: hex::encode(transaction.hash()),
+        public_key_input: address::public::encode(&transaction.public_key_input),
+        public_key_output: address::public::encode(&transaction.public_key_output),
+        amount: transaction.amount,
+        fee: transaction.fee,
+        timestamp: transaction.timestamp,
+        signature: hex::encode(transaction.signature),
+    })?))
 }
-async fn get_stake_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     let hash = hex::decode(
         STAKE_BY_HASH
             .find(first)
@@ -480,49 +316,21 @@ async fn get_stake_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, 
             .ok_or("GET STAKE_BY_HASH 2")?,
     )?;
     let stake = db::stake::get(&node.blockchain.db, &hash)?;
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&get::Stake {
-                    hash: hex::encode(stake.hash()),
-                    public_key: address::public::encode(&stake.public_key),
-                    amount: stake.amount,
-                    deposit: stake.deposit,
-                    fee: stake.fee,
-                    timestamp: stake.timestamp,
-                    signature: hex::encode(stake.signature)
-                })?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&get::Stake {
+        hash: hex::encode(stake.hash()),
+        public_key: address::public::encode(&stake.public_key),
+        amount: stake.amount,
+        deposit: stake.deposit,
+        fee: stake.fee,
+        timestamp: stake.timestamp,
+        signature: hex::encode(stake.signature),
+    })?))
 }
-async fn get_peers(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let peers = db::peer::get_all(&node.blockchain.db);
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&peers)?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&peers)?))
 }
-async fn post_transaction(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
+fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
     let transaction: Transaction = bincode::deserialize(&hex::decode(
         buffer
             .lines()
@@ -544,23 +352,9 @@ async fn post_transaction(stream: &mut tokio::net::TcpStream, node: &mut Node, b
             err.to_string()
         }
     };
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&status)?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&status)?))
 }
-async fn post_stake(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer: &[u8; 1024]) -> Result<(), Box<dyn Error>> {
+fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
     let stake: Stake = bincode::deserialize(&hex::decode(
         buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
@@ -577,27 +371,11 @@ async fn post_stake(stream: &mut tokio::net::TcpStream, node: &mut Node, buffer:
             err.to_string()
         }
     };
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&status)?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&status)?))
 }
-async fn c404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
-    stream.write_all("HTTP/1.1 404 Not Found".as_bytes()).await?;
-    Ok(())
+fn c404() -> Result<String, Box<dyn Error>> {
+    Ok("HTTP/1.1 404 Not Found".to_string())
 }
-async fn c405(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
-    stream.write_all("HTTP/1.1 405 Method Not Allowed".as_bytes()).await?;
-    Ok(())
+fn c405() -> Result<String, Box<dyn Error>> {
+    Ok("HTTP/1.1 405 Method Not Allowed".to_string())
 }

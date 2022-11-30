@@ -168,7 +168,7 @@ impl Command {
         };
         match get::sync(api).await {
             Ok(info) => {
-                println!("Synchronizing {}", info.sync.yellow());
+                println!("Synchronize {}", info.sync.yellow());
                 println!("Last block seen {}", info.last.yellow());
                 println!("Height {}", info.height.to_string().yellow());
                 println!("Peers {}", info.peers.to_string().yellow());

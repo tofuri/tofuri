@@ -29,11 +29,7 @@ macro_rules! impl_State {
                     } else {
                         self.balance.insert(transaction.public_key_input, balance_input);
                     }
-                    if balance_output == 0 {
-                        self.balance.remove(&transaction.public_key_output);
-                    } else {
-                        self.balance.insert(transaction.public_key_output, balance_output);
-                    }
+                    self.balance.insert(transaction.public_key_output, balance_output);
                 }
                 for stake in block.stakes.iter() {
                     let mut balance = self.balance(&stake.public_key);
@@ -47,8 +43,7 @@ macro_rules! impl_State {
                     }
                     if balance == 0 {
                         self.balance.remove(&stake.public_key);
-                    }
-                    else {
+                    } else {
                         self.balance.insert(stake.public_key, balance);
                     }
                     self.balance_staked.insert(stake.public_key, balance_staked);

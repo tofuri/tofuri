@@ -287,10 +287,10 @@ impl Node {
             }
         }
     }
+    pub fn gossipsub_has_mesh_peers(&mut self, topic: &str) -> bool {
+        self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
+    }
     pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) {
-        if self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() == 0 {
-            return;
-        }
         self.filter(&data, true);
         if let Err(err) = self.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
             error!("{}", err);

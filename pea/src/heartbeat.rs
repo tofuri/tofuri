@@ -83,7 +83,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     }
 }
 fn share(node: &mut Node) {
-    if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
+    if !node.gossipsub_has_mesh_peers("multiaddr") {
         return;
     }
     let vec: Vec<&Multiaddr> = node.connections.keys().collect();
@@ -94,7 +94,13 @@ fn grow(node: &mut Node) {
         if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",
-                node.swarm.behaviour().gossipsub.all_peers().count().to_string().yellow()
+                node.swarm
+                    .behaviour()
+                    .gossipsub
+                    .mesh_peers(&TopicHash::from_raw("blocks"))
+                    .count()
+                    .to_string()
+                    .yellow()
             );
         }
         node.blockchain.sync.syncing = true;
@@ -103,7 +109,7 @@ fn grow(node: &mut Node) {
         return;
     }
     if let Some(block) = node.blockchain.forge_block() {
-        if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
+        if !node.gossipsub_has_mesh_peers("block") {
             return;
         }
         node.gossipsub_publish("block", bincode::serialize(&block).unwrap());
@@ -113,7 +119,7 @@ fn sync(node: &mut Node) {
     if node.blockchain.states.dynamic.hashes.is_empty() {
         return;
     }
-    if node.swarm.behaviour().gossipsub.all_peers().count() == 0 {
+    if !node.gossipsub_has_mesh_peers("blocks") {
         node.blockchain.sync.index = 0;
         return;
     }

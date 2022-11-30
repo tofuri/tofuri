@@ -1,20 +1,9 @@
 use pea_int as int;
 fn main() {
-    let ints = vec![
-        0,
-        1,
-        10,
-        100,
-        1000000,
-        10000000000000,
-        1000000000000000000,
-        10000000000000000000000000,
-        100000000000000000000000000000000000000,
-    ];
-    for int in ints.clone() {
-        println!("{}", int::floor(int));
-    }
-    for int in ints {
-        println!("{:x}", int::floor(int));
+    for i in 0..39 {
+        let x = 10_u128.pow(i);
+        let y = int::floor(x);
+        let z = y as f64 / x as f64;
+        println!("{} {}", y, z);
     }
 }

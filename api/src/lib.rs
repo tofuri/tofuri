@@ -19,6 +19,20 @@ pub mod get {
         pub stakers: Vec<String>,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Options {
+        pub mint: bool,
+        pub tempdb: bool,
+        pub tempkey: bool,
+        pub trust: usize,
+        pub pending: usize,
+        pub ban_offline: usize,
+        pub time_delta: u32,
+        pub max_established: Option<u32>,
+        pub tps: f64,
+        pub bind_api: String,
+        pub host: String,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Data {
         pub public_key: String,
         pub tree_size: usize,

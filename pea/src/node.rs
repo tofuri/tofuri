@@ -61,6 +61,9 @@ pub struct Node {
     pub host: String,
     pub mint: bool,
     pub ban_offline: usize,
+    pub max_established: Option<u32>,
+    pub tempdb: bool,
+    pub tempkey: bool,
 }
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
@@ -84,6 +87,9 @@ impl Node {
             host: options.host,
             mint: options.mint,
             ban_offline: options.ban_offline,
+            max_established: options.max_established,
+            tempdb: options.tempdb,
+            tempkey: options.tempkey,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

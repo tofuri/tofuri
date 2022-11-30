@@ -19,6 +19,7 @@ lazy_static! {
     static ref SYNC: Regex = Regex::new(r" /sync ").unwrap();
     static ref DYNAMIC: Regex = Regex::new(r" /dynamic ").unwrap();
     static ref TRUSTED: Regex = Regex::new(r" /trusted ").unwrap();
+    static ref OPTIONS: Regex = Regex::new(r" /options ").unwrap();
     static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref BALANCE_STAKED: Regex = Regex::new(r" /balance_staked/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
@@ -62,6 +63,8 @@ async fn get(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -
         get_dynamic(stream, node).await?;
     } else if TRUSTED.is_match(first) {
         get_trusted(stream, node).await?;
+    } else if OPTIONS.is_match(first) {
+        get_options(stream, node).await?;
     } else if BALANCE.is_match(first) {
         get_balance(stream, node, first).await?;
     } else if BALANCE_STAKED.is_match(first) {
@@ -204,6 +207,35 @@ Content-Type: application/json
                     hashes: trusted.hashes.len(),
                     latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
                     stakers: trusted.stakers.iter().map(address::public::encode).collect(),
+                })?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn get_options(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&get::Options {
+                    mint: node.mint,
+                    trust: node.blockchain.trust_fork_after_blocks,
+                    pending: node.blockchain.pending_blocks_limit,
+                    ban_offline: node.ban_offline,
+                    time_delta: node.blockchain.time_delta,
+                    max_established: node.max_established,
+                    tps: node.tps,
+                    bind_api: node.bind_api.clone(),
+                    host: node.host.clone(),
+                    tempdb: node.tempdb,
+                    tempkey: node.tempkey
                 })?
             )
             .as_bytes(),

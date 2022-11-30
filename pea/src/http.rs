@@ -23,6 +23,7 @@ lazy_static! {
     static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref BALANCE_STAKED: Regex = Regex::new(r" /balance_staked/0[xX][0-9A-Fa-f]* ").unwrap();
     static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
+    static ref HEIGHT_BY_HASH: Regex = Regex::new(r" /height/[0-9A-Fa-f]* ").unwrap();
     static ref BLOCK_LATEST: Regex = Regex::new(r" /block/latest ").unwrap();
     static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]+ ").unwrap();
     static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
@@ -71,6 +72,8 @@ async fn get(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -
         get_staked_balance(stream, node, first).await?;
     } else if HEIGHT.is_match(first) {
         get_height(stream, node).await?;
+    } else if HEIGHT_BY_HASH.is_match(first) {
+        get_height_by_hash(stream, node, first).await?;
     } else if BLOCK_LATEST.is_match(first) {
         get_block_latest(stream, node).await?;
     } else if HASH_BY_HEIGHT.is_match(first) {
@@ -291,6 +294,34 @@ Content-Type: application/json
 }
 async fn get_height(stream: &mut tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
     let height = node.blockchain.height();
+    stream
+        .write_all(
+            format!(
+                "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+                serde_json::to_string(&height)?
+            )
+            .as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+async fn get_height_by_hash(stream: &mut tokio::net::TcpStream, node: &mut Node, first: &str) -> Result<(), Box<dyn Error>> {
+    let hash = hex::decode(
+        HEIGHT_BY_HASH
+            .find(first)
+            .ok_or("GET HEIGHT_BY_HASH 1")?
+            .as_str()
+            .trim()
+            .get(8..)
+            .ok_or("GET HEIGHT_BY_HASH 2")?,
+    )?;
+    let block = db::block::get(&node.blockchain.db, &hash)?;
+    let height = node.blockchain.tree.height(&block.previous_hash);
     stream
         .write_all(
             format!(

@@ -7,7 +7,7 @@ use colored::*;
 use futures::{FutureExt, StreamExt};
 use libp2p::{
     core::{connection::ConnectedPoint, either::EitherError, upgrade},
-    gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic},
+    gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic, TopicHash},
     identity,
     mdns::MdnsEvent,
     mplex, noise,
@@ -288,7 +288,7 @@ impl Node {
         }
     }
     pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) {
-        if self.swarm.behaviour().gossipsub.all_peers().count() == 0 {
+        if self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() == 0 {
             return;
         }
         self.filter(&data, true);

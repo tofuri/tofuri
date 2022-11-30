@@ -190,7 +190,7 @@ impl Blockchain {
         } else {
             hashes_dynamic[self.sync.index - hashes_trusted.len()]
         };
-        debug!("{} {} {}", "Sync 0".cyan(), self.sync.index.to_string().yellow(), hex::encode(hash));
+        debug!("{} {} {}", "Sync".cyan(), self.sync.index.to_string().yellow(), hex::encode(hash));
         let block = db::block::get(&self.db, &hash).unwrap();
         self.sync.index += 1;
         block

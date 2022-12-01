@@ -2,6 +2,7 @@ use crate::{multiaddr, node::Node};
 use colored::*;
 use libp2p::{gossipsub::TopicHash, multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
+use pea_block::Block;
 use pea_core::constants::SYNC_BLOCKS_PER_TICK;
 use std::time::{Duration, SystemTime};
 pub async fn next(tps: f64) {
@@ -26,12 +27,29 @@ pub fn handler(node: &mut Node) {
     if delay(node, 1) {
         node.blockchain.sync.handler();
     }
+    pending_blocks(node);
     offline_staker(node);
-    node.blockchain.accept_pending_blocks();
     grow(node);
     sync(node);
     node.heartbeats += 1;
     lag(node);
+}
+fn pending_blocks(node: &mut Node) {
+    let drain = node.blockchain.pending_blocks.drain(..);
+    let mut vec: Vec<Block> = vec![];
+    for block in drain {
+        if vec.iter().any(|a| a.signature == block.signature) {
+            continue;
+        }
+        vec.push(block);
+    }
+    loop {
+        if let Some(block) = vec.iter().find(|a| node.blockchain.validate_block(a).is_ok()) {
+            node.blockchain.accept_block(&block, false);
+        } else {
+            break;
+        }
+    }
 }
 fn offline_staker(node: &mut Node) {
     if node.ban_offline == 0 {

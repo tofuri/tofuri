@@ -102,13 +102,12 @@ impl Blockchain {
         self.tree.sort_branches();
         self.states
             .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
-        if let Some(index) = self.pending_blocks.iter().position(|x| x.hash() == hash) {
-            self.pending_blocks.remove(index);
-        }
-        self.pending_transactions.clear();
-        self.pending_stakes.clear();
-        if !forged && block.hash() == self.states.dynamic.latest_block.hash() {
-            self.sync.new += 1;
+        if block.hash() == self.states.dynamic.latest_block.hash() {
+            self.pending_transactions.clear();
+            self.pending_stakes.clear();
+            if !forged {
+                self.sync.new += 1;
+            }
         }
         info!(
             "{} {} {}",
@@ -116,23 +115,6 @@ impl Blockchain {
             self.tree.height(&block.previous_hash).to_string().yellow(),
             hex::encode(hash)
         );
-    }
-    pub fn accept_pending_blocks(&mut self) {
-        for block in self.pending_blocks.clone() {
-            self.accept_block(&block, false);
-        }
-    }
-    pub fn try_add_block(&mut self, block: Block) -> Result<(), Box<dyn Error>> {
-        if self.pending_blocks.iter().any(|b| b.signature == block.signature) {
-            return Err("block pending".into());
-        }
-        self.validate_block(&block)?;
-        self.pending_blocks.push(block);
-        self.pending_blocks.sort_by(|a, b| b.fees().cmp(&a.fees()));
-        while self.pending_blocks.len() > self.pending_blocks_limit {
-            self.pending_blocks.remove(self.pending_blocks.len() - 1);
-        }
-        Ok(())
     }
     pub fn try_add_transaction(&mut self, transaction: Transaction) -> Result<(), Box<dyn Error>> {
         if let Some(index) = self
@@ -186,7 +168,7 @@ impl Blockchain {
         self.sync.index += 1;
         block
     }
-    fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
+    pub fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
         if let Some(hash) = self.offline.get(&block.public_key) {
             if hash == &block.previous_hash {
                 return Err("block staker banned".into());

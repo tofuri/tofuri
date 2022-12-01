@@ -8,17 +8,11 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
     match message.topic.as_str() {
         "block" => {
             let block: Block = bincode::deserialize(&message.data)?;
-            node.blockchain.try_add_block(block.clone())?;
-            node.blockchain.accept_block(&block, false);
+            node.blockchain.pending_blocks.push(block);
         }
         "blocks" => {
-            let vec: Vec<Block> = bincode::deserialize(&message.data)?;
-            for block in vec {
-                if node.blockchain.try_add_block(block.clone()).is_err() {
-                    continue;
-                }
-                node.blockchain.accept_block(&block, false);
-            }
+            let mut vec: Vec<Block> = bincode::deserialize(&message.data)?;
+            node.blockchain.pending_blocks.append(&mut vec);
         }
         "stake" => {
             let stake: Stake = bincode::deserialize(&message.data)?;

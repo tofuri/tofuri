@@ -28,8 +28,7 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
             node.blockchain.try_add_transaction(transaction)?;
         }
         "multiaddr" => {
-            let vec: Vec<Multiaddr> = bincode::deserialize(&message.data)?;
-            for multiaddr in vec {
+            for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
                 if let Some(multiaddr) = multiaddr::filter_ip_port(&multiaddr) {
                     node.unknown.insert(multiaddr);
                 }

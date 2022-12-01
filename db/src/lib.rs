@@ -186,19 +186,19 @@ pub mod tree {
     use std::collections::HashMap;
     pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) {
         tree.clear();
-        let mut map: HashMap<types::Hash, (Vec<types::Hash>, u32)> = HashMap::new();
+        let mut map: HashMap<types::Hash, Vec<(types::Hash, u32)>> = HashMap::new();
         for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
             let block: block::Metadata = bincode::deserialize(&bytes).unwrap();
             match map.get(&block.previous_hash) {
-                Some((vec, _)) => {
+                Some(vec) => {
                     let mut vec = vec.clone();
-                    vec.push(hash);
-                    map.insert(block.previous_hash, (vec, block.timestamp));
+                    vec.push((hash, block.timestamp));
+                    map.insert(block.previous_hash, vec);
                 }
                 None => {
-                    map.insert(block.previous_hash, (vec![hash], block.timestamp));
+                    map.insert(block.previous_hash, vec![(hash, block.timestamp)]);
                 }
             };
         }
@@ -208,9 +208,9 @@ pub mod tree {
         let previous_hash = [0; 32];
         let mut previous_hashes = vec![previous_hash];
         let mut hashes_0 = vec![];
-        let (_, (genesis_hashes, timestamp)) = map.iter().find(|(&x, _)| x == previous_hash).unwrap();
-        for &hash in genesis_hashes {
-            hashes_0.push((hash, *timestamp));
+        let (_, vec) = map.iter().find(|(&x, _)| x == previous_hash).unwrap();
+        for (hash, timestamp) in vec {
+            hashes_0.push((*hash, *timestamp));
         }
         let mut vec = vec![];
         loop {
@@ -218,8 +218,8 @@ pub mod tree {
             for previous_hash in previous_hashes.clone() {
                 for (hash, timestamp) in hashes_0.clone() {
                     vec.push((hash, previous_hash, timestamp));
-                    if let Some((hashes, timestamp)) = map.remove(&hash) {
-                        for hash in hashes {
+                    if let Some(vec) = map.remove(&hash) {
+                        for (hash, timestamp) in vec {
                             hashes_1.push((hash, timestamp));
                         }
                     };

@@ -102,19 +102,20 @@ impl Blockchain {
         self.tree.sort_branches();
         self.states
             .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
-        if block.hash() == self.states.dynamic.latest_block.hash() {
-            self.pending_transactions.clear();
-            self.pending_stakes.clear();
-            if !forged {
-                self.sync.new += 1;
+        let info_0 = if forged { "Forged".magenta() } else { "Accept".green() };
+        let info_1 = hex::encode(hash);
+        if let Some(main) = self.tree.main() {
+            if hash == main.0 {
+                self.pending_transactions.clear();
+                self.pending_stakes.clear();
+                if !forged {
+                    self.sync.new += 1;
+                }
+                info!("{} {} {}", info_0, main.1.to_string().yellow(), info_1);
+                return;
             }
         }
-        info!(
-            "{} {} {}",
-            if forged { "Forged".magenta() } else { "Accept".green() },
-            self.tree.height(&block.previous_hash).to_string().yellow(),
-            hex::encode(hash)
-        );
+        info!("{} {}", info_0, info_1);
     }
     pub fn try_add_transaction(&mut self, transaction: Transaction) -> Result<(), Box<dyn Error>> {
         if let Some(index) = self

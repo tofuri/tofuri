@@ -186,42 +186,72 @@ pub mod tree {
     use std::collections::HashMap;
     pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) {
         tree.clear();
-        let mut hashes: HashMap<types::Hash, (Vec<types::Hash>, u32)> = HashMap::new();
+        let mut map: HashMap<types::Hash, (Vec<types::Hash>, u32)> = HashMap::new();
         for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
             let block: block::Metadata = bincode::deserialize(&bytes).unwrap();
-            match hashes.get(&block.previous_hash) {
+            match map.get(&block.previous_hash) {
                 Some((vec, _)) => {
                     let mut vec = vec.clone();
                     vec.push(hash);
-                    hashes.insert(block.previous_hash, (vec, block.timestamp));
+                    map.insert(block.previous_hash, (vec, block.timestamp));
                 }
                 None => {
-                    hashes.insert(block.previous_hash, (vec![hash], block.timestamp));
+                    map.insert(block.previous_hash, (vec![hash], block.timestamp));
                 }
             };
         }
-        if hashes.is_empty() {
+        if map.is_empty() {
             return;
         }
         let previous_hash = [0; 32];
-        let (_, (vec, timestamp)) = hashes.iter().find(|(&x, _)| x == previous_hash).unwrap();
-        fn recurse(
-            tree: &mut Tree,
-            hashes: &HashMap<types::Hash, (Vec<types::Hash>, u32)>,
-            previous_hash: types::Hash,
-            vec: &Vec<types::Hash>,
-            timestamp: u32,
-        ) {
-            for hash in vec {
-                tree.insert(*hash, previous_hash, timestamp);
-                if let Some((vec, timestamp)) = hashes.get(hash) {
-                    recurse(tree, hashes, *hash, vec, *timestamp);
-                };
-            }
+        let mut previous_hashes = vec![previous_hash];
+        let mut hashes_0 = vec![];
+        let (_, (genesis_hashes, timestamp)) = map.iter().find(|(&x, _)| x == previous_hash).unwrap();
+        for &hash in genesis_hashes {
+            hashes_0.push((hash, *timestamp));
         }
-        recurse(tree, &hashes, previous_hash, vec, *timestamp);
+        let mut vec = vec![];
+        loop {
+            let mut hashes_1 = vec![];
+            for previous_hash in previous_hashes.clone() {
+                for (hash, timestamp) in hashes_0.clone() {
+                    vec.push((hash, previous_hash, timestamp));
+                    if let Some((hashes, timestamp)) = map.remove(&hash) {
+                        for hash in hashes {
+                            hashes_1.push((hash, timestamp));
+                        }
+                    };
+                }
+            }
+            if hashes_1.is_empty() {
+                break;
+            }
+            previous_hashes.clear();
+            for (hash, _) in hashes_0 {
+                previous_hashes.push(hash);
+            }
+            hashes_0 = hashes_1;
+        }
+        for (hash, previous_hash, timestamp) in vec {
+            tree.insert(hash, previous_hash, timestamp);
+        }
+        // fn recurse(
+        // tree: &mut Tree,
+        // hashes: &HashMap<types::Hash, (Vec<types::Hash>, u32)>,
+        // previous_hash: types::Hash,
+        // vec: &Vec<types::Hash>,
+        // timestamp: u32,
+        // ) {
+        // for hash in vec {
+        // tree.insert(*hash, previous_hash, timestamp);
+        // if let Some((vec, timestamp)) = hashes.get(hash) {
+        // recurse(tree, hashes, *hash, vec, *timestamp);
+        // };
+        // }
+        // }
+        // recurse(tree, &hashes, previous_hash, vec, *timestamp);
         tree.sort_branches();
     }
 }

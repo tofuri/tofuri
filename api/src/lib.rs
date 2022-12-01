@@ -6,6 +6,9 @@ pub mod get {
         pub sync: String,
         pub last: String,
         pub height: usize,
+        pub bps: f32,
+        pub downloading: bool,
+        pub completed: bool,
         pub peers: usize,
         pub index: usize,
     }

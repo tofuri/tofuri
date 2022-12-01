@@ -154,6 +154,9 @@ fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
         sync,
         last,
         height: node.blockchain.height(),
+        bps: node.blockchain.sync.bps,
+        downloading: node.blockchain.sync.downloading(),
+        completed: node.blockchain.sync.completed,
         peers: node.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw("blocks")).count(),
         index: node.blockchain.sync.index,
     })?))

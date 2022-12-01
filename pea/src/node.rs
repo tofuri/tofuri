@@ -311,16 +311,16 @@ impl Node {
     }
     pub fn sync(&self) -> String {
         let completed = "completed";
-        if !self.blockchain.sync.downloading {
+        if self.blockchain.sync.completed {
             return completed.to_string();
         }
-        if self.blockchain.sync.avg < 1_f32 {
+        if !self.blockchain.sync.downloading() {
             return "waiting to start".to_string();
         }
         let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
         let mut diff = util::timestamp().saturating_sub(timestamp) as f32;
         diff /= BLOCK_TIME_MIN as f32;
-        diff /= self.blockchain.sync.avg;
+        diff /= self.blockchain.sync.bps;
         let mut string = util::duration_to_string(diff as u32, completed);
         if string != completed {
             string.push_str(" remaining");

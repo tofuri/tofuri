@@ -55,7 +55,7 @@ fn offline_staker(node: &mut Node) {
     if node.ban_offline == 0 {
         return;
     }
-    if node.blockchain.sync.syncing {
+    if node.blockchain.sync.downloading {
         return;
     }
     let behaviour = node.swarm.behaviour();
@@ -108,7 +108,7 @@ fn share(node: &mut Node) {
     node.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
 }
 fn grow(node: &mut Node) {
-    if !node.blockchain.sync.syncing && !node.mint && node.blockchain.states.dynamic.current_staker().is_none() {
+    if !node.blockchain.sync.downloading && !node.mint && node.blockchain.states.dynamic.current_staker().is_none() {
         if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",
@@ -121,9 +121,9 @@ fn grow(node: &mut Node) {
                     .yellow()
             );
         }
-        node.blockchain.sync.syncing = true;
+        node.blockchain.sync.downloading = true;
     }
-    if node.blockchain.sync.syncing {
+    if node.blockchain.sync.downloading {
         return;
     }
     if let Some(block) = node.blockchain.forge_block() {

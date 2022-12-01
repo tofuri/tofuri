@@ -311,7 +311,7 @@ impl Node {
     }
     pub fn sync(&self) -> String {
         let completed = "completed";
-        if !self.blockchain.sync.syncing {
+        if !self.blockchain.sync.downloading {
             return completed.to_string();
         }
         if self.blockchain.sync.avg < 1_f32 {

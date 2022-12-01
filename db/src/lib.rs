@@ -237,21 +237,6 @@ pub mod tree {
         for (hash, previous_hash, timestamp) in vec {
             tree.insert(hash, previous_hash, timestamp);
         }
-        // fn recurse(
-        // tree: &mut Tree,
-        // hashes: &HashMap<types::Hash, (Vec<types::Hash>, u32)>,
-        // previous_hash: types::Hash,
-        // vec: &Vec<types::Hash>,
-        // timestamp: u32,
-        // ) {
-        // for hash in vec {
-        // tree.insert(*hash, previous_hash, timestamp);
-        // if let Some((vec, timestamp)) = hashes.get(hash) {
-        // recurse(tree, hashes, *hash, vec, *timestamp);
-        // };
-        // }
-        // }
-        // recurse(tree, &hashes, previous_hash, vec, *timestamp);
         tree.sort_branches();
     }
 }

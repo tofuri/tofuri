@@ -22,7 +22,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value = "16")]
     pub trust: usize,
     /// Pending blocks limit
-    #[clap(long, value_parser, default_value = "10")]
+    #[clap(long, value_parser, default_value = "256")]
     pub pending: usize,
     /// Mesh peers required to ban stakers that failed to show up
     #[clap(long, value_parser, default_value = "10")]

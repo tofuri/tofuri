@@ -29,7 +29,7 @@ pub struct Args {
     pub ban_offline: usize,
     /// Time synchronization requests to measure average delay
     #[clap(long, value_parser, default_value = "2")]
-    pub time_sync_requests: usize, // ping delay & perception of time
+    pub time_sync_requests: usize,
     /// Max time delta allowed
     #[clap(long, value_parser, default_value = "1")]
     pub time_delta: u32, // ping delay & perception of time

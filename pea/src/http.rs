@@ -5,6 +5,7 @@ use libp2p::gossipsub::TopicHash;
 use log::{error, info};
 use pea_address as address;
 use pea_api::get;
+use pea_core::util;
 use pea_db as db;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
@@ -343,7 +344,7 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
     let data = bincode::serialize(&transaction).unwrap();
-    let status = match node.blockchain.try_add_transaction(transaction) {
+    let status = match node.blockchain.try_add_transaction(transaction, util::timestamp()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("transaction") {
                 node.gossipsub_publish("transaction", data);
@@ -362,7 +363,7 @@ fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Er
         buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
     let data = bincode::serialize(&stake).unwrap();
-    let status = match node.blockchain.try_add_stake(stake) {
+    let status = match node.blockchain.try_add_stake(stake, util::timestamp()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("stake") {
                 node.gossipsub_publish("stake", data);

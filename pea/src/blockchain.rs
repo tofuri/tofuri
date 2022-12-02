@@ -116,7 +116,7 @@ impl Blockchain {
         }
         info!("{} {}", info_0, info_1);
     }
-    pub fn try_add_transaction(&mut self, transaction: Transaction) -> Result<(), Box<dyn Error>> {
+    pub fn try_add_transaction(&mut self, transaction: Transaction, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if let Some(index) = self
             .pending_transactions
             .iter()
@@ -127,7 +127,7 @@ impl Blockchain {
             }
             self.pending_transactions.remove(index);
         }
-        self.validate_transaction(&transaction, self.states.dynamic.latest_block.timestamp, util::timestamp())?;
+        self.validate_transaction(&transaction, self.states.dynamic.latest_block.timestamp, timestamp)?;
         info!("Transaction {}", hex::encode(&transaction.hash()).green());
         self.pending_transactions.push(transaction);
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -136,14 +136,14 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn try_add_stake(&mut self, stake: Stake) -> Result<(), Box<dyn Error>> {
+    pub fn try_add_stake(&mut self, stake: Stake, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if let Some(index) = self.pending_stakes.iter().position(|s| s.public_key == stake.public_key) {
             if stake.fee <= self.pending_stakes[index].fee {
                 return Err("stake fee too low".into());
             }
             self.pending_stakes.remove(index);
         }
-        self.validate_stake(&stake, self.states.dynamic.latest_block.timestamp, util::timestamp())?;
+        self.validate_stake(&stake, self.states.dynamic.latest_block.timestamp, timestamp)?;
         info!("Stake {}", hex::encode(&stake.hash()).green());
         self.pending_stakes.push(stake);
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));

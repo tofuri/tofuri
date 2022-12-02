@@ -3,7 +3,7 @@ use colored::*;
 use log::{debug, info, warn};
 use pea_block::Block;
 use pea_core::constants::{
-    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
+    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, SYNC_BLOCKS_PER_TICK,
 };
 use pea_core::types;
 use pea_db as db;
@@ -49,6 +49,7 @@ impl Blockchain {
     pub fn load(&mut self) {
         let start = Instant::now();
         db::tree::reload(&mut self.tree, &self.db);
+        self.sync.index = self.height().saturating_sub(self.trust_fork_after_blocks + SYNC_BLOCKS_PER_TICK);
         info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(self.trust_fork_after_blocks);

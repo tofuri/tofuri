@@ -4,17 +4,47 @@ use crossterm::{event, terminal};
 use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
 use pea_api::{get, post};
-use pea_core::{constants::COIN, util};
+use pea_core::constants::COIN;
 use pea_stake::Stake;
+use pea_time::Time;
 use pea_transaction::Transaction;
-use std::{ops::Range, process};
+use std::{ops::Range, process, time::Duration};
+pub struct Options {
+    pub api: String,
+    pub time_sync_requests: usize,
+}
 pub struct Command {
     api: String,
     wallet: Option<Wallet>,
+    pub time: Time,
 }
 impl Command {
-    pub fn new(api: String) -> Command {
-        Command { api, wallet: None }
+    pub fn new(options: Options) -> Command {
+        Command {
+            api: options.api,
+            wallet: None,
+            time: Time::new(options.time_sync_requests),
+        }
+    }
+    pub async fn sync_time(&mut self) {
+        if self.time.requests == 0 {
+            println!("Skipping adjust for time difference...");
+            return;
+        }
+        if self.time.sync().await {
+            println!(
+                "Successfully adjusted for time difference. System clock is {} of world clock.",
+                format!(
+                    "{:?} {}",
+                    Duration::from_micros(self.time.diff.abs() as u64),
+                    if self.time.diff.is_negative() { "behind" } else { "ahead" }
+                )
+                .to_string()
+                .yellow()
+            );
+        } else {
+            println!("Failed to adjust for time difference!");
+        }
     }
     pub async fn select(&mut self) -> bool {
         let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
@@ -52,11 +82,11 @@ impl Command {
                 true
             }
             "Send" => {
-                Self::transaction(self.wallet.as_ref().unwrap(), &self.api).await;
+                self.transaction(self.wallet.as_ref().unwrap()).await;
                 true
             }
             "Stake" => {
-                Self::stake(self.wallet.as_ref().unwrap(), &self.api).await;
+                self.stake(self.wallet.as_ref().unwrap()).await;
                 true
             }
             "Secret" => {
@@ -149,7 +179,7 @@ impl Command {
                     }
                     let amount = balance - fee;
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee, util::timestamp());
+                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee, self.time.timestamp_secs());
                     transaction.sign(&subkey);
                     println!("{:?}", transaction);
                     match post::transaction(&self.api, &transaction).await {
@@ -250,7 +280,7 @@ impl Command {
             _ => false,
         }
     }
-    async fn transaction(wallet: &Wallet, api: &str) {
+    async fn transaction(&self, wallet: &Wallet) {
         let address = Self::inquire_address();
         let amount = Self::inquire_amount();
         let fee = Self::inquire_fee();
@@ -263,10 +293,10 @@ impl Command {
         } {
             return;
         }
-        let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee, util::timestamp());
+        let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee, self.time.timestamp_secs());
         transaction.sign(&wallet.key);
         println!("Hash: {}", hex::encode(transaction.hash()).cyan());
-        match post::transaction(api, &transaction).await {
+        match post::transaction(&self.api, &transaction).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
             Err(err) => println!("{}", err.to_string().red()),
         };
@@ -280,7 +310,7 @@ impl Command {
             }
         }
     }
-    async fn stake(wallet: &Wallet, api: &str) {
+    async fn stake(&self, wallet: &Wallet) {
         let deposit = Self::inquire_deposit();
         let amount = Self::inquire_amount();
         let fee = Self::inquire_fee();
@@ -288,10 +318,10 @@ impl Command {
         if !send {
             return;
         }
-        let mut stake = Stake::new(deposit, amount, fee, util::timestamp());
+        let mut stake = Stake::new(deposit, amount, fee, self.time.timestamp_secs());
         stake.sign(&wallet.key);
         println!("Hash: {}", hex::encode(stake.hash()).cyan());
-        match post::stake(api, &stake).await {
+        match post::stake(&self.api, &stake).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
             Err(err) => println!("{}", err.to_string().red()),
         };

@@ -3052,6 +3052,7 @@ dependencies = [
  "pea-int",
  "pea-key",
  "pea-stake",
+ "pea-time",
  "pea-transaction",
  "tokio",
  "zxcvbn",

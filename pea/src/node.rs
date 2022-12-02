@@ -305,7 +305,7 @@ impl Node {
             return "never".to_string();
         }
         let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let diff = util::timestamp().saturating_sub(timestamp);
+        let diff = self.time.timestamp_secs().saturating_sub(timestamp);
         let now = "just now";
         let mut string = util::duration_to_string(diff, now);
         if string != now {
@@ -322,7 +322,7 @@ impl Node {
             return "waiting to start".to_string();
         }
         let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let mut diff = util::timestamp().saturating_sub(timestamp) as f32;
+        let mut diff = self.time.timestamp_secs().saturating_sub(timestamp) as f32;
         diff /= BLOCK_TIME_MIN as f32;
         diff /= self.blockchain.sync.bps;
         let mut string = util::duration_to_string(diff as u32, completed);

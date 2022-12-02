@@ -3,7 +3,7 @@ use colored::*;
 use libp2p::{gossipsub::TopicHash, multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
 use pea_block::Block;
-use pea_core::{constants::SYNC_BLOCKS_PER_TICK, util};
+use pea_core::constants::SYNC_BLOCKS_PER_TICK;
 use std::time::{Duration, SystemTime};
 pub async fn next(tps: f64) {
     tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
@@ -43,8 +43,9 @@ fn pending_blocks(node: &mut Node) {
         }
         vec.push(block);
     }
+    let timestamp = node.time.timestamp_secs();
     loop {
-        if let Some(block) = vec.iter().find(|a| node.blockchain.validate_block(a, util::timestamp()).is_ok()) {
+        if let Some(block) = vec.iter().find(|a| node.blockchain.validate_block(a, timestamp).is_ok()) {
             node.blockchain.accept_block(&block, false);
         } else {
             break;
@@ -63,7 +64,8 @@ fn offline_staker(node: &mut Node) {
         return;
     }
     let dynamic = &node.blockchain.states.dynamic;
-    if let Some(public_key) = dynamic.offline_staker(util::timestamp()) {
+    let timestamp = node.time.timestamp_secs();
+    if let Some(public_key) = dynamic.offline_staker(timestamp) {
         let latest_hash = dynamic.latest_block.hash();
         if let Some(hash) = node.blockchain.offline.insert(public_key.clone(), latest_hash) {
             if hash == latest_hash {
@@ -108,7 +110,8 @@ fn share(node: &mut Node) {
     node.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
 }
 fn grow(node: &mut Node) {
-    if !node.blockchain.sync.downloading() && !node.mint && node.blockchain.states.dynamic.current_staker(util::timestamp()).is_none() {
+    let timestamp = node.time.timestamp_secs();
+    if !node.blockchain.sync.downloading() && !node.mint && node.blockchain.states.dynamic.current_staker(timestamp).is_none() {
         if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",
@@ -126,7 +129,7 @@ fn grow(node: &mut Node) {
     if !node.blockchain.sync.completed {
         return;
     }
-    if let Some(block) = node.blockchain.forge_block(util::timestamp()) {
+    if let Some(block) = node.blockchain.forge_block(timestamp) {
         if !node.gossipsub_has_mesh_peers("block") {
             return;
         }

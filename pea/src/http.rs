@@ -30,9 +30,9 @@ lazy_static! {
     static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
     static ref STAKE_BY_HASH: Regex = Regex::new(r" /stake/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
-    static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&Transaction::new([0; 32], 0, 0, 0)).unwrap()).len();
+    static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&Transaction::default()).unwrap()).len();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
-    static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&Stake::new(false, 0, 0, 0)).unwrap()).len();
+    static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&Stake::default()).unwrap()).len();
     static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
 }
 pub async fn next(listener: &tokio::net::TcpListener) -> Result<tokio::net::TcpStream, Box<dyn Error>> {

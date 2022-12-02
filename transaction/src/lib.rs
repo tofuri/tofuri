@@ -101,6 +101,18 @@ impl Transaction {
         Ok(())
     }
 }
+impl Default for Transaction {
+    fn default() -> Self {
+        Transaction {
+            public_key_input: [0; 32],
+            public_key_output: [0; 32],
+            amount: 0,
+            fee: 0,
+            timestamp: 0,
+            signature: [0; 64],
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

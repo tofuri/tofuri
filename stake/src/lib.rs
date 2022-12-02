@@ -113,6 +113,18 @@ impl Stake {
         Ok(())
     }
 }
+impl Default for Stake {
+    fn default() -> Self {
+        Stake {
+            public_key: [0; 32],
+            deposit: false,
+            amount: 0,
+            fee: 0,
+            timestamp: 0,
+            signature: [0; 64],
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

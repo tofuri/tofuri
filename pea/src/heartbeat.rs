@@ -3,7 +3,7 @@ use colored::*;
 use libp2p::{gossipsub::TopicHash, multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
 use pea_block::Block;
-use pea_core::constants::SYNC_BLOCKS_PER_TICK;
+use pea_core::{constants::SYNC_BLOCKS_PER_TICK, util};
 use std::time::{Duration, SystemTime};
 pub async fn next(tps: f64) {
     tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
@@ -126,7 +126,7 @@ fn grow(node: &mut Node) {
     if !node.blockchain.sync.completed {
         return;
     }
-    if let Some(block) = node.blockchain.forge_block() {
+    if let Some(block) = node.blockchain.forge_block(util::timestamp()) {
         if !node.gossipsub_has_mesh_peers("block") {
             return;
         }

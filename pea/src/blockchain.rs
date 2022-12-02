@@ -63,21 +63,20 @@ impl Blockchain {
             0
         }
     }
-    pub fn forge_block(&mut self) -> Option<Block> {
-        let timestamp = util::timestamp();
+    pub fn forge_block(&mut self, timestamp: u32) -> Option<Block> {
         if let Some(public_key) = self.states.dynamic.current_staker() {
             if public_key != &self.key.public_key_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
                 return None;
             }
         } else {
-            let mut stake = Stake::new(true, MIN_STAKE, 0, util::timestamp());
+            let mut stake = Stake::new(true, MIN_STAKE, 0, timestamp);
             stake.sign(&self.key);
             self.pending_stakes = vec![stake];
         }
         let mut block = if let Some(main) = self.tree.main() {
-            Block::new(main.0, util::timestamp())
+            Block::new(main.0, timestamp)
         } else {
-            Block::new([0; 32], util::timestamp())
+            Block::new([0; 32], timestamp)
         };
         for transaction in self.pending_transactions.iter() {
             if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {

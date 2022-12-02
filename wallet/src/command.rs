@@ -197,11 +197,11 @@ impl Command {
             Err(err) => println!("{}", err.to_string().red()),
         };
         match get::sync(api).await {
-            Ok(info) => {
-                println!("Synchronize {}", info.sync.yellow());
-                println!("Last block seen {}", info.last.yellow());
-                println!("Height {}", info.height.to_string().yellow());
-                println!("Peers {}", info.peers.to_string().yellow());
+            Ok(sync) => {
+                println!("Synchronize {}", sync.sync.yellow());
+                println!("Last block seen {}", sync.last.yellow());
+                println!("Height {}", sync.height.to_string().yellow());
+                println!("Peers {}", sync.peers.to_string().yellow());
             }
             Err(err) => println!("{}", err.to_string().red()),
         };

@@ -135,8 +135,8 @@ impl Block {
         }
         let stake = self.stakes.first().unwrap();
         stake.validate_mint()?;
-        if stake.timestamp < self.timestamp {
-            return Err("stake mint timestamp ancient".into());
+        if stake.timestamp != self.timestamp {
+            return Err("stake mint timestamp".into());
         }
         Ok(())
     }

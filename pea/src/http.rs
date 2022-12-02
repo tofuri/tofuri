@@ -146,8 +146,9 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
     Ok(json(serde_json::to_string(&get::Data {
         time: datetime.to_rfc2822(),
         public_key: node.blockchain.key.public(),
-        tree_size: node.blockchain.tree.size(),
+        uptime: format!("{}", node.uptime()),
         heartbeats: node.heartbeats,
+        tree_size: node.blockchain.tree.size(),
         lag: node.lag,
     })?))
 }

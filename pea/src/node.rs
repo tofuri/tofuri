@@ -353,4 +353,8 @@ impl Node {
         }
         string
     }
+    pub fn uptime(&self) -> String {
+        let seconds = (self.heartbeats as f64 / self.tps) as u32;
+        util::duration_to_string(seconds, "0")
+    }
 }

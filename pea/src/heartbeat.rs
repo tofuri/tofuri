@@ -4,14 +4,15 @@ use libp2p::{gossipsub::TopicHash, multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
 use pea_block::Block;
 use pea_core::constants::SYNC_BLOCKS_PER_TICK;
-use std::time::{Duration, SystemTime};
-pub async fn next(tps: f64) {
-    tokio::time::sleep(Duration::from_nanos(nanos(tps))).await
+use std::time::Duration;
+pub async fn next(tps: f64, timestamp: u64) {
+    tokio::time::sleep(Duration::from_micros(micros_until_next_tick(tps, timestamp))).await
 }
 fn delay(node: &mut Node, seconds: usize) -> bool {
     node.heartbeats % (node.tps * seconds as f64) as usize == 0
 }
 pub fn handler(node: &mut Node) {
+    let timestamp = node.time.timestamp_secs();
     if delay(node, 60) {
         dial_known(node);
     }
@@ -27,14 +28,14 @@ pub fn handler(node: &mut Node) {
     if delay(node, 1) {
         node.blockchain.sync.handler();
     }
-    pending_blocks(node);
-    offline_staker(node);
-    grow(node);
+    pending_blocks(node, timestamp);
+    offline_staker(node, timestamp);
+    grow(node, timestamp);
     sync(node);
     node.heartbeats += 1;
     lag(node);
 }
-fn pending_blocks(node: &mut Node) {
+fn pending_blocks(node: &mut Node, timestamp: u32) {
     let drain = node.blockchain.pending_blocks.drain(..);
     let mut vec: Vec<Block> = vec![];
     for block in drain {
@@ -43,7 +44,6 @@ fn pending_blocks(node: &mut Node) {
         }
         vec.push(block);
     }
-    let timestamp = node.time.timestamp_secs();
     loop {
         if let Some(block) = vec.iter().find(|a| node.blockchain.validate_block(a, timestamp).is_ok()) {
             node.blockchain.accept_block(&block, false);
@@ -52,7 +52,7 @@ fn pending_blocks(node: &mut Node) {
         }
     }
 }
-fn offline_staker(node: &mut Node) {
+fn offline_staker(node: &mut Node, timestamp: u32) {
     if node.ban_offline == 0 {
         return;
     }
@@ -64,7 +64,6 @@ fn offline_staker(node: &mut Node) {
         return;
     }
     let dynamic = &node.blockchain.states.dynamic;
-    let timestamp = node.time.timestamp_secs();
     if let Some(public_key) = dynamic.offline_staker(timestamp) {
         let latest_hash = dynamic.latest_block.hash();
         if let Some(hash) = node.blockchain.offline.insert(public_key.clone(), latest_hash) {
@@ -109,8 +108,7 @@ fn share(node: &mut Node) {
     let vec: Vec<&Multiaddr> = node.connections.keys().collect();
     node.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
 }
-fn grow(node: &mut Node) {
-    let timestamp = node.time.timestamp_secs();
+fn grow(node: &mut Node, timestamp: u32) {
     if !node.blockchain.sync.downloading() && !node.mint && node.blockchain.states.dynamic.current_staker(timestamp).is_none() {
         if delay(node, 60) {
             info!(
@@ -150,23 +148,23 @@ fn sync(node: &mut Node) {
     }
     node.gossipsub_publish("blocks", bincode::serialize(&vec).unwrap())
 }
-fn nanos(tps: f64) -> u64 {
+fn micros_until_next_tick(tps: f64, timestamp: u64) -> u64 {
     let f = 1_f64 / tps;
-    let u = (f * 1_000_000_000_f64) as u128;
-    let mut nanos = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-    let secs = nanos / u;
-    nanos -= secs * u;
-    (u - nanos) as u64
+    let u = (f * 1_000_000_f64) as u64;
+    let mut micros = timestamp;
+    let secs = micros / u;
+    micros -= secs * u;
+    (u - micros) as u64
 }
 fn lag(node: &mut Node) {
     let f = 1_f64 / node.tps;
-    let u = (f * 1_000_000_000_f64) as u64;
-    let nanos = u - nanos(node.tps);
-    node.lag = (nanos / 1_000) as f64 / 1_000_f64;
+    let u = (f * 1_000_000_f64) as u64;
+    let micros = u - micros_until_next_tick(node.tps, node.time.timestamp_micros());
+    node.lag = micros as f64 / 1_000_f64;
     debug!(
         "{} {} {}",
         "Heartbeat".cyan(),
         node.heartbeats,
-        format!("{:?}", Duration::from_nanos(nanos)).yellow()
+        format!("{:?}", Duration::from_nanos(micros)).yellow()
     );
 }

@@ -247,7 +247,7 @@ impl Node {
                     Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {
                         error!("{}", err);
                     },
-                    _ = heartbeat::next(self.tps).fuse() => heartbeat::handler(self),
+                    _ = heartbeat::next(self.tps, self.time.timestamp_micros()).fuse() => heartbeat::handler(self),
                     event = self.swarm.select_next_some() => self.handle_event(event),
                 }
             }
@@ -255,7 +255,7 @@ impl Node {
             info!("API is {}", "disabled".red());
             loop {
                 tokio::select! {
-                    _ = heartbeat::next(self.tps).fuse() => heartbeat::handler(self),
+                    _ = heartbeat::next(self.tps, self.time.timestamp_micros()).fuse() => heartbeat::handler(self),
                     event = self.swarm.select_next_some() => self.handle_event(event),
                 }
             }

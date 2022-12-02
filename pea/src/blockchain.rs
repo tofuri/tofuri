@@ -64,7 +64,7 @@ impl Blockchain {
         }
     }
     pub fn forge_block(&mut self, timestamp: u32) -> Option<Block> {
-        if let Some(public_key) = self.states.dynamic.current_staker(util::timestamp()) {
+        if let Some(public_key) = self.states.dynamic.current_staker(timestamp) {
             if public_key != &self.key.public_key_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
                 return None;
             }

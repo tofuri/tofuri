@@ -199,6 +199,7 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
         host: node.host.clone(),
         tempdb: node.tempdb,
         tempkey: node.tempkey,
+        dev: node.dev,
     })?))
 }
 fn get_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {

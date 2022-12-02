@@ -49,6 +49,7 @@ pub struct Options<'a> {
     pub peer: &'a str,
     pub bind_api: String,
     pub host: String,
+    pub dev: bool,
 }
 pub struct Node {
     pub swarm: Swarm<Behaviour>,
@@ -68,6 +69,7 @@ pub struct Node {
     pub tempdb: bool,
     pub tempkey: bool,
     pub time: Time,
+    pub dev: bool,
 }
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
@@ -95,6 +97,7 @@ impl Node {
             tempdb: options.tempdb,
             tempkey: options.tempkey,
             time: Time::new(options.time_sync_requests),
+            dev: options.dev,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

@@ -33,6 +33,7 @@ pub mod get {
         pub tps: f64,
         pub bind_api: String,
         pub host: String,
+        pub dev: bool,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Data {

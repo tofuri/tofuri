@@ -1,8 +1,16 @@
 use clap::Parser;
 use colored::*;
-use log::info;
+use log::{info, warn};
 use pea::node::{Node, Options};
 use pea_logger as logger;
+const TEMP_DB: bool = false;
+const TEMP_KEY: bool = false;
+const BIND_API: &str = ":::9332";
+const HOST: &str = "/ip4/0.0.0.0/tcp/9333";
+const DEV_TEMP_DB: bool = true;
+const DEV_TEMP_KEY: bool = true;
+const DEV_BIND_API: &str = ":::9334";
+const DEV_HOST: &str = "/ip4/0.0.0.0/tcp/9335";
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
@@ -10,10 +18,10 @@ pub struct Args {
     #[clap(short, long, value_parser, default_value_t = false)]
     pub debug: bool,
     /// Store blockchain in a temporary database
-    #[clap(long, value_parser, default_value_t = false)]
+    #[clap(long, value_parser, default_value_t = TEMP_DB)]
     pub tempdb: bool,
     /// Use temporary random keypair
-    #[clap(long, value_parser, default_value_t = false)]
+    #[clap(long, value_parser, default_value_t = TEMP_KEY)]
     pub tempkey: bool,
     /// Generate genesis block
     #[clap(long, value_parser, default_value_t = false)]
@@ -49,11 +57,14 @@ pub struct Args {
     #[clap(short, long, value_parser, default_value = "")]
     pub peer: String,
     /// TCP socket address to bind to
-    #[clap(long, value_parser, default_value = ":::9332")]
+    #[clap(long, value_parser, default_value = BIND_API)]
     pub bind_api: String,
     /// Multiaddr to listen on
-    #[clap(short, long, value_parser, default_value = "/ip4/0.0.0.0/tcp/9333")]
+    #[clap(short, long, value_parser, default_value = HOST)]
     pub host: String,
+    /// Development mode
+    #[clap(long, value_parser, default_value_t = false)]
+    pub dev: bool,
 }
 #[tokio::main]
 async fn main() {
@@ -63,7 +74,7 @@ async fn main() {
         env!("CARGO_PKG_VERSION").magenta()
     );
     println!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), env!("GIT_HASH").magenta());
-    let args = Args::parse();
+    let mut args = Args::parse();
     logger::init(args.debug);
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
@@ -81,6 +92,22 @@ async fn main() {
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
     info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
     info!("{} {}", "--host".cyan(), args.host.magenta());
+    info!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
+    if args.dev {
+        warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
+        if args.tempdb == TEMP_DB {
+            args.tempdb = DEV_TEMP_DB;
+        }
+        if args.tempkey == TEMP_KEY {
+            args.tempkey = DEV_TEMP_KEY;
+        }
+        if args.bind_api == BIND_API {
+            args.bind_api = DEV_BIND_API.to_string();
+        }
+        if args.host == HOST {
+            args.host = DEV_HOST.to_string();
+        }
+    }
     let mut node = Node::new(Options {
         tempdb: args.tempdb,
         tempkey: args.tempkey,
@@ -97,6 +124,7 @@ async fn main() {
         peer: &args.peer,
         bind_api: args.bind_api,
         host: args.host,
+        dev: args.dev,
     })
     .await;
     node.start().await;

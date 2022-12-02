@@ -16,7 +16,7 @@ use libp2p::{
     tcp::TokioTcpConfig,
     Multiaddr, PeerId, Swarm, Transport,
 };
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use pea_address as address;
 use pea_core::{constants::BLOCK_TIME_MIN, types, util};
 use pea_db as db;
@@ -27,6 +27,7 @@ use std::{
     collections::{HashMap, HashSet},
     error::Error,
     num::NonZeroU32,
+    time::Duration,
 };
 use tempdir::TempDir;
 use tokio::net::TcpListener;
@@ -199,7 +200,28 @@ impl Node {
             _ => {}
         }
     }
+    pub async fn sync_time(&mut self) {
+        if self.time.requests == 0 {
+            info!("Skipping adjust for time difference...");
+            return;
+        }
+        if self.time.sync().await {
+            info!(
+                "Successfully adjusted for time difference. System clock is {} of world clock.",
+                format!(
+                    "{:?} {}",
+                    Duration::from_micros(self.time.diff.abs() as u64),
+                    if self.time.diff.is_negative() { "behind" } else { "ahead" }
+                )
+                .to_string()
+                .yellow()
+            );
+        } else {
+            warn!("Failed to adjust for time difference!");
+        }
+    }
     pub async fn start(&mut self) {
+        self.sync_time().await;
         self.blockchain.load();
         info!(
             "Blockchain height is {}",

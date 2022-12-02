@@ -14,6 +14,9 @@ impl Time {
         Time { diff: 0, requests }
     }
     pub async fn sync(&mut self) -> bool {
+        if self.requests == 0 {
+            panic!("cannot sync without a request");
+        }
         if let Ok(a) = avg(self.requests).await {
             self.diff = a;
             true

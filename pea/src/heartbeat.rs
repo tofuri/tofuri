@@ -165,6 +165,6 @@ fn lag(node: &mut Node) {
         "{} {} {}",
         "Heartbeat".cyan(),
         node.heartbeats,
-        format!("{:?}", Duration::from_nanos(micros)).yellow()
+        format!("{:?}", Duration::from_micros(micros)).yellow()
     );
 }

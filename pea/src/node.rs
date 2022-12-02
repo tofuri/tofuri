@@ -40,7 +40,7 @@ pub struct Options<'a> {
     pub trust: usize,
     pub pending: usize,
     pub ban_offline: usize,
-    pub time_requests: usize,
+    pub time_sync_requests: usize,
     pub time_delta: u32,
     pub max_established: Option<u32>,
     pub tps: f64,
@@ -94,7 +94,7 @@ impl Node {
             max_established: options.max_established,
             tempdb: options.tempdb,
             tempkey: options.tempkey,
-            time: Time::new(options.time_requests),
+            time: Time::new(options.time_sync_requests),
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

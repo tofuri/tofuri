@@ -27,9 +27,9 @@ pub struct Args {
     /// Mesh peers required to ban stakers that failed to show up
     #[clap(long, value_parser, default_value = "10")]
     pub ban_offline: usize,
-    /// Requests to measure average delay
+    /// Time synchronization requests to measure average delay
     #[clap(long, value_parser, default_value = "2")]
-    pub time_requests: usize, // ping delay & perception of time
+    pub time_sync_requests: usize, // ping delay & perception of time
     /// Max time delta allowed
     #[clap(long, value_parser, default_value = "1")]
     pub time_delta: u32, // ping delay & perception of time
@@ -72,7 +72,7 @@ async fn main() {
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
     info!("{} {}", "--pending".cyan(), args.pending.to_string().magenta());
     info!("{} {}", "--ban-offline".cyan(), args.ban_offline.to_string().magenta());
-    info!("{} {}", "--time-requests".cyan(), args.time_requests.to_string().magenta());
+    info!("{} {}", "--time-sync-requests".cyan(), args.time_sync_requests.to_string().magenta());
     info!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());
     info!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
     info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
@@ -88,7 +88,7 @@ async fn main() {
         trust: args.trust,
         pending: args.pending,
         ban_offline: args.ban_offline,
-        time_requests: args.time_requests,
+        time_sync_requests: args.time_sync_requests,
         time_delta: args.time_delta,
         max_established: args.max_established,
         tps: args.tps,

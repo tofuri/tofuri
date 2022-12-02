@@ -1,5 +1,5 @@
 use pea_block::Block;
-use pea_core::{constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types, util};
+use pea_core::{constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
 use pea_db as db;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
@@ -146,11 +146,11 @@ impl Dynamic {
     pub fn staker(&self, timestamp: u32, previous_timestamp: u32) -> Option<&types::PublicKeyBytes> {
         self.stakers.get(Self::staker_index(timestamp, previous_timestamp))
     }
-    pub fn current_staker(&self) -> Option<&types::PublicKeyBytes> {
-        self.staker(util::timestamp(), self.latest_block.timestamp)
+    pub fn current_staker(&self, timestamp: u32) -> Option<&types::PublicKeyBytes> {
+        self.staker(timestamp, self.latest_block.timestamp)
     }
-    pub fn offline_staker(&self) -> Option<&types::PublicKeyBytes> {
-        let index = Self::staker_index(util::timestamp(), self.latest_block.timestamp);
+    pub fn offline_staker(&self, timestamp: u32) -> Option<&types::PublicKeyBytes> {
+        let index = Self::staker_index(timestamp, self.latest_block.timestamp);
         if index == 0 {
             return None;
         }

@@ -5,7 +5,7 @@ use pea_block::Block;
 use pea_core::constants::{
     BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT,
 };
-use pea_core::{types, util};
+use pea_core::types;
 use pea_db as db;
 use pea_key::Key;
 use pea_stake::Stake;

@@ -1,0 +1,15 @@
+[package]
+name = "pea-time"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "エンドウ"
+repository = "https://github.com/peacash/peacash"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.11.11", features = ["json"] }
+tokio = { version = "1.19.2", features = ["full"] }
+serde = { version = "1.0.137", features = ["derive"] }
+chrono = "0.4.23"

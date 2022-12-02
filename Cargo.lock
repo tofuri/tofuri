@@ -2999,6 +2999,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pea-time"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "reqwest",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "pea-transaction"
 version = "0.3.0"
 dependencies = [

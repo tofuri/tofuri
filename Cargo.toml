@@ -10,6 +10,7 @@ members = [
     "pay",
     "pea",
     "stake",
+    "time",
     "transaction",
     "tree",
     "wallet"

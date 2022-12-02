@@ -1,4 +1,5 @@
 use crate::node::Node;
+use chrono::{TimeZone, Utc};
 use colored::*;
 use lazy_static::lazy_static;
 use libp2p::gossipsub::TopicHash;
@@ -140,7 +141,10 @@ fn get_index() -> Result<String, Box<dyn Error>> {
     )))
 }
 fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
+    let timestamp = (node.time.timestamp_micros() * 1_000) as i64;
+    let datetime = Utc.timestamp_nanos(timestamp);
     Ok(json(serde_json::to_string(&get::Data {
+        time: datetime.to_rfc2822(),
         public_key: node.blockchain.key.public(),
         tree_size: node.blockchain.tree.size(),
         heartbeats: node.heartbeats,

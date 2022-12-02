@@ -36,6 +36,7 @@ pub mod get {
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Data {
+        pub time: String,
         pub public_key: String,
         pub tree_size: usize,
         pub heartbeats: usize,

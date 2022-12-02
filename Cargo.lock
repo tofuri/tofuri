@@ -2812,6 +2812,7 @@ name = "pea"
 version = "0.7.0"
 dependencies = [
  "bincode",
+ "chrono",
  "clap",
  "colored",
  "futures",

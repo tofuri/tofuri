@@ -31,11 +31,11 @@ impl Command {
     pub async fn sync_time(&mut self) {
         if self.time.sync().await {
             println!(
-                "Successfully adjusted for time difference. System clock is {} of world clock.",
+                "Successfully adjusted for time difference. System clock is {} the world clock.",
                 format!(
                     "{:?} {}",
                     Duration::from_micros(self.time.diff.abs() as u64),
-                    if self.time.diff.is_negative() { "behind" } else { "ahead" }
+                    if self.time.diff.is_negative() { "behind" } else { "ahead of" }
                 )
                 .to_string()
                 .yellow()

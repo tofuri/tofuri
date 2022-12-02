@@ -44,7 +44,7 @@ fn pending_blocks(node: &mut Node) {
         vec.push(block);
     }
     loop {
-        if let Some(block) = vec.iter().find(|a| node.blockchain.validate_block(a).is_ok()) {
+        if let Some(block) = vec.iter().find(|a| node.blockchain.validate_block(a, util::timestamp()).is_ok()) {
             node.blockchain.accept_block(&block, false);
         } else {
             break;

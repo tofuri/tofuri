@@ -168,7 +168,7 @@ impl Blockchain {
         self.sync.index += 1;
         block
     }
-    pub fn validate_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
+    pub fn validate_block(&self, block: &Block, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if let Some(hash) = self.offline.get(&block.public_key) {
             if hash == &block.previous_hash {
                 return Err("block staker banned".into());
@@ -177,7 +177,7 @@ impl Blockchain {
         if self.tree.get(&block.hash()).is_some() {
             return Err("block hash in tree".into());
         }
-        if block.timestamp > util::timestamp() + self.time_delta {
+        if block.timestamp > timestamp + self.time_delta {
             return Err("block timestamp future".into());
         }
         if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {
@@ -208,7 +208,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn validate_transaction(&self, transaction: &Transaction, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_transaction(&self, transaction: &Transaction, previous_block_timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.pending_transactions.iter().any(|x| x.signature == transaction.signature) {
             return Err("transaction pending".into());
         }
@@ -217,7 +217,7 @@ impl Blockchain {
         if transaction.timestamp > util::timestamp() + self.time_delta {
             return Err("transaction timestamp future".into());
         }
-        if transaction.timestamp < timestamp {
+        if transaction.timestamp < previous_block_timestamp {
             return Err("transaction timestamp ancient".into());
         }
         if transaction.amount + transaction.fee > balance {
@@ -228,7 +228,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn validate_stake(&self, stake: &Stake, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_stake(&self, stake: &Stake, previous_block_timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.pending_stakes.iter().any(|x| x.signature == stake.signature) {
             return Err("stake pending".into());
         }
@@ -238,7 +238,7 @@ impl Blockchain {
         if stake.timestamp > util::timestamp() + self.time_delta {
             return Err("stake timestamp future".into());
         }
-        if stake.timestamp < timestamp {
+        if stake.timestamp < previous_block_timestamp {
             return Err("stake timestamp ancient".into());
         }
         if stake.deposit {

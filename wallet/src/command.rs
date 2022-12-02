@@ -43,7 +43,7 @@ impl Command {
                 .yellow()
             );
         } else {
-            println!("Failed to adjust for time difference!");
+            println!("{}", "Failed to adjust for time difference!".red());
         }
     }
     pub async fn select(&mut self) -> bool {

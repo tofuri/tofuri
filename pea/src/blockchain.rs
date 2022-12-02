@@ -193,7 +193,7 @@ impl Blockchain {
                 return Err("block staker public_key".into());
             }
         } else {
-            block.validate_mint(util::timestamp())?;
+            block.validate_mint(timestamp)?;
             return Ok(());
         }
         block.validate()?;

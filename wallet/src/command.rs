@@ -11,7 +11,6 @@ use pea_transaction::Transaction;
 use std::{ops::Range, process, time::Duration};
 pub struct Options {
     pub api: String,
-    pub time_sync_requests: usize,
 }
 pub struct Command {
     api: String,
@@ -23,14 +22,10 @@ impl Command {
         Command {
             api: options.api,
             wallet: None,
-            time: Time::new(options.time_sync_requests),
+            time: Time::new(),
         }
     }
     pub async fn sync_time(&mut self) {
-        if self.time.requests == 0 {
-            println!("Skipping adjust for time difference...");
-            return;
-        }
         if self.time.sync().await {
             println!(
                 "Successfully adjusted for time difference. System clock is {} of world clock.",

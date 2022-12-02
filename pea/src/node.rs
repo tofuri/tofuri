@@ -40,7 +40,6 @@ pub struct Options<'a> {
     pub trust: usize,
     pub pending: usize,
     pub ban_offline: usize,
-    pub time_sync_requests: usize,
     pub time_delta: u32,
     pub max_established: Option<u32>,
     pub tps: f64,
@@ -96,7 +95,7 @@ impl Node {
             max_established: options.max_established,
             tempdb: options.tempdb,
             tempkey: options.tempkey,
-            time: Time::new(options.time_sync_requests),
+            time: Time::new(),
             dev: options.dev,
         }
     }
@@ -204,10 +203,6 @@ impl Node {
         }
     }
     pub async fn sync_time(&mut self) {
-        if self.time.requests == 0 {
-            info!("Skipping adjust for time difference...");
-            return;
-        }
         if self.time.sync().await {
             info!(
                 "Successfully adjusted for time difference. System clock is {} of world clock.",

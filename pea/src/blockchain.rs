@@ -127,7 +127,7 @@ impl Blockchain {
             }
             self.pending_transactions.remove(index);
         }
-        self.validate_transaction(&transaction, self.states.dynamic.latest_block.timestamp)?;
+        self.validate_transaction(&transaction, self.states.dynamic.latest_block.timestamp, util::timestamp())?;
         info!("Transaction {}", hex::encode(&transaction.hash()).green());
         self.pending_transactions.push(transaction);
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -143,7 +143,7 @@ impl Blockchain {
             }
             self.pending_stakes.remove(index);
         }
-        self.validate_stake(&stake, self.states.dynamic.latest_block.timestamp)?;
+        self.validate_stake(&stake, self.states.dynamic.latest_block.timestamp, util::timestamp())?;
         info!("Stake {}", hex::encode(&stake.hash()).green());
         self.pending_stakes.push(stake);
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -201,20 +201,20 @@ impl Blockchain {
             return Err("block previous_hash not latest hash".into());
         }
         for stake in block.stakes.iter() {
-            self.validate_stake(stake, latest_block.timestamp)?;
+            self.validate_stake(stake, latest_block.timestamp, timestamp)?;
         }
         for transaction in block.transactions.iter() {
-            self.validate_transaction(transaction, latest_block.timestamp)?;
+            self.validate_transaction(transaction, latest_block.timestamp, timestamp)?;
         }
         Ok(())
     }
-    fn validate_transaction(&self, transaction: &Transaction, previous_block_timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_transaction(&self, transaction: &Transaction, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.pending_transactions.iter().any(|x| x.signature == transaction.signature) {
             return Err("transaction pending".into());
         }
         transaction.validate()?;
         let balance = self.states.dynamic.balance(&transaction.public_key_input);
-        if transaction.timestamp > util::timestamp() + self.time_delta {
+        if transaction.timestamp > timestamp + self.time_delta {
             return Err("transaction timestamp future".into());
         }
         if transaction.timestamp < previous_block_timestamp {
@@ -228,14 +228,14 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn validate_stake(&self, stake: &Stake, previous_block_timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_stake(&self, stake: &Stake, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.pending_stakes.iter().any(|x| x.signature == stake.signature) {
             return Err("stake pending".into());
         }
         stake.validate()?;
         let balance = self.states.dynamic.balance(&stake.public_key);
         let balance_staked = self.states.dynamic.balance_staked(&stake.public_key);
-        if stake.timestamp > util::timestamp() + self.time_delta {
+        if stake.timestamp > timestamp + self.time_delta {
             return Err("stake timestamp future".into());
         }
         if stake.timestamp < previous_block_timestamp {

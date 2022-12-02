@@ -123,7 +123,7 @@ impl Block {
         }
         Ok(())
     }
-    pub fn validate_mint(&self) -> Result<(), Box<dyn Error>> {
+    pub fn validate_mint(&self, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.verify().is_err() {
             return Err("block signature".into());
         }
@@ -135,10 +135,7 @@ impl Block {
         }
         let stake = self.stakes.first().unwrap();
         stake.validate_mint()?;
-        if stake.timestamp > util::timestamp() {
-            return Err("stake mint timestamp future".into());
-        }
-        if stake.timestamp < self.timestamp {
+        if stake.timestamp < timestamp {
             return Err("stake mint timestamp ancient".into());
         }
         Ok(())

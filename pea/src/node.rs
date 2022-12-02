@@ -20,6 +20,7 @@ use log::{debug, error, info};
 use pea_address as address;
 use pea_core::{constants::BLOCK_TIME_MIN, types, util};
 use pea_db as db;
+use pea_time::Time;
 use pea_wallet::Wallet;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{
@@ -38,6 +39,7 @@ pub struct Options<'a> {
     pub trust: usize,
     pub pending: usize,
     pub ban_offline: usize,
+    pub time_requests: usize,
     pub time_delta: u32,
     pub max_established: Option<u32>,
     pub tps: f64,
@@ -64,6 +66,7 @@ pub struct Node {
     pub max_established: Option<u32>,
     pub tempdb: bool,
     pub tempkey: bool,
+    pub time: Time,
 }
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
@@ -90,6 +93,7 @@ impl Node {
             max_established: options.max_established,
             tempdb: options.tempdb,
             tempkey: options.tempkey,
+            time: Time::new(options.time_requests),
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

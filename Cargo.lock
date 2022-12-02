@@ -2828,6 +2828,7 @@ dependencies = [
  "pea-key",
  "pea-logger",
  "pea-stake",
+ "pea-time",
  "pea-transaction",
  "pea-tree",
  "pea-wallet",

@@ -11,9 +11,11 @@ use pea_transaction::Transaction;
 use std::{ops::Range, process, time::Duration};
 pub struct Options {
     pub api: String,
+    pub time_api: bool,
 }
 pub struct Command {
     api: String,
+    pub time_api: bool,
     wallet: Option<Wallet>,
     pub time: Time,
 }
@@ -21,6 +23,7 @@ impl Command {
     pub fn new(options: Options) -> Command {
         Command {
             api: options.api,
+            time_api: options.time_api,
             wallet: None,
             time: Time::new(),
         }

@@ -25,6 +25,7 @@ pub mod get {
         pub mint: bool,
         pub tempdb: bool,
         pub tempkey: bool,
+        pub time_api: bool,
         pub trust: usize,
         pub pending: usize,
         pub ban_offline: usize,

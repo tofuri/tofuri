@@ -37,6 +37,7 @@ pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,
     pub mint: bool,
+    pub time_api: bool,
     pub trust: usize,
     pub pending: usize,
     pub ban_offline: usize,
@@ -68,6 +69,7 @@ pub struct Node {
     pub tempdb: bool,
     pub tempkey: bool,
     pub time: Time,
+    pub time_api: bool,
     pub dev: bool,
 }
 impl Node {
@@ -96,6 +98,7 @@ impl Node {
             tempdb: options.tempdb,
             tempkey: options.tempkey,
             time: Time::new(),
+            time_api: options.time_api,
             dev: options.dev,
         }
     }
@@ -215,11 +218,13 @@ impl Node {
                 .yellow()
             );
         } else {
-            warn!("Failed to adjust for time difference!");
+            warn!("{}", "Failed to adjust for time difference!".red());
         }
     }
     pub async fn start(&mut self) {
-        self.sync_time().await;
+        if self.time_api {
+            self.sync_time().await;
+        }
         self.blockchain.load();
         info!(
             "Blockchain height is {}",

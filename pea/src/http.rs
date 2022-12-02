@@ -199,6 +199,7 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
         host: node.host.clone(),
         tempdb: node.tempdb,
         tempkey: node.tempkey,
+        time_api: node.time_api,
         dev: node.dev,
     })?))
 }

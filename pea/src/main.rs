@@ -26,6 +26,9 @@ pub struct Args {
     /// Generate genesis block
     #[clap(long, value_parser, default_value_t = false)]
     pub mint: bool,
+    /// Use time api to adjust time difference
+    #[clap(long, value_parser, default_value_t = false)]
+    pub time_api: bool,
     /// Trust fork after blocks
     #[clap(long, value_parser, default_value = "16")]
     pub trust: usize,
@@ -77,6 +80,7 @@ async fn main() {
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
     info!("{} {}", "--mint".cyan(), args.mint.to_string().magenta());
+    info!("{} {}", "--time-api".cyan(), args.time_api.to_string().magenta());
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
     info!("{} {}", "--pending".cyan(), args.pending.to_string().magenta());
     info!("{} {}", "--ban-offline".cyan(), args.ban_offline.to_string().magenta());
@@ -108,6 +112,7 @@ async fn main() {
         tempdb: args.tempdb,
         tempkey: args.tempkey,
         mint: args.mint,
+        time_api: args.time_api,
         trust: args.trust,
         pending: args.pending,
         ban_offline: args.ban_offline,

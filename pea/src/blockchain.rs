@@ -75,9 +75,9 @@ impl Blockchain {
             self.pending_stakes = vec![stake];
         }
         let mut block = if let Some(main) = self.tree.main() {
-            Block::new(main.0)
+            Block::new(main.0, util::timestamp())
         } else {
-            Block::new([0; 32])
+            Block::new([0; 32], util::timestamp())
         };
         for transaction in self.pending_transactions.iter() {
             if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {

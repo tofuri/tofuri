@@ -51,10 +51,10 @@ impl fmt::Debug for Block {
     }
 }
 impl Block {
-    pub fn new(previous_hash: types::Hash) -> Block {
+    pub fn new(previous_hash: types::Hash, timestamp: u32) -> Block {
         Block {
             previous_hash,
-            timestamp: util::timestamp(),
+            timestamp,
             public_key: [0; 32],
             signature: [0; 64],
             transactions: vec![],

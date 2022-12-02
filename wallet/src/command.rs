@@ -4,7 +4,7 @@ use crossterm::{event, terminal};
 use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
 use pea_api::{get, post};
-use pea_core::constants::COIN;
+use pea_core::{constants::COIN, util};
 use pea_stake::Stake;
 use pea_transaction::Transaction;
 use std::{ops::Range, process};
@@ -149,7 +149,7 @@ impl Command {
                     }
                     let amount = balance - fee;
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee);
+                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee, util::timestamp());
                     transaction.sign(&subkey);
                     println!("{:?}", transaction);
                     match post::transaction(&self.api, &transaction).await {
@@ -263,7 +263,7 @@ impl Command {
         } {
             return;
         }
-        let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee);
+        let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee, util::timestamp());
         transaction.sign(&wallet.key);
         println!("Hash: {}", hex::encode(transaction.hash()).cyan());
         match post::transaction(api, &transaction).await {
@@ -288,7 +288,7 @@ impl Command {
         if !send {
             return;
         }
-        let mut stake = Stake::new(deposit, amount, fee);
+        let mut stake = Stake::new(deposit, amount, fee, util::timestamp());
         stake.sign(&wallet.key);
         println!("Hash: {}", hex::encode(stake.hash()).cyan());
         match post::stake(api, &stake).await {

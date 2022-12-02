@@ -88,7 +88,7 @@ impl PaymentProcessor {
         self.charges.get(hash).map(Payment::from)
     }
     pub async fn send(&self, address: &str, amount: u128, fee: u128) -> Result<(), Box<dyn Error>> {
-        let mut transaction = Transaction::new(address::public::decode(address).unwrap(), amount, fee);
+        let mut transaction = Transaction::new(address::public::decode(address).unwrap(), amount, fee, util::timestamp());
         transaction.sign(&self.wallet.key);
         post::transaction(&self.api, &transaction).await?;
         Ok(())

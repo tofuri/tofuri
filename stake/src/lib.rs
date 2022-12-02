@@ -50,13 +50,13 @@ impl fmt::Debug for Stake {
     }
 }
 impl Stake {
-    pub fn new(deposit: bool, amount: u128, fee: u128) -> Stake {
+    pub fn new(deposit: bool, amount: u128, fee: u128, timestamp: u32) -> Stake {
         Stake {
             public_key: [0; 32],
             deposit,
             amount: pea_int::floor(amount),
             fee: pea_int::floor(fee),
-            timestamp: util::timestamp(),
+            timestamp,
             signature: [0; 64],
         }
     }

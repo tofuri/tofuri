@@ -50,13 +50,13 @@ impl fmt::Debug for Transaction {
     }
 }
 impl Transaction {
-    pub fn new(public_key_output: types::PublicKeyBytes, amount: u128, fee: u128) -> Transaction {
+    pub fn new(public_key_output: types::PublicKeyBytes, amount: u128, fee: u128, timestamp: u32) -> Transaction {
         Transaction {
             public_key_input: [0; 32],
             public_key_output,
             amount: pea_int::floor(amount),
             fee: pea_int::floor(fee),
-            timestamp: util::timestamp(),
+            timestamp,
             signature: [0; 64],
         }
     }

@@ -173,7 +173,7 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
         balance_staked: dynamic.balance_staked(&node.blockchain.key.public_key_bytes()),
         hashes: dynamic.hashes.len(),
         latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
-        stakers: dynamic.stakers.iter().map(address::public::encode).collect(),
+        stakers: dynamic.stakers.iter().take(16).map(address::public::encode).collect(),
     })?))
 }
 fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
@@ -183,7 +183,7 @@ fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
         balance_staked: trusted.balance_staked(&node.blockchain.key.public_key_bytes()),
         hashes: trusted.hashes.len(),
         latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
-        stakers: trusted.stakers.iter().map(address::public::encode).collect(),
+        stakers: trusted.stakers.iter().take(16).map(address::public::encode).collect(),
     })?))
 }
 fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {

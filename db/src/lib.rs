@@ -208,8 +208,7 @@ pub mod tree {
         let previous_hash = [0; 32];
         let mut previous_hashes = vec![previous_hash];
         let mut hashes_0 = vec![];
-        let (_, vec) = map.iter().find(|(&x, _)| x == previous_hash).unwrap();
-        for (hash, timestamp) in vec {
+        for (hash, timestamp) in map.get(&previous_hash).unwrap() {
             hashes_0.push((*hash, *timestamp));
         }
         let mut vec = vec![];

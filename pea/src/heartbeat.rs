@@ -9,7 +9,7 @@ pub async fn next(tps: f64, timestamp: u64) {
     tokio::time::sleep(Duration::from_micros(micros_until_next_tick(tps, timestamp))).await
 }
 fn delay(node: &mut Node, seconds: usize) -> bool {
-    (node.heartbeats as f64 * 1_f64 / node.tps) as usize % seconds as usize == 0
+    (node.heartbeats as f64 % (node.tps * seconds as f64)) as usize == 0
 }
 pub fn handler(node: &mut Node) {
     let timestamp = node.time.timestamp_secs();

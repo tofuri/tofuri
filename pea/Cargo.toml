@@ -14,14 +14,14 @@ repository = "https://github.com/peacash/peacash"
 pea-address = { version = "0.3.0", path = "../address" }
 pea-int = { version = "0.1.0", path = "../int" }
 pea-api = { version = "0.3.0", path = "../api" }
-pea-block = { version = "0.3.0", path = "../block" }
-pea-core = { version = "0.3.0", path = "../core" }
-pea-db = { version = "0.4.0", path = "../db" }
+pea-block = { version = "0.4.0", path = "../block" }
+pea-core = { version = "0.3.1", path = "../core" }
+pea-db = { version = "0.5.0", path = "../db" }
 pea-logger = { version = "0.1.1", path = "../logger" }
 pea-key = { version = "0.2.2", path = "../key" }
-pea-stake = { version = "0.3.0", path = "../stake" }
+pea-stake = { version = "0.4.0", path = "../stake" }
 pea-time = { version = "0.1.0", path = "../time" }
-pea-transaction = { version = "0.3.0", path = "../transaction" }
+pea-transaction = { version = "0.4.0", path = "../transaction" }
 pea-tree = { version = "0.2.2", path = "../tree" }
 pea-wallet = { version = "0.4.0", path = "../wallet" }
 rocksdb = "0.19.0"

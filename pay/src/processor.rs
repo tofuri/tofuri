@@ -17,7 +17,7 @@ use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::{
     collections::HashMap,
     error::Error,
-    time::{Duration, Instant, SystemTime},
+    time::{Duration, Instant},
 };
 use tempdir::TempDir;
 use tokio::net::TcpListener;
@@ -202,7 +202,7 @@ impl PaymentProcessor {
     async fn next(tps: f64) {
         let f = 1_f64 / tps;
         let u = (f * 1_000_000_000_f64) as u128;
-        let mut nanos = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let mut nanos = chrono::offset::Utc::now().timestamp_nanos() as u128;
         let secs = nanos / u;
         nanos -= secs * u;
         let nanos = (u - nanos) as u64;

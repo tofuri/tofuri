@@ -1,9 +1,6 @@
 use chrono::DateTime;
 use serde::Deserialize;
-use std::{
-    error::Error,
-    time::{Instant, SystemTime, UNIX_EPOCH},
-};
+use std::{error::Error, time::Instant};
 #[derive(Debug)]
 pub struct Time {
     pub diff: i64,
@@ -29,7 +26,7 @@ impl Time {
     }
 }
 fn timestamp() -> i64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_micros() as i64
+    chrono::offset::Utc::now().timestamp_micros()
 }
 #[derive(Debug, Deserialize)]
 struct Data {

@@ -2886,6 +2886,7 @@ version = "0.3.0"
 dependencies = [
  "bincode",
  "blake3",
+ "chrono",
  "hex",
  "merkle-cbt",
  "rand 0.7.3",
@@ -2943,6 +2944,7 @@ name = "pea-pay"
 version = "0.1.2"
 dependencies = [
  "bincode",
+ "chrono",
  "clap",
  "colored",
  "futures",

@@ -7,10 +7,9 @@ use std::{
     fs::File,
     io::{BufRead, BufReader},
     path::Path,
-    time::{SystemTime, UNIX_EPOCH},
 };
 pub fn timestamp() -> u32 {
-    SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs() as u32
+    chrono::offset::Utc::now().timestamp() as u32
 }
 pub fn hash(input: &[u8]) -> types::Hash {
     blake3::hash(input).into()

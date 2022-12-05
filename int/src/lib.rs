@@ -46,9 +46,7 @@ pub fn floor(input: u128) -> u128 {
 pub fn to_string(num: u128) -> String {
     let mut string = format!("{}{}", "0".repeat(DECIMAL_PLACES as usize), num);
     string.insert(string.len() - DECIMAL_PLACES as usize, '.');
-    string = string.trim_start_matches('0').to_string();
-    string = string.trim_end_matches('0').to_string();
-    string = string.trim_end_matches('.').to_string();
+    string = string.trim_start_matches('0').trim_end_matches('0').trim_end_matches('.').to_string();
     if string.starts_with('.') {
         let mut s = "0".to_string();
         s.push_str(&string);

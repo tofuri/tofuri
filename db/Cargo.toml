@@ -9,7 +9,7 @@ repository = "https://github.com/peacash/peacash"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pea-int = { version = "0.1.0", path = "../int" }
+pea-int = { version = "0.2.0", path = "../int" }
 pea-block = { version = "0.4.0", path = "../block" }
 pea-core = { version = "0.3.1", path = "../core" }
 pea-stake = { version = "0.4.0", path = "../stake" }

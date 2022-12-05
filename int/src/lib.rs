@@ -52,6 +52,9 @@ pub fn to_string(num: u128) -> String {
         s.push_str(&string);
         string = s;
     }
+    if string == "" {
+        string.push('0');
+    }
     string
 }
 pub fn from_string(str: &str) -> Result<u128, Box<dyn Error>> {
@@ -87,6 +90,7 @@ mod tests {
         assert_eq!("1", to_string(1_000_000_000_000_000_000));
         assert_eq!("10", to_string(10_000_000_000_000_000_000));
         assert_eq!("0.1", to_string(100_000_000_000_000_000));
+        assert_eq!("0", to_string(0));
     }
     #[test]
     fn test_from_string() {
@@ -96,5 +100,6 @@ mod tests {
         assert_eq!(10_000_000_000_000_000_000, from_string("10.").unwrap());
         assert_eq!(10_000_000_000_000_000_000, from_string("10.0").unwrap());
         assert_eq!(100_000_000_000_000_000, from_string(".1").unwrap());
+        assert_eq!(0, from_string("0").unwrap());
     }
 }

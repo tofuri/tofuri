@@ -1,4 +1,5 @@
 use pea_core::constants::{AMOUNT_BYTES, DECIMAL_PLACES};
+use std::error::Error;
 pub fn to_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
     if input == 0 {
         return [0; AMOUNT_BYTES];
@@ -47,12 +48,25 @@ pub fn to_string(num: u128) -> String {
     string.insert(string.len() - DECIMAL_PLACES as usize, '.');
     string = string.trim_start_matches('0').to_string();
     string = string.trim_end_matches('0').to_string();
+    string = string.trim_end_matches('.').to_string();
     if string.starts_with('.') {
         let mut s = "0".to_string();
         s.push_str(&string);
         string = s;
     }
     string
+}
+pub fn from_string(str: &str) -> Result<u128, Box<dyn Error>> {
+    let (mut string, diff) = match str.split_once(".") {
+        Some((a, b)) => {
+            let mut string = a.to_string();
+            string.push_str(b);
+            (string, DECIMAL_PLACES as usize - b.len())
+        }
+        None => (str.to_string(), DECIMAL_PLACES as usize),
+    };
+    string.push_str(&"0".repeat(diff));
+    Ok(string.parse()?)
 }
 #[cfg(test)]
 mod tests {
@@ -72,5 +86,17 @@ mod tests {
     #[test]
     fn test_to_string() {
         assert_eq!("10.01", to_string(10_010_000_000_000_000_000));
+        assert_eq!("1", to_string(1_000_000_000_000_000_000));
+        assert_eq!("10", to_string(10_000_000_000_000_000_000));
+        assert_eq!("0.1", to_string(100_000_000_000_000_000));
+    }
+    #[test]
+    fn test_from_string() {
+        assert_eq!(10_010_000_000_000_000_000, from_string("010.010").unwrap());
+        assert_eq!(1_000_000_000_000_000_000, from_string("1").unwrap());
+        assert_eq!(10_000_000_000_000_000_000, from_string("10").unwrap());
+        assert_eq!(10_000_000_000_000_000_000, from_string("10.").unwrap());
+        assert_eq!(10_000_000_000_000_000_000, from_string("10.0").unwrap());
+        assert_eq!(100_000_000_000_000_000, from_string(".1").unwrap());
     }
 }

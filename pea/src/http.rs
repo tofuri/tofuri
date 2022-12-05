@@ -344,7 +344,7 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
     let transaction: Transaction = bincode::deserialize(&hex::decode(
         buffer
             .lines()
-            .nth(5)
+            .last()
             .ok_or("POST TRANSACTION 1")??
             .get(0..*TRANSACTION_SERIALIZED)
             .ok_or("POST TRANSACTION 2")?,
@@ -366,7 +366,7 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
 }
 fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
     let stake: Stake = bincode::deserialize(&hex::decode(
-        buffer.lines().nth(5).ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
+        buffer.lines().last().ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
     let data = bincode::serialize(&stake).unwrap();
     let status = match node.blockchain.try_add_stake(stake, node.time.timestamp_secs()) {

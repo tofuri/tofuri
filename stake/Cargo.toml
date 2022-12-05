@@ -10,7 +10,7 @@ repository = "https://github.com/peacash/peacash"
 
 [dependencies]
 pea-address = { version = "0.3.0", path = "../address" }
-pea-int = { version = "0.2.0", path = "../int" }
+pea-int = { version = "0.2.1", path = "../int" }
 pea-core = { version = "0.3.1", path = "../core" }
 pea-key = { version = "0.2.2", path = "../key" }
 serde = { version = "1.0.137", features = ["derive"] }

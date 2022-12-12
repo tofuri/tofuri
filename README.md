@@ -17,14 +17,14 @@ cd peacash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-#### Arch
+#### Arch-based
 
 ```bash
 sudo pacman -Sy
 sudo pacman -S git cmake clang
 ```
 
-#### Debian
+#### Debian-based
 
 ```bash
 sudo apt update

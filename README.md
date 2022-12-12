@@ -11,20 +11,20 @@ cd peacash
 
 ### Dependencies
 
-#### Rust
+#### Rustup - The toolchain installer
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-#### Arch-based
+#### Arch-based systems
 
 ```bash
 sudo pacman -Sy
 sudo pacman -S git cmake clang
 ```
 
-#### Debian-based
+#### Debian-based systems
 
 ```bash
 sudo apt update

@@ -7,6 +7,7 @@ It is recommended that you read through [The Technical Paper](https://github.com
 ```bash
 git clone https://github.com/peacash/peacash.git
 cd peacash
+cargo run --bin pea
 ```
 
 ### Dependencies

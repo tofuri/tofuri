@@ -141,7 +141,7 @@ impl Node {
             behaviour.gossipsub.subscribe(ident_topic)?;
         }
         let mut limits = ConnectionLimits::default();
-        limits = limits.with_max_established_per_peer(Some(2));
+        limits = limits.with_max_established_per_peer(Some(1));
         limits = limits.with_max_established(max_established);
         Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
             .executor(Box::new(|fut| {

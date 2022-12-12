@@ -338,7 +338,7 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
     })?))
 }
 fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    let peers = db::peer::get_all(&node.blockchain.db);
+    let peers: Vec<&Multiaddr> = node.connections.keys().collect();
     Ok(json(serde_json::to_string(&peers)?))
 }
 fn get_peer(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {

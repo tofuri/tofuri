@@ -2,7 +2,7 @@
 
 It is recommended that you read through [The Technical Paper](https://github.com/peacash/paper/blob/main/README.md).
 
-## Install
+## Installation
 
 ```bash
 git clone https://github.com/peacash/peacash.git

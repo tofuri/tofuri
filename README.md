@@ -11,7 +11,7 @@ cd peacash
 
 ### Dependencies
 
-#### [rustup.rs - The Rust toolchain installer](https://rustup.rs/) - The toolchain installer
+#### [rustup.rs - The Rust toolchain installer](https://rustup.rs/)
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh

@@ -1,7 +1,7 @@
 use crate::{multiaddr, node::Node};
 use async_std::stream::{self, Pending, StreamExt, Timeout};
 use colored::*;
-use libp2p::{gossipsub::TopicHash, multiaddr::Protocol, Multiaddr};
+use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
 use pea_block::Block;
 use pea_core::constants::SYNC_BLOCKS_PER_TICK;
@@ -67,8 +67,7 @@ fn offline_staker(node: &mut Node, timestamp: u32) {
     if !node.blockchain.sync.completed {
         return;
     }
-    let behaviour = node.swarm.behaviour();
-    if behaviour.gossipsub.mesh_peers(&TopicHash::from_raw("block")).count() < node.ban_offline {
+    if node.connections.len() < node.ban_offline {
         return;
     }
     let dynamic = &node.blockchain.states.dynamic;
@@ -121,13 +120,7 @@ fn grow(node: &mut Node, timestamp: u32) {
         if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",
-                node.swarm
-                    .behaviour()
-                    .gossipsub
-                    .mesh_peers(&TopicHash::from_raw("blocks"))
-                    .count()
-                    .to_string()
-                    .yellow()
+                node.connections.len().to_string().yellow()
             );
         }
         node.blockchain.sync.completed = false;

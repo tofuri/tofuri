@@ -5,7 +5,7 @@ use async_std::{
 };
 use chrono::{TimeZone, Utc};
 use lazy_static::lazy_static;
-use libp2p::{gossipsub::TopicHash, Multiaddr};
+use libp2p::Multiaddr;
 use log::error;
 use pea_address as address;
 use pea_api::get;
@@ -163,7 +163,7 @@ fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
         bps: node.blockchain.sync.bps,
         downloading: node.blockchain.sync.downloading(),
         completed: node.blockchain.sync.completed,
-        peers: node.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw("blocks")).count(),
+        peers: node.connections.len(),
         index: node.blockchain.sync.index,
     })?))
 }

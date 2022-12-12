@@ -2,6 +2,13 @@
 
 It is recommended that you read through [The Technical Paper](https://github.com/peacash/paper/blob/main/README.md).
 
+## Installation
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+git clone https://github.com/peacash/peacash.git
+```
+
 ## Install using [Cargo](https://doc.rust-lang.org/cargo/)
 
 ```bash

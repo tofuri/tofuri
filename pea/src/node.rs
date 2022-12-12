@@ -3,6 +3,7 @@ use crate::{
     blockchain::Blockchain,
     gossipsub, heartbeat, http, multiaddr,
 };
+use async_std::net::TcpListener;
 use colored::*;
 use futures::{FutureExt, StreamExt};
 use libp2p::{
@@ -13,7 +14,7 @@ use libp2p::{
     mplex, noise,
     ping::Failure,
     swarm::{ConnectionHandlerUpgrErr, ConnectionLimits, SwarmBuilder, SwarmEvent},
-    tcp::TokioTcpConfig,
+    tcp::TcpConfig,
     Multiaddr, PeerId, Swarm, Transport,
 };
 use log::{debug, error, info, warn};
@@ -30,7 +31,6 @@ use std::{
     time::Duration,
 };
 use tempdir::TempDir;
-use tokio::net::TcpListener;
 type HandlerErr =
     EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>;
 pub struct Options<'a> {
@@ -122,7 +122,7 @@ impl Node {
         let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
             .into_authentic(&local_key)
             .expect("Signing libp2p-noise static DH keypair failed.");
-        let transport = TokioTcpConfig::new()
+        let transport = TcpConfig::new()
             .nodelay(true)
             .upgrade(upgrade::Version::V1)
             .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
@@ -145,7 +145,7 @@ impl Node {
         limits = limits.with_max_established(max_established);
         Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
             .executor(Box::new(|fut| {
-                tokio::spawn(fut);
+                async_std::task::spawn(fut);
             }))
             .connection_limits(limits)
             .build())
@@ -173,7 +173,7 @@ impl Node {
         }
         false
     }
-    fn handle_event(&mut self, event: SwarmEvent<OutEvent, HandlerErr>) {
+    fn swarm_event(&mut self, event: SwarmEvent<OutEvent, HandlerErr>) {
         debug!("{:?}", event);
         match event {
             SwarmEvent::ConnectionEstablished {
@@ -238,31 +238,28 @@ impl Node {
         let multiaddr: Multiaddr = self.host.parse().unwrap();
         self.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());
-        if !self.bind_api.is_empty() {
-            let listener = TcpListener::bind(&self.bind_api).await.unwrap();
-            info!(
-                "API is listening on {}{}",
-                "http://".cyan(),
-                listener.local_addr().unwrap().to_string().magenta()
-            );
-            loop {
-                tokio::select! {
-                    Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {
-                        error!("{}", err);
-                    },
-                    _ = heartbeat::next(self.tps, self.time.timestamp_micros()).fuse() => heartbeat::handler(self),
-                    event = self.swarm.select_next_some() => self.handle_event(event),
+        let listener = TcpListener::bind(&self.bind_api).await.unwrap();
+        info!(
+            "API is listening on {}{}",
+            "http://".cyan(),
+            listener.local_addr().unwrap().to_string().magenta()
+        );
+        loop {
+            let mut s = heartbeat::timeout(self.tps, self.time.timestamp_micros()).fuse();
+            futures::select! {
+                _ = s.select_next_some() => heartbeat::handler(self),
+                event = self.swarm.select_next_some() => self.swarm_event(event),
+                res = listener.accept().fuse() => match res {
+                    Ok((stream, socket_addr)) => {
+                        match http::handler(stream, self).await {
+                            Ok(first) => info!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), first),
+                            Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err)
+                        }
+                    }
+                    Err(err) => error!("{} {}", "API".cyan(), err)
                 }
             }
-        } else {
-            info!("API is {}", "disabled".red());
-            loop {
-                tokio::select! {
-                    _ = heartbeat::next(self.tps, self.time.timestamp_micros()).fuse() => heartbeat::handler(self),
-                    event = self.swarm.select_next_some() => self.handle_event(event),
-                }
-            }
-        };
+        }
     }
     fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
         let mut save = |multiaddr: Multiaddr| {

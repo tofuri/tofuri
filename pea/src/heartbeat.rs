@@ -1,12 +1,14 @@
 use crate::{multiaddr, node::Node};
+use async_std::stream::{self, Pending, StreamExt, Timeout};
 use colored::*;
 use libp2p::{gossipsub::TopicHash, multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
 use pea_block::Block;
 use pea_core::constants::SYNC_BLOCKS_PER_TICK;
 use std::time::Duration;
-pub async fn next(tps: f64, timestamp: u64) {
-    tokio::time::sleep(Duration::from_micros(micros_until_next_tick(tps, timestamp))).await
+pub fn timeout(tps: f64, timestamp: u64) -> Timeout<Pending<()>> {
+    let dur = Duration::from_micros(micros_until_next_tick(tps, timestamp));
+    stream::pending::<()>().timeout(dur)
 }
 fn delay(node: &mut Node, seconds: usize) -> bool {
     (node.heartbeats as f64 % (node.tps * seconds as f64)) as usize == 0

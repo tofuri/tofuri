@@ -1,9 +1,12 @@
 use crate::node::Node;
+use async_std::{
+    io::{ReadExt, WriteExt},
+    net::TcpStream,
+};
 use chrono::{TimeZone, Utc};
-use colored::*;
 use lazy_static::lazy_static;
 use libp2p::gossipsub::TopicHash;
-use log::{error, info};
+use log::error;
 use pea_address as address;
 use pea_api::get;
 use pea_db as db;
@@ -11,7 +14,6 @@ use pea_stake::Stake;
 use pea_transaction::Transaction;
 use regex::Regex;
 use std::{error::Error, io::BufRead};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 lazy_static! {
     static ref GET: Regex = Regex::new(r"^GET [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
     static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
@@ -36,14 +38,10 @@ lazy_static! {
     static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&Stake::default()).unwrap()).len();
     static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
 }
-pub async fn next(listener: &tokio::net::TcpListener) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
-    Ok(listener.accept().await?.0)
-}
-pub async fn handler(mut stream: tokio::net::TcpStream, node: &mut Node) -> Result<(), Box<dyn Error>> {
+pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<String, Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
-    info!("{} {} {}", "API".cyan(), stream.peer_addr()?.to_string().magenta(), first);
     write(
         &mut stream,
         if GET.is_match(&first) {
@@ -56,7 +54,7 @@ pub async fn handler(mut stream: tokio::net::TcpStream, node: &mut Node) -> Resu
     )
     .await?;
     stream.flush().await?;
-    Ok(())
+    Ok(first)
 }
 fn get(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     if INDEX.is_match(first) {
@@ -104,7 +102,7 @@ fn post(node: &mut Node, first: &str, buffer: &[u8; 1024]) -> Result<String, Box
         c404()
     }
 }
-async fn write(stream: &mut tokio::net::TcpStream, string: String) -> Result<(), Box<dyn Error>> {
+async fn write(stream: &mut TcpStream, string: String) -> Result<(), Box<dyn Error>> {
     stream.write_all(string.as_bytes()).await?;
     Ok(())
 }

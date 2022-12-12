@@ -66,7 +66,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value_t = false)]
     pub dev: bool,
 }
-#[tokio::main]
+#[async_std::main]
 async fn main() {
     println!(
         "{} = {{ version = \"{}\" }}",

@@ -1,11 +1,11 @@
-use crate::node::Node;
+use crate::{multiaddr, node::Node};
 use async_std::{
     io::{ReadExt, WriteExt},
     net::TcpStream,
 };
 use chrono::{TimeZone, Utc};
 use lazy_static::lazy_static;
-use libp2p::gossipsub::TopicHash;
+use libp2p::{gossipsub::TopicHash, Multiaddr};
 use log::error;
 use pea_address as address;
 use pea_api::get;
@@ -15,8 +15,8 @@ use pea_transaction::Transaction;
 use regex::Regex;
 use std::{error::Error, io::BufRead};
 lazy_static! {
-    static ref GET: Regex = Regex::new(r"^GET [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
-    static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
+    static ref GET: Regex = Regex::new(r"^GET .* HTTP/1.1$").unwrap();
+    static ref POST: Regex = Regex::new(r"^POST .* HTTP/1.1$").unwrap();
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();
     static ref INFO: Regex = Regex::new(r" /info ").unwrap();
     static ref SYNC: Regex = Regex::new(r" /sync ").unwrap();
@@ -28,7 +28,7 @@ lazy_static! {
     static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
     static ref HEIGHT_BY_HASH: Regex = Regex::new(r" /height/[0-9A-Fa-f]* ").unwrap();
     static ref BLOCK_LATEST: Regex = Regex::new(r" /block/latest ").unwrap();
-    static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]+ ").unwrap();
+    static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]* ").unwrap();
     static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
     static ref STAKE_BY_HASH: Regex = Regex::new(r" /stake/[0-9A-Fa-f]* ").unwrap();
@@ -37,6 +37,7 @@ lazy_static! {
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
     static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&Stake::default()).unwrap()).len();
     static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
+    static ref PEER: Regex = Regex::new(r" /peer/.* ").unwrap();
 }
 pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<String, Box<dyn Error>> {
     let mut buffer = [0; 1024];
@@ -89,6 +90,8 @@ fn get(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
         get_stake_by_hash(node, first)
     } else if PEERS.is_match(first) {
         get_peers(node)
+    } else if PEER.is_match(first) {
+        get_peer(node, first)
     } else {
         c404()
     }
@@ -337,6 +340,15 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
 fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let peers = db::peer::get_all(&node.blockchain.db);
     Ok(json(serde_json::to_string(&peers)?))
+}
+fn get_peer(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
+    let str = first.get(9..).ok_or("multiaddr 1")?;
+    let str = str.get(..str.len() - 9).ok_or("multiaddr 2")?;
+    let multiaddr = str.parse::<Multiaddr>()?;
+    let multiaddr = multiaddr::filter_ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
+    let string = multiaddr.to_string();
+    node.unknown.insert(multiaddr);
+    Ok(text(string))
 }
 fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
     let transaction: Transaction = bincode::deserialize(&hex::decode(

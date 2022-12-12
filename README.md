@@ -6,6 +6,8 @@ It is recommended that you read through [The Technical Paper](https://github.com
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+```bash
 git clone https://github.com/peacash/peacash.git
 ```
 

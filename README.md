@@ -5,27 +5,30 @@ It is recommended that you read through [The Technical Paper](https://github.com
 ## Install
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-```bash
 git clone https://github.com/peacash/peacash.git
+cd peacash
 ```
 
 ### Dependencies
+
+#### Rust
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
 
 #### Arch
 
 ```bash
 sudo pacman -Sy
-sudo pacman -S cmake clang
+sudo pacman -S git cmake clang
 ```
 
 #### Debian
 
 ```bash
 sudo apt update
-sudo apt install cmake clang libssl-dev pkg-config
+sudo apt install git cmake clang libssl-dev pkg-config
 ```
 
 ## Contribute

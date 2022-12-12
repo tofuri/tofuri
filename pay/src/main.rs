@@ -37,7 +37,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value = ":::9331")]
     pub bind_api: String,
 }
-#[tokio::main]
+#[async_std::main]
 async fn main() {
     println!(
         "{} = {{ version = \"{}\" }}",

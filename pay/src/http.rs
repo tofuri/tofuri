@@ -1,10 +1,11 @@
 use crate::processor::PaymentProcessor;
-use colored::*;
+use async_std::{
+    io::{ReadExt, WriteExt},
+    net::TcpStream,
+};
 use lazy_static::lazy_static;
-use log::info;
 use regex::Regex;
 use std::{error::Error, io::BufRead};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 lazy_static! {
     static ref GET: Regex = Regex::new(r"^GET [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
     static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
@@ -13,23 +14,19 @@ lazy_static! {
     static ref CHARGE: Regex = Regex::new(r" /charge/[0-9A-Fa-f]* ").unwrap();
     static ref CHARGE_NEW: Regex = Regex::new(r" /charge/new/[0-9]* ").unwrap();
 }
-pub async fn next(listener: &tokio::net::TcpListener) -> Result<tokio::net::TcpStream, Box<dyn Error>> {
-    Ok(listener.accept().await?.0)
-}
-pub async fn handler(mut stream: tokio::net::TcpStream, payment_processor: &mut PaymentProcessor) -> Result<(), Box<dyn Error>> {
+pub async fn handler(mut stream: TcpStream, payment_processor: &mut PaymentProcessor) -> Result<String, Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
-    info!("{} {} {}", "API".cyan(), stream.peer_addr()?.to_string().magenta(), first);
     if GET.is_match(&first) {
         get(&mut stream, payment_processor, &first).await?;
     } else {
         c405(&mut stream).await?;
     };
     stream.flush().await?;
-    Ok(())
+    Ok(first)
 }
-async fn get(stream: &mut tokio::net::TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get(stream: &mut TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
     if INDEX.is_match(first) {
         get_index(stream).await?;
     } else if CHARGES.is_match(first) {
@@ -43,7 +40,7 @@ async fn get(stream: &mut tokio::net::TcpStream, payment_processor: &mut Payment
     };
     Ok(())
 }
-async fn get_index(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+async fn get_index(stream: &mut TcpStream) -> Result<(), Box<dyn Error>> {
     stream
         .write_all(
             format!(
@@ -63,7 +60,7 @@ Access-Control-Allow-Origin: *
         .await?;
     Ok(())
 }
-async fn get_charges(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor) -> Result<(), Box<dyn Error>> {
+async fn get_charges(stream: &mut TcpStream, payment_processor: &PaymentProcessor) -> Result<(), Box<dyn Error>> {
     stream
         .write_all(
             format!(
@@ -80,7 +77,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn get_charge(stream: &mut tokio::net::TcpStream, payment_processor: &PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_charge(stream: &mut TcpStream, payment_processor: &PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
     let hash = hex::decode(CHARGE.find(first).ok_or("GET CHARGE 1")?.as_str().trim().get(8..).ok_or("GET CHARGE 2")?)?;
     let payment = payment_processor.get_charge(&hash);
     stream
@@ -99,7 +96,7 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn get_charge_new(stream: &mut tokio::net::TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+async fn get_charge_new(stream: &mut TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
     let amount: u128 = CHARGE_NEW
         .find(first)
         .ok_or("GET CHARGE 1")?
@@ -125,11 +122,11 @@ Content-Type: application/json
         .await?;
     Ok(())
 }
-async fn c404(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+async fn c404(stream: &mut TcpStream) -> Result<(), Box<dyn Error>> {
     stream.write_all("HTTP/1.1 404 Not Found".as_bytes()).await?;
     Ok(())
 }
-async fn c405(stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
+async fn c405(stream: &mut TcpStream) -> Result<(), Box<dyn Error>> {
     stream.write_all("HTTP/1.1 405 Method Not Allowed".as_bytes()).await?;
     Ok(())
 }

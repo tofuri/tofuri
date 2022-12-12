@@ -12,7 +12,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value_t = false)]
     pub time_api: bool,
 }
-#[tokio::main]
+#[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "{} = {{ version = \"{}\" }}",

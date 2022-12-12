@@ -1,4 +1,5 @@
 use crate::http;
+use async_std::net::TcpListener;
 use colored::*;
 use futures::FutureExt;
 use log::{error, info};
@@ -20,7 +21,6 @@ use std::{
     time::{Duration, Instant},
 };
 use tempdir::TempDir;
-use tokio::net::TcpListener;
 pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,
@@ -206,7 +206,7 @@ impl PaymentProcessor {
         let secs = nanos / u;
         nanos -= secs * u;
         let nanos = (u - nanos) as u64;
-        tokio::time::sleep(Duration::from_nanos(nanos)).await
+        async_std::task::sleep(Duration::from_nanos(nanos)).await
     }
     pub async fn start(&mut self) {
         self.load();
@@ -217,16 +217,22 @@ impl PaymentProcessor {
             listener.local_addr().unwrap().to_string().magenta()
         );
         loop {
-            tokio::select! {
-                Ok(stream) = http::next(&listener).fuse() => if let Err(err) = http::handler(stream, self).await {
-                    error!("{}", err);
-                },
+            futures::select! {
                 _ = Self::next(self.tps).fuse() => match self.check().await {
                     Ok(vec) => if !vec.is_empty() {
                         info!("{:?}", vec);
-                    },
+                    }
                     Err(err) => error!("{}", err)
                 },
+                res = listener.accept().fuse() => match res {
+                    Ok((stream, socket_addr)) => {
+                        match http::handler(stream, self).await {
+                            Ok(first) => info!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), first),
+                            Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err)
+                        }
+                    }
+                    Err(err) => error!("{} {}", "API".cyan(), err)
+                }
             }
         }
     }

@@ -1,7 +1,7 @@
 use pea_api::get;
 use std::error::Error;
 const API: &str = "http://localhost:8080";
-#[tokio::main]
+#[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let height = get::height(API).await?;
     let hash = get::hash(API, &height).await?;

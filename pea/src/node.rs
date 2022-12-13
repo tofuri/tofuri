@@ -231,7 +231,7 @@ impl Node {
                 "0".red()
             }
         );
-        info!("Latest block seen {}", self.last().yellow());
+        info!("Latest block seen {}", self.last_seen().yellow());
         let multiaddr: Multiaddr = self.host.parse().unwrap();
         self.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());
@@ -319,7 +319,7 @@ impl Node {
             error!("{}", err);
         }
     }
-    pub fn last(&self) -> String {
+    pub fn last_seen(&self) -> String {
         if self.blockchain.states.dynamic.latest_block.timestamp == 0 {
             return "never".to_string();
         }
@@ -332,7 +332,7 @@ impl Node {
         }
         string
     }
-    pub fn sync(&self) -> String {
+    pub fn sync_status(&self) -> String {
         let completed = "completed";
         if self.blockchain.sync.completed {
             return completed.to_string();

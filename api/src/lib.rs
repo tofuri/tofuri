@@ -3,14 +3,9 @@ pub mod get {
     use std::error::Error;
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Sync {
-        pub sync: String,
-        pub last: String,
+        pub status: String,
         pub height: usize,
-        pub bps: f32,
-        pub downloading: bool,
-        pub completed: bool,
-        pub peers: usize,
-        pub index: usize,
+        pub last_seen: String,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct State {

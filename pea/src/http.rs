@@ -154,17 +154,12 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
     })?))
 }
 fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    let last = node.last();
-    let sync = node.sync();
+    let last = node.last_seen();
+    let status = node.sync_status();
     Ok(json(serde_json::to_string(&get::Sync {
-        sync,
-        last,
+        status,
         height: node.blockchain.height(),
-        bps: node.blockchain.sync.bps,
-        downloading: node.blockchain.sync.downloading(),
-        completed: node.blockchain.sync.completed,
-        peers: node.connections.len(),
-        index: node.blockchain.sync.index,
+        last_seen: last,
     })?))
 }
 fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {

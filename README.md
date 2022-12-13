@@ -49,7 +49,9 @@ Allow port `9333` in firewall.
 sudo ufw allow 9333
 ```
 
-Allow port `9332` in firewall (API).
+#### Optional
+
+Allow port `9332` in firewall (HTTP API).
 
 ```bash
 sudo ufw allow 9332

@@ -11,7 +11,6 @@ use libp2p::{
     identity,
     mdns::MdnsEvent,
     mplex, noise,
-    ping::Failure,
     swarm::{ConnectionHandlerUpgrErr, ConnectionLimits, SwarmBuilder, SwarmEvent},
     tcp,
     tcp::GenTcpConfig,
@@ -33,10 +32,7 @@ use std::{
 use tempdir::TempDir;
 use tokio::net::TcpListener;
 use void::Void;
-type HandlerErr = EitherError<
-    EitherError<EitherError<EitherError<EitherError<Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>,
-    Void,
->;
+type HandlerErr = EitherError<EitherError<EitherError<Void, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>;
 pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,

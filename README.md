@@ -26,14 +26,14 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 ```bash
 sudo pacman -Sy
-sudo pacman -S git cmake clang
+sudo pacman -S git cmake clang protobuf
 ```
 
 #### Debian-based Linux Distributions
 
 ```bash
 sudo apt update
-sudo apt install git cmake clang libssl-dev pkg-config
+sudo apt install git cmake clang libssl-dev pkg-config protobuf-compiler
 ```
 
 ### Configuration

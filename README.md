@@ -35,6 +35,26 @@ sudo apt update
 sudo apt install git cmake clang libssl-dev pkg-config
 ```
 
+### Configuration
+
+Synchronize system clock.
+
+```bash
+timedatectl set-ntp true
+```
+
+Allow port `9333` in firewall.
+
+```
+sudo ufw allow 9333
+```
+
+Allow port `9332` in firewall (`API`).
+
+```
+sudo ufw allow 9332
+```
+
 ## Contribute
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

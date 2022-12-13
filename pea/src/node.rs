@@ -245,9 +245,8 @@ impl Node {
             listener.local_addr().unwrap().to_string().magenta()
         );
         loop {
-            let mut s = heartbeat::timeout(self.tps, self.time.timestamp_micros()).fuse();
             futures::select! {
-                _ = s.select_next_some() => heartbeat::handler(self),
+                () = heartbeat::sleep(self.tps, self.time.timestamp_micros()).fuse() => heartbeat::handler(self),
                 event = self.swarm.select_next_some() => self.swarm_event(event),
                 res = listener.accept().fuse() => match res {
                     Ok((stream, socket_addr)) => {

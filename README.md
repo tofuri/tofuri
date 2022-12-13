@@ -14,6 +14,7 @@ cargo run --bin pea
 
 * [LLVM](https://github.com/llvm/llvm-project/releases)
 * [CMake](https://github.com/Kitware/CMake/releases)
+* [Protocol Buffers](https://github.com/protocolbuffers/protobuf/releases)
 
 #### [Rustup.rs](https://rustup.rs/) - The Rust toolchain installer
 

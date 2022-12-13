@@ -4,16 +4,17 @@ use crate::{
     gossipsub, heartbeat, http, multiaddr,
 };
 use colored::*;
-use libp2p::futures::StreamExt;
 use libp2p::{
     core::{connection::ConnectedPoint, either::EitherError, upgrade},
+    futures::StreamExt,
     gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic, TopicHash},
     identity,
     mdns::MdnsEvent,
     mplex, noise,
     ping::Failure,
     swarm::{ConnectionHandlerUpgrErr, ConnectionLimits, SwarmBuilder, SwarmEvent},
-    tcp::TcpConfig,
+    tcp,
+    tcp::GenTcpConfig,
     Multiaddr, PeerId, Swarm, Transport,
 };
 use log::{debug, error, info, warn};
@@ -31,8 +32,11 @@ use std::{
 };
 use tempdir::TempDir;
 use tokio::net::TcpListener;
-type HandlerErr =
-    EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>;
+use void::Void;
+type HandlerErr = EitherError<
+    EitherError<EitherError<EitherError<EitherError<Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>,
+    Void,
+>;
 pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,
@@ -119,13 +123,10 @@ impl Node {
     async fn swarm(max_established: Option<u32>) -> Result<Swarm<Behaviour>, Box<dyn Error>> {
         let local_key = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(local_key.public());
-        let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
-            .into_authentic(&local_key)
-            .expect("Signing libp2p-noise static DH keypair failed.");
-        let transport = TcpConfig::new()
-            .nodelay(true)
+        info!("Peer id {}", local_peer_id.to_string().cyan());
+        let transport = tcp::TokioTcpTransport::new(GenTcpConfig::new())
             .upgrade(upgrade::Version::V1)
-            .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
+            .authenticate(noise::NoiseAuthenticated::xx(&local_key).expect("Signing libp2p-noise static DH keypair failed."))
             .multiplex(mplex::MplexConfig::new())
             .boxed();
         let mut behaviour = Behaviour::new(local_key).await?;

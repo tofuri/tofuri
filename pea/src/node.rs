@@ -244,9 +244,10 @@ impl Node {
             "http://".cyan(),
             listener.local_addr().unwrap().to_string().magenta()
         );
+        let mut interval = async_std::stream::interval(Duration::from_micros(util::micros_per_tick(self.tps))).fuse();
         loop {
             futures::select! {
-                () = util::sleep(self.tps, self.time.timestamp_micros()).fuse() => heartbeat::handler(self),
+                () = interval.select_next_some() => heartbeat::handler(self),
                 event = self.swarm.select_next_some() => self.swarm_event(event),
                 res = listener.accept().fuse() => match res {
                     Ok((stream, socket_addr)) => {

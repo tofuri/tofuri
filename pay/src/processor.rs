@@ -1,7 +1,7 @@
 use crate::http;
 use async_std::net::TcpListener;
 use colored::*;
-use futures::FutureExt;
+use futures::{FutureExt, StreamExt};
 use log::{error, info};
 use pea_address as address;
 use pea_api::{
@@ -15,7 +15,11 @@ use pea_pay_db as db;
 use pea_transaction::Transaction;
 use pea_wallet::Wallet;
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
-use std::{collections::HashMap, error::Error, time::Instant};
+use std::{
+    collections::HashMap,
+    error::Error,
+    time::{Duration, Instant},
+};
 use tempdir::TempDir;
 pub struct Options<'a> {
     pub tempdb: bool,
@@ -203,9 +207,10 @@ impl PaymentProcessor {
             "http://".cyan(),
             listener.local_addr().unwrap().to_string().magenta()
         );
+        let mut interval = async_std::stream::interval(Duration::from_micros(util::micros_per_tick(self.tps))).fuse();
         loop {
             futures::select! {
-                () = util::sleep(self.tps, chrono::offset::Utc::now().timestamp_micros() as u64).fuse() => match self.check().await {
+                () = interval.select_next_some() => match self.check().await {
                     Ok(vec) => if !vec.is_empty() {
                         info!("{:?}", vec);
                     }

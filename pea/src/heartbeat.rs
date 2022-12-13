@@ -3,12 +3,13 @@ use colored::*;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
 use pea_block::Block;
-use pea_core::{constants::SYNC_BLOCKS_PER_TICK, util};
-use std::time::Duration;
+use pea_core::constants::SYNC_BLOCKS_PER_TICK;
+use std::time::{Duration, Instant};
 fn delay(node: &mut Node, seconds: usize) -> bool {
     (node.heartbeats as f64 % (node.tps * seconds as f64)) as usize == 0
 }
 pub fn handler(node: &mut Node) {
+    let start = Instant::now();
     let timestamp = node.time.timestamp_secs();
     if delay(node, 60) {
         dial_known(node);
@@ -30,7 +31,7 @@ pub fn handler(node: &mut Node) {
     grow(node, timestamp);
     sync(node);
     node.heartbeats += 1;
-    lag(node);
+    lag(node, start.elapsed());
 }
 fn pending_blocks(node: &mut Node, timestamp: u32) {
     let drain = node.blockchain.pending_blocks.drain(..);
@@ -144,13 +145,7 @@ fn sync(node: &mut Node) {
     }
     node.gossipsub_publish("blocks", bincode::serialize(&vec).unwrap())
 }
-fn lag(node: &mut Node) {
-    let micros = util::micros_since_last_tick(node.tps, node.time.timestamp_micros());
-    node.lag = micros as f64 / 1_000_f64;
-    debug!(
-        "{} {} {}",
-        "Heartbeat".cyan(),
-        node.heartbeats,
-        format!("{:?}", Duration::from_micros(micros)).yellow()
-    );
+fn lag(node: &mut Node, duration: Duration) {
+    node.lag = duration.as_micros() as f64 / 1_000_f64;
+    debug!("{} {} {}", "Heartbeat".cyan(), node.heartbeats, format!("{:?}", duration).yellow());
 }

@@ -15,11 +15,7 @@ use pea_pay_db as db;
 use pea_transaction::Transaction;
 use pea_wallet::Wallet;
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
-use std::{
-    collections::HashMap,
-    error::Error,
-    time::{Duration, Instant},
-};
+use std::{collections::HashMap, error::Error, time::Instant};
 use tempdir::TempDir;
 pub struct Options<'a> {
     pub tempdb: bool,
@@ -199,15 +195,6 @@ impl PaymentProcessor {
         }
         Ok(())
     }
-    async fn next(tps: f64) {
-        let f = 1_f64 / tps;
-        let u = (f * 1_000_000_000_f64) as u128;
-        let mut nanos = chrono::offset::Utc::now().timestamp_nanos() as u128;
-        let secs = nanos / u;
-        nanos -= secs * u;
-        let nanos = (u - nanos) as u64;
-        async_std::task::sleep(Duration::from_nanos(nanos)).await
-    }
     pub async fn start(&mut self) {
         self.load();
         let listener = TcpListener::bind(&self.bind_api).await.unwrap();
@@ -218,7 +205,7 @@ impl PaymentProcessor {
         );
         loop {
             futures::select! {
-                _ = Self::next(self.tps).fuse() => match self.check().await {
+                () = util::sleep(self.tps, chrono::offset::Utc::now().timestamp_micros() as u64).fuse() => match self.check().await {
                     Ok(vec) => if !vec.is_empty() {
                         info!("{:?}", vec);
                     }

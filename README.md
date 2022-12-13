@@ -45,13 +45,13 @@ timedatectl set-ntp true
 
 Allow port `9333` in firewall.
 
-```
+```bash
 sudo ufw allow 9333
 ```
 
 Allow port `9332` in firewall (`API`).
 
-```
+```bash
 sudo ufw allow 9332
 ```
 

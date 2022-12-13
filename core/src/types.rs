@@ -20,12 +20,25 @@ impl Merge for Hasher {
 pub type CBMT = ExCBMT<[u8; 32], Hasher>;
 pub mod api {
     use serde::{Deserialize, Serialize};
+    pub type Index = String;
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Info {
+        pub time: String,
+        pub public_key: String,
+        pub uptime: String,
+        pub heartbeats: usize,
+        pub tree_size: usize,
+        pub lag: f64,
+    }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Sync {
         pub status: String,
         pub height: usize,
         pub last_seen: String,
     }
+    pub type Height = usize;
+    pub type Amount = u128;
+    pub type Hash = String;
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct State {
         pub balance: u128,
@@ -49,15 +62,6 @@ pub mod api {
         pub bind_api: String,
         pub host: String,
         pub dev: bool,
-    }
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct Data {
-        pub time: String,
-        pub public_key: String,
-        pub uptime: String,
-        pub heartbeats: usize,
-        pub tree_size: usize,
-        pub lag: f64,
     }
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Block {

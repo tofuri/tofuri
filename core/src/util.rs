@@ -7,6 +7,7 @@ use std::{
     fs::File,
     io::{BufRead, BufReader},
     path::Path,
+    time::Duration,
 };
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
@@ -21,6 +22,22 @@ pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>>
 }
 pub fn reward(balance_staked: u128) -> u128 {
     ((2f64.powf((balance_staked as f64 / COIN as f64) / MIN_STAKE_MULTIPLIER as f64) - 1f64) * COIN as f64) as u128
+}
+fn micros_per_tick(tps: f64) -> u64 {
+    let secs = 1_f64 / tps;
+    (secs * 1_000_000_f64) as u64
+}
+pub fn micros_since_last_tick(tps: f64, timestamp: u64) -> u64 {
+    let micros = micros_per_tick(tps);
+    let ticks = timestamp / micros;
+    timestamp - ticks * micros
+}
+pub fn micros_until_next_tick(tps: f64, timestamp: u64) -> u64 {
+    micros_per_tick(tps) - micros_since_last_tick(tps, timestamp)
+}
+pub async fn sleep(tps: f64, timestamp: u64) {
+    let duration = Duration::from_micros(micros_until_next_tick(tps, timestamp));
+    async_std::task::sleep(duration).await;
 }
 pub fn duration_to_string(seconds: u32, now: &str) -> String {
     if seconds == 0 {

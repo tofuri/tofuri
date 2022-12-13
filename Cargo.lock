@@ -2893,6 +2893,7 @@ dependencies = [
 name = "pea-core"
 version = "0.3.1"
 dependencies = [
+ "async-std",
  "bincode",
  "blake3",
  "chrono",

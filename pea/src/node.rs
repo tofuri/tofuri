@@ -246,7 +246,7 @@ impl Node {
         );
         loop {
             futures::select! {
-                () = heartbeat::sleep(self.tps, self.time.timestamp_micros()).fuse() => heartbeat::handler(self),
+                () = util::sleep(self.tps, self.time.timestamp_micros()).fuse() => heartbeat::handler(self),
                 event = self.swarm.select_next_some() => self.swarm_event(event),
                 res = listener.accept().fuse() => match res {
                     Ok((stream, socket_addr)) => {

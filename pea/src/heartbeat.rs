@@ -3,12 +3,8 @@ use colored::*;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
 use pea_block::Block;
-use pea_core::constants::SYNC_BLOCKS_PER_TICK;
+use pea_core::{constants::SYNC_BLOCKS_PER_TICK, util};
 use std::time::Duration;
-pub async fn sleep(tps: f64, timestamp: u64) {
-    let duration = Duration::from_micros(micros_until_next_tick(tps, timestamp));
-    async_std::task::sleep(duration).await;
-}
 fn delay(node: &mut Node, seconds: usize) -> bool {
     (node.heartbeats as f64 % (node.tps * seconds as f64)) as usize == 0
 }
@@ -148,18 +144,8 @@ fn sync(node: &mut Node) {
     }
     node.gossipsub_publish("blocks", bincode::serialize(&vec).unwrap())
 }
-fn micros_until_next_tick(tps: f64, timestamp: u64) -> u64 {
-    let f = 1_f64 / tps;
-    let u = (f * 1_000_000_f64) as u64;
-    let mut micros = timestamp;
-    let secs = micros / u;
-    micros -= secs * u;
-    (u - micros) as u64
-}
 fn lag(node: &mut Node) {
-    let f = 1_f64 / node.tps;
-    let u = (f * 1_000_000_f64) as u64;
-    let micros = u - micros_until_next_tick(node.tps, node.time.timestamp_micros());
+    let micros = util::micros_since_last_tick(node.tps, node.time.timestamp_micros());
     node.lag = micros as f64 / 1_000_f64;
     debug!(
         "{} {} {}",

@@ -2333,12 +2333,10 @@ dependencies = [
  "bincode",
  "hex",
  "pea-core",
- "pea-int",
  "pea-stake",
  "pea-transaction",
  "reqwest",
  "serde",
- "tokio",
 ]
 
 [[package]]

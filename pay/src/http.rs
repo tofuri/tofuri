@@ -7,8 +7,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::{error::Error, io::BufRead};
 lazy_static! {
-    static ref GET: Regex = Regex::new(r"^GET [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
-    static ref POST: Regex = Regex::new(r"^POST [/_0-9A-Za-z]+ HTTP/1.1$").unwrap();
+    static ref GET: Regex = Regex::new(r"^GET .* HTTP/1.1$").unwrap();
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();
     static ref CHARGES: Regex = Regex::new(r" /charges ").unwrap();
     static ref CHARGE: Regex = Regex::new(r" /charge/[0-9A-Fa-f]* ").unwrap();
@@ -18,85 +17,68 @@ pub async fn handler(mut stream: TcpStream, payment_processor: &mut PaymentProce
     let mut buffer = [0; 1024];
     let _ = stream.read(&mut buffer).await?;
     let first = buffer.lines().next().ok_or("http request first line")??;
-    if GET.is_match(&first) {
-        get(&mut stream, payment_processor, &first).await?;
-    } else {
-        c405(&mut stream).await?;
-    };
+    write(&mut stream, if GET.is_match(&first) { get(payment_processor, &first) } else { c405() }?).await?;
     stream.flush().await?;
     Ok(first)
 }
-async fn get(stream: &mut TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+fn get(payment_processor: &mut PaymentProcessor, first: &str) -> Result<String, Box<dyn Error>> {
     if INDEX.is_match(first) {
-        get_index(stream).await?;
+        get_index()
     } else if CHARGES.is_match(first) {
-        get_charges(stream, payment_processor).await?;
+        get_charges(payment_processor)
     } else if CHARGE.is_match(first) {
-        get_charge(stream, payment_processor, first).await?;
+        get_charge(payment_processor, first)
     } else if CHARGE_NEW.is_match(first) {
-        get_charge_new(stream, payment_processor, first).await?;
+        get_charge_new(payment_processor, first)
     } else {
-        c404(stream).await?;
-    };
+        c404()
+    }
+}
+async fn write(stream: &mut TcpStream, string: String) -> Result<(), Box<dyn Error>> {
+    stream.write_all(string.as_bytes()).await?;
     Ok(())
 }
-async fn get_index(stream: &mut TcpStream) -> Result<(), Box<dyn Error>> {
-    stream
-        .write_all(
-            format!(
-                "\
+fn json(string: String) -> String {
+    format!(
+        "\
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+
+{}",
+        string
+    )
+}
+fn text(string: String) -> String {
+    format!(
+        "\
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 
+{}",
+        string
+    )
+}
+fn get_index() -> Result<String, Box<dyn Error>> {
+    Ok(text(format!(
+        "\
 {} = {{ version = \"{}\" }}
 {}/tree/{}",
-                env!("CARGO_PKG_NAME"),
-                env!("CARGO_PKG_VERSION"),
-                env!("CARGO_PKG_REPOSITORY"),
-                env!("GIT_HASH"),
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+        env!("CARGO_PKG_REPOSITORY"),
+        env!("GIT_HASH"),
+    )))
 }
-async fn get_charges(stream: &mut TcpStream, payment_processor: &PaymentProcessor) -> Result<(), Box<dyn Error>> {
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&payment_processor.get_charges())?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+fn get_charges(payment_processor: &PaymentProcessor) -> Result<String, Box<dyn Error>> {
+    Ok(json(serde_json::to_string(&payment_processor.get_charges())?))
 }
-async fn get_charge(stream: &mut TcpStream, payment_processor: &PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+fn get_charge(payment_processor: &PaymentProcessor, first: &str) -> Result<String, Box<dyn Error>> {
     let hash = hex::decode(CHARGE.find(first).ok_or("GET CHARGE 1")?.as_str().trim().get(8..).ok_or("GET CHARGE 2")?)?;
     let payment = payment_processor.get_charge(&hash);
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&payment)?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&payment)?))
 }
-async fn get_charge_new(stream: &mut TcpStream, payment_processor: &mut PaymentProcessor, first: &str) -> Result<(), Box<dyn Error>> {
+fn get_charge_new(payment_processor: &mut PaymentProcessor, first: &str) -> Result<String, Box<dyn Error>> {
     let amount: u128 = CHARGE_NEW
         .find(first)
         .ok_or("GET CHARGE 1")?
@@ -106,27 +88,11 @@ async fn get_charge_new(stream: &mut TcpStream, payment_processor: &mut PaymentP
         .ok_or("GET CHARGE 2")?
         .parse()?;
     let (hash, payment) = payment_processor.charge(amount);
-    stream
-        .write_all(
-            format!(
-                "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{}",
-                serde_json::to_string(&(hash, payment))?
-            )
-            .as_bytes(),
-        )
-        .await?;
-    Ok(())
+    Ok(json(serde_json::to_string(&(hash, payment))?))
 }
-async fn c404(stream: &mut TcpStream) -> Result<(), Box<dyn Error>> {
-    stream.write_all("HTTP/1.1 404 Not Found".as_bytes()).await?;
-    Ok(())
+fn c404() -> Result<String, Box<dyn Error>> {
+    Ok("HTTP/1.1 404 Not Found".to_string())
 }
-async fn c405(stream: &mut TcpStream) -> Result<(), Box<dyn Error>> {
-    stream.write_all("HTTP/1.1 405 Method Not Allowed".as_bytes()).await?;
-    Ok(())
+fn c405() -> Result<String, Box<dyn Error>> {
+    Ok("HTTP/1.1 405 Method Not Allowed".to_string())
 }

@@ -4,12 +4,11 @@ use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
 use pea_block::Block;
 use pea_core::constants::SYNC_BLOCKS_PER_TICK;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
     (node.heartbeats as f64 % (node.tps * seconds as f64)) as usize == 0
 }
-pub fn handler(node: &mut Node) {
-    let start = Instant::now();
+pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     let timestamp = node.time.timestamp_secs();
     if delay(node, 60) {
         dial_known(node);
@@ -31,7 +30,7 @@ pub fn handler(node: &mut Node) {
     grow(node, timestamp);
     sync(node);
     node.heartbeats += 1;
-    lag(node, start.elapsed());
+    lag(node, instant.elapsed());
 }
 fn pending_blocks(node: &mut Node, timestamp: u32) {
     let drain = node.blockchain.pending_blocks.drain(..);

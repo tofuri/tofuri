@@ -1,11 +1,11 @@
 use crate::processor::PaymentProcessor;
-use async_std::{
-    io::{ReadExt, WriteExt},
-    net::TcpStream,
-};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::{error::Error, io::BufRead};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
+};
 lazy_static! {
     static ref GET: Regex = Regex::new(r"^GET .* HTTP/1.1$").unwrap();
     static ref INDEX: Regex = Regex::new(r" / ").unwrap();

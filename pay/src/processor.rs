@@ -1,7 +1,6 @@
 use crate::http;
-use async_std::net::TcpListener;
 use colored::*;
-use futures::{FutureExt, StreamExt};
+use futures::FutureExt;
 use log::{error, info};
 use pea_address as address;
 use pea_api::{
@@ -21,6 +20,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tempdir::TempDir;
+use tokio::net::TcpListener;
 pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,
@@ -207,10 +207,10 @@ impl PaymentProcessor {
             "http://".cyan(),
             listener.local_addr().unwrap().to_string().magenta()
         );
-        let mut interval = async_std::stream::interval(Duration::from_micros(util::micros_per_tick(self.tps))).fuse();
+        let mut interval = tokio::time::interval(Duration::from_micros(util::micros_per_tick(self.tps)));
         loop {
-            futures::select! {
-                () = interval.select_next_some() => match self.check().await {
+            tokio::select! {
+                _ = interval.tick() => match self.check().await {
                     Ok(vec) => if !vec.is_empty() {
                         info!("{:?}", vec);
                     }

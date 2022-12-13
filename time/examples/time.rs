@@ -1,5 +1,5 @@
 use pea_time::Time;
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     let mut time = Time::new();
     println!("Success {}", time.sync().await);

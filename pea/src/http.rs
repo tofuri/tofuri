@@ -1,8 +1,4 @@
 use crate::{multiaddr, node::Node};
-use async_std::{
-    io::{ReadExt, WriteExt},
-    net::TcpStream,
-};
 use chrono::{TimeZone, Utc};
 use lazy_static::lazy_static;
 use libp2p::Multiaddr;
@@ -14,6 +10,10 @@ use pea_stake::Stake;
 use pea_transaction::Transaction;
 use regex::Regex;
 use std::{error::Error, io::BufRead};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
+};
 lazy_static! {
     static ref GET: Regex = Regex::new(r"^GET .* HTTP/1.1$").unwrap();
     static ref POST: Regex = Regex::new(r"^POST .* HTTP/1.1$").unwrap();

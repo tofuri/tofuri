@@ -3,9 +3,8 @@ use crate::{
     blockchain::Blockchain,
     gossipsub, heartbeat, http, multiaddr,
 };
-use async_std::net::TcpListener;
 use colored::*;
-use futures::{FutureExt, StreamExt};
+use libp2p::futures::StreamExt;
 use libp2p::{
     core::{connection::ConnectedPoint, either::EitherError, upgrade},
     gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic, TopicHash},
@@ -31,6 +30,7 @@ use std::{
     time::Duration,
 };
 use tempdir::TempDir;
+use tokio::net::TcpListener;
 type HandlerErr =
     EitherError<EitherError<EitherError<EitherError<void::Void, Failure>, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>;
 pub struct Options<'a> {
@@ -145,7 +145,7 @@ impl Node {
         limits = limits.with_max_established(max_established);
         Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
             .executor(Box::new(|fut| {
-                async_std::task::spawn(fut);
+                tokio::task::spawn(fut);
             }))
             .connection_limits(limits)
             .build())
@@ -244,12 +244,12 @@ impl Node {
             "http://".cyan(),
             listener.local_addr().unwrap().to_string().magenta()
         );
-        let mut interval = async_std::stream::interval(Duration::from_micros(util::micros_per_tick(self.tps))).fuse();
+        let mut interval = tokio::time::interval(Duration::from_micros(util::micros_per_tick(self.tps)));
         loop {
-            futures::select! {
-                () = interval.select_next_some() => heartbeat::handler(self),
+            tokio::select! {
+                instant = interval.tick() => heartbeat::handler(self, instant),
                 event = self.swarm.select_next_some() => self.swarm_event(event),
-                res = listener.accept().fuse() => match res {
+                res = listener.accept() => match res {
                     Ok((stream, socket_addr)) => {
                         match http::handler(stream, self).await {
                             Ok(first) => info!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), first),

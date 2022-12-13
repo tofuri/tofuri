@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use libp2p::Multiaddr;
 use log::error;
 use pea_address as address;
-use pea_api::get;
+use pea_core::types;
 use pea_db as db;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
@@ -144,7 +144,7 @@ fn get_index() -> Result<String, Box<dyn Error>> {
 fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let timestamp = (node.time.timestamp_micros() * 1_000) as i64;
     let datetime = Utc.timestamp_nanos(timestamp);
-    Ok(json(serde_json::to_string(&get::Data {
+    Ok(json(serde_json::to_string(&types::api::Data {
         time: datetime.to_rfc2822(),
         public_key: node.blockchain.key.public(),
         uptime: format!("{}", node.uptime()),
@@ -156,7 +156,7 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
 fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let last = node.last_seen();
     let status = node.sync_status();
-    Ok(json(serde_json::to_string(&get::Sync {
+    Ok(json(serde_json::to_string(&types::api::Sync {
         status,
         height: node.blockchain.height(),
         last_seen: last,
@@ -164,7 +164,7 @@ fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
 }
 fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
-    Ok(json(serde_json::to_string(&get::State {
+    Ok(json(serde_json::to_string(&types::api::State {
         balance: dynamic.balance(&node.blockchain.key.public_key_bytes()),
         balance_staked: dynamic.balance_staked(&node.blockchain.key.public_key_bytes()),
         hashes: dynamic.hashes.len(),
@@ -174,7 +174,7 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
 }
 fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
-    Ok(json(serde_json::to_string(&get::State {
+    Ok(json(serde_json::to_string(&types::api::State {
         balance: trusted.balance(&node.blockchain.key.public_key_bytes()),
         balance_staked: trusted.balance_staked(&node.blockchain.key.public_key_bytes()),
         hashes: trusted.hashes.len(),
@@ -183,7 +183,7 @@ fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     })?))
 }
 fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    Ok(json(serde_json::to_string(&get::Options {
+    Ok(json(serde_json::to_string(&types::api::Options {
         mint: node.mint,
         trust: node.blockchain.trust_fork_after_blocks,
         pending: node.blockchain.pending_blocks_limit,
@@ -237,7 +237,7 @@ fn get_height_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Er
 }
 fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let block = &node.blockchain.states.dynamic.latest_block;
-    Ok(json(serde_json::to_string(&get::Block {
+    Ok(json(serde_json::to_string(&types::api::Block {
         hash: hex::encode(block.hash()),
         previous_hash: hex::encode(block.previous_hash),
         timestamp: block.timestamp,
@@ -280,7 +280,7 @@ fn get_block_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
             .ok_or("GET BLOCK_BY_HASH 2")?,
     )?;
     let block = db::block::get(&node.blockchain.db, &hash)?;
-    Ok(json(serde_json::to_string(&get::Block {
+    Ok(json(serde_json::to_string(&types::api::Block {
         hash: hex::encode(block.hash()),
         previous_hash: hex::encode(block.previous_hash),
         timestamp: block.timestamp,
@@ -301,7 +301,7 @@ fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<d
             .ok_or("GET TRANSACTION_BY_HASH 2")?,
     )?;
     let transaction = db::transaction::get(&node.blockchain.db, &hash)?;
-    Ok(json(serde_json::to_string(&get::Transaction {
+    Ok(json(serde_json::to_string(&types::api::Transaction {
         hash: hex::encode(transaction.hash()),
         public_key_input: address::public::encode(&transaction.public_key_input),
         public_key_output: address::public::encode(&transaction.public_key_output),
@@ -322,7 +322,7 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
             .ok_or("GET STAKE_BY_HASH 2")?,
     )?;
     let stake = db::stake::get(&node.blockchain.db, &hash)?;
-    Ok(json(serde_json::to_string(&get::Stake {
+    Ok(json(serde_json::to_string(&types::api::Stake {
         hash: hex::encode(stake.hash()),
         public_key: address::public::encode(&stake.public_key),
         amount: stake.amount,

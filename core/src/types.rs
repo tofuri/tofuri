@@ -18,3 +18,75 @@ impl Merge for Hasher {
     }
 }
 pub type CBMT = ExCBMT<[u8; 32], Hasher>;
+pub mod api {
+    use serde::{Deserialize, Serialize};
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Sync {
+        pub status: String,
+        pub height: usize,
+        pub last_seen: String,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct State {
+        pub balance: u128,
+        pub balance_staked: u128,
+        pub hashes: usize,
+        pub latest_hashes: Vec<String>,
+        pub stakers: Vec<String>,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Options {
+        pub mint: bool,
+        pub tempdb: bool,
+        pub tempkey: bool,
+        pub time_api: bool,
+        pub trust: usize,
+        pub pending: usize,
+        pub ban_offline: usize,
+        pub time_delta: u32,
+        pub max_established: Option<u32>,
+        pub tps: f64,
+        pub bind_api: String,
+        pub host: String,
+        pub dev: bool,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Data {
+        pub time: String,
+        pub public_key: String,
+        pub uptime: String,
+        pub heartbeats: usize,
+        pub tree_size: usize,
+        pub lag: f64,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Block {
+        pub hash: String,
+        pub previous_hash: String,
+        pub timestamp: u32,
+        pub public_key: String,
+        pub signature: String,
+        pub transactions: Vec<String>,
+        pub stakes: Vec<String>,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Transaction {
+        pub hash: String,
+        pub public_key_input: String,
+        pub public_key_output: String,
+        pub amount: u128,
+        pub fee: u128,
+        pub timestamp: u32,
+        pub signature: String,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Stake {
+        pub hash: String,
+        pub public_key: String,
+        pub amount: u128,
+        pub deposit: bool,
+        pub fee: u128,
+        pub timestamp: u32,
+        pub signature: String,
+    }
+}

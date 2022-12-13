@@ -4,7 +4,7 @@ use futures::FutureExt;
 use log::{error, info};
 use pea_address as address;
 use pea_api::{
-    get::{self, Block},
+    get::{self},
     post,
 };
 use pea_core::{types, util};
@@ -42,7 +42,7 @@ pub struct PaymentProcessor {
     pub tps: f64,
     // charges: HashMap<usize, Charge>,
     charges: HashMap<types::Hash, Charge>,
-    chain: Vec<Block>,
+    chain: Vec<types::api::Block>,
     subkey: usize,
 }
 impl PaymentProcessor {

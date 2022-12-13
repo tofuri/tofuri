@@ -12,6 +12,9 @@ cargo run --bin pea
 
 ### Dependencies
 
+* [LLVM](https://github.com/llvm/llvm-project/releases)
+* [CMake](https://github.com/Kitware/CMake/releases)
+
 #### [Rustup.rs](https://rustup.rs/) - The Rust toolchain installer
 
 ```bash

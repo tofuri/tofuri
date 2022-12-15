@@ -46,6 +46,7 @@ pub struct Options<'a> {
     pub bind_api: String,
     pub host: String,
     pub dev: bool,
+    pub timeout: u64,
 }
 pub struct Node {
     pub swarm: Swarm<Behaviour>,
@@ -67,6 +68,7 @@ pub struct Node {
     pub time: Time,
     pub time_api: bool,
     pub dev: bool,
+    pub timeout: u64,
 }
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
@@ -74,7 +76,7 @@ impl Node {
         info!("PubKey is {}", address::public::encode(&wallet.key.public_key_bytes()).green());
         let db = Node::db(options.tempdb);
         let blockchain = Blockchain::new(db, wallet.key, options.trust, options.pending, options.time_delta);
-        let swarm = Node::swarm(options.max_established).await.unwrap();
+        let swarm = Node::swarm(options.max_established, options.timeout).await.unwrap();
         let known = Node::known(&blockchain.db, options.peer);
         Node {
             swarm,
@@ -96,6 +98,7 @@ impl Node {
             time: Time::new(),
             time_api: options.time_api,
             dev: options.dev,
+            timeout: options.timeout,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {
@@ -112,7 +115,7 @@ impl Node {
             false => Wallet::import(wallet, passphrase).unwrap(),
         }
     }
-    async fn swarm(max_established: Option<u32>) -> Result<Swarm<Behaviour>, Box<dyn Error>> {
+    async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Box<dyn Error>> {
         let local_key = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(local_key.public());
         info!("Peer id {}", local_peer_id.to_string().cyan());
@@ -120,6 +123,7 @@ impl Node {
             .upgrade(upgrade::Version::V1)
             .authenticate(noise::NoiseAuthenticated::xx(&local_key).expect("Signing libp2p-noise static DH keypair failed."))
             .multiplex(mplex::MplexConfig::new())
+            .timeout(Duration::from_millis(timeout))
             .boxed();
         let mut behaviour = Behaviour::new(local_key).await?;
         for ident_topic in [
@@ -242,7 +246,7 @@ impl Node {
                 res = listener.accept() => match res {
                     Ok((stream, socket_addr)) => {
                         match http::handler(stream, self).await {
-                            Ok(first) => info!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), first),
+                            Ok((bytes, first)) => info!("{} {} {} {}", "API".cyan(), socket_addr.to_string().magenta(), bytes.to_string().yellow(), first),
                             Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err)
                         }
                     }

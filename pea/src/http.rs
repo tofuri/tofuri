@@ -9,10 +9,11 @@ use pea_db as db;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
 use regex::Regex;
-use std::{error::Error, io::BufRead};
+use std::{error::Error, io::BufRead, time::Duration};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
+    time::timeout,
 };
 lazy_static! {
     static ref GET: Regex = Regex::new(r"^GET .* HTTP/1.1$").unwrap();
@@ -39,9 +40,9 @@ lazy_static! {
     static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
     static ref PEER: Regex = Regex::new(r" /peer/.* ").unwrap();
 }
-pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<String, Box<dyn Error>> {
+pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, String), Box<dyn Error>> {
     let mut buffer = [0; 1024];
-    let _ = stream.read(&mut buffer).await?;
+    let bytes = timeout(Duration::from_millis(node.timeout), stream.read(&mut buffer)).await??;
     let first = buffer.lines().next().ok_or("http request first line")??;
     write(
         &mut stream,
@@ -55,7 +56,7 @@ pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<String, B
     )
     .await?;
     stream.flush().await?;
-    Ok(first)
+    Ok((bytes, first))
 }
 fn get(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     if INDEX.is_match(first) {

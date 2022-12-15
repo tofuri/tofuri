@@ -65,6 +65,9 @@ pub struct Args {
     /// Development mode
     #[clap(long, value_parser, default_value_t = false)]
     pub dev: bool,
+    /// Timeout
+    #[clap(long, value_parser, default_value = "300")]
+    pub timeout: u64,
 }
 #[tokio::main]
 async fn main() {
@@ -125,6 +128,7 @@ async fn main() {
         bind_api: args.bind_api,
         host: args.host,
         dev: args.dev,
+        timeout: args.timeout,
     })
     .await;
     node.start().await;

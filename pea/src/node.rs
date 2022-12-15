@@ -8,13 +8,9 @@ use libp2p::{
     core::{connection::ConnectedPoint, either::EitherError, upgrade},
     futures::StreamExt,
     gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic, TopicHash},
-    identity,
-    mdns::MdnsEvent,
-    mplex, noise,
+    identity, mdns, mplex, noise,
     swarm::{ConnectionHandlerUpgrErr, ConnectionLimits, SwarmBuilder, SwarmEvent},
-    tcp,
-    tcp::GenTcpConfig,
-    Multiaddr, PeerId, Swarm, Transport,
+    tcp, Multiaddr, PeerId, Swarm, Transport,
 };
 use log::{debug, error, info, warn};
 use pea_address as address;
@@ -120,7 +116,7 @@ impl Node {
         let local_key = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(local_key.public());
         info!("Peer id {}", local_peer_id.to_string().cyan());
-        let transport = tcp::TokioTcpTransport::new(GenTcpConfig::new())
+        let transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true))
             .upgrade(upgrade::Version::V1)
             .authenticate(noise::NoiseAuthenticated::xx(&local_key).expect("Signing libp2p-noise static DH keypair failed."))
             .multiplex(mplex::MplexConfig::new())
@@ -140,10 +136,7 @@ impl Node {
         let mut limits = ConnectionLimits::default();
         limits = limits.with_max_established_per_peer(Some(1));
         limits = limits.with_max_established(max_established);
-        Ok(SwarmBuilder::new(transport, behaviour, local_peer_id)
-            .executor(Box::new(|fut| {
-                tokio::task::spawn(fut);
-            }))
+        Ok(SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id)
             .connection_limits(limits)
             .build())
     }
@@ -184,7 +177,7 @@ impl Node {
             SwarmEvent::ConnectionClosed { endpoint, num_established, .. } => {
                 Self::connection_closed(self, endpoint, num_established);
             }
-            SwarmEvent::Behaviour(OutEvent::Mdns(MdnsEvent::Discovered(list))) => {
+            SwarmEvent::Behaviour(OutEvent::Mdns(mdns::Event::Discovered(list))) => {
                 for (_, multiaddr) in list {
                     if let Some(multiaddr) = multiaddr::filter_ip_port(&multiaddr) {
                         self.unknown.insert(multiaddr);

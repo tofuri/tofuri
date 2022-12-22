@@ -33,22 +33,9 @@ pub fn peers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
 }
 pub mod block {
     use super::{stake, transaction};
-    use pea_block::Block;
-    use pea_core::types;
+    use pea_block::{Block, Metadata};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
-    use serde::{Deserialize, Serialize};
-    use serde_big_array::BigArray;
     use std::error::Error;
-    #[derive(Serialize, Deserialize, Debug)]
-    pub struct Metadata {
-        pub previous_hash: types::Hash,
-        pub timestamp: u32,
-        pub public_key: types::PublicKeyBytes,
-        #[serde(with = "BigArray")]
-        pub signature: types::SignatureBytes,
-        pub transaction_hashes: Vec<types::Hash>,
-        pub stake_hashes: Vec<types::Hash>,
-    }
     pub fn put(block: &Block, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         for transaction in block.transactions.iter() {
             transaction::put(transaction, db)?;
@@ -56,130 +43,50 @@ pub mod block {
         for stake in block.stakes.iter() {
             stake::put(stake, db)?;
         }
-        db.put_cf(
-            super::blocks(db),
-            &block.hash(),
-            bincode::serialize(&Metadata {
-                previous_hash: block.previous_hash,
-                timestamp: block.timestamp,
-                public_key: block.public_key,
-                signature: block.signature,
-                transaction_hashes: block.transaction_hashes(),
-                stake_hashes: block.stake_hashes(),
-            })?,
-        )?;
+        db.put_cf(super::blocks(db), &block.hash(), bincode::serialize(&block.metadata())?)?;
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block, Box<dyn Error>> {
-        let metadata: Metadata = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
+        let block_metadata: Metadata = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
         let mut transactions = vec![];
-        for hash in metadata.transaction_hashes {
-            transactions.push(transaction::get(db, &hash)?);
+        for hash in block_metadata.transaction_hashes.iter() {
+            transactions.push(transaction::get(db, hash)?);
         }
         let mut stakes = vec![];
-        for hash in metadata.stake_hashes {
-            stakes.push(stake::get(db, &hash)?);
+        for hash in block_metadata.stake_hashes.iter() {
+            stakes.push(stake::get(db, hash)?);
         }
-        Ok(Block {
-            previous_hash: metadata.previous_hash,
-            timestamp: metadata.timestamp,
-            public_key: metadata.public_key,
-            signature: metadata.signature,
-            transactions,
-            stakes,
-        })
+        Ok(block_metadata.block(transactions, stakes))
     }
 }
 pub mod transaction {
-    use pea_core::types;
-    use pea_transaction::Transaction;
+    use pea_transaction::{Metadata, Transaction};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
-    use serde::{Deserialize, Serialize};
-    use serde_big_array::BigArray;
     use std::error::Error;
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct Metadata {
-        pub input_public_key: types::PublicKeyBytes,
-        pub output_address: types::AddressBytes,
-        pub amount: types::CompressedAmount,
-        pub fee: types::CompressedAmount,
-        pub timestamp: u32,
-        #[serde(with = "BigArray")]
-        pub signature: types::SignatureBytes,
-    }
     pub fn put(transaction: &Transaction, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(
-            super::transactions(db),
-            transaction.hash(),
-            bincode::serialize(&Metadata {
-                input_public_key: transaction.input_public_key,
-                output_address: transaction.output_address,
-                amount: pea_int::to_bytes(transaction.amount),
-                fee: pea_int::to_bytes(transaction.fee),
-                timestamp: transaction.timestamp,
-                signature: transaction.signature,
-            })?,
-        )?;
+        db.put_cf(super::transactions(db), transaction.hash(), bincode::serialize(&transaction.metadata())?)?;
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Transaction, Box<dyn Error>> {
-        let metadata: Metadata = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
-        Ok(Transaction {
-            input_public_key: metadata.input_public_key,
-            output_address: metadata.output_address,
-            amount: pea_int::from_bytes(&metadata.amount),
-            fee: pea_int::from_bytes(&metadata.fee),
-            timestamp: metadata.timestamp,
-            signature: metadata.signature,
-        })
+        let transaction_metadata: Metadata = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
+        Ok(transaction_metadata.transaction())
     }
 }
 pub mod stake {
-    use pea_core::types;
-    use pea_stake::Stake;
+    use pea_stake::{Metadata, Stake};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
-    use serde::{Deserialize, Serialize};
-    use serde_big_array::BigArray;
     use std::error::Error;
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct Metadata {
-        pub public_key: types::PublicKeyBytes,
-        pub amount: types::CompressedAmount,
-        pub fee: types::CompressedAmount,
-        pub deposit: bool,
-        pub timestamp: u32,
-        #[serde(with = "BigArray")]
-        pub signature: types::SignatureBytes,
-    }
     pub fn put(stake: &Stake, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(
-            super::stakes(db),
-            stake.hash(),
-            bincode::serialize(&Metadata {
-                public_key: stake.public_key,
-                amount: pea_int::to_bytes(stake.amount),
-                fee: pea_int::to_bytes(stake.fee),
-                deposit: stake.deposit,
-                timestamp: stake.timestamp,
-                signature: stake.signature,
-            })?,
-        )?;
+        db.put_cf(super::stakes(db), stake.hash(), bincode::serialize(&stake.metadata())?)?;
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Stake, Box<dyn Error>> {
-        let metadata: Metadata = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
-        Ok(Stake {
-            public_key: metadata.public_key,
-            amount: pea_int::from_bytes(&metadata.amount),
-            fee: pea_int::from_bytes(&metadata.fee),
-            deposit: metadata.deposit,
-            timestamp: metadata.timestamp,
-            signature: metadata.signature,
-        })
+        let stake_metadata: Metadata = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
+        Ok(stake_metadata.stake())
     }
 }
 pub mod tree {
-    use super::block;
+    use pea_block::Metadata;
     use pea_core::types;
     use pea_tree::Tree;
     use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
@@ -190,15 +97,15 @@ pub mod tree {
         for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
-            let block: block::Metadata = bincode::deserialize(&bytes).unwrap();
-            match map.get(&block.previous_hash) {
+            let block_metadata: Metadata = bincode::deserialize(&bytes).unwrap();
+            match map.get(&block_metadata.previous_hash) {
                 Some(vec) => {
                     let mut vec = vec.clone();
-                    vec.push((hash, block.timestamp));
-                    map.insert(block.previous_hash, vec);
+                    vec.push((hash, block_metadata.timestamp));
+                    map.insert(block_metadata.previous_hash, vec);
                 }
                 None => {
-                    map.insert(block.previous_hash, vec![(hash, block.timestamp)]);
+                    map.insert(block_metadata.previous_hash, vec![(hash, block_metadata.timestamp)]);
                 }
             };
         }

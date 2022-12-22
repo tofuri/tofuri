@@ -1,4 +1,4 @@
-use pea_core::{types, util};
+use pea_core::{constants::AMOUNT_BYTES, types, util};
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -100,6 +100,16 @@ impl Transaction {
         }
         Ok(())
     }
+    pub fn metadata(&self) -> Metadata {
+        Metadata {
+            input_public_key: self.input_public_key,
+            output_address: self.output_address,
+            amount: pea_int::to_bytes(self.amount),
+            fee: pea_int::to_bytes(self.fee),
+            timestamp: self.timestamp,
+            signature: self.signature,
+        }
+    }
 }
 impl Default for Transaction {
     fn default() -> Self {
@@ -113,15 +123,52 @@ impl Default for Transaction {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Metadata {
+    pub input_public_key: types::PublicKeyBytes,
+    pub output_address: types::AddressBytes,
+    pub amount: types::CompressedAmount,
+    pub fee: types::CompressedAmount,
+    pub timestamp: u32,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
+}
+impl Metadata {
+    pub fn transaction(&self) -> Transaction {
+        Transaction {
+            input_public_key: self.input_public_key,
+            output_address: self.output_address,
+            amount: pea_int::from_bytes(&self.amount),
+            fee: pea_int::from_bytes(&self.fee),
+            timestamp: self.timestamp,
+            signature: self.signature,
+        }
+    }
+}
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata {
+            input_public_key: [0; 32],
+            output_address: [0; 20],
+            amount: [0; AMOUNT_BYTES],
+            fee: [0; AMOUNT_BYTES],
+            timestamp: 0,
+            signature: [0; 64],
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn test_hash() {
-        let transaction = Transaction::default();
         assert_eq!(
-            transaction.hash(),
+            Transaction::default().hash(),
             [77, 0, 105, 118, 99, 106, 134, 150, 217, 9, 166, 48, 164, 8, 26, 173, 77, 124, 80, 248, 26, 253, 238, 4, 2, 11, 240, 80, 134, 171, 106, 85]
         );
+    }
+    #[test]
+    fn test_serialize_len() {
+        assert_eq!(128, bincode::serialize(&Metadata::default()).unwrap().len());
     }
 }

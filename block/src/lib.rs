@@ -140,6 +140,16 @@ impl Block {
         }
         Ok(())
     }
+    pub fn metadata(&self) -> Metadata {
+        Metadata {
+            previous_hash: self.previous_hash,
+            timestamp: self.timestamp,
+            public_key: self.public_key,
+            signature: self.signature,
+            transaction_hashes: self.transaction_hashes(),
+            stake_hashes: self.stake_hashes(),
+        }
+    }
 }
 impl Default for Block {
     fn default() -> Self {
@@ -153,26 +163,55 @@ impl Default for Block {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Metadata {
+    pub previous_hash: types::Hash,
+    pub timestamp: u32,
+    pub public_key: types::PublicKeyBytes,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
+    pub transaction_hashes: Vec<types::Hash>,
+    pub stake_hashes: Vec<types::Hash>,
+}
+impl Metadata {
+    pub fn block(&self, transactions: Vec<Transaction>, stakes: Vec<Stake>) -> Block {
+        Block {
+            previous_hash: self.previous_hash,
+            timestamp: self.timestamp,
+            public_key: self.public_key,
+            signature: self.signature,
+            transactions,
+            stakes,
+        }
+    }
+}
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata {
+            previous_hash: [0; 32],
+            timestamp: 0,
+            public_key: [0; 32],
+            signature: [0; 64],
+            transaction_hashes: vec![],
+            stake_hashes: vec![],
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn test_hash() {
-        let block = Block {
-            previous_hash: [0; 32],
-            timestamp: 0,
-            public_key: [0; 32],
-            signature: [0; 64],
-            transactions: vec![],
-            stakes: vec![],
-        };
-        println!("{:x?}", block.hash());
         assert_eq!(
+            Block::default().hash(),
             [
                 0xac, 0x6f, 0x86, 0xff, 0xf6, 0x30, 0xa5, 0x6a, 0x21, 0xf5, 0x9d, 0x3a, 0x0c, 0x1c, 0x69, 0x07, 0xfe, 0x3f, 0x7c, 0xaf, 0xd5, 0xfa, 0x91, 0x6f,
                 0x9b, 0x72, 0x20, 0x32, 0xf6, 0x05, 0x9e, 0xd9
-            ],
-            block.hash()
+            ]
         );
+    }
+    #[test]
+    fn test_serialize_len() {
+        assert_eq!(148, bincode::serialize(&Metadata::default()).unwrap().len());
     }
 }

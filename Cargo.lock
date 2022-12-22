@@ -2915,8 +2915,6 @@ dependencies = [
  "pea-transaction",
  "pea-tree",
  "rocksdb",
- "serde",
- "serde-big-array",
  "tempdir",
 ]
 

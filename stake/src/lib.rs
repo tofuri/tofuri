@@ -1,4 +1,7 @@
-use pea_core::{constants::MIN_STAKE, types, util};
+use pea_core::{
+    constants::{AMOUNT_BYTES, MIN_STAKE},
+    types, util,
+};
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -7,16 +10,16 @@ use std::{error::Error, fmt};
 pub struct Header {
     pub public_key: types::PublicKeyBytes,
     pub amount: types::CompressedAmount,
-    pub deposit: bool,
     pub fee: types::CompressedAmount,
+    pub deposit: bool,
     pub timestamp: u32,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Stake {
     pub public_key: types::PublicKeyBytes,
-    pub deposit: bool,
     pub amount: u128,
     pub fee: u128,
+    pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
@@ -28,9 +31,9 @@ impl fmt::Debug for Stake {
         struct Stake {
             hash: String,
             public_key: String,
-            deposit: bool,
             amount: u128,
             fee: u128,
+            deposit: bool,
             timestamp: u32,
             signature: String,
         }
@@ -40,9 +43,9 @@ impl fmt::Debug for Stake {
             Stake {
                 hash: hex::encode(self.hash()),
                 public_key: pea_address::public::encode(&self.public_key),
-                deposit: self.deposit,
                 amount: self.amount,
                 fee: self.fee,
+                deposit: self.deposit,
                 timestamp: self.timestamp,
                 signature: hex::encode(self.signature),
             }
@@ -53,9 +56,9 @@ impl Stake {
     pub fn new(deposit: bool, amount: u128, fee: u128, timestamp: u32) -> Stake {
         Stake {
             public_key: [0; 32],
-            deposit,
             amount: pea_int::floor(amount),
             fee: pea_int::floor(fee),
+            deposit,
             timestamp,
             signature: [0; 64],
         }
@@ -73,9 +76,9 @@ impl Stake {
     pub fn header(&self) -> Header {
         Header {
             public_key: self.public_key,
-            deposit: self.deposit,
             amount: pea_int::to_bytes(self.amount),
             fee: pea_int::to_bytes(self.fee),
+            deposit: self.deposit,
             timestamp: self.timestamp,
         }
     }
@@ -112,14 +115,58 @@ impl Stake {
         }
         Ok(())
     }
+    pub fn metadata(&self) -> Metadata {
+        Metadata {
+            public_key: self.public_key,
+            amount: pea_int::to_bytes(self.amount),
+            fee: pea_int::to_bytes(self.fee),
+            deposit: self.deposit,
+            timestamp: self.timestamp,
+            signature: self.signature,
+        }
+    }
 }
 impl Default for Stake {
     fn default() -> Self {
         Stake {
             public_key: [0; 32],
-            deposit: false,
             amount: 0,
             fee: 0,
+            deposit: false,
+            timestamp: 0,
+            signature: [0; 64],
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Metadata {
+    pub public_key: types::PublicKeyBytes,
+    pub amount: types::CompressedAmount,
+    pub fee: types::CompressedAmount,
+    pub deposit: bool,
+    pub timestamp: u32,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
+}
+impl Metadata {
+    pub fn stake(&self) -> Stake {
+        Stake {
+            public_key: self.public_key,
+            amount: pea_int::from_bytes(&self.amount),
+            fee: pea_int::from_bytes(&self.fee),
+            deposit: self.deposit,
+            timestamp: self.timestamp,
+            signature: self.signature,
+        }
+    }
+}
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata {
+            public_key: [0; 32],
+            amount: [0; AMOUNT_BYTES],
+            fee: [0; AMOUNT_BYTES],
+            deposit: false,
             timestamp: 0,
             signature: [0; 64],
         }
@@ -130,10 +177,13 @@ mod tests {
     use super::*;
     #[test]
     fn test_hash() {
-        let stake = Stake::default();
         assert_eq!(
-            stake.hash(),
+            Stake::default().hash(),
             [38, 150, 39, 44, 192, 60, 233, 141, 22, 106, 60, 125, 33, 31, 169, 224, 58, 198, 123, 28, 152, 25, 113, 88, 196, 152, 101, 43, 21, 185, 28, 134]
         );
+    }
+    #[test]
+    fn test_serialize_len() {
+        assert_eq!(109, bincode::serialize(&Metadata::default()).unwrap().len());
     }
 }

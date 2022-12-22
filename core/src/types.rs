@@ -38,12 +38,12 @@ pub mod api {
         pub last_seen: String,
     }
     pub type Height = usize;
-    pub type Amount = u128;
+    pub type Amount = String;
     pub type Hash = String;
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct State {
-        pub balance: u128,
-        pub balance_staked: u128,
+        pub balance: Amount,
+        pub balance_staked: Amount,
         pub hashes: usize,
         pub latest_hashes: Vec<String>,
         pub stakers: Vec<String>,
@@ -79,8 +79,8 @@ pub mod api {
         pub hash: String,
         pub input_address: String,
         pub output_address: String,
-        pub amount: u128,
-        pub fee: u128,
+        pub amount: Amount,
+        pub fee: Amount,
         pub timestamp: u32,
         pub signature: String,
     }
@@ -88,9 +88,9 @@ pub mod api {
     pub struct Stake {
         pub hash: String,
         pub address: String,
-        pub amount: u128,
+        pub amount: Amount,
+        pub fee: Amount,
         pub deposit: bool,
-        pub fee: u128,
         pub timestamp: u32,
         pub signature: String,
     }

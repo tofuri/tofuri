@@ -166,11 +166,12 @@ impl Command {
             let address = address::address::encode(&subkey.address());
             println!("{} {}", n.to_string().red(), address.green());
             match get::balance(&self.api, &address).await {
-                Ok(balance) => {
+                Ok(balance_string) => {
+                    let balance = pea_int::from_string(&balance_string).unwrap();
                     if balance == 0 {
                         continue;
                     }
-                    println!("Account balance: {}", pea_int::to_string(balance).yellow());
+                    println!("Account balance: {}", balance_string.yellow());
                     if balance <= fee {
                         println!("{}", "Insufficient balance".red());
                         continue;
@@ -206,11 +207,7 @@ impl Command {
     async fn balance(api: &str, address: &str) {
         match get::balance(api, address).await {
             Ok(balance) => match get::balance_staked(api, address).await {
-                Ok(balance_staked) => println!(
-                    "Account balance: {}, locked: {}",
-                    pea_int::to_string(balance).yellow(),
-                    pea_int::to_string(balance_staked).yellow()
-                ),
+                Ok(balance_staked) => println!("Account balance: {}, locked: {}", balance.yellow(), balance_staked.yellow()),
                 Err(err) => println!("{}", err.to_string().red()),
             },
             Err(err) => println!("{}", err.to_string().red()),

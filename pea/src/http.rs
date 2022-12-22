@@ -166,8 +166,8 @@ fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
 fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
     Ok(json(serde_json::to_string(&types::api::State {
-        balance: dynamic.balance(&node.blockchain.key.address()),
-        balance_staked: dynamic.balance_staked(&node.blockchain.key.address()),
+        balance: pea_int::to_string(dynamic.balance(&node.blockchain.key.address())),
+        balance_staked: pea_int::to_string(dynamic.balance_staked(&node.blockchain.key.address())),
         hashes: dynamic.hashes.len(),
         latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
         stakers: dynamic.stakers.iter().take(16).map(address::address::encode).collect(),
@@ -176,8 +176,8 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
 fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
     Ok(json(serde_json::to_string(&types::api::State {
-        balance: trusted.balance(&node.blockchain.key.address()),
-        balance_staked: trusted.balance_staked(&node.blockchain.key.address()),
+        balance: pea_int::to_string(trusted.balance(&node.blockchain.key.address())),
+        balance_staked: pea_int::to_string(trusted.balance_staked(&node.blockchain.key.address())),
         hashes: trusted.hashes.len(),
         latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
         stakers: trusted.stakers.iter().take(16).map(address::address::encode).collect(),
@@ -306,8 +306,8 @@ fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<d
         hash: hex::encode(transaction.hash()),
         input_address: address::address::encode(&util::address(&transaction.input_public_key)),
         output_address: address::address::encode(&transaction.output_address),
-        amount: transaction.amount,
-        fee: transaction.fee,
+        amount: pea_int::to_string(transaction.amount),
+        fee: pea_int::to_string(transaction.fee),
         timestamp: transaction.timestamp,
         signature: hex::encode(transaction.signature),
     })?))
@@ -326,9 +326,9 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
     Ok(json(serde_json::to_string(&types::api::Stake {
         hash: hex::encode(stake.hash()),
         address: address::address::encode(&util::address(&stake.public_key)),
-        amount: stake.amount,
+        amount: pea_int::to_string(stake.amount),
+        fee: pea_int::to_string(stake.fee),
         deposit: stake.deposit,
-        fee: stake.fee,
         timestamp: stake.timestamp,
         signature: hex::encode(stake.signature),
     })?))

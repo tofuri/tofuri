@@ -132,7 +132,7 @@ impl PaymentProcessor {
                         Some(a) => *a,
                         None => 0,
                     };
-                    map.insert(address, amount + transaction.amount);
+                    map.insert(address, amount + pea_int::from_string(&transaction.amount).unwrap());
                 }
             }
         }

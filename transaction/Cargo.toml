@@ -12,7 +12,7 @@ repository = "https://github.com/peacash/peacash"
 pea-address = { version = "0.4.0", path = "../address" }
 pea-int = { version = "0.2.1", path = "../int" }
 pea-core = { version = "0.4.0", path = "../core" }
-pea-key = { version = "0.2.2", path = "../key" }
+pea-key = { version = "0.3.0", path = "../key" }
 serde = { version = "1.0.137", features = ["derive"] }
 serde-big-array = "0.4.1"
 bincode = "1.3.3"

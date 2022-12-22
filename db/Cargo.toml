@@ -12,7 +12,7 @@ repository = "https://github.com/peacash/peacash"
 pea-int = { version = "0.2.1", path = "../int" }
 pea-block = { version = "0.4.0", path = "../block" }
 pea-core = { version = "0.4.0", path = "../core" }
-pea-stake = { version = "0.4.0", path = "../stake" }
+pea-stake = { version = "0.4.1", path = "../stake" }
 pea-transaction = { version = "0.5.0", path = "../transaction" }
 pea-tree = { version = "0.2.2", path = "../tree" }
 rocksdb = "0.19.0"

@@ -16,7 +16,7 @@ pea-address = { version = "0.4.0", path = "../address" }
 pea-int = { version = "0.2.1", path = "../int" }
 pea-api = { version = "0.3.0", path = "../api" }
 pea-key = { version = "0.3.0", path = "../key" }
-pea-stake = { version = "0.4.0", path = "../stake" }
+pea-stake = { version = "0.4.1", path = "../stake" }
 pea-time = { version = "0.1.0", path = "../time" }
 pea-transaction = { version = "0.5.0", path = "../transaction" }
 chacha20poly1305 = "0.10.1"

@@ -76,7 +76,7 @@ impl Command {
                 true
             }
             "Balance" => {
-                Self::balance(&self.api, &self.wallet.as_ref().unwrap().key.public()).await;
+                Self::balance(&self.api, &self.wallet.as_ref().unwrap().key.address()).await;
                 true
             }
             "Send" => {
@@ -153,7 +153,7 @@ impl Command {
         let key = &self.wallet.as_ref().unwrap().key;
         for n in Self::inquire_subkeys_range() {
             let subkey = key.subkey(n);
-            let address = subkey.public();
+            let address = subkey.address();
             println!("{} {}", n.to_string().red(), address.green());
             Self::balance(&self.api, &address).await;
         }
@@ -163,7 +163,7 @@ impl Command {
         let key = &self.wallet.as_ref().unwrap().key;
         for n in Self::inquire_subkeys_range() {
             let subkey = key.subkey(n);
-            let address = subkey.public();
+            let address = subkey.address();
             println!("{} {}", n.to_string().red(), address.green());
             match get::balance(&self.api, &address).await {
                 Ok(balance) => {
@@ -177,7 +177,7 @@ impl Command {
                     }
                     let amount = balance - fee;
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let mut transaction = Transaction::new(key.public_key_bytes(), amount, fee, self.time.timestamp_secs());
+                    let mut transaction = Transaction::new(key.address_bytes(), amount, fee, self.time.timestamp_secs());
                     transaction.sign(&subkey);
                     println!("{:?}", transaction);
                     match post::transaction(&self.api, &transaction).await {
@@ -226,8 +226,8 @@ impl Command {
         CustomType::<String>::new("Address:")
             .with_error_message("Please enter a valid address")
             .with_help_message("Type the hex encoded address with 0x as prefix")
-            .with_parser(&|x| match address::public::decode(x) {
-                Ok(y) => Ok(address::public::encode(&y)),
+            .with_parser(&|x| match address::address::decode(x) {
+                Ok(y) => Ok(address::address::encode(&y)),
                 Err(_) => Err(()),
             })
             .prompt()
@@ -290,7 +290,7 @@ impl Command {
         } {
             return;
         }
-        let mut transaction = Transaction::new(address::public::decode(&address).unwrap(), amount, fee, self.time.timestamp_secs());
+        let mut transaction = Transaction::new(address::address::decode(&address).unwrap(), amount, fee, self.time.timestamp_secs());
         transaction.sign(&wallet.key);
         println!("Hash: {}", hex::encode(transaction.hash()).cyan());
         match post::transaction(&self.api, &transaction).await {
@@ -324,14 +324,14 @@ impl Command {
         };
     }
     fn address(wallet: &Wallet) {
-        println!("{}", wallet.key.public().green());
+        println!("{}", wallet.key.address().green());
     }
     fn inquire_search() -> String {
         CustomType::<String>::new("Search:")
             .with_error_message("Please enter a valid Address, Hash or Number.")
             .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
             .with_parser(&|x| {
-                if address::public::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
+                if address::address::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
                     return Ok(x.to_string());
                 }
                 Err(())
@@ -344,7 +344,7 @@ impl Command {
     }
     async fn search(api: &str) {
         let search = Self::inquire_search();
-        if address::public::decode(&search).is_ok() {
+        if address::address::decode(&search).is_ok() {
             Self::balance(api, &search).await;
             return;
         } else if search.len() == 64 {

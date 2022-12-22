@@ -22,11 +22,17 @@ impl Key {
         };
         Key { keypair }
     }
+    pub fn address_bytes(&self) -> types::AddressBytes {
+        util::address(&self.keypair.public.to_bytes())
+    }
     pub fn public_key_bytes(&self) -> types::PublicKeyBytes {
         self.keypair.public.to_bytes()
     }
     pub fn secret_key_bytes(&self) -> types::SecretKeyBytes {
         self.keypair.secret.to_bytes()
+    }
+    pub fn address(&self) -> String {
+        address::address::encode(&self.address_bytes())
     }
     pub fn public(&self) -> String {
         address::public::encode(&self.public_key_bytes())

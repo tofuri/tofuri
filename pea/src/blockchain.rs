@@ -5,7 +5,7 @@ use pea_block::Block;
 use pea_core::constants::{
     BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, SYNC_BLOCKS_PER_TICK,
 };
-use pea_core::types;
+use pea_core::{types, util};
 use pea_db as db;
 use pea_key::Key;
 use pea_stake::Stake;
@@ -27,7 +27,7 @@ pub struct Blockchain {
     pub trust_fork_after_blocks: usize,
     pub pending_blocks_limit: usize,
     pub time_delta: u32,
-    pub offline: HashMap<types::PublicKeyBytes, types::Hash>,
+    pub offline: HashMap<types::AddressBytes, types::Hash>,
 }
 impl Blockchain {
     pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize, pending_blocks_limit: usize, time_delta: u32) -> Self {
@@ -65,8 +65,8 @@ impl Blockchain {
         }
     }
     pub fn forge_block(&mut self, timestamp: u32) -> Option<Block> {
-        if let Some(public_key) = self.states.dynamic.current_staker(timestamp) {
-            if public_key != &self.key.public_key_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+        if let Some(address) = self.states.dynamic.current_staker(timestamp) {
+            if address != &self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
                 return None;
             }
         } else {
@@ -121,7 +121,7 @@ impl Blockchain {
         if let Some(index) = self
             .pending_transactions
             .iter()
-            .position(|s| s.public_key_input == transaction.public_key_input)
+            .position(|s| s.input_public_key == transaction.input_public_key)
         {
             if transaction.fee <= self.pending_transactions[index].fee {
                 return Err("transaction fee too low".into());
@@ -170,7 +170,8 @@ impl Blockchain {
         block
     }
     pub fn validate_block(&self, block: &Block, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if let Some(hash) = self.offline.get(&block.public_key) {
+        let address = util::address(&block.public_key);
+        if let Some(hash) = self.offline.get(&address) {
             if hash == &block.previous_hash {
                 return Err("block staker banned".into());
             }
@@ -189,9 +190,9 @@ impl Blockchain {
         if block.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return Err("block timestamp early".into());
         }
-        if let Some(public_key) = dynamic.staker(block.timestamp, latest_block.timestamp) {
-            if public_key != &block.public_key {
-                return Err("block staker public_key".into());
+        if let Some(a) = dynamic.staker(block.timestamp, latest_block.timestamp) {
+            if a != &address {
+                return Err("block staker address".into());
             }
         } else {
             block.validate_mint()?;
@@ -214,7 +215,7 @@ impl Blockchain {
             return Err("transaction pending".into());
         }
         transaction.validate()?;
-        let balance = self.states.dynamic.balance(&transaction.public_key_input);
+        let balance = self.states.dynamic.balance(&util::address(&transaction.input_public_key));
         if transaction.timestamp > timestamp + self.time_delta {
             return Err("transaction timestamp future".into());
         }
@@ -234,8 +235,9 @@ impl Blockchain {
             return Err("stake pending".into());
         }
         stake.validate()?;
-        let balance = self.states.dynamic.balance(&stake.public_key);
-        let balance_staked = self.states.dynamic.balance_staked(&stake.public_key);
+        let address = util::address(&stake.public_key);
+        let balance = self.states.dynamic.balance(&address);
+        let balance_staked = self.states.dynamic.balance_staked(&address);
         if stake.timestamp > timestamp + self.time_delta {
             return Err("stake timestamp future".into());
         }

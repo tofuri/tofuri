@@ -48,7 +48,7 @@ pub struct PaymentProcessor {
 impl PaymentProcessor {
     pub fn new(options: Options) -> Self {
         let wallet = PaymentProcessor::wallet(options.tempkey, options.wallet, options.passphrase);
-        info!("PubKey is {}", address::public::encode(&wallet.key.public_key_bytes()).green());
+        info!("Address {}", wallet.key.address().green());
         let db = PaymentProcessor::db(options.tempdb);
         Self {
             db,
@@ -88,7 +88,7 @@ impl PaymentProcessor {
         self.charges.get(hash).map(Payment::from)
     }
     pub async fn send(&self, address: &str, amount: u128, fee: u128) -> Result<(), Box<dyn Error>> {
-        let mut transaction = Transaction::new(address::public::decode(address).unwrap(), amount, fee, util::timestamp());
+        let mut transaction = Transaction::new(address::address::decode(address).unwrap(), amount, fee, util::timestamp());
         transaction.sign(&self.wallet.key);
         post::transaction(&self.api, &transaction).await?;
         Ok(())
@@ -126,21 +126,21 @@ impl PaymentProcessor {
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
             for charge in self.charges.values() {
-                let public = Key::from_secret_key_bytes(&charge.secret_key_bytes).public();
-                if transaction.public_key_output == public {
-                    let amount = match map.get(&public) {
+                let address = Key::from_secret_key_bytes(&charge.secret_key_bytes).address();
+                if transaction.output_address == address {
+                    let amount = match map.get(&address) {
                         Some(a) => *a,
                         None => 0,
                     };
-                    map.insert(public, amount + transaction.amount);
+                    map.insert(address, amount + transaction.amount);
                 }
             }
         }
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
-            let public = Key::from_secret_key_bytes(&charge.secret_key_bytes).public();
+            let addres = Key::from_secret_key_bytes(&charge.secret_key_bytes).address();
             let res = {
-                let amount = match map.get(&public) {
+                let amount = match map.get(&addres) {
                     Some(a) => *a,
                     None => 0,
                 };

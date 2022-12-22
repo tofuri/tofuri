@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use libp2p::Multiaddr;
 use log::error;
 use pea_address as address;
-use pea_core::types;
+use pea_core::{types, util};
 use pea_db as db;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
@@ -147,7 +147,7 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let datetime = Utc.timestamp_nanos(timestamp);
     Ok(json(serde_json::to_string(&types::api::Info {
         time: datetime.to_rfc2822(),
-        public_key: node.blockchain.key.public(),
+        address: node.blockchain.key.address(),
         uptime: format!("{}", node.uptime()),
         heartbeats: node.heartbeats,
         tree_size: node.blockchain.tree.size(),
@@ -166,21 +166,21 @@ fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
 fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
     Ok(json(serde_json::to_string(&types::api::State {
-        balance: dynamic.balance(&node.blockchain.key.public_key_bytes()),
-        balance_staked: dynamic.balance_staked(&node.blockchain.key.public_key_bytes()),
+        balance: dynamic.balance(&node.blockchain.key.address_bytes()),
+        balance_staked: dynamic.balance_staked(&node.blockchain.key.address_bytes()),
         hashes: dynamic.hashes.len(),
         latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
-        stakers: dynamic.stakers.iter().take(16).map(address::public::encode).collect(),
+        stakers: dynamic.stakers.iter().take(16).map(address::address::encode).collect(),
     })?))
 }
 fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
     Ok(json(serde_json::to_string(&types::api::State {
-        balance: trusted.balance(&node.blockchain.key.public_key_bytes()),
-        balance_staked: trusted.balance_staked(&node.blockchain.key.public_key_bytes()),
+        balance: trusted.balance(&node.blockchain.key.address_bytes()),
+        balance_staked: trusted.balance_staked(&node.blockchain.key.address_bytes()),
         hashes: trusted.hashes.len(),
         latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
-        stakers: trusted.stakers.iter().take(16).map(address::public::encode).collect(),
+        stakers: trusted.stakers.iter().take(16).map(address::address::encode).collect(),
     })?))
 }
 fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
@@ -201,12 +201,12 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
     })?))
 }
 fn get_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let public_key = address::public::decode(BALANCE.find(first).ok_or("GET BALANCE 1")?.as_str().trim().get(9..).ok_or("GET BALANCE 2")?)?;
-    let balance = node.blockchain.states.dynamic.balance(&public_key);
+    let address = address::address::decode(BALANCE.find(first).ok_or("GET BALANCE 1")?.as_str().trim().get(9..).ok_or("GET BALANCE 2")?)?;
+    let balance = node.blockchain.states.dynamic.balance(&address);
     Ok(json(serde_json::to_string(&balance)?))
 }
 fn get_staked_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let public_key = address::public::decode(
+    let address = address::address::decode(
         BALANCE_STAKED
             .find(first)
             .ok_or("GET BALANCE_STAKED 1")?
@@ -215,7 +215,7 @@ fn get_staked_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Er
             .get(16..)
             .ok_or("GET BALANCE_STAKED 2")?,
     )?;
-    let balance = node.blockchain.states.dynamic.balance_staked(&public_key);
+    let balance = node.blockchain.states.dynamic.balance_staked(&address);
     Ok(json(serde_json::to_string(&balance)?))
 }
 fn get_height(node: &mut Node) -> Result<String, Box<dyn Error>> {
@@ -242,7 +242,7 @@ fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
         hash: hex::encode(block.hash()),
         previous_hash: hex::encode(block.previous_hash),
         timestamp: block.timestamp,
-        public_key: address::public::encode(&block.public_key),
+        address: address::address::encode(&util::address(&block.public_key)),
         signature: hex::encode(block.signature),
         transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
         stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
@@ -285,7 +285,7 @@ fn get_block_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
         hash: hex::encode(block.hash()),
         previous_hash: hex::encode(block.previous_hash),
         timestamp: block.timestamp,
-        public_key: address::public::encode(&block.public_key),
+        address: address::address::encode(&util::address(&block.public_key)),
         signature: hex::encode(block.signature),
         transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
         stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
@@ -304,8 +304,8 @@ fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<d
     let transaction = db::transaction::get(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Transaction {
         hash: hex::encode(transaction.hash()),
-        public_key_input: address::public::encode(&transaction.public_key_input),
-        public_key_output: address::public::encode(&transaction.public_key_output),
+        input_address: address::address::encode(&util::address(&transaction.input_public_key)),
+        output_address: address::address::encode(&transaction.output_address),
         amount: transaction.amount,
         fee: transaction.fee,
         timestamp: transaction.timestamp,
@@ -325,7 +325,7 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
     let stake = db::stake::get(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Stake {
         hash: hex::encode(stake.hash()),
-        public_key: address::public::encode(&stake.public_key),
+        address: address::address::encode(&util::address(&stake.public_key)),
         amount: stake.amount,
         deposit: stake.deposit,
         fee: stake.fee,

@@ -113,9 +113,9 @@ impl Block {
         if self.verify().is_err() {
             return Err("block signature".into());
         }
-        let public_key_inputs = self.transactions.iter().map(|t| t.public_key_input).collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_key_inputs.len()).any(|i| public_key_inputs[i..].contains(&public_key_inputs[i - 1])) {
-            return Err("block includes multiple transactions from same public_key_input".into());
+        let public_keys = self.transactions.iter().map(|t| t.input_public_key).collect::<Vec<types::PublicKeyBytes>>();
+        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
+            return Err("block includes multiple transactions from same input_public_key".into());
         }
         let public_keys = self.stakes.iter().map(|s| s.public_key).collect::<Vec<types::PublicKeyBytes>>();
         if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {

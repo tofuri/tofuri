@@ -99,8 +99,8 @@ pub mod transaction {
     use std::error::Error;
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Metadata {
-        pub public_key_input: types::PublicKeyBytes,
-        pub public_key_output: types::PublicKeyBytes,
+        pub input_public_key: types::PublicKeyBytes,
+        pub output_address: types::AddressBytes,
         pub amount: types::CompressedAmount,
         pub fee: types::CompressedAmount,
         pub timestamp: u32,
@@ -112,8 +112,8 @@ pub mod transaction {
             super::transactions(db),
             transaction.hash(),
             bincode::serialize(&Metadata {
-                public_key_input: transaction.public_key_input,
-                public_key_output: transaction.public_key_output,
+                input_public_key: transaction.input_public_key,
+                output_address: transaction.output_address,
                 amount: pea_int::to_bytes(transaction.amount),
                 fee: pea_int::to_bytes(transaction.fee),
                 timestamp: transaction.timestamp,
@@ -125,8 +125,8 @@ pub mod transaction {
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Transaction, Box<dyn Error>> {
         let metadata: Metadata = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
         Ok(Transaction {
-            public_key_input: metadata.public_key_input,
-            public_key_output: metadata.public_key_output,
+            input_public_key: metadata.input_public_key,
+            output_address: metadata.output_address,
             amount: pea_int::from_bytes(&metadata.amount),
             fee: pea_int::from_bytes(&metadata.fee),
             timestamp: metadata.timestamp,

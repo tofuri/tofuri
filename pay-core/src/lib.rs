@@ -33,7 +33,7 @@ impl Charge {
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Payment {
-    pub public: String,
+    pub address: String,
     pub amount: u128,
     pub timestamp: u32,
     pub status: String,
@@ -41,10 +41,10 @@ pub struct Payment {
 impl Payment {
     pub fn from(charge: &Charge) -> Payment {
         let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
-        let public = key.public();
+        let address = key.address();
         let status = status(&charge.status);
         Payment {
-            public,
+            address,
             amount: charge.amount,
             timestamp: charge.timestamp,
             status,

@@ -66,14 +66,14 @@ fn offline_staker(node: &mut Node, timestamp: u32) {
         return;
     }
     let dynamic = &node.blockchain.states.dynamic;
-    if let Some(public_key) = dynamic.offline_staker(timestamp) {
+    if let Some(address) = dynamic.offline_staker(timestamp) {
         let latest_hash = dynamic.latest_block.hash();
-        if let Some(hash) = node.blockchain.offline.insert(public_key.clone(), latest_hash) {
+        if let Some(hash) = node.blockchain.offline.insert(address.clone(), latest_hash) {
             if hash == latest_hash {
                 return;
             }
         }
-        warn!("Banned offline staker {}", pea_address::public::encode(&public_key).green());
+        warn!("Banned offline staker {}", pea_address::address::encode(&address).green());
     }
 }
 fn dial_known(node: &mut Node) {

@@ -3,6 +3,7 @@ pub type CompressedAmount = [u8; AMOUNT_BYTES];
 pub type Hash = [u8; 32];
 pub type Checksum = [u8; 4];
 pub type MerkleRoot = [u8; 32];
+pub type AddressBytes = [u8; 20];
 pub type PublicKeyBytes = [u8; 32];
 pub type SecretKeyBytes = [u8; 32];
 pub type SignatureBytes = [u8; 64];
@@ -24,7 +25,7 @@ pub mod api {
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Info {
         pub time: String,
-        pub public_key: String,
+        pub address: String,
         pub uptime: String,
         pub heartbeats: usize,
         pub tree_size: usize,
@@ -68,7 +69,7 @@ pub mod api {
         pub hash: String,
         pub previous_hash: String,
         pub timestamp: u32,
-        pub public_key: String,
+        pub address: String,
         pub signature: String,
         pub transactions: Vec<String>,
         pub stakes: Vec<String>,
@@ -76,8 +77,8 @@ pub mod api {
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Transaction {
         pub hash: String,
-        pub public_key_input: String,
-        pub public_key_output: String,
+        pub input_address: String,
+        pub output_address: String,
         pub amount: u128,
         pub fee: u128,
         pub timestamp: u32,
@@ -86,7 +87,7 @@ pub mod api {
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Stake {
         pub hash: String,
-        pub public_key: String,
+        pub address: String,
         pub amount: u128,
         pub deposit: bool,
         pub fee: u128,

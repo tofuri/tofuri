@@ -14,6 +14,9 @@ pub fn timestamp() -> u32 {
 pub fn hash(input: &[u8]) -> types::Hash {
     blake3::hash(input).into()
 }
+pub fn address(public_key_bytes: &types::PublicKeyBytes) -> types::AddressBytes {
+    hash(public_key_bytes)[..20].try_into().unwrap()
+}
 pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>> {
     let file = File::open(path)?;
     let buf = BufReader::new(file);

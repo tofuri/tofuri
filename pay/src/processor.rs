@@ -48,7 +48,7 @@ pub struct PaymentProcessor {
 impl PaymentProcessor {
     pub fn new(options: Options) -> Self {
         let wallet = PaymentProcessor::wallet(options.tempkey, options.wallet, options.passphrase);
-        info!("Address {}", wallet.key.address().green());
+        info!("Address {}", pea_address::address::encode(&wallet.key.address()).green());
         let db = PaymentProcessor::db(options.tempdb);
         Self {
             db,
@@ -98,7 +98,7 @@ impl PaymentProcessor {
         let key = self.wallet.key.subkey(self.subkey);
         let timestamp = util::timestamp();
         let charge = Charge {
-            secret_key_bytes: key.secret_key_bytes(),
+            secret_key_bytes: key.secret_key(),
             amount,
             timestamp,
             status: ChargeStatus::Pending,
@@ -126,7 +126,7 @@ impl PaymentProcessor {
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
             for charge in self.charges.values() {
-                let address = Key::from_secret_key_bytes(&charge.secret_key_bytes).address();
+                let address = address::address::encode(&Key::from_secret_key_bytes(&charge.secret_key_bytes).address());
                 if transaction.output_address == address {
                     let amount = match map.get(&address) {
                         Some(a) => *a,
@@ -138,9 +138,9 @@ impl PaymentProcessor {
         }
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
-            let addres = Key::from_secret_key_bytes(&charge.secret_key_bytes).address();
+            let address = address::address::encode(&Key::from_secret_key_bytes(&charge.secret_key_bytes).address());
             let res = {
-                let amount = match map.get(&addres) {
+                let amount = match map.get(&address) {
                     Some(a) => *a,
                     None => 0,
                 };

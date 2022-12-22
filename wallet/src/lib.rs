@@ -92,7 +92,7 @@ impl Wallet {
         })
     }
     fn export(&mut self, filename: String) -> Result<(), Box<dyn Error>> {
-        let (salt, nonce, ciphertext) = Wallet::encrypt(&self.key.secret_key_bytes())?;
+        let (salt, nonce, ciphertext) = Wallet::encrypt(&self.key.secret_key())?;
         self.salt = salt.to_vec();
         self.nonce = nonce.to_vec();
         self.ciphertext = ciphertext.to_vec();

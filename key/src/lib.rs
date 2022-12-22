@@ -1,6 +1,5 @@
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
-use pea_address as address;
 use pea_core::{types, util};
 use rand::rngs::OsRng;
 #[derive(Debug)]
@@ -22,23 +21,14 @@ impl Key {
         };
         Key { keypair }
     }
-    pub fn address_bytes(&self) -> types::AddressBytes {
+    pub fn address(&self) -> types::AddressBytes {
         util::address(&self.keypair.public.to_bytes())
     }
-    pub fn public_key_bytes(&self) -> types::PublicKeyBytes {
+    pub fn public_key(&self) -> types::PublicKeyBytes {
         self.keypair.public.to_bytes()
     }
-    pub fn secret_key_bytes(&self) -> types::SecretKeyBytes {
+    pub fn secret_key(&self) -> types::SecretKeyBytes {
         self.keypair.secret.to_bytes()
-    }
-    pub fn address(&self) -> String {
-        address::address::encode(&self.address_bytes())
-    }
-    pub fn public(&self) -> String {
-        address::public::encode(&self.public_key_bytes())
-    }
-    pub fn secret(&self) -> String {
-        address::secret::encode(&self.secret_key_bytes())
     }
     pub fn sign(&self, msg: &[u8]) -> [u8; 64] {
         self.keypair.sign(msg).to_bytes()
@@ -63,6 +53,6 @@ mod tests {
         let key = Key::generate();
         let message = [0; 128];
         let signature_bytes = key.sign(&message);
-        assert!(Key::verify(&key.public_key_bytes(), &message, &signature_bytes).is_ok());
+        assert!(Key::verify(&key.public_key(), &message, &signature_bytes).is_ok());
     }
 }

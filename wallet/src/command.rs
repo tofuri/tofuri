@@ -76,7 +76,7 @@ impl Command {
                 true
             }
             "Balance" => {
-                Self::balance(&self.api, &self.wallet.as_ref().unwrap().key.address()).await;
+                Self::balance(&self.api, &address::address::encode(&self.wallet.as_ref().unwrap().key.address())).await;
                 true
             }
             "Send" => {
@@ -153,7 +153,7 @@ impl Command {
         let key = &self.wallet.as_ref().unwrap().key;
         for n in Self::inquire_subkeys_range() {
             let subkey = key.subkey(n);
-            let address = subkey.address();
+            let address = address::address::encode(&subkey.address());
             println!("{} {}", n.to_string().red(), address.green());
             Self::balance(&self.api, &address).await;
         }
@@ -163,7 +163,7 @@ impl Command {
         let key = &self.wallet.as_ref().unwrap().key;
         for n in Self::inquire_subkeys_range() {
             let subkey = key.subkey(n);
-            let address = subkey.address();
+            let address = address::address::encode(&subkey.address());
             println!("{} {}", n.to_string().red(), address.green());
             match get::balance(&self.api, &address).await {
                 Ok(balance) => {
@@ -177,7 +177,7 @@ impl Command {
                     }
                     let amount = balance - fee;
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let mut transaction = Transaction::new(key.address_bytes(), amount, fee, self.time.timestamp_secs());
+                    let mut transaction = Transaction::new(key.address(), amount, fee, self.time.timestamp_secs());
                     transaction.sign(&subkey);
                     println!("{:?}", transaction);
                     match post::transaction(&self.api, &transaction).await {
@@ -324,7 +324,7 @@ impl Command {
         };
     }
     fn address(wallet: &Wallet) {
-        println!("{}", wallet.key.address().green());
+        println!("{}", address::address::encode(&wallet.key.address()).green());
     }
     fn inquire_search() -> String {
         CustomType::<String>::new("Search:")
@@ -383,7 +383,7 @@ impl Command {
                 process::exit(0)
             }
         } {
-            println!("{}", wallet.key.secret().red());
+            println!("{}", address::secret::encode(&wallet.key.secret_key()).red());
         }
     }
     fn data(wallet: &Wallet) {

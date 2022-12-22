@@ -64,7 +64,7 @@ impl Stake {
         util::hash(&bincode::serialize(&self.header()).unwrap())
     }
     pub fn sign(&mut self, key: &Key) {
-        self.public_key = key.public_key_bytes();
+        self.public_key = key.public_key();
         self.signature = key.sign(&self.hash());
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {

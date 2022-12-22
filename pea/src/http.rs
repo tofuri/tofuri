@@ -147,7 +147,7 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let datetime = Utc.timestamp_nanos(timestamp);
     Ok(json(serde_json::to_string(&types::api::Info {
         time: datetime.to_rfc2822(),
-        address: node.blockchain.key.address(),
+        address: address::address::encode(&node.blockchain.key.address()),
         uptime: format!("{}", node.uptime()),
         heartbeats: node.heartbeats,
         tree_size: node.blockchain.tree.size(),
@@ -166,8 +166,8 @@ fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
 fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
     Ok(json(serde_json::to_string(&types::api::State {
-        balance: dynamic.balance(&node.blockchain.key.address_bytes()),
-        balance_staked: dynamic.balance_staked(&node.blockchain.key.address_bytes()),
+        balance: dynamic.balance(&node.blockchain.key.address()),
+        balance_staked: dynamic.balance_staked(&node.blockchain.key.address()),
         hashes: dynamic.hashes.len(),
         latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
         stakers: dynamic.stakers.iter().take(16).map(address::address::encode).collect(),
@@ -176,8 +176,8 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
 fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
     Ok(json(serde_json::to_string(&types::api::State {
-        balance: trusted.balance(&node.blockchain.key.address_bytes()),
-        balance_staked: trusted.balance_staked(&node.blockchain.key.address_bytes()),
+        balance: trusted.balance(&node.blockchain.key.address()),
+        balance_staked: trusted.balance_staked(&node.blockchain.key.address()),
         hashes: trusted.hashes.len(),
         latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
         stakers: trusted.stakers.iter().take(16).map(address::address::encode).collect(),

@@ -41,7 +41,7 @@ pub struct Payment {
 impl Payment {
     pub fn from(charge: &Charge) -> Payment {
         let key = Key::from_secret_key_bytes(&charge.secret_key_bytes);
-        let address = key.address();
+        let address = pea_address::address::encode(&key.address());
         let status = status(&charge.status);
         Payment {
             address,

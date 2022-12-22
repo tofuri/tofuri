@@ -118,20 +118,10 @@ mod tests {
     use super::*;
     #[test]
     fn test_hash() {
-        let transaction = Transaction {
-            input_public_key: [0; 32],
-            output_address: [0; 20],
-            amount: 0,
-            fee: 0,
-            timestamp: 0,
-            signature: [0; 64],
-        };
+        let transaction = Transaction::default();
         assert_eq!(
             transaction.hash(),
-            [
-                172, 111, 134, 255, 246, 48, 165, 106, 33, 245, 157, 58, 12, 28, 105, 7, 254, 63, 124, 175, 213, 250, 145, 111, 155, 114, 32, 50, 246, 5, 158,
-                217
-            ]
+            [77, 0, 105, 118, 99, 106, 134, 150, 217, 9, 166, 48, 164, 8, 26, 173, 77, 124, 80, 248, 26, 253, 238, 4, 2, 11, 240, 80, 134, 171, 106, 85]
         );
     }
 }

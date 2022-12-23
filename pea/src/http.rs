@@ -203,7 +203,7 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
 fn get_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     let address = address::address::decode(BALANCE.find(first).ok_or("GET BALANCE 1")?.as_str().trim().get(9..).ok_or("GET BALANCE 2")?)?;
     let balance = node.blockchain.states.dynamic.balance(&address);
-    Ok(json(serde_json::to_string(&balance)?))
+    Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
 }
 fn get_staked_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     let address = address::address::decode(
@@ -216,7 +216,7 @@ fn get_staked_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Er
             .ok_or("GET BALANCE_STAKED 2")?,
     )?;
     let balance = node.blockchain.states.dynamic.balance_staked(&address);
-    Ok(json(serde_json::to_string(&balance)?))
+    Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
 }
 fn get_height(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let height = node.blockchain.height();

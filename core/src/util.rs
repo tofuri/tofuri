@@ -15,7 +15,12 @@ pub fn hash(input: &[u8]) -> types::Hash {
     blake3::hash(input).into()
 }
 pub fn address(public_key_bytes: &types::PublicKeyBytes) -> types::AddressBytes {
-    hash(public_key_bytes)[..20].try_into().unwrap()
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(public_key_bytes);
+    let mut output = [0; 20];
+    let mut output_reader = hasher.finalize_xof();
+    output_reader.fill(&mut output);
+    output
 }
 pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>> {
     let file = File::open(path)?;

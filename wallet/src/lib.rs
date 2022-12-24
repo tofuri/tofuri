@@ -83,7 +83,7 @@ impl Wallet {
         let ciphertext = &data[44..];
         let secret_key = SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
         let secret_key_bytes = secret_key.to_bytes();
-        let key = Key::from_secret_key_bytes(&secret_key_bytes);
+        let key = Key::from_canonical_bytes(secret_key_bytes).unwrap();
         Ok(Wallet {
             key,
             salt: salt.to_vec(),
@@ -92,7 +92,7 @@ impl Wallet {
         })
     }
     fn export(&mut self, filename: String) -> Result<(), Box<dyn Error>> {
-        let (salt, nonce, ciphertext) = Wallet::encrypt(&self.key.secret_key())?;
+        let (salt, nonce, ciphertext) = Wallet::encrypt(&self.key.secret_key_bytes())?;
         self.salt = salt.to_vec();
         self.nonce = nonce.to_vec();
         self.ciphertext = ciphertext.to_vec();

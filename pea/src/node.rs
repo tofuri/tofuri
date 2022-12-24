@@ -72,7 +72,7 @@ pub struct Node {
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
         let wallet = Node::wallet(options.tempkey, options.wallet, options.passphrase);
-        info!("Address {}", pea_address::address::encode(&wallet.key.address()).green());
+        info!("Address {}", pea_address::address::encode(&wallet.key.address_bytes()).green());
         let db = Node::db(options.tempdb);
         let blockchain = Blockchain::new(db, wallet.key, options.trust, options.pending, options.time_delta);
         let swarm = Node::swarm(options.max_established, options.timeout).await.unwrap();

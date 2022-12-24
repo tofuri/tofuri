@@ -418,6 +418,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
 dependencies = [
+ "block-padding",
  "generic-array",
 ]
 
@@ -1834,6 +1835,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "keccak"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3afef3b6eff9ce9d8ff9b3601125eec7f0c8cbac7abd14f355d053fa56c98768"
+dependencies = [
+ "cpufeatures",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2929,6 +2939,7 @@ dependencies = [
 name = "pea-key"
 version = "0.3.0"
 dependencies = [
+ "curve25519-dalek 3.2.0",
  "ed25519",
  "ed25519-dalek",
  "pea-core",
@@ -2943,56 +2954,6 @@ dependencies = [
  "colored",
  "env_logger",
  "log",
-]
-
-[[package]]
-name = "pea-pay"
-version = "0.1.2"
-dependencies = [
- "bincode",
- "chrono",
- "clap",
- "colored",
- "futures",
- "hex",
- "lazy_static",
- "log",
- "pea-address",
- "pea-api",
- "pea-core",
- "pea-int",
- "pea-key",
- "pea-logger",
- "pea-pay-core",
- "pea-pay-db",
- "pea-transaction",
- "pea-wallet",
- "regex",
- "reqwest",
- "rocksdb",
- "serde_json",
- "tempdir",
- "tokio",
-]
-
-[[package]]
-name = "pea-pay-core"
-version = "0.1.1"
-dependencies = [
- "bincode",
- "pea-address",
- "pea-core",
- "pea-key",
- "serde",
-]
-
-[[package]]
-name = "pea-pay-db"
-version = "0.1.1"
-dependencies = [
- "bincode",
- "pea-pay-core",
- "rocksdb",
 ]
 
 [[package]]
@@ -3040,6 +3001,18 @@ dependencies = [
  "bincode",
  "hex",
  "pea-core",
+]
+
+[[package]]
+name = "pea-vrf"
+version = "0.1.0"
+dependencies = [
+ "curve25519-dalek 3.2.0",
+ "pea-core",
+ "pea-key",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "sha3",
 ]
 
 [[package]]
@@ -3951,6 +3924,18 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest 0.10.3",
+]
+
+[[package]]
+name = "sha3"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f81199417d4e5de3f04b1e871023acea7389672c4135918f05aa9cbf2f2fa809"
+dependencies = [
+ "block-buffer 0.9.0",
+ "digest 0.9.0",
+ "keccak",
+ "opaque-debug",
 ]
 
 [[package]]

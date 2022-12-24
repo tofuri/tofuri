@@ -124,18 +124,18 @@ mod tests {
     #[test]
     fn test_fake_proof() {
         let key = Key::generate();
-        let f_key = Key::generate();
+        let key_fake = Key::generate();
         let alpha = [0];
-        let f_alpha = [1];
+        let alpha_fake = [1];
         let (beta, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
-        let (f_beta_0, f_pi) = prove::<Sha3_512, Sha3_256>(&alpha, &f_key.scalar);
-        let mut f_beta_1 = beta.clone();
-        f_beta_1[0] += 0x01;
-        assert!(!verify::<Sha3_512, Sha3_256>(&f_alpha, &beta, key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, f_key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &f_beta_0, key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &f_beta_1, key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.ristretto_point(), &f_pi));
+        let (beta_fake_0, pi_fake) = prove::<Sha3_512, Sha3_256>(&alpha, &key_fake.scalar);
+        let mut beta_fake_1 = beta.clone();
+        beta_fake_1[0] += 0x01;
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha_fake, &beta, key.ristretto_point(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key_fake.ristretto_point(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta_fake_0, key.ristretto_point(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta_fake_1, key.ristretto_point(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.ristretto_point(), &pi_fake));
     }
     #[test]
     fn test_serialize() {

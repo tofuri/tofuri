@@ -1,6 +1,7 @@
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
+use digest::generic_array::typenum::U32;
 use digest::generic_array::typenum::U64;
 use digest::Digest;
 use rand_core::OsRng;
@@ -33,16 +34,18 @@ impl Proof {
 fn serialize_point(ristretto_point: RistrettoPoint) -> [u8; 32] {
     ristretto_point.compress().to_bytes()
 }
-pub fn prove<D>(alpha: &[u8], secret: &Scalar) -> ([u8; 32], Proof)
+pub fn prove<A, B>(alpha: &[u8], secret: &Scalar) -> ([u8; 32], Proof)
 where
-    D: Digest<OutputSize = U64> + Default,
+    A: Digest<OutputSize = U64> + Default,
+    B: Digest<OutputSize = U32> + Default,
 {
-    let h = RistrettoPoint::hash_from_bytes::<D>(alpha);
+    let h = RistrettoPoint::hash_from_bytes::<A>(alpha);
     let p = &RISTRETTO_BASEPOINT_TABLE * secret;
     let gamma = h * secret;
     let k: Scalar = Scalar::random(&mut OsRng);
-    let c = blake3::hash(
-        &[
+    let mut hasher = B::default();
+    hasher.update(
+        [
             serialize_point(h),
             serialize_point(p),
             serialize_point(gamma),
@@ -50,11 +53,13 @@ where
             serialize_point(h * k),
         ]
         .concat(),
-    )
-    .into();
+    );
+    let c = hasher.finalize().into();
     let c_scalar = Scalar::from_bytes_mod_order(c);
     let s = k - c_scalar * secret;
-    let beta = blake3::hash(&serialize_point(gamma)).into();
+    let mut hasher = B::default();
+    hasher.update(serialize_point(gamma));
+    let beta = hasher.finalize().into();
     (
         beta,
         Proof {
@@ -64,9 +69,10 @@ where
         },
     )
 }
-pub fn verify<D>(alpha: &[u8], beta: &[u8; 32], p: RistrettoPoint, pi: &Proof) -> bool
+pub fn verify<A, B>(alpha: &[u8], beta: &[u8; 32], p: RistrettoPoint, pi: &Proof) -> bool
 where
-    D: Digest<OutputSize = U64> + Default,
+    A: Digest<OutputSize = U64> + Default,
+    B: Digest<OutputSize = U32> + Default,
 {
     let gamma = CompressedRistretto::from_slice(&pi.gamma).decompress();
     if gamma.is_none() {
@@ -80,33 +86,40 @@ where
     let s = s.unwrap();
     let c_scalar = Scalar::from_bytes_mod_order(pi.c);
     let u = p * c_scalar + &RISTRETTO_BASEPOINT_TABLE * &s;
-    let h = RistrettoPoint::hash_from_bytes::<D>(alpha);
+    let h = RistrettoPoint::hash_from_bytes::<A>(alpha);
     let v = gamma * c_scalar + h * s;
-    beta == blake3::hash(&serialize_point(gamma)).as_bytes()
-        && blake3::hash(
-            &[
-                serialize_point(h),
-                serialize_point(p),
-                serialize_point(gamma),
-                serialize_point(u),
-                serialize_point(v),
-            ]
-            .concat(),
-        )
-        .as_bytes()
-            == &pi.c
+    let mut hasher = B::default();
+    hasher.update(serialize_point(gamma));
+    if beta != hasher.finalize_reset().as_slice() {
+        return false;
+    }
+    hasher.update(
+        [
+            serialize_point(h),
+            serialize_point(p),
+            serialize_point(gamma),
+            serialize_point(u),
+            serialize_point(v),
+        ]
+        .concat(),
+    );
+    if pi.c != hasher.finalize().as_slice() {
+        return false;
+    }
+    true
 }
 #[cfg(test)]
 mod tests {
     use super::*;
     use pea_key::Key;
+    use sha3::Sha3_256;
     use sha3::Sha3_512;
     #[test]
     fn test_proof() {
         let key = Key::generate();
         let alpha = [];
-        let (beta, pi) = prove::<Sha3_512>(&alpha, &key.scalar);
-        assert!(verify::<Sha3_512>(&alpha, &beta, key.ristretto_point(), &pi));
+        let (beta, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
+        assert!(verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.ristretto_point(), &pi));
     }
     #[test]
     fn test_fake_proof() {
@@ -114,21 +127,21 @@ mod tests {
         let f_key = Key::generate();
         let alpha = [0];
         let f_alpha = [1];
-        let (beta, pi) = prove::<Sha3_512>(&alpha, &key.scalar);
-        let (f_beta_0, f_pi) = prove::<Sha3_512>(&alpha, &f_key.scalar);
+        let (beta, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
+        let (f_beta_0, f_pi) = prove::<Sha3_512, Sha3_256>(&alpha, &f_key.scalar);
         let mut f_beta_1 = beta.clone();
         f_beta_1[0] += 0x01;
-        assert!(!verify::<Sha3_512>(&f_alpha, &beta, key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512>(&alpha, &beta, f_key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512>(&alpha, &f_beta_0, key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512>(&alpha, &f_beta_1, key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512>(&alpha, &beta, key.ristretto_point(), &f_pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&f_alpha, &beta, key.ristretto_point(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, f_key.ristretto_point(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &f_beta_0, key.ristretto_point(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &f_beta_1, key.ristretto_point(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.ristretto_point(), &f_pi));
     }
     #[test]
     fn test_serialize() {
         let key = Key::generate();
         let alpha = [];
-        let (_, pi) = prove::<Sha3_512>(&alpha, &key.scalar);
+        let (_, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
         assert_eq!(pi, Proof::from_bytes(&pi.to_bytes()));
     }
 }

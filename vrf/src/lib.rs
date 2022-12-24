@@ -33,15 +33,16 @@ impl Proof {
 fn serialize_point(ristretto_point: RistrettoPoint) -> [u8; 32] {
     ristretto_point.compress().to_bytes()
 }
-pub fn prove(alpha: &[u8], secret_key: &Scalar) -> ([u8; 32], Proof) {
+pub fn prove(alpha: &[u8], secret: &Scalar) -> ([u8; 32], Proof) {
     let h = RistrettoPoint::hash_from_bytes::<Sha3_512>(alpha);
-    let gamma = h * secret_key;
+    let p = RISTRETTO_BASEPOINT_POINT * secret;
+    let gamma = h * secret;
     let k: Scalar = Scalar::random(&mut OsRng);
     let c = util::hash(
         &[
             serialize_point(RISTRETTO_BASEPOINT_POINT),
             serialize_point(h),
-            serialize_point(RISTRETTO_BASEPOINT_POINT * secret_key),
+            serialize_point(p),
             serialize_point(gamma),
             serialize_point(RISTRETTO_BASEPOINT_POINT * k),
             serialize_point(h * k),
@@ -49,7 +50,7 @@ pub fn prove(alpha: &[u8], secret_key: &Scalar) -> ([u8; 32], Proof) {
         .concat(),
     );
     let c_scalar = Scalar::from_bytes_mod_order(c);
-    let s = k - c_scalar * secret_key;
+    let s = k - c_scalar * secret;
     let beta = util::hash(&serialize_point(gamma));
     (
         beta,
@@ -60,7 +61,7 @@ pub fn prove(alpha: &[u8], secret_key: &Scalar) -> ([u8; 32], Proof) {
         },
     )
 }
-pub fn verify(alpha: &[u8], public_key: &RistrettoPoint, beta: [u8; 32], pi: &Proof) -> bool {
+pub fn verify(alpha: &[u8], p: RistrettoPoint, beta: [u8; 32], pi: &Proof) -> bool {
     let gamma = CompressedRistretto::from_slice(&pi.gamma).decompress();
     if gamma.is_none() {
         return false;
@@ -72,7 +73,7 @@ pub fn verify(alpha: &[u8], public_key: &RistrettoPoint, beta: [u8; 32], pi: &Pr
     }
     let s = s.unwrap();
     let c_scalar = Scalar::from_bytes_mod_order(pi.c);
-    let u = public_key * c_scalar + RISTRETTO_BASEPOINT_POINT * s;
+    let u = p * c_scalar + RISTRETTO_BASEPOINT_POINT * s;
     let h = RistrettoPoint::hash_from_bytes::<Sha3_512>(alpha);
     let v = gamma * c_scalar + h * s;
     beta == util::hash(&serialize_point(gamma))
@@ -80,7 +81,7 @@ pub fn verify(alpha: &[u8], public_key: &RistrettoPoint, beta: [u8; 32], pi: &Pr
             &[
                 serialize_point(RISTRETTO_BASEPOINT_POINT),
                 serialize_point(h),
-                serialize_point(*public_key),
+                serialize_point(p),
                 serialize_point(gamma),
                 serialize_point(u),
                 serialize_point(v),
@@ -97,7 +98,7 @@ mod tests {
         let key = Key::generate();
         let alpha = [];
         let (beta, pi) = prove(&alpha, &key.scalar);
-        assert!(verify(&alpha, &key.ristretto_point(), beta, &pi));
+        assert!(verify(&alpha, key.ristretto_point(), beta, &pi));
     }
     #[test]
     fn test_fake_proof() {
@@ -109,11 +110,11 @@ mod tests {
         let (f_beta_0, f_pi) = prove(&alpha, &f_key.scalar);
         let mut f_beta_1 = beta.clone();
         f_beta_1[0] += 0x01;
-        assert!(!verify(&f_alpha, &key.ristretto_point(), beta, &pi));
-        assert!(!verify(&alpha, &f_key.ristretto_point(), beta, &pi));
-        assert!(!verify(&alpha, &key.ristretto_point(), f_beta_0, &pi));
-        assert!(!verify(&alpha, &key.ristretto_point(), f_beta_1, &pi));
-        assert!(!verify(&alpha, &key.ristretto_point(), beta, &f_pi));
+        assert!(!verify(&f_alpha, key.ristretto_point(), beta, &pi));
+        assert!(!verify(&alpha, f_key.ristretto_point(), beta, &pi));
+        assert!(!verify(&alpha, key.ristretto_point(), f_beta_0, &pi));
+        assert!(!verify(&alpha, key.ristretto_point(), f_beta_1, &pi));
+        assert!(!verify(&alpha, key.ristretto_point(), beta, &f_pi));
     }
     #[test]
     fn test_serialize() {

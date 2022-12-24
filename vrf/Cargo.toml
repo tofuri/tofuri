@@ -9,13 +9,12 @@ repository = "https://github.com/peacash/peacash"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pea-core = { version = "0.4.0", path = "../core" }
-pea-key = { version = "0.3.0", path = "../key" }
 rand_core = "0.5.1"
 curve25519-dalek = "3.1.1"
 digest = "0.9.0"
 
 [dev-dependencies]
+pea-key = { version = "0.3.0", path = "../key" }
 rand = "0.7.3"
 sha3 = "0.9.1"
 sha2 = "0.9.9"

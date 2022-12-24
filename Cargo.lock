@@ -3016,7 +3016,6 @@ dependencies = [
  "curve25519-dalek 3.2.0",
  "digest 0.9.0",
  "hex",
- "pea-core",
  "pea-key",
  "rand 0.7.3",
  "rand_core 0.5.1",

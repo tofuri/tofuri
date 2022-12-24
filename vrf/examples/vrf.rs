@@ -12,7 +12,7 @@ fn main() {
         }
         let (beta, pi) = prove::<Sha512, Sha256>(&alpha, &key.scalar);
         println!("{}", hex::encode(beta));
-        println!("{}", verify::<Sha512, Sha256>(&alpha, &beta, key.ristretto_point(), &pi));
+        println!("{}", verify::<Sha512, Sha256>(&alpha, &beta, key.compressed_ristretto(), &pi));
         alpha = beta;
     }
 }

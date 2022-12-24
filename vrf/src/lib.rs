@@ -69,11 +69,16 @@ where
         },
     )
 }
-pub fn verify<A, B>(alpha: &[u8], beta: &[u8; 32], p: RistrettoPoint, pi: &Proof) -> bool
+pub fn verify<A, B>(alpha: &[u8], beta: &[u8; 32], compressed_ristretto: CompressedRistretto, pi: &Proof) -> bool
 where
     A: Digest<OutputSize = U64> + Default,
     B: Digest<OutputSize = U32> + Default,
 {
+    let y = compressed_ristretto.decompress();
+    if y.is_none() {
+        return false;
+    }
+    let y = y.unwrap();
     let gamma = CompressedRistretto::from_slice(&pi.gamma).decompress();
     if gamma.is_none() {
         return false;
@@ -85,7 +90,7 @@ where
     }
     let s = s.unwrap();
     let c_scalar = Scalar::from_bytes_mod_order(pi.c);
-    let u = p * c_scalar + &RISTRETTO_BASEPOINT_TABLE * &s;
+    let u = y * c_scalar + &RISTRETTO_BASEPOINT_TABLE * &s;
     let h = RistrettoPoint::hash_from_bytes::<A>(alpha);
     let v = gamma * c_scalar + h * s;
     let mut hasher = B::default();
@@ -96,7 +101,7 @@ where
     hasher.update(
         [
             serialize_point(h),
-            serialize_point(p),
+            serialize_point(y),
             serialize_point(gamma),
             serialize_point(u),
             serialize_point(v),
@@ -119,7 +124,7 @@ mod tests {
         let key = Key::generate();
         let alpha = [];
         let (beta, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
-        assert!(verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.ristretto_point(), &pi));
+        assert!(verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.compressed_ristretto(), &pi));
     }
     #[test]
     fn test_fake_proof() {
@@ -131,11 +136,11 @@ mod tests {
         let (beta_fake_0, pi_fake) = prove::<Sha3_512, Sha3_256>(&alpha, &key_fake.scalar);
         let mut beta_fake_1 = beta.clone();
         beta_fake_1[0] += 0x01;
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha_fake, &beta, key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key_fake.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta_fake_0, key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta_fake_1, key.ristretto_point(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.ristretto_point(), &pi_fake));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha_fake, &beta, key.compressed_ristretto(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key_fake.compressed_ristretto(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta_fake_0, key.compressed_ristretto(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta_fake_1, key.compressed_ristretto(), &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.compressed_ristretto(), &pi_fake));
     }
     #[test]
     fn test_serialize() {

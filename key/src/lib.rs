@@ -1,4 +1,8 @@
-use curve25519_dalek::{constants::RISTRETTO_BASEPOINT_TABLE, ristretto::RistrettoPoint, scalar::Scalar};
+use curve25519_dalek::{
+    constants::RISTRETTO_BASEPOINT_TABLE,
+    ristretto::{CompressedRistretto, RistrettoPoint},
+    scalar::Scalar,
+};
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
 use pea_core::{types, util};
@@ -42,6 +46,9 @@ impl Key {
     }
     pub fn ristretto_point(&self) -> RistrettoPoint {
         &RISTRETTO_BASEPOINT_TABLE * &self.scalar
+    }
+    pub fn compressed_ristretto(&self) -> CompressedRistretto {
+        self.ristretto_point().compress()
     }
     pub fn keypair(&self) -> Keypair {
         Keypair {

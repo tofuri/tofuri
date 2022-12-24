@@ -61,7 +61,7 @@ impl Transaction {
         }
     }
     pub fn hash(&self) -> types::Hash {
-        util::hash(&bincode::serialize(&self.header()).unwrap())
+        blake3::hash(&bincode::serialize(&self.header()).unwrap()).into()
     }
     pub fn sign(&mut self, key: &Key) {
         self.input_public_key = key.public_key_bytes();

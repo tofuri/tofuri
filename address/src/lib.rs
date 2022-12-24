@@ -1,9 +1,15 @@
+pub fn checksum(address: &[u8]) -> [u8; 4] {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(address);
+    let mut output = [0; 4];
+    let mut output_reader = hasher.finalize_xof();
+    output_reader.fill(&mut output);
+    output
+}
 pub mod address {
-    use pea_core::{constants::PREFIX_ADDRESS, types, util};
+    use super::*;
+    use pea_core::{constants::PREFIX_ADDRESS, types};
     use std::error::Error;
-    pub fn checksum(address: &types::AddressBytes) -> types::Checksum {
-        util::hash(address).get(0..4).unwrap().try_into().unwrap()
-    }
     pub fn encode(address: &types::AddressBytes) -> String {
         [PREFIX_ADDRESS, &hex::encode(address), &hex::encode(checksum(address))].concat()
     }
@@ -27,18 +33,12 @@ pub mod address {
         fn test_decode() {
             assert_eq!([0; 20], decode("0x0000000000000000000000000000000000000000607b1aff").unwrap());
         }
-        #[test]
-        fn test_cecksum() {
-            assert_eq!(vec![96, 123, 26, 255], checksum(&[0; 20]));
-        }
     }
 }
 pub mod public {
-    use pea_core::{constants::PREFIX_ADDRESS, types, util};
+    use super::*;
+    use pea_core::{constants::PREFIX_ADDRESS, types};
     use std::error::Error;
-    pub fn checksum(public_key: &types::PublicKeyBytes) -> types::Checksum {
-        util::hash(public_key).get(0..4).unwrap().try_into().unwrap()
-    }
     pub fn encode(public_key: &types::PublicKeyBytes) -> String {
         [PREFIX_ADDRESS, &hex::encode(public_key), &hex::encode(checksum(public_key))].concat()
     }
@@ -65,18 +65,12 @@ pub mod public {
                 decode("0x00000000000000000000000000000000000000000000000000000000000000002ada83c1").unwrap()
             );
         }
-        #[test]
-        fn test_cecksum() {
-            assert_eq!(vec![0x2a, 0xda, 0x83, 0xc1], checksum(&[0; 32]));
-        }
     }
 }
 pub mod secret {
-    use pea_core::{constants::PREFIX_ADDRESS_KEY, types, util};
+    use super::*;
+    use pea_core::{constants::PREFIX_ADDRESS_KEY, types};
     use std::error::Error;
-    pub fn checksum(secret_key: &types::SecretKeyBytes) -> types::Checksum {
-        util::hash(secret_key).get(4..8).unwrap().try_into().unwrap()
-    }
     pub fn encode(secret_key: &types::SecretKeyBytes) -> String {
         [PREFIX_ADDRESS_KEY, &hex::encode(secret_key), &hex::encode(checksum(secret_key))].concat()
     }
@@ -106,9 +100,13 @@ pub mod secret {
                 decode("SECRETx0000000000000000000000000000000000000000000000000000000000000000819a5372").unwrap()
             );
         }
-        #[test]
-        fn test_cecksum() {
-            assert_eq!(vec![129, 154, 83, 114], checksum(&[0; 32]));
-        }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_cecksum() {
+        assert_eq!(vec![0x2a, 0xda, 0x83, 0xc1], checksum(&[0; 32]));
     }
 }

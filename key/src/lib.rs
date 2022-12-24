@@ -60,7 +60,7 @@ impl Key {
     pub fn subkey(&self, n: usize) -> Key {
         let mut vec = self.secret_key_bytes().to_vec();
         vec.append(&mut n.to_le_bytes().to_vec());
-        let hash = util::hash(&vec);
+        let hash = blake3::hash(&vec).into();
         Key::from_bytes_mod_order(hash)
     }
 }

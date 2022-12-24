@@ -10,7 +10,7 @@ fn main() {
         }
         let (beta, pi) = prove(&alpha, &key.scalar);
         println!("{}", hex::encode(beta));
-        println!("{}", verify(&alpha, beta, key.ristretto_point(), &pi));
+        println!("{}", verify(&alpha, &beta, key.ristretto_point(), &pi));
         alpha = beta;
     }
 }

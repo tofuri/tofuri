@@ -11,9 +11,6 @@ use std::{
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
 }
-pub fn hash(input: &[u8]) -> types::Hash {
-    blake3::hash(input).into()
-}
 pub fn address(public_key_bytes: &types::PublicKeyBytes) -> types::AddressBytes {
     let mut hasher = blake3::Hasher::new();
     hasher.update(public_key_bytes);

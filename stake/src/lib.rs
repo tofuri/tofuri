@@ -1,6 +1,6 @@
 use pea_core::{
     constants::{AMOUNT_BYTES, MIN_STAKE},
-    types, util,
+    types,
 };
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
@@ -64,7 +64,7 @@ impl Stake {
         }
     }
     pub fn hash(&self) -> types::Hash {
-        util::hash(&bincode::serialize(&self.header()).unwrap())
+        blake3::hash(&bincode::serialize(&self.header()).unwrap()).into()
     }
     pub fn sign(&mut self, key: &Key) {
         self.public_key = key.public_key_bytes();

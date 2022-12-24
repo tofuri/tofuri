@@ -157,7 +157,7 @@ impl Node {
         known
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
-        let hash = util::hash(data);
+        let hash = blake3::hash(data).into();
         if self.message_data_hashes.contains(&hash) {
             return true;
         }

@@ -1,7 +1,6 @@
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
-use pea_core::util;
 use rand_core::OsRng;
 use sha3::Sha3_512;
 #[derive(Debug, PartialEq, Eq)]
@@ -38,7 +37,7 @@ pub fn prove(alpha: &[u8], secret: &Scalar) -> ([u8; 32], Proof) {
     let p = &RISTRETTO_BASEPOINT_TABLE * secret;
     let gamma = h * secret;
     let k: Scalar = Scalar::random(&mut OsRng);
-    let c = util::hash(
+    let c = blake3::hash(
         &[
             serialize_point(h),
             serialize_point(p),
@@ -47,10 +46,11 @@ pub fn prove(alpha: &[u8], secret: &Scalar) -> ([u8; 32], Proof) {
             serialize_point(h * k),
         ]
         .concat(),
-    );
+    )
+    .into();
     let c_scalar = Scalar::from_bytes_mod_order(c);
     let s = k - c_scalar * secret;
-    let beta = util::hash(&serialize_point(gamma));
+    let beta = blake3::hash(&serialize_point(gamma)).into();
     (
         beta,
         Proof {
@@ -60,7 +60,7 @@ pub fn prove(alpha: &[u8], secret: &Scalar) -> ([u8; 32], Proof) {
         },
     )
 }
-pub fn verify(alpha: &[u8], beta: [u8; 32], p: RistrettoPoint, pi: &Proof) -> bool {
+pub fn verify(alpha: &[u8], beta: &[u8; 32], p: RistrettoPoint, pi: &Proof) -> bool {
     let gamma = CompressedRistretto::from_slice(&pi.gamma).decompress();
     if gamma.is_none() {
         return false;
@@ -75,8 +75,8 @@ pub fn verify(alpha: &[u8], beta: [u8; 32], p: RistrettoPoint, pi: &Proof) -> bo
     let u = p * c_scalar + &RISTRETTO_BASEPOINT_TABLE * &s;
     let h = RistrettoPoint::hash_from_bytes::<Sha3_512>(alpha);
     let v = gamma * c_scalar + h * s;
-    beta == util::hash(&serialize_point(gamma))
-        && util::hash(
+    beta == blake3::hash(&serialize_point(gamma)).as_bytes()
+        && blake3::hash(
             &[
                 serialize_point(h),
                 serialize_point(p),
@@ -85,7 +85,9 @@ pub fn verify(alpha: &[u8], beta: [u8; 32], p: RistrettoPoint, pi: &Proof) -> bo
                 serialize_point(v),
             ]
             .concat(),
-        ) == pi.c
+        )
+        .as_bytes()
+            == &pi.c
 }
 #[cfg(test)]
 mod tests {
@@ -96,7 +98,7 @@ mod tests {
         let key = Key::generate();
         let alpha = [];
         let (beta, pi) = prove(&alpha, &key.scalar);
-        assert!(verify(&alpha, beta, key.ristretto_point(), &pi));
+        assert!(verify(&alpha, &beta, key.ristretto_point(), &pi));
     }
     #[test]
     fn test_fake_proof() {
@@ -108,11 +110,11 @@ mod tests {
         let (f_beta_0, f_pi) = prove(&alpha, &f_key.scalar);
         let mut f_beta_1 = beta.clone();
         f_beta_1[0] += 0x01;
-        assert!(!verify(&f_alpha, beta, key.ristretto_point(), &pi));
-        assert!(!verify(&alpha, beta, f_key.ristretto_point(), &pi));
-        assert!(!verify(&alpha, f_beta_0, key.ristretto_point(), &pi));
-        assert!(!verify(&alpha, f_beta_1, key.ristretto_point(), &pi));
-        assert!(!verify(&alpha, beta, key.ristretto_point(), &f_pi));
+        assert!(!verify(&f_alpha, &beta, key.ristretto_point(), &pi));
+        assert!(!verify(&alpha, &beta, f_key.ristretto_point(), &pi));
+        assert!(!verify(&alpha, &f_beta_0, key.ristretto_point(), &pi));
+        assert!(!verify(&alpha, &f_beta_1, key.ristretto_point(), &pi));
+        assert!(!verify(&alpha, &beta, key.ristretto_point(), &f_pi));
     }
     #[test]
     fn test_serialize() {

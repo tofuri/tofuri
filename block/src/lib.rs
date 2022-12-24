@@ -69,7 +69,7 @@ impl Block {
         Key::verify(&self.public_key, &self.hash(), &self.signature)
     }
     pub fn hash(&self) -> types::Hash {
-        util::hash(&bincode::serialize(&self.header()).unwrap())
+        blake3::hash(&bincode::serialize(&self.header()).unwrap()).into()
     }
     pub fn fees(&self) -> u128 {
         let mut fees = 0;

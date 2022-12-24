@@ -1,4 +1,4 @@
-use curve25519_dalek::constants::RISTRETTO_BASEPOINT_POINT;
+use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use pea_core::util;
@@ -35,16 +35,15 @@ fn serialize_point(ristretto_point: RistrettoPoint) -> [u8; 32] {
 }
 pub fn prove(alpha: &[u8], secret: &Scalar) -> ([u8; 32], Proof) {
     let h = RistrettoPoint::hash_from_bytes::<Sha3_512>(alpha);
-    let p = RISTRETTO_BASEPOINT_POINT * secret;
+    let p = &RISTRETTO_BASEPOINT_TABLE * secret;
     let gamma = h * secret;
     let k: Scalar = Scalar::random(&mut OsRng);
     let c = util::hash(
         &[
-            serialize_point(RISTRETTO_BASEPOINT_POINT),
             serialize_point(h),
             serialize_point(p),
             serialize_point(gamma),
-            serialize_point(RISTRETTO_BASEPOINT_POINT * k),
+            serialize_point(&RISTRETTO_BASEPOINT_TABLE * &k),
             serialize_point(h * k),
         ]
         .concat(),
@@ -73,13 +72,12 @@ pub fn verify(alpha: &[u8], p: RistrettoPoint, beta: [u8; 32], pi: &Proof) -> bo
     }
     let s = s.unwrap();
     let c_scalar = Scalar::from_bytes_mod_order(pi.c);
-    let u = p * c_scalar + RISTRETTO_BASEPOINT_POINT * s;
+    let u = p * c_scalar + &RISTRETTO_BASEPOINT_TABLE * &s;
     let h = RistrettoPoint::hash_from_bytes::<Sha3_512>(alpha);
     let v = gamma * c_scalar + h * s;
     beta == util::hash(&serialize_point(gamma))
         && util::hash(
             &[
-                serialize_point(RISTRETTO_BASEPOINT_POINT),
                 serialize_point(h),
                 serialize_point(p),
                 serialize_point(gamma),

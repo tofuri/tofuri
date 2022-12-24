@@ -60,7 +60,7 @@ pub fn prove(alpha: &[u8], secret: &Scalar) -> ([u8; 32], Proof) {
         },
     )
 }
-pub fn verify(alpha: &[u8], p: RistrettoPoint, beta: [u8; 32], pi: &Proof) -> bool {
+pub fn verify(alpha: &[u8], beta: [u8; 32], p: RistrettoPoint, pi: &Proof) -> bool {
     let gamma = CompressedRistretto::from_slice(&pi.gamma).decompress();
     if gamma.is_none() {
         return false;
@@ -96,7 +96,7 @@ mod tests {
         let key = Key::generate();
         let alpha = [];
         let (beta, pi) = prove(&alpha, &key.scalar);
-        assert!(verify(&alpha, key.ristretto_point(), beta, &pi));
+        assert!(verify(&alpha, beta, key.ristretto_point(), &pi));
     }
     #[test]
     fn test_fake_proof() {
@@ -108,11 +108,11 @@ mod tests {
         let (f_beta_0, f_pi) = prove(&alpha, &f_key.scalar);
         let mut f_beta_1 = beta.clone();
         f_beta_1[0] += 0x01;
-        assert!(!verify(&f_alpha, key.ristretto_point(), beta, &pi));
-        assert!(!verify(&alpha, f_key.ristretto_point(), beta, &pi));
-        assert!(!verify(&alpha, key.ristretto_point(), f_beta_0, &pi));
-        assert!(!verify(&alpha, key.ristretto_point(), f_beta_1, &pi));
-        assert!(!verify(&alpha, key.ristretto_point(), beta, &f_pi));
+        assert!(!verify(&f_alpha, beta, key.ristretto_point(), &pi));
+        assert!(!verify(&alpha, beta, f_key.ristretto_point(), &pi));
+        assert!(!verify(&alpha, f_beta_0, key.ristretto_point(), &pi));
+        assert!(!verify(&alpha, f_beta_1, key.ristretto_point(), &pi));
+        assert!(!verify(&alpha, beta, key.ristretto_point(), &f_pi));
     }
     #[test]
     fn test_serialize() {

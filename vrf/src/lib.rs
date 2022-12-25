@@ -7,7 +7,7 @@ use digest::generic_array::GenericArray;
 use digest::Digest;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Copy, Clone)]
 pub struct Proof {
     gamma: [u8; 32],
     c: [u8; 32],

@@ -86,6 +86,11 @@ where
         return false;
     }
     let gamma = gamma.unwrap();
+    let mut hasher = B::default();
+    hasher.update(to_bytes(gamma));
+    if beta != hasher.finalize_reset().as_slice() {
+        return false;
+    }
     let s = Scalar::from_canonical_bytes(pi.s);
     if s.is_none() {
         return false;
@@ -95,11 +100,6 @@ where
     let u = y * c_scalar + &RISTRETTO_BASEPOINT_TABLE * &s;
     let h = RistrettoPoint::hash_from_bytes::<A>(alpha);
     let v = gamma * c_scalar + h * s;
-    let mut hasher = B::default();
-    hasher.update(to_bytes(gamma));
-    if beta != hasher.finalize_reset().as_slice() {
-        return false;
-    }
     hasher.update([to_bytes(h), to_bytes(y), to_bytes(gamma), to_bytes(u), to_bytes(v)].concat());
     if pi.c != hasher.finalize().as_slice() {
         return false;

@@ -1,4 +1,5 @@
 use pea_block::Block;
+use pea_core::constants::COIN;
 use pea_core::util;
 use pea_core::{constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
 use pea_db as db;
@@ -291,13 +292,15 @@ fn staker_index(timestamp: u32, previous_timestamp: u32) -> usize {
     index as usize
 }
 fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32) {
-    for _ in 0..staker_index(timestamp, previous_timestamp) {
+    for i in 0..staker_index(timestamp, previous_timestamp) {
         if state.get_stakers_mut().is_empty() {
             break;
         }
-        let staker = state.get_stakers().get(0).unwrap().clone();
-        state.get_balance_staked_mut().remove(&staker);
-        state.get_stakers_mut().remove(0).unwrap();
+        let address = state.get_stakers().get(0).unwrap().clone();
+        let mut balance_staked = state.balance(&address);
+        balance_staked = balance_staked.saturating_sub(COIN * i as u128);
+        state.get_balance_staked_mut().insert(address, balance_staked);
+        update_staker(state, address);
     }
 }
 pub fn update<T: State>(state: &mut T, block: &Block, previous_timestamp: u32) {

@@ -6,7 +6,8 @@ use digest::generic_array::typenum::U64;
 use digest::generic_array::GenericArray;
 use digest::Digest;
 use rand_core::OsRng;
-#[derive(Debug, PartialEq, Eq)]
+use serde::{Deserialize, Serialize};
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Proof {
     gamma: [u8; 32],
     c: [u8; 32],

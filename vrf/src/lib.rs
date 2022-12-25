@@ -40,7 +40,7 @@ fn from_bytes(bytes: &[u8]) -> Option<RistrettoPoint> {
 pub fn validate_key(public: &[u8]) -> bool {
     from_bytes(public).is_some()
 }
-pub fn prove<A, B>(alpha: &[u8], secret: &Scalar) -> ([u8; 32], Proof)
+pub fn prove<A, B>(alpha: &[u8], secret: &Scalar) -> ([u8; 32], [u8; 96])
 where
     A: Digest<OutputSize = U64> + Default,
     B: Digest<OutputSize = U32> + Default,
@@ -72,16 +72,18 @@ where
             gamma: gamma.compress().to_bytes(),
             c,
             s: s.to_bytes(),
-        },
+        }
+        .to_bytes(),
     )
 }
-pub fn verify<A, B>(public: &[u8], alpha: &[u8], beta: &[u8; 32], pi: &Proof) -> bool
+pub fn verify<A, B>(public: &[u8], alpha: &[u8], beta: &[u8; 32], pi: &[u8; 96]) -> bool
 where
     A: Digest<OutputSize = U64> + Default,
     B: Digest<OutputSize = U32> + Default,
 {
     let y = from_bytes(public).expect("valid key");
-    let gamma = CompressedRistretto::from_slice(&pi.gamma).decompress();
+    let proof = Proof::from_bytes(pi);
+    let gamma = CompressedRistretto::from_slice(&proof.gamma).decompress();
     if gamma.is_none() {
         return false;
     }
@@ -91,17 +93,17 @@ where
     if beta != hasher.finalize_reset().as_slice() {
         return false;
     }
-    let s = Scalar::from_canonical_bytes(pi.s);
+    let s = Scalar::from_canonical_bytes(proof.s);
     if s.is_none() {
         return false;
     }
     let s = s.unwrap();
-    let c_scalar = Scalar::from_bytes_mod_order(pi.c);
+    let c_scalar = Scalar::from_bytes_mod_order(proof.c);
     let u = y * c_scalar + &RISTRETTO_BASEPOINT_TABLE * &s;
     let h = RistrettoPoint::hash_from_bytes::<A>(alpha);
     let v = gamma * c_scalar + h * s;
     hasher.update([to_bytes(h), to_bytes(y), to_bytes(gamma), to_bytes(u), to_bytes(v)].concat());
-    if pi.c != hasher.finalize().as_slice() {
+    if proof.c != hasher.finalize().as_slice() {
         return false;
     }
     true
@@ -134,13 +136,6 @@ mod tests {
         assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta_fake_0, &pi));
         assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta_fake_1, &pi));
         assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta, &pi_fake));
-    }
-    #[test]
-    fn test_serialize() {
-        let key = Key::generate();
-        let alpha = [];
-        let (_, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
-        assert_eq!(pi, Proof::from_bytes(&pi.to_bytes()));
     }
     #[test]
     fn test_validate_key() {

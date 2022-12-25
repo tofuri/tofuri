@@ -120,13 +120,13 @@ mod tests {
         let key = Key::generate();
         let alpha = [];
         let proof_0 = prove::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
-        let beta_0 = proof_0.hash::<Sha3_256>();
         let proof_1 = prove::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
-        let beta_1 = proof_1.hash::<Sha3_256>();
-        assert_eq!(beta_0, beta_1);
         assert_eq!(proof_0.gamma, proof_1.gamma);
         assert_ne!(proof_0.c, proof_1.c);
         assert_ne!(proof_0.s, proof_1.s);
+        let beta_0 = proof_0.hash::<Sha3_256>();
+        let beta_1 = proof_1.hash::<Sha3_256>();
+        assert_eq!(beta_0, beta_1);
     }
     #[test]
     fn test_verify() {

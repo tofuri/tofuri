@@ -1,4 +1,4 @@
-use pea_core::{types, util};
+use pea_core::{constants::COIN, types};
 use pea_key::Key;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
@@ -81,8 +81,8 @@ impl Block {
         }
         fees
     }
-    pub fn reward(&self, balance_staked: u128) -> u128 {
-        self.fees() + util::reward(balance_staked)
+    pub fn reward(&self) -> u128 {
+        self.fees() + COIN
     }
     pub fn transaction_hashes(&self) -> Vec<types::Hash> {
         let mut transaction_hashes = vec![];

@@ -1,7 +1,4 @@
-use crate::{
-    constants::{COIN, MIN_STAKE_MULTIPLIER},
-    types,
-};
+use crate::types;
 use std::{
     error::Error,
     fs::File,
@@ -23,9 +20,6 @@ pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>>
     let file = File::open(path)?;
     let buf = BufReader::new(file);
     Ok(buf.lines().map(|l| l.expect("Could not parse line")).collect())
-}
-pub fn reward(balance_staked: u128) -> u128 {
-    ((2f64.powf((balance_staked as f64 / COIN as f64) / MIN_STAKE_MULTIPLIER as f64) - 1f64) * COIN as f64) as u128
 }
 pub fn micros_per_tick(tps: f64) -> u64 {
     let secs = 1_f64 / tps;

@@ -3,7 +3,7 @@ use colored::*;
 use log::{debug, info, warn};
 use pea_block::Block;
 use pea_core::constants::{
-    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, MAX_STAKE, MIN_STAKE, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, SYNC_BLOCKS_PER_TICK,
+    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, STAKE, SYNC_BLOCKS_PER_TICK,
 };
 use pea_core::{types, util};
 use pea_db as db;
@@ -70,7 +70,7 @@ impl Blockchain {
                 return None;
             }
         } else {
-            let mut stake = Stake::new(true, MIN_STAKE, 0, timestamp);
+            let mut stake = Stake::new(true, 0, timestamp);
             stake.sign(&self.key);
             self.pending_stakes = vec![stake];
         }
@@ -245,17 +245,17 @@ impl Blockchain {
             return Err("stake timestamp ancient".into());
         }
         if stake.deposit {
-            if stake.amount + stake.fee > balance {
+            if STAKE + stake.fee > balance {
                 return Err("stake deposit too expensive".into());
             }
-            if stake.amount + balance_staked > MAX_STAKE {
-                return Err("stake deposit exceeds MAX_STAKE".into());
+            if balance_staked != 0 {
+                return Err("stake already staking".into());
             }
         } else {
             if stake.fee > balance {
                 return Err("stake withdraw fee too expensive".into());
             }
-            if stake.amount > balance_staked {
+            if STAKE > balance_staked {
                 return Err("stake withdraw too expensive".into());
             }
         }

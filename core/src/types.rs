@@ -88,7 +88,6 @@ pub mod api {
     pub struct Stake {
         pub hash: String,
         pub address: String,
-        pub amount: Amount,
         pub fee: Amount,
         pub deposit: bool,
         pub timestamp: u32,

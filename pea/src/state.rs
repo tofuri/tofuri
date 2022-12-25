@@ -1,7 +1,7 @@
 use pea_block::Block;
-use pea_core::constants::COIN;
+use pea_core::constants::{COIN, STAKE};
 use pea_core::util;
-use pea_core::{constants::BLOCK_TIME_MAX, constants::MIN_STAKE, types};
+use pea_core::{constants::BLOCK_TIME_MAX, types};
 use pea_db as db;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
@@ -241,26 +241,30 @@ fn update_balances<T: State>(state: &mut T, block: &Block) {
         let mut balance = state.balance(&address);
         let mut balance_staked = state.balance_staked(&address);
         if stake.deposit {
-            balance -= stake.amount + stake.fee;
-            balance_staked += stake.amount;
+            balance -= STAKE + stake.fee;
+            balance_staked += STAKE;
         } else {
-            balance += stake.amount - stake.fee;
-            balance_staked -= stake.amount;
+            balance += STAKE - stake.fee;
+            balance_staked -= STAKE;
         }
         if balance == 0 {
             state.get_balance_mut().remove(&address);
         } else {
             state.get_balance_mut().insert(address, balance);
         }
-        state.get_balance_staked_mut().insert(address, balance_staked);
+        if balance_staked == 0 {
+            state.get_balance_staked_mut().remove(&address);
+        } else {
+            state.get_balance_staked_mut().insert(address, balance_staked);
+        }
     }
 }
 fn update_staker<T: State>(state: &mut T, address: types::AddressBytes) {
     let balance_staked = state.balance_staked(&address);
     let any = state.get_stakers().iter().any(|x| x == &address);
-    if !any && balance_staked >= MIN_STAKE {
+    if !any && balance_staked >= COIN {
         state.get_stakers_mut().push_back(address);
-    } else if any && balance_staked < MIN_STAKE {
+    } else if any && balance_staked < COIN {
         state.get_balance_staked_mut().remove(&address);
         let index = state.get_stakers().iter().position(|x| x == &address).unwrap();
         state.get_stakers_mut().remove(index).unwrap();
@@ -276,12 +280,11 @@ fn update_stakers<T: State>(state: &mut T, block: &Block) {
 }
 fn update_reward<T: State>(state: &mut T, block: &Block) {
     let address = util::address(&block.public_key);
-    let balance_staked = state.balance_staked(&address);
     let mut balance = state.balance(&address);
-    balance += block.reward(balance_staked);
+    balance += block.reward();
     if let Some(stake) = block.stakes.first() {
         if stake.fee == 0 {
-            balance += MIN_STAKE;
+            balance += STAKE;
         }
     }
     state.get_balance_mut().insert(address, balance);

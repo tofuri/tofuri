@@ -306,13 +306,12 @@ impl Command {
     }
     async fn stake(&self, wallet: &Wallet) {
         let deposit = Self::inquire_deposit();
-        let amount = Self::inquire_amount();
         let fee = Self::inquire_fee();
         let send = Self::inquire_send();
         if !send {
             return;
         }
-        let mut stake = Stake::new(deposit, amount, fee, self.time.timestamp_secs());
+        let mut stake = Stake::new(deposit, fee, self.time.timestamp_secs());
         stake.sign(&wallet.key);
         println!("Hash: {}", hex::encode(stake.hash()).cyan());
         match post::stake(&self.api, &stake).await {

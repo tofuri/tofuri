@@ -326,7 +326,6 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
     Ok(json(serde_json::to_string(&types::api::Stake {
         hash: hex::encode(stake.hash()),
         address: address::address::encode(&util::address(&stake.public_key)),
-        amount: pea_int::to_string(stake.amount),
         fee: pea_int::to_string(stake.fee),
         deposit: stake.deposit,
         timestamp: stake.timestamp,

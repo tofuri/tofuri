@@ -30,6 +30,14 @@ impl Proof {
         s.copy_from_slice(&input[64..96]);
         Proof { gamma, c, s }
     }
+    pub fn hash<B>(&self) -> [u8; 32]
+    where
+        B: Digest<OutputSize = U32> + Default,
+    {
+        let mut hasher = B::default();
+        hasher.update(self.gamma);
+        hasher.finalize().into()
+    }
 }
 fn to_bytes(p: RistrettoPoint) -> [u8; 32] {
     p.compress().to_bytes()
@@ -40,7 +48,7 @@ fn from_bytes(bytes: &[u8]) -> Option<RistrettoPoint> {
 pub fn validate_key(public: &[u8]) -> bool {
     from_bytes(public).is_some()
 }
-pub fn prove<A, B>(alpha: &[u8], secret: &Scalar) -> ([u8; 32], [u8; 96])
+pub fn prove<A, B>(alpha: &[u8], secret: &Scalar) -> Proof
 where
     A: Digest<OutputSize = U64> + Default,
     B: Digest<OutputSize = U32> + Default,
@@ -63,18 +71,11 @@ where
     let c = hasher.finalize().into();
     let c_scalar = Scalar::from_bytes_mod_order(c);
     let s = k - c_scalar * secret;
-    let mut hasher = B::default();
-    hasher.update(to_bytes(gamma));
-    let beta = hasher.finalize().into();
-    (
-        beta,
-        Proof {
-            gamma: gamma.compress().to_bytes(),
-            c,
-            s: s.to_bytes(),
-        }
-        .to_bytes(),
-    )
+    Proof {
+        gamma: to_bytes(gamma),
+        c,
+        s: s.to_bytes(),
+    }
 }
 pub fn verify<A, B>(public: &[u8], alpha: &[u8], beta: &[u8; 32], pi: &[u8; 96]) -> bool
 where
@@ -83,7 +84,7 @@ where
 {
     let y = from_bytes(public).expect("valid key");
     let proof = Proof::from_bytes(pi);
-    let gamma = CompressedRistretto::from_slice(&proof.gamma).decompress();
+    let gamma = from_bytes(&proof.gamma);
     if gamma.is_none() {
         return false;
     }
@@ -118,7 +119,9 @@ mod tests {
     fn test_proof() {
         let key = Key::generate();
         let alpha = [];
-        let (beta, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
+        let proof = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
+        let beta = proof.hash::<Sha3_256>();
+        let pi = proof.to_bytes();
         assert!(verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta, &pi));
     }
     #[test]
@@ -127,8 +130,12 @@ mod tests {
         let key_fake = Key::generate();
         let alpha = [0];
         let alpha_fake = [1];
-        let (beta, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
-        let (beta_fake_0, pi_fake) = prove::<Sha3_512, Sha3_256>(&alpha, &key_fake.scalar);
+        let proof = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
+        let beta = proof.hash::<Sha3_256>();
+        let pi = proof.to_bytes();
+        let proof_fake = prove::<Sha3_512, Sha3_256>(&alpha, &key_fake.scalar);
+        let beta_fake_0 = proof_fake.hash::<Sha3_256>();
+        let pi_fake = proof_fake.to_bytes();
         let mut beta_fake_1 = beta.clone();
         beta_fake_1[0] += 0x01;
         assert!(!verify::<Sha3_512, Sha3_256>(key_fake.compressed_ristretto().as_bytes(), &alpha, &beta, &pi));

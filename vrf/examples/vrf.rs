@@ -17,7 +17,7 @@ fn main() {
         let pi = proof.to_bytes();
         let public = key.compressed_ristretto().to_bytes();
         println!("{}", hex::encode(beta));
-        println!("{}", validate_key(&public) && verify::<Sha512, Sha256>(&public, &alpha, &beta, &pi));
+        println!("{}", validate_key(&public) && verify::<Sha512, Sha256>(&public, &alpha, &pi, &beta));
         alpha = beta;
     }
 }

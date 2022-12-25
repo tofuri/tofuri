@@ -77,7 +77,7 @@ where
         s: s.to_bytes(),
     }
 }
-pub fn verify<D512, D256>(public: &[u8], alpha: &[u8], beta: &[u8; 32], pi: &[u8; 96]) -> bool
+pub fn verify<D512, D256>(public: &[u8], alpha: &[u8], pi: &[u8; 96], beta: &[u8; 32]) -> bool
 where
     D512: Digest<OutputSize = U64> + Default,
     D256: Digest<OutputSize = U32> + Default,
@@ -122,7 +122,7 @@ mod tests {
         let proof = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
         let beta = proof.hash::<Sha3_256>();
         let pi = proof.to_bytes();
-        assert!(verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta, &pi));
+        assert!(verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &pi, &beta));
     }
     #[test]
     fn test_fake_proof() {
@@ -138,11 +138,11 @@ mod tests {
         let pi_fake = proof_fake.to_bytes();
         let mut beta_fake_1 = beta.clone();
         beta_fake_1[0] += 0x01;
-        assert!(!verify::<Sha3_512, Sha3_256>(key_fake.compressed_ristretto().as_bytes(), &alpha, &beta, &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha_fake, &beta, &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta_fake_0, &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta_fake_1, &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta, &pi_fake));
+        assert!(!verify::<Sha3_512, Sha3_256>(key_fake.compressed_ristretto().as_bytes(), &alpha, &pi, &beta));
+        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha_fake, &pi, &beta));
+        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &pi, &beta_fake_0));
+        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &pi, &beta_fake_1));
+        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &pi_fake, &beta));
     }
     #[test]
     fn test_validate_key() {

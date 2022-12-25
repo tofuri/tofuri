@@ -125,7 +125,7 @@ mod tests {
         assert!(verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &pi, &beta));
     }
     #[test]
-    fn test_fake_proof() {
+    fn test_proof_fake() {
         let key = Key::generate();
         let key_fake = Key::generate();
         let alpha = [0];

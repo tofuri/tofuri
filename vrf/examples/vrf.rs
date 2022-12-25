@@ -11,6 +11,7 @@ fn main() {
     let proof = prove::<Sha512, Sha256>(&secret, &alpha);
     let beta = proof.hash::<Sha256>();
     let pi = proof.to_bytes();
+    println!("{}", hex::encode(public));
     println!("{}", hex::encode(beta));
     println!("{}", validate_key(&public) && verify::<Sha512, Sha256>(&public, &alpha, &pi, &beta));
 }

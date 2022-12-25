@@ -75,7 +75,7 @@ where
         },
     )
 }
-pub fn verify<A, B>(alpha: &[u8], beta: &[u8; 32], public: &[u8], pi: &Proof) -> bool
+pub fn verify<A, B>(public: &[u8], alpha: &[u8], beta: &[u8; 32], pi: &Proof) -> bool
 where
     A: Digest<OutputSize = U64> + Default,
     B: Digest<OutputSize = U32> + Default,
@@ -117,7 +117,7 @@ mod tests {
         let key = Key::generate();
         let alpha = [];
         let (beta, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
-        assert!(verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.compressed_ristretto().as_bytes(), &pi));
+        assert!(verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta, &pi));
     }
     #[test]
     fn test_fake_proof() {
@@ -129,11 +129,11 @@ mod tests {
         let (beta_fake_0, pi_fake) = prove::<Sha3_512, Sha3_256>(&alpha, &key_fake.scalar);
         let mut beta_fake_1 = beta.clone();
         beta_fake_1[0] += 0x01;
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha_fake, &beta, key.compressed_ristretto().as_bytes(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key_fake.compressed_ristretto().as_bytes(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta_fake_0, key.compressed_ristretto().as_bytes(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta_fake_1, key.compressed_ristretto().as_bytes(), &pi));
-        assert!(!verify::<Sha3_512, Sha3_256>(&alpha, &beta, key.compressed_ristretto().as_bytes(), &pi_fake));
+        assert!(!verify::<Sha3_512, Sha3_256>(key_fake.compressed_ristretto().as_bytes(), &alpha, &beta, &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha_fake, &beta, &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta_fake_0, &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta_fake_1, &pi));
+        assert!(!verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta, &pi_fake));
     }
     #[test]
     fn test_serialize() {

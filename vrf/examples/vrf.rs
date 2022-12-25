@@ -14,7 +14,7 @@ fn main() {
         let (beta, pi) = prove::<Sha512, Sha256>(&alpha, &key.scalar);
         let public = key.compressed_ristretto().to_bytes();
         println!("{}", hex::encode(beta));
-        println!("{}", validate_key(&public) && verify::<Sha512, Sha256>(&alpha, &beta, &public, &pi));
+        println!("{}", validate_key(&public) && verify::<Sha512, Sha256>(&public, &alpha, &beta, &pi));
         alpha = beta;
     }
 }

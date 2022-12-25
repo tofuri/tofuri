@@ -144,9 +144,9 @@ mod tests {
     fn test_verify() {
         let key = Key::generate();
         let alpha = [];
-        let pi = Proof::new::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
-        let beta = pi.hash::<Sha3_256>();
-        assert!(pi.verify::<Sha3_512, Sha3_256, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta));
+        let proof = Proof::new::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
+        let beta = proof.hash::<Sha3_256>();
+        assert!(proof.verify::<Sha3_512, Sha3_256, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &beta));
     }
     #[test]
     fn test_verify_fake() {

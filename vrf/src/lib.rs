@@ -131,13 +131,13 @@ mod tests {
     fn test_proof() {
         let key = Key::generate();
         let alpha = [];
-        let pi_0 = Proof::new::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
-        let pi_1 = Proof::new::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
-        assert_eq!(pi_0.gamma, pi_1.gamma);
-        assert_ne!(pi_0.c, pi_1.c);
-        assert_ne!(pi_0.s, pi_1.s);
-        let beta_0 = pi_0.hash::<Sha3_256>();
-        let beta_1 = pi_1.hash::<Sha3_256>();
+        let proof_0 = Proof::new::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
+        let proof_1 = Proof::new::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
+        assert_eq!(proof_0.gamma, proof_1.gamma);
+        assert_ne!(proof_0.c, proof_1.c);
+        assert_ne!(proof_0.s, proof_1.s);
+        let beta_0 = proof_0.hash::<Sha3_256>();
+        let beta_1 = proof_1.hash::<Sha3_256>();
         assert_eq!(beta_0, beta_1);
     }
     #[test]

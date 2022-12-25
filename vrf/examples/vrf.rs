@@ -8,7 +8,7 @@ fn main() {
     let key = Key::generate();
     let secret = key.scalar;
     let public = key.compressed_ristretto().to_bytes();
-    let alpha = [0; 32];
+    let alpha = [];
     let proof = prove::<Sha3_512, Sha3_256>(&secret, &alpha);
     let beta = proof.hash::<Sha3_224>();
     let pi = proof.to_bytes();

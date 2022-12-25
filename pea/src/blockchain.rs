@@ -255,9 +255,6 @@ impl Blockchain {
             if stake.fee > balance {
                 return Err("stake withdraw fee too expensive".into());
             }
-            if STAKE > balance_staked {
-                return Err("stake withdraw too expensive".into());
-            }
         }
         if db::stake::get(&self.db, &stake.hash()).is_ok() {
             return Err("stake in chain".into());

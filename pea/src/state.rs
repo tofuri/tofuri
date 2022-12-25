@@ -244,8 +244,8 @@ fn update_balances<T: State>(state: &mut T, block: &Block) {
             balance -= STAKE + stake.fee;
             balance_staked += STAKE;
         } else {
-            balance += STAKE - stake.fee;
-            balance_staked -= STAKE;
+            balance += balance_staked - stake.fee;
+            balance_staked = 0;
         }
         if balance == 0 {
             state.get_balance_mut().remove(&address);

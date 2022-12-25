@@ -6,7 +6,7 @@ use curve25519_dalek::{
 use ed25519::signature::Signer;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature};
 use pea_core::{types, util};
-use rand::rngs::OsRng;
+use rand_core::OsRng;
 #[derive(Debug)]
 pub struct Key {
     pub scalar: Scalar,

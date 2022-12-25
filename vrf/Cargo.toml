@@ -16,6 +16,5 @@ serde = { version = "1.0.137", features = ["derive"] }
 
 [dev-dependencies]
 pea-key = { version = "0.3.0", path = "../key" }
-rand = "0.7.3"
 sha3 = "0.9.1"
 hex = "0.4.3"

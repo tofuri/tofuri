@@ -10,7 +10,7 @@ repository = "https://github.com/peacash/peacash"
 
 [dependencies]
 pea-core = { version = "0.4.0", path = "../core" }
-rand = "0.7.3"
+rand_core = "0.5.1"
 ed25519 = "1.5.2"
 ed25519-dalek = "1.0.1"
 curve25519-dalek = "3.1.1"

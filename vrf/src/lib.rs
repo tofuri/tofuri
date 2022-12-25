@@ -142,4 +142,9 @@ mod tests {
         let (_, pi) = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
         assert_eq!(pi, Proof::from_bytes(&pi.to_bytes()));
     }
+    #[test]
+    fn test_validate_key() {
+        let key = Key::generate();
+        assert!(validate_key(key.compressed_ristretto().as_bytes()));
+    }
 }

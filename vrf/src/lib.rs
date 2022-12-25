@@ -48,7 +48,7 @@ fn from_bytes(bytes: &[u8]) -> Option<RistrettoPoint> {
 pub fn validate_key(public: &[u8]) -> bool {
     from_bytes(public).is_some()
 }
-pub fn prove<D512, D256>(alpha: &[u8], secret: &Scalar) -> Proof
+pub fn prove<D512, D256>(secret: &Scalar, alpha: &[u8]) -> Proof
 where
     D512: Digest<OutputSize = U64> + Default,
     D256: Digest<OutputSize = U32> + Default,
@@ -119,7 +119,7 @@ mod tests {
     fn test_proof() {
         let key = Key::generate();
         let alpha = [];
-        let proof = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
+        let proof = prove::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
         let beta = proof.hash::<Sha3_256>();
         let pi = proof.to_bytes();
         assert!(verify::<Sha3_512, Sha3_256>(key.compressed_ristretto().as_bytes(), &alpha, &pi, &beta));
@@ -130,10 +130,10 @@ mod tests {
         let key_fake = Key::generate();
         let alpha = [0];
         let alpha_fake = [1];
-        let proof = prove::<Sha3_512, Sha3_256>(&alpha, &key.scalar);
+        let proof = prove::<Sha3_512, Sha3_256>(&key.scalar, &alpha);
         let beta = proof.hash::<Sha3_256>();
         let pi = proof.to_bytes();
-        let proof_fake = prove::<Sha3_512, Sha3_256>(&alpha, &key_fake.scalar);
+        let proof_fake = prove::<Sha3_512, Sha3_256>(&key_fake.scalar, &alpha);
         let beta_fake_0 = proof_fake.hash::<Sha3_256>();
         let pi_fake = proof_fake.to_bytes();
         let mut beta_fake_1 = beta.clone();

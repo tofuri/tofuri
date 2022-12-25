@@ -8,11 +8,11 @@ fn main() {
     let mut alpha = [0; 32];
     for _ in 0..3 {
         for _ in 0..2 {
-            let proof = prove::<Sha512, Sha256>(&alpha, &key.scalar);
+            let proof = prove::<Sha512, Sha256>(&key.scalar, &alpha);
             let beta = proof.hash::<Sha256>();
             println!("{}", hex::encode(beta));
         }
-        let proof = prove::<Sha512, Sha256>(&alpha, &key.scalar);
+        let proof = prove::<Sha512, Sha256>(&key.scalar, &alpha);
         let beta = proof.hash::<Sha256>();
         let pi = proof.to_bytes();
         let public = key.compressed_ristretto().to_bytes();

@@ -30,11 +30,11 @@ impl Proof {
         s.copy_from_slice(&input[64..96]);
         Proof { gamma, c, s }
     }
-    pub fn hash<B>(&self) -> [u8; 32]
+    pub fn hash<D256>(&self) -> [u8; 32]
     where
-        B: Digest<OutputSize = U32> + Default,
+        D256: Digest<OutputSize = U32> + Default,
     {
-        let mut hasher = B::default();
+        let mut hasher = D256::default();
         hasher.update(self.gamma);
         hasher.finalize().into()
     }
@@ -48,16 +48,16 @@ fn from_bytes(bytes: &[u8]) -> Option<RistrettoPoint> {
 pub fn validate_key(public: &[u8]) -> bool {
     from_bytes(public).is_some()
 }
-pub fn prove<A, B>(alpha: &[u8], secret: &Scalar) -> Proof
+pub fn prove<D512, D256>(alpha: &[u8], secret: &Scalar) -> Proof
 where
-    A: Digest<OutputSize = U64> + Default,
-    B: Digest<OutputSize = U32> + Default,
+    D512: Digest<OutputSize = U64> + Default,
+    D256: Digest<OutputSize = U32> + Default,
 {
-    let h = RistrettoPoint::hash_from_bytes::<A>(alpha);
+    let h = RistrettoPoint::hash_from_bytes::<D512>(alpha);
     let p = &RISTRETTO_BASEPOINT_TABLE * secret;
     let gamma = h * secret;
     let k: Scalar = Scalar::random(&mut OsRng);
-    let mut hasher = B::default();
+    let mut hasher = D256::default();
     hasher.update(
         [
             to_bytes(h),
@@ -77,10 +77,10 @@ where
         s: s.to_bytes(),
     }
 }
-pub fn verify<A, B>(public: &[u8], alpha: &[u8], beta: &[u8; 32], pi: &[u8; 96]) -> bool
+pub fn verify<D512, D256>(public: &[u8], alpha: &[u8], beta: &[u8; 32], pi: &[u8; 96]) -> bool
 where
-    A: Digest<OutputSize = U64> + Default,
-    B: Digest<OutputSize = U32> + Default,
+    D512: Digest<OutputSize = U64> + Default,
+    D256: Digest<OutputSize = U32> + Default,
 {
     let y = from_bytes(public).expect("valid key");
     let proof = Proof::from_bytes(pi);
@@ -89,7 +89,7 @@ where
         return false;
     }
     let gamma = gamma.unwrap();
-    let mut hasher = B::default();
+    let mut hasher = D256::default();
     hasher.update(to_bytes(gamma));
     if beta != hasher.finalize_reset().as_slice() {
         return false;
@@ -101,7 +101,7 @@ where
     let s = s.unwrap();
     let c_scalar = Scalar::from_bytes_mod_order(proof.c);
     let u = y * c_scalar + &RISTRETTO_BASEPOINT_TABLE * &s;
-    let h = RistrettoPoint::hash_from_bytes::<A>(alpha);
+    let h = RistrettoPoint::hash_from_bytes::<D512>(alpha);
     let v = gamma * c_scalar + h * s;
     hasher.update([to_bytes(h), to_bytes(y), to_bytes(gamma), to_bytes(u), to_bytes(v)].concat());
     if proof.c != hasher.finalize().as_slice() {

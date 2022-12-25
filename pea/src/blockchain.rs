@@ -249,7 +249,7 @@ impl Blockchain {
                 return Err("stake deposit too expensive".into());
             }
             if balance_staked != 0 {
-                return Err("stake already staking".into());
+                return Err("already staking".into());
             }
         } else if stake.fee > balance {
             return Err("stake withdraw fee too expensive".into());

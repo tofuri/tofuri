@@ -254,21 +254,23 @@ fn update_balances<T: State>(state: &mut T, block: &Block) {
         state.get_balance_staked_mut().insert(address, balance_staked);
     }
 }
+fn update_staker<T: State>(state: &mut T, address: types::AddressBytes) {
+    let balance_staked = state.balance_staked(&address);
+    let any = state.get_stakers().iter().any(|x| x == &address);
+    if !any && balance_staked >= MIN_STAKE {
+        state.get_stakers_mut().push_back(address);
+    } else if any && balance_staked < MIN_STAKE {
+        state.get_balance_staked_mut().remove(&address);
+        let index = state.get_stakers().iter().position(|x| x == &address).unwrap();
+        state.get_stakers_mut().remove(index).unwrap();
+    }
+}
 fn update_stakers<T: State>(state: &mut T, block: &Block) {
-    if state.get_stakers_mut().len() > 1 {
+    if state.get_stakers().len() > 1 {
         state.get_stakers_mut().rotate_left(1);
     }
     for stake in block.stakes.iter() {
-        let address = util::address(&stake.public_key);
-        let balance_staked = state.balance_staked(&address);
-        let any = state.get_stakers_mut().iter().any(|x| x == &address);
-        if !any && balance_staked >= MIN_STAKE {
-            state.get_stakers_mut().push_back(address);
-        } else if any && balance_staked < MIN_STAKE {
-            state.get_balance_staked_mut().remove(&address);
-            let index = state.get_stakers_mut().iter().position(|x| x == &address).unwrap();
-            state.get_stakers_mut().remove(index).unwrap();
-        }
+        update_staker(state, util::address(&stake.public_key));
     }
 }
 fn update_reward<T: State>(state: &mut T, block: &Block) {

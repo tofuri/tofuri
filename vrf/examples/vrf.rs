@@ -1,4 +1,5 @@
 use pea_key::Key;
+use pea_vrf::validate_key;
 use pea_vrf::{prove, verify};
 use sha2::Sha256;
 use sha2::Sha512;
@@ -11,8 +12,9 @@ fn main() {
             println!("{}", hex::encode(beta));
         }
         let (beta, pi) = prove::<Sha512, Sha256>(&alpha, &key.scalar);
+        let public = key.compressed_ristretto().to_bytes();
         println!("{}", hex::encode(beta));
-        println!("{}", verify::<Sha512, Sha256>(&alpha, &beta, key.compressed_ristretto(), &pi));
+        println!("{}", validate_key(&public) && verify::<Sha512, Sha256>(&alpha, &beta, &public, &pi));
         alpha = beta;
     }
 }

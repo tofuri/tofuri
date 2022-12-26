@@ -15,8 +15,8 @@ pub mod address {
     }
     pub fn decode(str: &str) -> Result<types::AddressBytes, Box<dyn Error>> {
         let decoded = hex::decode(str.replacen(PREFIX_ADDRESS, "", 1))?;
-        let address: types::AddressBytes = decoded.get(0..20).ok_or("Invalid address")?.try_into().unwrap();
-        if checksum(&address) == decoded.get(20..).ok_or("Invalid address checksum")? {
+        let address: types::AddressBytes = decoded.get(0..20).ok_or("invalid address")?.try_into().unwrap();
+        if checksum(&address) == decoded.get(20..).ok_or("invalid address checksum")? {
             Ok(address)
         } else {
             Err("checksum mismatch".into())
@@ -44,8 +44,8 @@ pub mod public {
     }
     pub fn decode(str: &str) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
         let decoded = hex::decode(str.replacen(PREFIX_ADDRESS, "", 1))?;
-        let public_key: types::PublicKeyBytes = decoded.get(0..32).ok_or("Invalid public key")?.try_into().unwrap();
-        if checksum(&public_key) == decoded.get(32..).ok_or("Invalid public key checksum")? {
+        let public_key: types::PublicKeyBytes = decoded.get(0..33).ok_or("invalid public key")?.try_into().unwrap();
+        if checksum(&public_key) == decoded.get(33..).ok_or("invalid public key checksum")? {
             Ok(public_key)
         } else {
             Err("checksum mismatch".into())
@@ -56,13 +56,13 @@ pub mod public {
         use super::*;
         #[test]
         fn test_encode() {
-            assert_eq!("0x00000000000000000000000000000000000000000000000000000000000000002ada83c1", encode(&[0; 32]));
+            assert_eq!("0x000000000000000000000000000000000000000000000000000000000000000000232b17a9", encode(&[0; 33]));
         }
         #[test]
         fn test_decode() {
             assert_eq!(
-                [0; 32],
-                decode("0x00000000000000000000000000000000000000000000000000000000000000002ada83c1").unwrap()
+                [0; 33],
+                decode("0x000000000000000000000000000000000000000000000000000000000000000000232b17a9").unwrap()
             );
         }
     }
@@ -76,8 +76,8 @@ pub mod secret {
     }
     pub fn decode(str: &str) -> Result<types::SecretKeyBytes, Box<dyn Error>> {
         let decoded = hex::decode(str.replacen(PREFIX_ADDRESS_KEY, "", 1))?;
-        let secret_key: types::SecretKeyBytes = decoded.get(0..32).ok_or("Invalid secret key")?.try_into().unwrap();
-        if checksum(&secret_key) == decoded.get(32..).ok_or("Invalid secret key checksum")? {
+        let secret_key: types::SecretKeyBytes = decoded.get(0..32).ok_or("invalid secret key")?.try_into().unwrap();
+        if checksum(&secret_key) == decoded.get(32..).ok_or("invalid secret key checksum")? {
             Ok(secret_key)
         } else {
             Err("checksum mismatch".into())

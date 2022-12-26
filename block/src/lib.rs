@@ -16,7 +16,7 @@ pub struct Header {
 pub struct Block {
     pub previous_hash: types::Hash,
     pub timestamp: u32,
-    pub public_key: types::PublicKeyBytes,
+    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
     pub transactions: Vec<Transaction>,
@@ -30,7 +30,8 @@ impl fmt::Debug for Block {
             hash: String,
             previous_hash: String,
             timestamp: u32,
-            public_key: String,
+            address: String,
+            recovery_id: types::RecoveryId,
             signature: String,
             transactions: Vec<String>,
             stakes: Vec<String>,
@@ -42,7 +43,8 @@ impl fmt::Debug for Block {
                 hash: hex::encode(self.hash()),
                 previous_hash: hex::encode(self.previous_hash),
                 timestamp: self.timestamp,
-                public_key: pea_address::public::encode(&self.public_key),
+                address: pea_address::address::encode(&self.input().expect("valid input")),
+                recovery_id: self.recovery_id,
                 signature: hex::encode(self.signature),
                 transactions: self.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
                 stakes: self.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
@@ -55,18 +57,23 @@ impl Block {
         Block {
             previous_hash,
             timestamp,
-            public_key: [0; 32],
+            recovery_id: 0,
             signature: [0; 64],
             transactions: vec![],
             stakes: vec![],
         }
     }
     pub fn sign(&mut self, key: &Key) {
-        self.public_key = key.public_key_bytes();
-        self.signature = key.sign(&self.hash());
+        let (recovery_id, signature_bytes) = key.sign(&self.hash()).unwrap();
+        self.recovery_id = recovery_id;
+        self.signature = signature_bytes;
+    }
+    pub fn input(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+        Ok(Key::recover(&self.hash(), &self.signature, self.recovery_id)?)
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        Key::verify(&self.public_key, &self.hash(), &self.signature)
+        self.input()?;
+        Ok(())
     }
     pub fn hash(&self) -> types::Hash {
         blake3::hash(&bincode::serialize(&self.header()).unwrap()).into()
@@ -113,12 +120,20 @@ impl Block {
         if self.verify().is_err() {
             return Err("block signature".into());
         }
-        let public_keys = self.transactions.iter().map(|t| t.input_public_key).collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
+        let inputs = self
+            .transactions
+            .iter()
+            .map(|t| t.input().expect("valid input"))
+            .collect::<Vec<types::AddressBytes>>();
+        if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
             return Err("block includes multiple transactions from same input_public_key".into());
         }
-        let public_keys = self.stakes.iter().map(|s| s.public_key).collect::<Vec<types::PublicKeyBytes>>();
-        if (1..public_keys.len()).any(|i| public_keys[i..].contains(&public_keys[i - 1])) {
+        let inputs = self
+            .stakes
+            .iter()
+            .map(|s| s.input().expect("valid input"))
+            .collect::<Vec<types::AddressBytes>>();
+        if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
             return Err("block includes multiple stakes from same public_key".into());
         }
         Ok(())
@@ -144,7 +159,7 @@ impl Block {
         Metadata {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
-            public_key: self.public_key,
+            recovery_id: self.recovery_id,
             signature: self.signature,
             transaction_hashes: self.transaction_hashes(),
             stake_hashes: self.stake_hashes(),
@@ -156,7 +171,7 @@ impl Default for Block {
         Block {
             previous_hash: [0; 32],
             timestamp: 0,
-            public_key: [0; 32],
+            recovery_id: 0,
             signature: [0; 64],
             transactions: vec![],
             stakes: vec![],
@@ -167,7 +182,7 @@ impl Default for Block {
 pub struct Metadata {
     pub previous_hash: types::Hash,
     pub timestamp: u32,
-    pub public_key: types::PublicKeyBytes,
+    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
     pub transaction_hashes: Vec<types::Hash>,
@@ -178,7 +193,7 @@ impl Metadata {
         Block {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
-            public_key: self.public_key,
+            recovery_id: self.recovery_id,
             signature: self.signature,
             transactions,
             stakes,
@@ -190,7 +205,7 @@ impl Default for Metadata {
         Metadata {
             previous_hash: [0; 32],
             timestamp: 0,
-            public_key: [0; 32],
+            recovery_id: 0,
             signature: [0; 64],
             transaction_hashes: vec![],
             stake_hashes: vec![],

@@ -1,11 +1,10 @@
-use pea_core::{constants::AMOUNT_BYTES, types, util};
+use pea_core::{constants::AMOUNT_BYTES, types};
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::{error::Error, fmt};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Header {
-    pub input_public_key: types::PublicKeyBytes,
     pub output_address: types::AddressBytes,
     pub amount: types::CompressedAmount,
     pub fee: types::CompressedAmount,
@@ -13,11 +12,11 @@ pub struct Header {
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Transaction {
-    pub input_public_key: types::PublicKeyBytes,
     pub output_address: types::AddressBytes,
     pub amount: u128,
     pub fee: u128,
     pub timestamp: u32,
+    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
@@ -27,11 +26,12 @@ impl fmt::Debug for Transaction {
         #[derive(Debug)]
         struct Transaction {
             hash: String,
-            input_public_key: String,
+            input_address: String,
             output_address: String,
             amount: u128,
             fee: u128,
             timestamp: u32,
+            recovery_id: types::RecoveryId,
             signature: String,
         }
         write!(
@@ -39,11 +39,12 @@ impl fmt::Debug for Transaction {
             "{:?}",
             Transaction {
                 hash: hex::encode(self.hash()),
-                input_public_key: pea_address::public::encode(&self.input_public_key),
+                input_address: pea_address::address::encode(&self.input().expect("valid input")),
                 output_address: pea_address::address::encode(&self.output_address),
                 amount: self.amount,
                 fee: self.fee,
                 timestamp: self.timestamp,
+                recovery_id: self.recovery_id,
                 signature: hex::encode(self.signature),
             }
         )
@@ -52,11 +53,11 @@ impl fmt::Debug for Transaction {
 impl Transaction {
     pub fn new(public_key_output: types::AddressBytes, amount: u128, fee: u128, timestamp: u32) -> Transaction {
         Transaction {
-            input_public_key: [0; 32],
             output_address: public_key_output,
             amount: pea_int::floor(amount),
             fee: pea_int::floor(fee),
             timestamp,
+            recovery_id: 0,
             signature: [0; 64],
         }
     }
@@ -64,15 +65,19 @@ impl Transaction {
         blake3::hash(&bincode::serialize(&self.header()).unwrap()).into()
     }
     pub fn sign(&mut self, key: &Key) {
-        self.input_public_key = key.public_key_bytes();
-        self.signature = key.sign(&self.hash());
+        let (recovery_id, signature_bytes) = key.sign(&self.hash()).unwrap();
+        self.recovery_id = recovery_id;
+        self.signature = signature_bytes;
+    }
+    pub fn input(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+        Ok(Key::recover(&self.hash(), &self.signature, self.recovery_id)?)
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        Key::verify(&self.input_public_key, &self.hash(), &self.signature)
+        self.input()?;
+        Ok(())
     }
     pub fn header(&self) -> Header {
         Header {
-            input_public_key: self.input_public_key,
             output_address: self.output_address,
             amount: pea_int::to_bytes(self.amount),
             fee: pea_int::to_bytes(self.fee),
@@ -95,18 +100,18 @@ impl Transaction {
         if self.fee != pea_int::floor(self.fee) {
             return Err("transaction fee floor".into());
         }
-        if util::address(&self.input_public_key) == self.output_address {
+        if self.input()? == self.output_address {
             return Err("transaction input output".into());
         }
         Ok(())
     }
     pub fn metadata(&self) -> Metadata {
         Metadata {
-            input_public_key: self.input_public_key,
             output_address: self.output_address,
             amount: pea_int::to_bytes(self.amount),
             fee: pea_int::to_bytes(self.fee),
             timestamp: self.timestamp,
+            recovery_id: self.recovery_id,
             signature: self.signature,
         }
     }
@@ -114,33 +119,33 @@ impl Transaction {
 impl Default for Transaction {
     fn default() -> Self {
         Transaction {
-            input_public_key: [0; 32],
             output_address: [0; 20],
             amount: 0,
             fee: 0,
             timestamp: 0,
+            recovery_id: 0,
             signature: [0; 64],
         }
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Metadata {
-    pub input_public_key: types::PublicKeyBytes,
     pub output_address: types::AddressBytes,
     pub amount: types::CompressedAmount,
     pub fee: types::CompressedAmount,
     pub timestamp: u32,
+    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
 impl Metadata {
     pub fn transaction(&self) -> Transaction {
         Transaction {
-            input_public_key: self.input_public_key,
             output_address: self.output_address,
             amount: pea_int::from_bytes(&self.amount),
             fee: pea_int::from_bytes(&self.fee),
             timestamp: self.timestamp,
+            recovery_id: self.recovery_id,
             signature: self.signature,
         }
     }
@@ -148,11 +153,11 @@ impl Metadata {
 impl Default for Metadata {
     fn default() -> Self {
         Metadata {
-            input_public_key: [0; 32],
             output_address: [0; 20],
             amount: [0; AMOUNT_BYTES],
             fee: [0; AMOUNT_BYTES],
             timestamp: 0,
+            recovery_id: 0,
             signature: [0; 64],
         }
     }
@@ -164,11 +169,14 @@ mod tests {
     fn test_hash() {
         assert_eq!(
             Transaction::default().hash(),
-            [77, 0, 105, 118, 99, 106, 134, 150, 217, 9, 166, 48, 164, 8, 26, 173, 77, 124, 80, 248, 26, 253, 238, 4, 2, 11, 240, 80, 134, 171, 106, 85]
+            [
+                42, 218, 131, 193, 129, 154, 83, 114, 218, 225, 35, 143, 193, 222, 209, 35, 200, 16, 79, 218, 161, 88, 98, 170, 238, 105, 66, 138, 24, 32, 252,
+                218
+            ]
         );
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(128, bincode::serialize(&Metadata::default()).unwrap().len());
+        assert_eq!(97, bincode::serialize(&Metadata::default()).unwrap().len());
     }
 }

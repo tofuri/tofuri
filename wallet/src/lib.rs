@@ -3,7 +3,6 @@ use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
     ChaCha20Poly1305,
 };
-use ed25519_dalek::SecretKey;
 use pea_core::{constants::EXTENSION, types};
 pub mod command;
 pub mod kdf;
@@ -81,9 +80,7 @@ impl Wallet {
         let salt = &data[..32];
         let nonce = &data[32..44];
         let ciphertext = &data[44..];
-        let secret_key = SecretKey::from_bytes(&Wallet::decrypt(salt, nonce, ciphertext, passphrase)?)?;
-        let secret_key_bytes = secret_key.to_bytes();
-        let key = Key::from_canonical_bytes(secret_key_bytes).unwrap();
+        let key = Key::from_slice(Wallet::decrypt(salt, nonce, ciphertext, passphrase)?.as_slice().try_into()?);
         Ok(Wallet {
             key,
             salt: salt.to_vec(),

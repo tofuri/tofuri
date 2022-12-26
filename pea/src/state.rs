@@ -188,7 +188,7 @@ fn balance_staked<T: State>(state: &T, address: &types::AddressBytes) -> u128 {
 }
 fn update_balances<T: State>(state: &mut T, block: &Block) {
     for transaction in block.transactions.iter() {
-        let input_address = util::address(&transaction.input_public_key);
+        let input_address = transaction.input().expect("valid input");
         let mut balance_input = state.balance(&input_address);
         let mut balance_output = state.balance(&transaction.output_address);
         balance_input -= transaction.amount + transaction.fee;
@@ -202,7 +202,7 @@ fn update_balances<T: State>(state: &mut T, block: &Block) {
     }
     let stake_amount = util::stake_amount(state.get_stakers().len());
     for stake in block.stakes.iter() {
-        let address = util::address(&stake.public_key);
+        let address = stake.input().expect("valid input");
         let mut balance = state.balance(&address);
         let mut balance_staked = state.balance_staked(&address);
         if stake.deposit {
@@ -242,11 +242,11 @@ fn update_stakers<T: State>(state: &mut T, block: &Block, previous_timestamp: u3
         }
     }
     for stake in block.stakes.iter() {
-        update_staker(state, util::address(&stake.public_key));
+        update_staker(state, stake.input().expect("valid input"));
     }
 }
 fn update_reward<T: State>(state: &mut T, block: &Block) {
-    let address = util::address(&block.public_key);
+    let address = block.input().expect("valid input");
     let mut balance = state.balance(&address);
     balance += block.reward();
     if let Some(stake) = block.stakes.first() {

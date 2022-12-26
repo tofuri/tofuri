@@ -118,17 +118,14 @@ impl Blockchain {
         info!("{} {}", info_0, info_1);
     }
     pub fn try_add_transaction(&mut self, transaction: Transaction, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if let Some(index) = self
-            .pending_transactions
-            .iter()
-            .position(|s| s.input_public_key == transaction.input_public_key)
-        {
+        self.validate_transaction(&transaction, self.states.dynamic.latest_block.timestamp, timestamp)?;
+        let input_address = transaction.input().expect("valid input");
+        if let Some(index) = self.pending_transactions.iter().position(|x| x.input().expect("valid input") == input_address) {
             if transaction.fee <= self.pending_transactions[index].fee {
                 return Err("transaction fee too low".into());
             }
             self.pending_transactions.remove(index);
         }
-        self.validate_transaction(&transaction, self.states.dynamic.latest_block.timestamp, timestamp)?;
         info!("Transaction {}", hex::encode(&transaction.hash()).green());
         self.pending_transactions.push(transaction);
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -138,13 +135,14 @@ impl Blockchain {
         Ok(())
     }
     pub fn try_add_stake(&mut self, stake: Stake, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if let Some(index) = self.pending_stakes.iter().position(|s| s.public_key == stake.public_key) {
+        self.validate_stake(&stake, self.states.dynamic.latest_block.timestamp, timestamp)?;
+        let address = stake.input().expect("valid input");
+        if let Some(index) = self.pending_stakes.iter().position(|x| x.input().expect("valid input") == address) {
             if stake.fee <= self.pending_stakes[index].fee {
                 return Err("stake fee too low".into());
             }
             self.pending_stakes.remove(index);
         }
-        self.validate_stake(&stake, self.states.dynamic.latest_block.timestamp, timestamp)?;
         info!("Stake {}", hex::encode(&stake.hash()).green());
         self.pending_stakes.push(stake);
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -170,7 +168,7 @@ impl Blockchain {
         block
     }
     pub fn validate_block(&self, block: &Block, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        let address = util::address(&block.public_key);
+        let address = block.input()?;
         if let Some(hash) = self.offline.get(&address) {
             if hash == &block.previous_hash {
                 return Err("block staker banned".into());
@@ -198,7 +196,6 @@ impl Blockchain {
             block.validate_mint()?;
             return Ok(());
         }
-        block.validate()?;
         if block.previous_hash != latest_block.hash() {
             return Err("block previous_hash not latest hash".into());
         }
@@ -208,6 +205,7 @@ impl Blockchain {
         for transaction in block.transactions.iter() {
             self.validate_transaction(transaction, latest_block.timestamp, timestamp)?;
         }
+        block.validate()?;
         Ok(())
     }
     fn validate_transaction(&self, transaction: &Transaction, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
@@ -215,7 +213,8 @@ impl Blockchain {
             return Err("transaction pending".into());
         }
         transaction.validate()?;
-        let balance = self.states.dynamic.balance(&util::address(&transaction.input_public_key));
+        let address = transaction.input().expect("valid input");
+        let balance = self.states.dynamic.balance(&address);
         if transaction.timestamp > timestamp + self.time_delta {
             return Err("transaction timestamp future".into());
         }
@@ -235,7 +234,7 @@ impl Blockchain {
             return Err("stake pending".into());
         }
         stake.validate()?;
-        let address = util::address(&stake.public_key);
+        let address = stake.input().expect("valid input");
         let balance = self.states.dynamic.balance(&address);
         let balance_staked = self.states.dynamic.balance_staked(&address);
         if stake.timestamp > timestamp + self.time_delta {

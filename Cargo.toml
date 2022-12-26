@@ -13,6 +13,6 @@ members = [
     "time",
     "transaction",
     "tree",
-    "vrf",
+    #"vrf",
     "wallet"
 ]

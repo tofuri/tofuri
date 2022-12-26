@@ -4,9 +4,10 @@ pub type Hash = [u8; 32];
 pub type Checksum = [u8; 4];
 pub type MerkleRoot = [u8; 32];
 pub type AddressBytes = [u8; 20];
-pub type PublicKeyBytes = [u8; 32];
+pub type PublicKeyBytes = [u8; 33];
 pub type SecretKeyBytes = [u8; 32];
 pub type SignatureBytes = [u8; 64];
+pub type RecoveryId = u8;
 use merkle_cbt::{merkle_tree::Merge, CBMT as ExCBMT};
 pub struct Hasher;
 impl Merge for Hasher {

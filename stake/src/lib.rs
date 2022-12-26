@@ -5,17 +5,16 @@ use serde_big_array::BigArray;
 use std::{error::Error, fmt};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Header {
-    pub public_key: types::PublicKeyBytes,
     pub fee: types::CompressedAmount,
     pub deposit: bool,
     pub timestamp: u32,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Stake {
-    pub public_key: types::PublicKeyBytes,
     pub fee: u128,
     pub deposit: bool,
     pub timestamp: u32,
+    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
@@ -25,10 +24,11 @@ impl fmt::Debug for Stake {
         #[derive(Debug)]
         struct Stake {
             hash: String,
-            public_key: String,
+            address: String,
             fee: u128,
             deposit: bool,
             timestamp: u32,
+            recovery_id: types::RecoveryId,
             signature: String,
         }
         write!(
@@ -36,10 +36,11 @@ impl fmt::Debug for Stake {
             "{:?}",
             Stake {
                 hash: hex::encode(self.hash()),
-                public_key: pea_address::public::encode(&self.public_key),
+                address: pea_address::address::encode(&self.input().expect("valid input")),
                 fee: self.fee,
                 deposit: self.deposit,
                 timestamp: self.timestamp,
+                recovery_id: self.recovery_id,
                 signature: hex::encode(self.signature),
             }
         )
@@ -48,10 +49,10 @@ impl fmt::Debug for Stake {
 impl Stake {
     pub fn new(deposit: bool, fee: u128, timestamp: u32) -> Stake {
         Stake {
-            public_key: [0; 32],
             fee: pea_int::floor(fee),
             deposit,
             timestamp,
+            recovery_id: 0,
             signature: [0; 64],
         }
     }
@@ -59,15 +60,19 @@ impl Stake {
         blake3::hash(&bincode::serialize(&self.header()).unwrap()).into()
     }
     pub fn sign(&mut self, key: &Key) {
-        self.public_key = key.public_key_bytes();
-        self.signature = key.sign(&self.hash());
+        let (recovery_id, signature_bytes) = key.sign(&self.hash()).unwrap();
+        self.recovery_id = recovery_id;
+        self.signature = signature_bytes;
+    }
+    pub fn input(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+        Ok(Key::recover(&self.hash(), &self.signature, self.recovery_id)?)
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        Key::verify(&self.public_key, &self.hash(), &self.signature)
+        self.input()?;
+        Ok(())
     }
     pub fn header(&self) -> Header {
         Header {
-            public_key: self.public_key,
             fee: pea_int::to_bytes(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
@@ -99,10 +104,10 @@ impl Stake {
     }
     pub fn metadata(&self) -> Metadata {
         Metadata {
-            public_key: self.public_key,
             fee: pea_int::to_bytes(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
+            recovery_id: self.recovery_id,
             signature: self.signature,
         }
     }
@@ -110,30 +115,30 @@ impl Stake {
 impl Default for Stake {
     fn default() -> Self {
         Stake {
-            public_key: [0; 32],
             fee: 0,
             deposit: false,
             timestamp: 0,
+            recovery_id: 0,
             signature: [0; 64],
         }
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Metadata {
-    pub public_key: types::PublicKeyBytes,
     pub fee: types::CompressedAmount,
     pub deposit: bool,
     pub timestamp: u32,
+    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
 impl Metadata {
     pub fn stake(&self) -> Stake {
         Stake {
-            public_key: self.public_key,
             fee: pea_int::from_bytes(&self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
+            recovery_id: self.recovery_id,
             signature: self.signature,
         }
     }
@@ -141,10 +146,10 @@ impl Metadata {
 impl Default for Metadata {
     fn default() -> Self {
         Metadata {
-            public_key: [0; 32],
             fee: [0; AMOUNT_BYTES],
             deposit: false,
             timestamp: 0,
+            recovery_id: 0,
             signature: [0; 64],
         }
     }
@@ -156,14 +161,11 @@ mod tests {
     fn test_hash() {
         assert_eq!(
             Stake::default().hash(),
-            [
-                176, 127, 105, 17, 29, 206, 142, 159, 221, 200, 157, 133, 219, 107, 254, 55, 214, 191, 0, 114, 95, 244, 66, 211, 207, 113, 159, 216, 184, 83,
-                42, 77
-            ]
+            [157, 21, 55, 43, 24, 48, 115, 90, 10, 45, 5, 33, 70, 105, 227, 39, 26, 117, 74, 172, 70, 254, 48, 59, 104, 187, 48, 70, 1, 58, 5, 116]
         );
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(105, bincode::serialize(&Metadata::default()).unwrap().len());
+        assert_eq!(74, bincode::serialize(&Metadata::default()).unwrap().len());
     }
 }

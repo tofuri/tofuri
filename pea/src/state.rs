@@ -1,5 +1,5 @@
 use pea_block::Block;
-use pea_core::constants::{COIN, STAKE};
+use pea_core::constants::COIN;
 use pea_core::util;
 use pea_core::{constants::BLOCK_TIME_MAX, types};
 use pea_db as db;
@@ -236,13 +236,14 @@ fn update_balances<T: State>(state: &mut T, block: &Block) {
         }
         state.get_balance_mut().insert(transaction.output_address, balance_output);
     }
+    let stake_amount = util::stake_amount(state.get_stakers().len());
     for stake in block.stakes.iter() {
         let address = util::address(&stake.public_key);
         let mut balance = state.balance(&address);
         let mut balance_staked = state.balance_staked(&address);
         if stake.deposit {
-            balance -= STAKE + stake.fee;
-            balance_staked += STAKE;
+            balance -= stake_amount + stake.fee;
+            balance_staked += stake_amount;
         } else {
             balance += balance_staked - stake.fee;
             balance_staked = 0;
@@ -284,7 +285,7 @@ fn update_reward<T: State>(state: &mut T, block: &Block) {
     balance += block.reward();
     if let Some(stake) = block.stakes.first() {
         if stake.fee == 0 {
-            balance += STAKE;
+            balance += util::stake_amount(0);
         }
     }
     state.get_balance_mut().insert(address, balance);

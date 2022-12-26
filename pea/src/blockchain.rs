@@ -3,7 +3,7 @@ use colored::*;
 use log::{debug, info, warn};
 use pea_block::Block;
 use pea_core::constants::{
-    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, STAKE, SYNC_BLOCKS_PER_TICK,
+    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, SYNC_BLOCKS_PER_TICK,
 };
 use pea_core::{types, util};
 use pea_db as db;
@@ -245,7 +245,7 @@ impl Blockchain {
             return Err("stake timestamp ancient".into());
         }
         if stake.deposit {
-            if STAKE + stake.fee > balance {
+            if util::stake_amount(self.states.dynamic.stakers.len()) + stake.fee > balance {
                 return Err("stake deposit too expensive".into());
             }
             if balance_staked != 0 {

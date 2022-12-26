@@ -1,4 +1,4 @@
-use crate::types;
+use crate::{constants::COIN, types};
 use std::{
     error::Error,
     fs::File,
@@ -51,6 +51,9 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
         i += 1;
     }
     string
+}
+pub fn stake_amount(stakers: usize) -> u128 {
+    COIN * (stakers + 1) as u128
 }
 #[cfg(test)]
 mod tests {

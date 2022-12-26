@@ -4,6 +4,7 @@ use secp256k1::{
     rand, Message, PublicKey, SecretKey, SECP256K1,
 };
 use std::error::Error;
+const RECOVERY_ID: i32 = 0;
 #[derive(Debug)]
 pub struct Key {
     pub secret_key: SecretKey,
@@ -29,16 +30,19 @@ impl Key {
     pub fn address_bytes(&self) -> types::AddressBytes {
         util::address(&self.public_key_bytes())
     }
-    pub fn sign(&self, hash: &types::Hash) -> Result<(types::RecoveryId, types::SignatureBytes), Box<dyn Error>> {
+    pub fn sign(&self, hash: &types::Hash) -> Result<types::SignatureBytes, Box<dyn Error>> {
         let message = Message::from_slice(hash)?;
-        let signature = SECP256K1.sign_ecdsa_recoverable(&message, &self.secret_key);
-        let (recovery_id, signature_bytes) = signature.serialize_compact();
-        Ok((recovery_id.to_i32() as u8, signature_bytes))
+        Ok(loop {
+            let signature = SECP256K1.sign_ecdsa_recoverable_with_noncedata(&message, &self.secret_key, &rand::random());
+            let (recovery_id, signature_bytes) = signature.serialize_compact();
+            if recovery_id.to_i32() == RECOVERY_ID {
+                break signature_bytes;
+            }
+        })
     }
-    pub fn recover(hash: &types::Hash, signature_bytes: &types::SignatureBytes, recovery_id: types::RecoveryId) -> Result<types::AddressBytes, Box<dyn Error>> {
-        let recovery_id = RecoveryId::from_i32(recovery_id as i32)?;
+    pub fn recover(hash: &types::Hash, signature_bytes: &types::SignatureBytes) -> Result<types::AddressBytes, Box<dyn Error>> {
         let message = Message::from_slice(hash)?;
-        let signature = RecoverableSignature::from_compact(signature_bytes, recovery_id)?;
+        let signature = RecoverableSignature::from_compact(signature_bytes, RecoveryId::from_i32(RECOVERY_ID).unwrap())?;
         let public_key_bytes: types::PublicKeyBytes = SECP256K1.recover_ecdsa(&message, &signature)?.serialize();
         Ok(util::address(&public_key_bytes))
     }
@@ -56,7 +60,7 @@ mod tests {
     fn test_sign_verify() {
         let key = Key::generate();
         let hash = [0; 32];
-        let (recovery_id, signature_bytes) = key.sign(&hash).unwrap();
-        assert_eq!(key.address_bytes(), Key::recover(&hash, &signature_bytes, recovery_id).unwrap());
+        let signature_bytes = key.sign(&hash).unwrap();
+        assert_eq!(key.address_bytes(), Key::recover(&hash, &signature_bytes).unwrap());
     }
 }

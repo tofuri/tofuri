@@ -16,7 +16,6 @@ pub struct Header {
 pub struct Block {
     pub previous_hash: types::Hash,
     pub timestamp: u32,
-    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
     pub transactions: Vec<Transaction>,
@@ -31,7 +30,6 @@ impl fmt::Debug for Block {
             previous_hash: String,
             timestamp: u32,
             address: String,
-            recovery_id: types::RecoveryId,
             signature: String,
             transactions: Vec<String>,
             stakes: Vec<String>,
@@ -44,7 +42,6 @@ impl fmt::Debug for Block {
                 previous_hash: hex::encode(self.previous_hash),
                 timestamp: self.timestamp,
                 address: pea_address::address::encode(&self.input().expect("valid input")),
-                recovery_id: self.recovery_id,
                 signature: hex::encode(self.signature),
                 transactions: self.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
                 stakes: self.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
@@ -57,19 +54,16 @@ impl Block {
         Block {
             previous_hash,
             timestamp,
-            recovery_id: 0,
             signature: [0; 64],
             transactions: vec![],
             stakes: vec![],
         }
     }
     pub fn sign(&mut self, key: &Key) {
-        let (recovery_id, signature_bytes) = key.sign(&self.hash()).unwrap();
-        self.recovery_id = recovery_id;
-        self.signature = signature_bytes;
+        self.signature = key.sign(&self.hash()).unwrap();
     }
     pub fn input(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
-        Ok(Key::recover(&self.hash(), &self.signature, self.recovery_id)?)
+        Ok(Key::recover(&self.hash(), &self.signature)?)
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
         self.input()?;
@@ -159,7 +153,6 @@ impl Block {
         Metadata {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
-            recovery_id: self.recovery_id,
             signature: self.signature,
             transaction_hashes: self.transaction_hashes(),
             stake_hashes: self.stake_hashes(),
@@ -171,7 +164,6 @@ impl Default for Block {
         Block {
             previous_hash: [0; 32],
             timestamp: 0,
-            recovery_id: 0,
             signature: [0; 64],
             transactions: vec![],
             stakes: vec![],
@@ -182,7 +174,6 @@ impl Default for Block {
 pub struct Metadata {
     pub previous_hash: types::Hash,
     pub timestamp: u32,
-    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
     pub transaction_hashes: Vec<types::Hash>,
@@ -193,7 +184,6 @@ impl Metadata {
         Block {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
-            recovery_id: self.recovery_id,
             signature: self.signature,
             transactions,
             stakes,
@@ -205,7 +195,6 @@ impl Default for Metadata {
         Metadata {
             previous_hash: [0; 32],
             timestamp: 0,
-            recovery_id: 0,
             signature: [0; 64],
             transaction_hashes: vec![],
             stake_hashes: vec![],
@@ -227,6 +216,6 @@ mod tests {
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(117, bincode::serialize(&Metadata::default()).unwrap().len());
+        assert_eq!(116, bincode::serialize(&Metadata::default()).unwrap().len());
     }
 }

@@ -14,7 +14,6 @@ pub struct Stake {
     pub fee: u128,
     pub deposit: bool,
     pub timestamp: u32,
-    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
@@ -28,7 +27,6 @@ impl fmt::Debug for Stake {
             fee: u128,
             deposit: bool,
             timestamp: u32,
-            recovery_id: types::RecoveryId,
             signature: String,
         }
         write!(
@@ -40,7 +38,6 @@ impl fmt::Debug for Stake {
                 fee: self.fee,
                 deposit: self.deposit,
                 timestamp: self.timestamp,
-                recovery_id: self.recovery_id,
                 signature: hex::encode(self.signature),
             }
         )
@@ -52,7 +49,6 @@ impl Stake {
             fee: pea_int::floor(fee),
             deposit,
             timestamp,
-            recovery_id: 0,
             signature: [0; 64],
         }
     }
@@ -60,12 +56,10 @@ impl Stake {
         blake3::hash(&bincode::serialize(&self.header()).unwrap()).into()
     }
     pub fn sign(&mut self, key: &Key) {
-        let (recovery_id, signature_bytes) = key.sign(&self.hash()).unwrap();
-        self.recovery_id = recovery_id;
-        self.signature = signature_bytes;
+        self.signature = key.sign(&self.hash()).unwrap();
     }
     pub fn input(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
-        Ok(Key::recover(&self.hash(), &self.signature, self.recovery_id)?)
+        Ok(Key::recover(&self.hash(), &self.signature)?)
     }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
         self.input()?;
@@ -107,7 +101,6 @@ impl Stake {
             fee: pea_int::to_bytes(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
-            recovery_id: self.recovery_id,
             signature: self.signature,
         }
     }
@@ -118,7 +111,6 @@ impl Default for Stake {
             fee: 0,
             deposit: false,
             timestamp: 0,
-            recovery_id: 0,
             signature: [0; 64],
         }
     }
@@ -128,7 +120,6 @@ pub struct Metadata {
     pub fee: types::CompressedAmount,
     pub deposit: bool,
     pub timestamp: u32,
-    pub recovery_id: types::RecoveryId,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
@@ -138,7 +129,6 @@ impl Metadata {
             fee: pea_int::from_bytes(&self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
-            recovery_id: self.recovery_id,
             signature: self.signature,
         }
     }
@@ -149,7 +139,6 @@ impl Default for Metadata {
             fee: [0; AMOUNT_BYTES],
             deposit: false,
             timestamp: 0,
-            recovery_id: 0,
             signature: [0; 64],
         }
     }
@@ -166,6 +155,6 @@ mod tests {
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(74, bincode::serialize(&Metadata::default()).unwrap().len());
+        assert_eq!(73, bincode::serialize(&Metadata::default()).unwrap().len());
     }
 }

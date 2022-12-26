@@ -227,6 +227,6 @@ mod tests {
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(148, bincode::serialize(&Metadata::default()).unwrap().len());
+        assert_eq!(117, bincode::serialize(&Metadata::default()).unwrap().len());
     }
 }

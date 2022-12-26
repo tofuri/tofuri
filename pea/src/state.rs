@@ -16,7 +16,7 @@ pub trait State {
     fn balance(&self, address: &types::AddressBytes) -> u128;
     fn balance_staked(&self, address: &types::AddressBytes) -> u128;
     fn update_balances(&mut self, block: &Block);
-    fn update_stakers(&mut self, block: &Block);
+    fn update_stakers(&mut self, block: &Block, previous_timestamp: u32);
     fn update_reward(&mut self, block: &Block);
     fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32);
     fn update(&mut self, block: &Block, previous_timestamp: u32);
@@ -47,8 +47,8 @@ impl Trusted {
     pub fn update_balances(&mut self, block: &Block) {
         update_balances(self, block)
     }
-    pub fn update_stakers(&mut self, block: &Block) {
-        update_stakers(self, block)
+    pub fn update_stakers(&mut self, block: &Block, previous_timestamp: u32) {
+        update_stakers(self, block, previous_timestamp)
     }
     pub fn update_reward(&mut self, block: &Block) {
         update_reward(self, block)
@@ -73,8 +73,8 @@ impl Dynamic {
     pub fn update_balances(&mut self, block: &Block) {
         update_balances(self, block)
     }
-    pub fn update_stakers(&mut self, block: &Block) {
-        update_stakers(self, block)
+    pub fn update_stakers(&mut self, block: &Block, previous_timestamp: u32) {
+        update_stakers(self, block, previous_timestamp)
     }
     pub fn update_reward(&mut self, block: &Block) {
         update_reward(self, block)
@@ -147,8 +147,8 @@ impl State for Trusted {
     fn update_balances(&mut self, block: &Block) {
         update_balances(self, block)
     }
-    fn update_stakers(&mut self, block: &Block) {
-        update_stakers(self, block)
+    fn update_stakers(&mut self, block: &Block, previous_timestamp: u32) {
+        update_stakers(self, block, previous_timestamp)
     }
     fn update_reward(&mut self, block: &Block) {
         update_reward(self, block)
@@ -194,8 +194,8 @@ impl State for Dynamic {
     fn update_balances(&mut self, block: &Block) {
         update_balances(self, block)
     }
-    fn update_stakers(&mut self, block: &Block) {
-        update_stakers(self, block)
+    fn update_stakers(&mut self, block: &Block, previous_timestamp: u32) {
+        update_stakers(self, block, previous_timestamp)
     }
     fn update_reward(&mut self, block: &Block) {
         update_reward(self, block)
@@ -271,9 +271,11 @@ fn update_staker<T: State>(state: &mut T, address: types::AddressBytes) {
         state.get_stakers_mut().remove(index).unwrap();
     }
 }
-fn update_stakers<T: State>(state: &mut T, block: &Block) {
+fn update_stakers<T: State>(state: &mut T, block: &Block, previous_timestamp: u32) {
     if state.get_stakers().len() > 1 {
-        state.get_stakers_mut().rotate_left(1);
+        for _ in 0..staker_index(block.timestamp, previous_timestamp) + 1 {
+            state.get_stakers_mut().rotate_left(1);
+        }
     }
     for stake in block.stakes.iter() {
         update_staker(state, util::address(&stake.public_key));
@@ -316,7 +318,7 @@ pub fn update<T: State>(state: &mut T, block: &Block, previous_timestamp: u32) {
     state.update_penalty(block.timestamp, previous_timestamp);
     state.update_reward(block);
     state.update_balances(block);
-    state.update_stakers(block);
+    state.update_stakers(block, previous_timestamp);
 }
 pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]) {
     let mut previous_timestamp = match hashes.first() {

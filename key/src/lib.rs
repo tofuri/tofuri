@@ -11,12 +11,14 @@ pub struct Key {
 }
 impl Key {
     pub fn generate() -> Key {
-        let secret_key = SecretKey::new(&mut rand::thread_rng());
-        Key { secret_key }
+        Key {
+            secret_key: SecretKey::new(&mut rand::thread_rng()),
+        }
     }
     pub fn from_slice(secret_key_bytes: &types::SecretKeyBytes) -> Key {
-        let secret_key = SecretKey::from_slice(secret_key_bytes).expect("32 bytes, within curve order");
-        Key { secret_key }
+        Key {
+            secret_key: SecretKey::from_slice(secret_key_bytes).expect("32 bytes, within curve order"),
+        }
     }
     pub fn secret_key_bytes(&self) -> types::SecretKeyBytes {
         self.secret_key.secret_bytes()

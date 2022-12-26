@@ -301,8 +301,8 @@ fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u
             break;
         }
         let address = state.get_stakers().get(0).unwrap().clone();
-        let mut balance_staked = state.balance(&address);
-        balance_staked = balance_staked.saturating_sub(COIN * i as u128);
+        let mut balance_staked = state.balance_staked(&address);
+        balance_staked = balance_staked.saturating_sub(COIN * (i + 1) as u128);
         if balance_staked == 0 {
             state.get_balance_staked_mut().remove(&address);
         } else {

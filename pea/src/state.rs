@@ -38,24 +38,6 @@ pub struct Dynamic {
     pub latest_block: Block,
 }
 impl Trusted {
-    pub fn balance(&self, address: &types::AddressBytes) -> u128 {
-        balance(self, address)
-    }
-    pub fn balance_staked(&self, address: &types::AddressBytes) -> u128 {
-        balance_staked(self, address)
-    }
-    pub fn update_balances(&mut self, block: &Block) {
-        update_balances(self, block)
-    }
-    pub fn update_stakers(&mut self, block: &Block, previous_timestamp: u32) {
-        update_stakers(self, block, previous_timestamp)
-    }
-    pub fn update_reward(&mut self, block: &Block) {
-        update_reward(self, block)
-    }
-    pub fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32) {
-        update_penalty(self, timestamp, previous_timestamp)
-    }
     pub fn update(&mut self, block: &Block, previous_timestamp: u32) {
         update(self, block, previous_timestamp)
     }
@@ -69,24 +51,6 @@ impl Dynamic {
     }
     pub fn balance_staked(&self, address: &types::AddressBytes) -> u128 {
         balance_staked(self, address)
-    }
-    pub fn update_balances(&mut self, block: &Block) {
-        update_balances(self, block)
-    }
-    pub fn update_stakers(&mut self, block: &Block, previous_timestamp: u32) {
-        update_stakers(self, block, previous_timestamp)
-    }
-    pub fn update_reward(&mut self, block: &Block) {
-        update_reward(self, block)
-    }
-    pub fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32) {
-        update_penalty(self, timestamp, previous_timestamp)
-    }
-    pub fn update(&mut self, block: &Block, previous_timestamp: u32) {
-        update(self, block, previous_timestamp)
-    }
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]) {
-        load(self, db, hashes)
     }
     pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash], trusted: &Trusted) -> Dynamic {
         let mut dynamic = Self {

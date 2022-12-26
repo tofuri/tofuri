@@ -42,8 +42,6 @@ pub mod api {
     pub type Hash = String;
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct State {
-        pub balance: Amount,
-        pub balance_staked: Amount,
         pub hashes: usize,
         pub latest_hashes: Vec<String>,
         pub stakers: Vec<String>,

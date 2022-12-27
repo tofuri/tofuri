@@ -1,16 +1,16 @@
 use sha2::{Digest, Sha256};
-pub fn checksum(bytes: &[u8]) -> [u8; 4] {
-    let mut hasher = Sha256::new();
-    hasher.update(bytes);
-    let hash = hasher.finalize();
-    let mut checksum = [0; 4];
-    checksum.copy_from_slice(&hash[..4]);
-    checksum
-}
 pub mod address {
     use super::*;
     use pea_core::{constants::PREFIX_ADDRESS, types};
     use std::error::Error;
+    pub fn checksum(bytes: &[u8]) -> [u8; 4] {
+        let mut hasher = Sha256::new();
+        hasher.update(bytes);
+        let hash = hasher.finalize();
+        let mut checksum = [0; 4];
+        checksum.copy_from_slice(&hash[..4]);
+        checksum
+    }
     pub fn encode(address: &types::AddressBytes) -> String {
         [PREFIX_ADDRESS, &hex::encode(address), &hex::encode(checksum(address))].concat()
     }
@@ -28,43 +28,11 @@ pub mod address {
         use super::*;
         #[test]
         fn test_encode() {
-            assert_eq!("0x0000000000000000000000000000000000000000607b1aff", encode(&[0; 20]));
+            assert_eq!("0x0000000000000000000000000000000000000000de47c9b2", encode(&[0; 20]));
         }
         #[test]
         fn test_decode() {
-            assert_eq!([0; 20], decode("0x0000000000000000000000000000000000000000607b1aff").unwrap());
-        }
-    }
-}
-pub mod public {
-    use super::*;
-    use pea_core::{constants::PREFIX_ADDRESS, types};
-    use std::error::Error;
-    pub fn encode(public_key: &types::PublicKeyBytes) -> String {
-        [PREFIX_ADDRESS, &hex::encode(public_key), &hex::encode(checksum(public_key))].concat()
-    }
-    pub fn decode(str: &str) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
-        let decoded = hex::decode(str.replacen(PREFIX_ADDRESS, "", 1))?;
-        let public_key: types::PublicKeyBytes = decoded.get(0..33).ok_or("invalid public key")?.try_into().unwrap();
-        if checksum(&public_key) == decoded.get(33..).ok_or("invalid public key checksum")? {
-            Ok(public_key)
-        } else {
-            Err("checksum mismatch".into())
-        }
-    }
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-        #[test]
-        fn test_encode() {
-            assert_eq!("0x000000000000000000000000000000000000000000000000000000000000000000232b17a9", encode(&[0; 33]));
-        }
-        #[test]
-        fn test_decode() {
-            assert_eq!(
-                [0; 33],
-                decode("0x000000000000000000000000000000000000000000000000000000000000000000232b17a9").unwrap()
-            );
+            assert_eq!([0; 20], decode("0x0000000000000000000000000000000000000000de47c9b2").unwrap());
         }
     }
 }
@@ -72,6 +40,14 @@ pub mod secret {
     use super::*;
     use pea_core::{constants::PREFIX_ADDRESS_KEY, types};
     use std::error::Error;
+    pub fn checksum(bytes: &[u8]) -> [u8; 4] {
+        let mut hasher = Sha256::new();
+        hasher.update(bytes);
+        let hash = hasher.finalize();
+        let mut checksum = [0; 4];
+        checksum.copy_from_slice(&hash[4..8]);
+        checksum
+    }
     pub fn encode(secret_key: &types::SecretKeyBytes) -> String {
         [PREFIX_ADDRESS_KEY, &hex::encode(secret_key), &hex::encode(checksum(secret_key))].concat()
     }
@@ -90,7 +66,7 @@ pub mod secret {
         #[test]
         fn test_encode() {
             assert_eq!(
-                "SECRETx00000000000000000000000000000000000000000000000000000000000000002ada83c1",
+                "SECRETx0000000000000000000000000000000000000000000000000000000000000000f862bd77",
                 encode(&[0; 32])
             );
         }
@@ -98,16 +74,8 @@ pub mod secret {
         fn test_decode() {
             assert_eq!(
                 [0; 32],
-                decode("SECRETx00000000000000000000000000000000000000000000000000000000000000002ada83c1").unwrap()
+                decode("SECRETx0000000000000000000000000000000000000000000000000000000000000000f862bd77").unwrap()
             );
         }
-    }
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_cecksum() {
-        assert_eq!(vec![0x2a, 0xda, 0x83, 0xc1], checksum(&[0; 32]));
     }
 }

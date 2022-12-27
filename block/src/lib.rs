@@ -233,14 +233,11 @@ mod tests {
     fn test_hash() {
         assert_eq!(
             Block::default().hash(),
-            [
-                205, 0, 226, 146, 197, 151, 13, 60, 94, 47, 15, 250, 81, 113, 229, 85, 188, 70, 191, 196, 250, 221, 251, 74, 65, 139, 104, 64, 184, 110, 121,
-                163
-            ]
+            [219, 36, 84, 162, 32, 189, 146, 241, 148, 53, 36, 177, 50, 142, 92, 103, 125, 225, 26, 208, 20, 86, 5, 216, 113, 32, 54, 141, 75, 147, 221, 219]
         );
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(116, bincode::serialize(&Metadata::default()).unwrap().len());
+        assert_eq!(197, bincode::serialize(&Metadata::default()).unwrap().len());
     }
 }

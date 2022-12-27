@@ -1,16 +1,16 @@
 use sha2::{Digest, Sha256};
+pub fn checksum(bytes: &[u8]) -> [u8; 4] {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    let hash = hasher.finalize();
+    let mut checksum = [0; 4];
+    checksum.copy_from_slice(&hash[..4]);
+    checksum
+}
 pub mod address {
     use super::*;
     use pea_core::{constants::PREFIX_ADDRESS, types};
     use std::error::Error;
-    pub fn checksum(bytes: &[u8]) -> [u8; 4] {
-        let mut hasher = Sha256::new();
-        hasher.update(bytes);
-        let hash = hasher.finalize();
-        let mut checksum = [0; 4];
-        checksum.copy_from_slice(&hash[..4]);
-        checksum
-    }
     pub fn encode(address: &types::AddressBytes) -> String {
         [PREFIX_ADDRESS, &hex::encode(address), &hex::encode(checksum(address))].concat()
     }
@@ -40,14 +40,6 @@ pub mod secret {
     use super::*;
     use pea_core::{constants::PREFIX_ADDRESS_KEY, types};
     use std::error::Error;
-    pub fn checksum(bytes: &[u8]) -> [u8; 4] {
-        let mut hasher = Sha256::new();
-        hasher.update(bytes);
-        let hash = hasher.finalize();
-        let mut checksum = [0; 4];
-        checksum.copy_from_slice(&hash[4..8]);
-        checksum
-    }
     pub fn encode(secret_key: &types::SecretKeyBytes) -> String {
         [PREFIX_ADDRESS_KEY, &hex::encode(secret_key), &hex::encode(checksum(secret_key))].concat()
     }
@@ -66,16 +58,25 @@ pub mod secret {
         #[test]
         fn test_encode() {
             assert_eq!(
-                "SECRETx0000000000000000000000000000000000000000000000000000000000000000f862bd77",
-                encode(&[0; 32])
+                encode(&[0; 32]),
+                "SECRETx000000000000000000000000000000000000000000000000000000000000000066687aad"
             );
         }
         #[test]
         fn test_decode() {
             assert_eq!(
-                [0; 32],
-                decode("SECRETx0000000000000000000000000000000000000000000000000000000000000000f862bd77").unwrap()
+                decode("SECRETx000000000000000000000000000000000000000000000000000000000000000066687aad").unwrap(),
+                [0; 32]
             );
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_cecksum() {
+        assert_eq!(checksum(&[0; 32]), [102, 104, 122, 173]);
+        assert_eq!(checksum(&[0; 33]), [127, 156, 158, 49]);
     }
 }

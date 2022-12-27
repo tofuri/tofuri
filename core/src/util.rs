@@ -6,6 +6,15 @@ use std::{
     io::{BufRead, BufReader},
     path::Path,
 };
+construct_uint! {
+    pub struct U256(4);
+}
+pub fn u256(beta: &[u8; 32]) -> U256 {
+    U256::from_big_endian(beta)
+}
+pub fn u256_mod(beta: &[u8; 32], m: usize) -> usize {
+    (u256(beta) % m).as_usize()
+}
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
 }
@@ -65,5 +74,16 @@ mod tests {
             address(&[0; 33]),
             [127, 156, 158, 49, 172, 130, 86, 202, 47, 37, 133, 131, 223, 38, 45, 188, 125, 111, 104, 242]
         );
+    }
+    #[test]
+    fn test_u256() {
+        assert_eq!(
+            u256(&[0xff; 32]),
+            U256::from_dec_str("115792089237316195423570985008687907853269984665640564039457584007913129639935").unwrap()
+        );
+    }
+    #[test]
+    fn test_u256_mod() {
+        assert_eq!(u256_mod(&[0xff; 32], 10), 5);
     }
 }

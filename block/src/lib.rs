@@ -6,11 +6,6 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::{error::Error, fmt};
-#[macro_use]
-extern crate uint;
-construct_uint! {
-    pub struct U256(4);
-}
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Header {
     pub previous_hash: types::Hash,
@@ -84,13 +79,6 @@ impl Block {
     }
     pub fn beta(&self) -> Option<[u8; 32]> {
         Key::vrf_proof_to_hash(&self.pi)
-    }
-    pub fn u256(&self) -> Option<U256> {
-        let beta = self.beta();
-        if beta.is_none() {
-            return None;
-        }
-        Some(U256::from_big_endian(&beta.unwrap()))
     }
     pub fn verify(&self, previous_beta: &[u8]) -> Result<(), Box<dyn Error>> {
         let y = self.input_public_key()?;
@@ -253,14 +241,13 @@ mod tests {
         assert_eq!(197, bincode::serialize(&Metadata::default()).unwrap().len());
     }
     #[test]
-    fn test_random_number() {
+    fn test_u256_from_beta() {
         let key = Key::from_slice(&[0xcd; 32]);
         let mut block = Block::default();
         block.sign(&key, &[0; 32]);
-        let u256 = block.u256().unwrap();
         assert_eq!(
-            u256,
-            U256::from_dec_str("92526807160300854379423726328595779761032533927961162464096185194601493188181").unwrap()
+            util::u256(&block.beta().unwrap()),
+            util::U256::from_dec_str("92526807160300854379423726328595779761032533927961162464096185194601493188181").unwrap()
         );
     }
 }

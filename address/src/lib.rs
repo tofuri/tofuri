@@ -1,10 +1,11 @@
-pub fn checksum(address: &[u8]) -> [u8; 4] {
-    let mut hasher = blake3::Hasher::new();
-    hasher.update(address);
-    let mut output = [0; 4];
-    let mut output_reader = hasher.finalize_xof();
-    output_reader.fill(&mut output);
-    output
+use sha2::{Digest, Sha256};
+pub fn checksum(bytes: &[u8]) -> [u8; 4] {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    let hash = hasher.finalize();
+    let mut checksum = [0; 4];
+    checksum.copy_from_slice(&hash[..4]);
+    checksum
 }
 pub mod address {
     use super::*;

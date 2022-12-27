@@ -18,6 +18,7 @@ use pea_db as db;
 use pea_time::Time;
 use pea_wallet::Wallet;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
@@ -157,7 +158,9 @@ impl Node {
         known
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
-        let hash = blake3::hash(data).into();
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let hash = hasher.finalize().into();
         if self.message_data_hashes.contains(&hash) {
             return true;
         }

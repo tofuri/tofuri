@@ -1,4 +1,5 @@
 use crate::constants::AMOUNT_BYTES;
+use sha2::{Digest, Sha256};
 pub type CompressedAmount = [u8; AMOUNT_BYTES];
 pub type Hash = [u8; 32];
 pub type Checksum = [u8; 4];
@@ -13,7 +14,7 @@ pub struct Hasher;
 impl Merge for Hasher {
     type Item = [u8; 32];
     fn merge(left: &Self::Item, right: &Self::Item) -> Self::Item {
-        let mut hasher = blake3::Hasher::new();
+        let mut hasher = Sha256::new();
         hasher.update(left);
         hasher.update(right);
         hasher.finalize().into()

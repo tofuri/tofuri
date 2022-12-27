@@ -1,4 +1,5 @@
 use crate::{constants::COIN, types};
+use sha2::{Digest, Sha256};
 use std::{
     error::Error,
     fs::File,
@@ -9,12 +10,12 @@ pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
 }
 pub fn address(public_key_bytes: &types::PublicKeyBytes) -> types::AddressBytes {
-    let mut hasher = blake3::Hasher::new();
+    let mut hasher = Sha256::new();
     hasher.update(public_key_bytes);
-    let mut output = [0; 20];
-    let mut output_reader = hasher.finalize_xof();
-    output_reader.fill(&mut output);
-    output
+    let hash = hasher.finalize();
+    let mut address = [0; 20];
+    address.copy_from_slice(&hash[..20]);
+    address
 }
 pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>> {
     let file = File::open(path)?;
@@ -57,11 +58,12 @@ pub fn stake_amount(stakers: usize) -> u128 {
 }
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[test]
-    fn test_hash() {
+    fn test_address() {
         assert_eq!(
-            blake3::hash(b"test").to_string(),
-            "4878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215".to_string()
+            address(&[0; 33]),
+            [127, 156, 158, 49, 172, 130, 86, 202, 47, 37, 133, 131, 223, 38, 45, 188, 125, 111, 104, 242]
         );
     }
 }

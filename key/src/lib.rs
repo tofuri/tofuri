@@ -3,6 +3,7 @@ use secp256k1::{
     ecdsa::{RecoverableSignature, RecoveryId},
     rand, Message, PublicKey, SecretKey, SECP256K1,
 };
+use sha2::{Digest, Sha256};
 use std::error::Error;
 const RECOVERY_ID: i32 = 0;
 #[derive(Debug)]
@@ -51,8 +52,9 @@ impl Key {
     pub fn subkey(&self, n: usize) -> Key {
         let mut vec = self.secret_key_bytes().to_vec();
         vec.append(&mut n.to_le_bytes().to_vec());
-        let hash = blake3::hash(&vec);
-        Key::from_slice(hash.as_bytes())
+        let mut hasher = Sha256::new();
+        hasher.update(&vec);
+        Key::from_slice(&hasher.finalize().into())
     }
 }
 #[cfg(test)]

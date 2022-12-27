@@ -2,6 +2,7 @@ use pea_core::{constants::AMOUNT_BYTES, types};
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
+use sha2::{Digest, Sha256};
 use std::{error::Error, fmt};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Header {
@@ -53,7 +54,9 @@ impl Stake {
         }
     }
     pub fn hash(&self) -> types::Hash {
-        blake3::hash(&bincode::serialize(&self.header()).unwrap()).into()
+        let mut hasher = Sha256::new();
+        hasher.update(&bincode::serialize(&self.header()).unwrap());
+        hasher.finalize().into()
     }
     pub fn sign(&mut self, key: &Key) {
         self.signature = key.sign(&self.hash()).unwrap();

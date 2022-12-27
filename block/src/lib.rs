@@ -4,6 +4,7 @@ use pea_stake::Stake;
 use pea_transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
+use sha2::{Digest, Sha256};
 use std::{error::Error, fmt};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Header {
@@ -70,7 +71,9 @@ impl Block {
         Ok(())
     }
     pub fn hash(&self) -> types::Hash {
-        blake3::hash(&bincode::serialize(&self.header()).unwrap()).into()
+        let mut hasher = Sha256::new();
+        hasher.update(&bincode::serialize(&self.header()).unwrap());
+        hasher.finalize().into()
     }
     pub fn fees(&self) -> u128 {
         let mut fees = 0;

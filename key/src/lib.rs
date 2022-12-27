@@ -75,9 +75,9 @@ impl Key {
         }
         Some(beta.unwrap().try_into().unwrap())
     }
-    pub fn subkey(&self, n: usize) -> Key {
+    pub fn subkey(&self, n: u128) -> Key {
         let mut vec = self.secret_key_bytes().to_vec();
-        vec.append(&mut n.to_le_bytes().to_vec());
+        vec.append(&mut n.to_be_bytes().to_vec());
         let mut hasher = Sha256::new();
         hasher.update(&vec);
         Key::from_slice(&hasher.finalize().into())

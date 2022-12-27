@@ -55,6 +55,7 @@ impl States {
         if hashes_0.len() == trust_fork_after_blocks {
             let block = db::block::get(db, hashes_0.first().unwrap()).unwrap();
             self.trusted.update(
+                db,
                 &block,
                 match db::block::get(db, &block.previous_hash) {
                     Ok(block) => block.timestamp,

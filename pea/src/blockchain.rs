@@ -197,7 +197,7 @@ impl Blockchain {
             return Err("block timestamp early".into());
         }
         let previous_beta = Key::vrf_proof_to_hash(&latest_block.pi).unwrap();
-        if let Some(a) = dynamic.staker(block.timestamp, latest_block.timestamp) {
+        if let Some(a) = dynamic.staker(block.timestamp, latest_block) {
             if a != &address {
                 return Err("block staker address".into());
             }

@@ -266,7 +266,7 @@ impl Node {
                 num_established.to_string().yellow()
             );
             node.known.insert(multiaddr.clone());
-            let _ = db::peer::put(&multiaddr.to_string(), &[], &node.blockchain.db);
+            let _ = db::peer::put(&multiaddr.to_string(), &node.blockchain.db);
             if let Some(previous_peer_id) = node
                 .connections
                 .insert(multiaddr::filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)

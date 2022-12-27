@@ -12,8 +12,17 @@ construct_uint! {
 pub fn u256(hash: &[u8; 32]) -> U256 {
     U256::from_big_endian(hash)
 }
-pub fn u256_mod(hash: &[u8; 32], m: usize) -> usize {
+pub fn u256_m(hash: &[u8; 32], m: usize) -> usize {
     (u256(hash) % m).as_usize()
+}
+pub fn hash_n(hash: &[u8; 32], n: u128) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(hash);
+    hasher.update(n.to_be_bytes());
+    hasher.finalize().into()
+}
+pub fn random(beta: &[u8; 32], n: usize, m: usize) -> usize {
+    u256_m(&hash_n(beta, n as u128), m)
 }
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
@@ -84,6 +93,6 @@ mod tests {
     }
     #[test]
     fn test_u256_mod() {
-        assert_eq!(u256_mod(&[0xff; 32], 10), 5);
+        assert_eq!(u256_m(&[0xff; 32], 10), 5);
     }
 }

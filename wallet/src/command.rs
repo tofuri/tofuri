@@ -152,7 +152,7 @@ impl Command {
     async fn subkeys_balance(&self) {
         let key = &self.wallet.as_ref().unwrap().key;
         for n in Self::inquire_subkeys_range() {
-            let subkey = key.subkey(n);
+            let subkey = key.subkey(n as u128);
             let address = address::address::encode(&subkey.address_bytes());
             println!("{} {}", n.to_string().red(), address.green());
             Self::balance(&self.api, &address).await;
@@ -162,7 +162,7 @@ impl Command {
         let fee = Self::inquire_fee();
         let key = &self.wallet.as_ref().unwrap().key;
         for n in Self::inquire_subkeys_range() {
-            let subkey = key.subkey(n);
+            let subkey = key.subkey(n as u128);
             let address = address::address::encode(&subkey.address_bytes());
             println!("{} {}", n.to_string().red(), address.green());
             match get::balance(&self.api, &address).await {

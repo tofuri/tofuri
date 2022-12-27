@@ -149,13 +149,9 @@ pub mod tree {
 pub mod peer {
     use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(peer: &str, value: &[u8], db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::peers(db), peer, value)?;
+    pub fn put(peer: &str, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::peers(db), peer, &[])?;
         Ok(())
-    }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> Result<u32, Box<dyn Error>> {
-        let bytes: [u8; 4] = db.get_cf(super::peers(db), peer)?.ok_or("peer not found")?.as_slice().try_into()?;
-        Ok(u32::from_le_bytes(bytes))
     }
     pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Vec<String> {
         let mut peers: Vec<String> = vec![];

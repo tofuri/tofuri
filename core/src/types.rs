@@ -71,6 +71,7 @@ pub mod api {
         pub timestamp: u32,
         pub address: String,
         pub signature: String,
+        pub pi: String,
         pub transactions: Vec<String>,
         pub stakes: Vec<String>,
     }

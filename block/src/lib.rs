@@ -1,4 +1,4 @@
-use pea_core::{constants::COIN, types};
+use pea_core::{constants::COIN, types, util};
 use pea_key::Key;
 use pea_stake::Stake;
 use pea_transaction::Transaction;
@@ -12,6 +12,8 @@ pub struct Header {
     pub transaction_merkle_root: types::MerkleRoot,
     pub stake_merkle_root: types::MerkleRoot,
     pub timestamp: u32,
+    #[serde(with = "BigArray")]
+    pub pi: [u8; 81],
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Block {
@@ -19,6 +21,8 @@ pub struct Block {
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
+    #[serde(with = "BigArray")]
+    pub pi: [u8; 81],
     pub transactions: Vec<Transaction>,
     pub stakes: Vec<Stake>,
 }
@@ -32,6 +36,7 @@ impl fmt::Debug for Block {
             timestamp: u32,
             address: String,
             signature: String,
+            pi: String,
             transactions: Vec<String>,
             stakes: Vec<String>,
         }
@@ -42,8 +47,9 @@ impl fmt::Debug for Block {
                 hash: hex::encode(self.hash()),
                 previous_hash: hex::encode(self.previous_hash),
                 timestamp: self.timestamp,
-                address: pea_address::address::encode(&self.input().expect("valid input")),
+                address: pea_address::address::encode(&self.input_address().expect("valid input address")),
                 signature: hex::encode(self.signature),
+                pi: hex::encode(self.pi),
                 transactions: self.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
                 stakes: self.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
             }
@@ -56,18 +62,27 @@ impl Block {
             previous_hash,
             timestamp,
             signature: [0; 64],
+            pi: [0; 81],
             transactions: vec![],
             stakes: vec![],
         }
     }
-    pub fn sign(&mut self, key: &Key) {
+    pub fn sign(&mut self, key: &Key, previous_beta: &[u8]) {
+        self.pi = key.vrf_prove(previous_beta).unwrap();
         self.signature = key.sign(&self.hash()).unwrap();
     }
-    pub fn input(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+    pub fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
         Ok(Key::recover(&self.hash(), &self.signature)?)
     }
-    pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        self.input()?;
+    pub fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+        Ok(util::address(&self.input_public_key()?))
+    }
+    pub fn beta(&self) -> Option<[u8; 32]> {
+        Key::vrf_proof_to_hash(&self.pi)
+    }
+    pub fn verify(&self, previous_beta: &[u8]) -> Result<(), Box<dyn Error>> {
+        let y = self.input_public_key()?;
+        Key::vrf_verify(&y, &self.pi, previous_beta).ok_or("invalid proof")?;
         Ok(())
     }
     pub fn hash(&self) -> types::Hash {
@@ -111,16 +126,17 @@ impl Block {
             transaction_merkle_root: Block::merkle_root(&self.transaction_hashes()),
             stake_merkle_root: Block::merkle_root(&self.stake_hashes()),
             timestamp: self.timestamp,
+            pi: self.pi,
         }
     }
-    pub fn validate(&self) -> Result<(), Box<dyn Error>> {
-        if self.verify().is_err() {
+    pub fn validate(&self, previous_beta: &[u8]) -> Result<(), Box<dyn Error>> {
+        if self.verify(previous_beta).is_err() {
             return Err("block signature".into());
         }
         let inputs = self
             .transactions
             .iter()
-            .map(|t| t.input().expect("valid input"))
+            .map(|t| t.input_address().expect("valid input address"))
             .collect::<Vec<types::AddressBytes>>();
         if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
             return Err("block includes multiple transactions from same input_public_key".into());
@@ -128,15 +144,15 @@ impl Block {
         let inputs = self
             .stakes
             .iter()
-            .map(|s| s.input().expect("valid input"))
+            .map(|s| s.input_address().expect("valid input address"))
             .collect::<Vec<types::AddressBytes>>();
         if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
             return Err("block includes multiple stakes from same public_key".into());
         }
         Ok(())
     }
-    pub fn validate_mint(&self) -> Result<(), Box<dyn Error>> {
-        if self.verify().is_err() {
+    pub fn validate_mint(&self, previous_beta: &[u8]) -> Result<(), Box<dyn Error>> {
+        if self.verify(previous_beta).is_err() {
             return Err("block signature".into());
         }
         if !self.transactions.is_empty() {
@@ -157,6 +173,7 @@ impl Block {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
             signature: self.signature,
+            pi: self.pi,
             transaction_hashes: self.transaction_hashes(),
             stake_hashes: self.stake_hashes(),
         }
@@ -168,6 +185,7 @@ impl Default for Block {
             previous_hash: [0; 32],
             timestamp: 0,
             signature: [0; 64],
+            pi: [0; 81],
             transactions: vec![],
             stakes: vec![],
         }
@@ -179,6 +197,8 @@ pub struct Metadata {
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
+    #[serde(with = "BigArray")]
+    pub pi: [u8; 81],
     pub transaction_hashes: Vec<types::Hash>,
     pub stake_hashes: Vec<types::Hash>,
 }
@@ -188,6 +208,7 @@ impl Metadata {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
             signature: self.signature,
+            pi: self.pi,
             transactions,
             stakes,
         }
@@ -199,6 +220,7 @@ impl Default for Metadata {
             previous_hash: [0; 32],
             timestamp: 0,
             signature: [0; 64],
+            pi: [0; 81],
             transaction_hashes: vec![],
             stake_hashes: vec![],
         }

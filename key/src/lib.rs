@@ -45,11 +45,11 @@ impl Key {
             }
         })
     }
-    pub fn recover(hash: &types::Hash, signature_bytes: &types::SignatureBytes) -> Result<types::AddressBytes, Box<dyn Error>> {
+    pub fn recover(hash: &types::Hash, signature_bytes: &types::SignatureBytes) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
         let message = Message::from_slice(hash)?;
         let signature = RecoverableSignature::from_compact(signature_bytes, RecoveryId::from_i32(RECOVERY_ID).unwrap())?;
         let public_key_bytes: types::PublicKeyBytes = SECP256K1.recover_ecdsa(&message, &signature)?.serialize();
-        Ok(util::address(&public_key_bytes))
+        Ok(public_key_bytes)
     }
     pub fn vrf_prove(&self, alpha: &[u8]) -> Option<[u8; 81]> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
@@ -58,6 +58,14 @@ impl Key {
             return None;
         }
         Some(pi.unwrap().try_into().unwrap())
+    }
+    pub fn vrf_proof_to_hash(pi: &[u8]) -> Option<[u8; 32]> {
+        let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
+        let beta = vrf.proof_to_hash(pi);
+        if let Err(_) = beta {
+            return None;
+        }
+        Some(beta.unwrap().try_into().unwrap())
     }
     pub fn vrf_verify(y: &[u8], pi: &[u8], alpha: &[u8]) -> Option<[u8; 32]> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
@@ -83,7 +91,7 @@ mod tests {
         let key = Key::generate();
         let hash = [0; 32];
         let signature_bytes = key.sign(&hash).unwrap();
-        assert_eq!(key.address_bytes(), Key::recover(&hash, &signature_bytes).unwrap());
+        assert_eq!(key.public_key_bytes(), Key::recover(&hash, &signature_bytes).unwrap());
     }
     #[test]
     fn test_vrf_public_key() {
@@ -98,6 +106,6 @@ mod tests {
         let alpha: [u8; 32] = rand::random();
         let pi = key.vrf_prove(&alpha).unwrap();
         let beta = Key::vrf_verify(&key.public_key_bytes(), &pi, &alpha);
-        assert!(beta.is_some());
+        assert!(beta.unwrap() == Key::vrf_proof_to_hash(&pi).unwrap());
     }
 }

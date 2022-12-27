@@ -238,8 +238,9 @@ fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
         hash: hex::encode(block.hash()),
         previous_hash: hex::encode(block.previous_hash),
         timestamp: block.timestamp,
-        address: address::address::encode(&block.input().expect("valid input")),
+        address: address::address::encode(&block.input_address().expect("valid input address")),
         signature: hex::encode(block.signature),
+        pi: hex::encode(block.pi),
         transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
         stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
     })?))
@@ -281,8 +282,9 @@ fn get_block_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
         hash: hex::encode(block.hash()),
         previous_hash: hex::encode(block.previous_hash),
         timestamp: block.timestamp,
-        address: address::address::encode(&block.input().expect("valid input")),
+        address: address::address::encode(&block.input_address().expect("valid input address")),
         signature: hex::encode(block.signature),
+        pi: hex::encode(block.pi),
         transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
         stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
     })?))
@@ -300,7 +302,7 @@ fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<d
     let transaction = db::transaction::get(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Transaction {
         hash: hex::encode(transaction.hash()),
-        input_address: address::address::encode(&transaction.input().expect("valid input")),
+        input_address: address::address::encode(&transaction.input_address().expect("valid input address")),
         output_address: address::address::encode(&transaction.output_address),
         amount: pea_int::to_string(transaction.amount),
         fee: pea_int::to_string(transaction.fee),
@@ -321,7 +323,7 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
     let stake = db::stake::get(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Stake {
         hash: hex::encode(stake.hash()),
-        address: address::address::encode(&stake.input().expect("valid input")),
+        address: address::address::encode(&stake.input_address().expect("valid input address")),
         fee: pea_int::to_string(stake.fee),
         deposit: stake.deposit,
         timestamp: stake.timestamp,

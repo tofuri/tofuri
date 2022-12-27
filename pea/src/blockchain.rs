@@ -74,10 +74,10 @@ impl Blockchain {
             stake.sign(&self.key);
             self.pending_stakes = vec![stake];
         }
-        let mut block = if let Some(main) = self.tree.main() {
-            Block::new(main.0, timestamp)
+        let (mut block, previous_beta) = if let Some(main) = self.tree.main() {
+            (Block::new(main.0, timestamp), self.states.dynamic.latest_block.beta().unwrap())
         } else {
-            Block::new([0; 32], timestamp)
+            (Block::new([0; 32], timestamp), [0; 32])
         };
         for transaction in self.pending_transactions.iter() {
             if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
@@ -89,7 +89,7 @@ impl Blockchain {
                 block.stakes.push(stake.clone());
             }
         }
-        block.sign(&self.key);
+        block.sign(&self.key, &previous_beta);
         self.accept_block(&block, true);
         Some(block)
     }
@@ -119,8 +119,12 @@ impl Blockchain {
     }
     pub fn try_add_transaction(&mut self, transaction: Transaction, timestamp: u32) -> Result<(), Box<dyn Error>> {
         self.validate_transaction(&transaction, self.states.dynamic.latest_block.timestamp, timestamp)?;
-        let input_address = transaction.input().expect("valid input");
-        if let Some(index) = self.pending_transactions.iter().position(|x| x.input().expect("valid input") == input_address) {
+        let input_address = transaction.input_address().expect("valid input address");
+        if let Some(index) = self
+            .pending_transactions
+            .iter()
+            .position(|x| x.input_address().expect("valid input address") == input_address)
+        {
             if transaction.fee <= self.pending_transactions[index].fee {
                 return Err("transaction fee too low".into());
             }
@@ -136,8 +140,12 @@ impl Blockchain {
     }
     pub fn try_add_stake(&mut self, stake: Stake, timestamp: u32) -> Result<(), Box<dyn Error>> {
         self.validate_stake(&stake, self.states.dynamic.latest_block.timestamp, timestamp)?;
-        let address = stake.input().expect("valid input");
-        if let Some(index) = self.pending_stakes.iter().position(|x| x.input().expect("valid input") == address) {
+        let address = stake.input_address().expect("valid input address");
+        if let Some(index) = self
+            .pending_stakes
+            .iter()
+            .position(|x| x.input_address().expect("valid input address") == address)
+        {
             if stake.fee <= self.pending_stakes[index].fee {
                 return Err("stake fee too low".into());
             }
@@ -168,7 +176,7 @@ impl Blockchain {
         block
     }
     pub fn validate_block(&self, block: &Block, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        let address = block.input()?;
+        let address = block.input_address()?;
         if let Some(hash) = self.offline.get(&address) {
             if hash == &block.previous_hash {
                 return Err("block staker banned".into());
@@ -188,12 +196,13 @@ impl Blockchain {
         if block.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return Err("block timestamp early".into());
         }
+        let previous_beta = Key::vrf_proof_to_hash(&latest_block.pi).unwrap();
         if let Some(a) = dynamic.staker(block.timestamp, latest_block.timestamp) {
             if a != &address {
                 return Err("block staker address".into());
             }
         } else {
-            block.validate_mint()?;
+            block.validate_mint(&previous_beta)?;
             return Ok(());
         }
         if block.previous_hash != latest_block.hash() {
@@ -205,7 +214,7 @@ impl Blockchain {
         for transaction in block.transactions.iter() {
             self.validate_transaction(transaction, latest_block.timestamp, timestamp)?;
         }
-        block.validate()?;
+        block.validate(&previous_beta)?;
         Ok(())
     }
     fn validate_transaction(&self, transaction: &Transaction, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
@@ -213,7 +222,7 @@ impl Blockchain {
             return Err("transaction pending".into());
         }
         transaction.validate()?;
-        let address = transaction.input().expect("valid input");
+        let address = transaction.input_address().expect("valid input address");
         let balance = self.states.dynamic.balance(&address);
         if transaction.timestamp > timestamp + self.time_delta {
             return Err("transaction timestamp future".into());
@@ -234,7 +243,7 @@ impl Blockchain {
             return Err("stake pending".into());
         }
         stake.validate()?;
-        let address = stake.input().expect("valid input");
+        let address = stake.input_address().expect("valid input address");
         let balance = self.states.dynamic.balance(&address);
         let balance_staked = self.states.dynamic.balance_staked(&address);
         if stake.timestamp > timestamp + self.time_delta {

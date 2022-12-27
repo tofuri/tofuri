@@ -1,4 +1,4 @@
-use pea_core::{constants::AMOUNT_BYTES, types};
+use pea_core::{constants::AMOUNT_BYTES, types, util};
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -38,7 +38,7 @@ impl fmt::Debug for Transaction {
             "{:?}",
             Transaction {
                 hash: hex::encode(self.hash()),
-                input_address: pea_address::address::encode(&self.input().expect("valid input")),
+                input_address: pea_address::address::encode(&self.input_address().expect("valid input address")),
                 output_address: pea_address::address::encode(&self.output_address),
                 amount: self.amount,
                 fee: self.fee,
@@ -66,11 +66,14 @@ impl Transaction {
     pub fn sign(&mut self, key: &Key) {
         self.signature = key.sign(&self.hash()).unwrap();
     }
-    pub fn input(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+    pub fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
         Ok(Key::recover(&self.hash(), &self.signature)?)
     }
+    pub fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+        Ok(util::address(&self.input_public_key()?))
+    }
     pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        self.input()?;
+        self.input_public_key()?;
         Ok(())
     }
     pub fn header(&self) -> Header {
@@ -97,7 +100,7 @@ impl Transaction {
         if self.fee != pea_int::floor(self.fee) {
             return Err("transaction fee floor".into());
         }
-        if self.input()? == self.output_address {
+        if self.input_address()? == self.output_address {
             return Err("transaction input output".into());
         }
         Ok(())

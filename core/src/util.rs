@@ -9,11 +9,11 @@ use std::{
 construct_uint! {
     pub struct U256(4);
 }
-pub fn u256(beta: &[u8; 32]) -> U256 {
-    U256::from_big_endian(beta)
+pub fn u256(hash: &[u8; 32]) -> U256 {
+    U256::from_big_endian(hash)
 }
-pub fn u256_mod(beta: &[u8; 32], m: usize) -> usize {
-    (u256(beta) % m).as_usize()
+pub fn u256_mod(hash: &[u8; 32], m: usize) -> usize {
+    (u256(hash) % m).as_usize()
 }
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32

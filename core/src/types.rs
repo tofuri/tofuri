@@ -72,6 +72,7 @@ pub mod api {
         pub address: String,
         pub signature: String,
         pub pi: String,
+        pub beta: String,
         pub transactions: Vec<String>,
         pub stakes: Vec<String>,
     }

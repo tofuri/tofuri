@@ -241,6 +241,7 @@ fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
         address: address::address::encode(&block.input_address().expect("valid input address")),
         signature: hex::encode(block.signature),
         pi: hex::encode(block.pi),
+        beta: hex::encode(block.beta().unwrap()),
         transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
         stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
     })?))
@@ -285,6 +286,7 @@ fn get_block_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
         address: address::address::encode(&block.input_address().expect("valid input address")),
         signature: hex::encode(block.signature),
         pi: hex::encode(block.pi),
+        beta: hex::encode(block.beta().unwrap()),
         transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
         stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
     })?))

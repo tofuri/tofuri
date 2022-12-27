@@ -5,6 +5,8 @@ use secp256k1::{
 };
 use sha2::{Digest, Sha256};
 use std::error::Error;
+use vrf::openssl::{CipherSuite, ECVRF};
+use vrf::VRF;
 const RECOVERY_ID: i32 = 0;
 #[derive(Debug)]
 pub struct Key {
@@ -49,6 +51,22 @@ impl Key {
         let public_key_bytes: types::PublicKeyBytes = SECP256K1.recover_ecdsa(&message, &signature)?.serialize();
         Ok(util::address(&public_key_bytes))
     }
+    pub fn vrf_prove(&self, alpha: &[u8]) -> Option<[u8; 81]> {
+        let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
+        let pi = vrf.prove(&self.secret_key_bytes(), alpha);
+        if let Err(_) = pi {
+            return None;
+        }
+        Some(pi.unwrap().try_into().unwrap())
+    }
+    pub fn vrf_verify(y: &[u8], pi: &[u8], alpha: &[u8]) -> Option<[u8; 32]> {
+        let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
+        let beta = vrf.verify(y, pi, alpha);
+        if let Err(_) = beta {
+            return None;
+        }
+        Some(beta.unwrap().try_into().unwrap())
+    }
     pub fn subkey(&self, n: usize) -> Key {
         let mut vec = self.secret_key_bytes().to_vec();
         vec.append(&mut n.to_le_bytes().to_vec());
@@ -66,5 +84,20 @@ mod tests {
         let hash = [0; 32];
         let signature_bytes = key.sign(&hash).unwrap();
         assert_eq!(key.address_bytes(), Key::recover(&hash, &signature_bytes).unwrap());
+    }
+    #[test]
+    fn test_vrf_public_key() {
+        let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
+        let key = Key::generate();
+        let public_key = vrf.derive_public_key(&key.secret_key_bytes()).unwrap();
+        assert_eq!(key.public_key_bytes().to_vec(), public_key);
+    }
+    #[test]
+    fn test_vrf_prove_verify() {
+        let key = Key::generate();
+        let alpha: [u8; 32] = rand::random();
+        let pi = key.vrf_prove(&alpha).unwrap();
+        let beta = Key::vrf_verify(&key.public_key_bytes(), &pi, &alpha);
+        assert!(beta.is_some());
     }
 }

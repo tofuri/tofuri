@@ -220,7 +220,7 @@ impl Blockchain {
         Ok(())
     }
     fn validate_transaction(&self, transaction: &Transaction, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if self.pending_transactions.iter().any(|x| x.signature == transaction.signature) {
+        if self.pending_transactions.iter().any(|x| x.hash() == transaction.hash()) {
             return Err("transaction pending".into());
         }
         transaction.validate()?;
@@ -241,7 +241,7 @@ impl Blockchain {
         Ok(())
     }
     fn validate_stake(&self, stake: &Stake, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if self.pending_stakes.iter().any(|x| x.signature == stake.signature) {
+        if self.pending_stakes.iter().any(|x| x.hash() == stake.hash()) {
             return Err("stake pending".into());
         }
         stake.validate()?;

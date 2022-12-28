@@ -36,7 +36,7 @@ fn pending_blocks(node: &mut Node, timestamp: u32) {
     let drain = node.blockchain.pending_blocks.drain(..);
     let mut vec: Vec<Block> = vec![];
     for block in drain {
-        if vec.iter().any(|a| a.signature == block.signature) {
+        if vec.iter().any(|a| a.hash() == block.hash()) {
             continue;
         }
         vec.push(block);

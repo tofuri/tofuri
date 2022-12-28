@@ -66,33 +66,27 @@ impl Dynamic {
         dynamic.load(db, hashes);
         dynamic
     }
-    pub fn staker(&self, timestamp: u32, previous_block: &Block) -> Option<&types::AddressBytes> {
-        if let Some(beta) = previous_block.beta() {
-            let n = offline(timestamp, previous_block.timestamp);
-            let m = self.stakers.len();
-            if m == 0 || n >= m {
-                return None;
-            }
+    pub fn staker_n(&self, timestamp: u32, mut n: isize) -> Option<&types::AddressBytes> {
+        n += offline(timestamp, self.latest_block.timestamp) as isize;
+        if n < 0 {
+            return None;
+        }
+        let n = n.abs() as usize;
+        let m = self.stakers.len();
+        if m == 0 || n >= m {
+            return None;
+        }
+        if let Some(beta) = self.latest_block.beta() {
             self.stakers.get(util::random(&beta, n, m))
         } else {
             None
         }
     }
-    pub fn current_staker(&self, timestamp: u32) -> Option<&types::AddressBytes> {
-        self.staker(timestamp, &self.latest_block)
+    pub fn staker(&self, timestamp: u32) -> Option<&types::AddressBytes> {
+        self.staker_n(timestamp, 0)
     }
-    pub fn offline_staker(&self, timestamp: u32) -> Option<&types::AddressBytes> {
-        let n = offline(timestamp, self.latest_block.timestamp);
-        if n == 0 {
-            return None;
-        }
-        let n = offline(timestamp, self.latest_block.timestamp);
-        let m = self.stakers.len();
-        if m == 0 || n > m {
-            return None;
-        }
-        let beta = self.latest_block.beta().unwrap();
-        self.stakers.get(util::random(&beta, n - 1, m))
+    pub fn staker_offline(&self, timestamp: u32) -> Option<&types::AddressBytes> {
+        self.staker_n(timestamp, -1)
     }
 }
 impl State for Trusted {

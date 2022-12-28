@@ -66,7 +66,7 @@ fn offline_staker(node: &mut Node, timestamp: u32) {
         return;
     }
     let dynamic = &node.blockchain.states.dynamic;
-    if let Some(address) = dynamic.offline_staker(timestamp) {
+    if let Some(address) = dynamic.staker_offline(timestamp) {
         let latest_hash = dynamic.latest_block.hash();
         if let Some(hash) = node.blockchain.offline.insert(address.clone(), latest_hash) {
             if hash == latest_hash {
@@ -111,7 +111,7 @@ fn share(node: &mut Node) {
     node.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
 }
 fn grow(node: &mut Node, timestamp: u32) {
-    if !node.blockchain.sync.downloading() && !node.mint && node.blockchain.states.dynamic.current_staker(timestamp).is_none() {
+    if !node.blockchain.sync.downloading() && !node.mint && node.blockchain.states.dynamic.staker(timestamp).is_none() {
         if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",

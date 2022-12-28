@@ -65,7 +65,7 @@ impl Blockchain {
         }
     }
     pub fn forge_block(&mut self, timestamp: u32) -> Option<Block> {
-        if let Some(address) = self.states.dynamic.current_staker(timestamp) {
+        if let Some(address) = self.states.dynamic.staker(timestamp) {
             if address != &self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
                 return None;
             }
@@ -192,15 +192,14 @@ impl Blockchain {
             return Err("block previous_hash not in tree".into());
         }
         let dynamic = self.states.dynamic_fork(self, &block.previous_hash)?;
-        let latest_block = &dynamic.latest_block;
-        if block.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+        if block.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return Err("block timestamp early".into());
         }
-        let previous_beta = match Key::vrf_proof_to_hash(&latest_block.pi) {
+        let previous_beta = match Key::vrf_proof_to_hash(&dynamic.latest_block.pi) {
             Some(x) => x,
             None => GENESIS_BETA,
         };
-        if let Some(a) = dynamic.staker(block.timestamp, latest_block) {
+        if let Some(a) = dynamic.staker(block.timestamp) {
             if a != &address {
                 return Err("block staker address".into());
             }
@@ -208,14 +207,14 @@ impl Blockchain {
             block.validate_mint(&previous_beta)?;
             return Ok(());
         }
-        if block.previous_hash != latest_block.hash() {
+        if block.previous_hash != dynamic.latest_block.hash() {
             return Err("block previous_hash not latest hash".into());
         }
         for stake in block.stakes.iter() {
-            self.validate_stake(stake, latest_block.timestamp, timestamp)?;
+            self.validate_stake(stake, dynamic.latest_block.timestamp, timestamp)?;
         }
         for transaction in block.transactions.iter() {
-            self.validate_transaction(transaction, latest_block.timestamp, timestamp)?;
+            self.validate_transaction(transaction, dynamic.latest_block.timestamp, timestamp)?;
         }
         block.validate(&previous_beta)?;
         Ok(())

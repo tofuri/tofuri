@@ -43,7 +43,14 @@ pub mod api {
     pub type Amount = String;
     pub type Hash = String;
     #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct State {
+    pub struct Dynamic {
+        pub random_queue: Vec<String>,
+        pub hashes: usize,
+        pub latest_hashes: Vec<String>,
+        pub stakers: Vec<String>,
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Trusted {
         pub hashes: usize,
         pub latest_hashes: Vec<String>,
         pub stakers: Vec<String>,

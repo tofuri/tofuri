@@ -13,7 +13,7 @@ pub trait State {
     fn get_balance_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128>;
     fn get_balance_staked(&self) -> &HashMap<types::AddressBytes, u128>;
     fn get_balance_staked_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128>;
-    fn get_latest_block(&mut self) -> &Block;
+    fn get_latest_block(&self) -> &Block;
     fn get_latest_block_mut(&mut self) -> &mut Block;
     fn balance(&self, address: &types::AddressBytes) -> u128;
     fn balance_staked(&self, address: &types::AddressBytes) -> u128;
@@ -111,7 +111,7 @@ impl State for Trusted {
     fn get_balance_staked_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128> {
         &mut self.balance_staked
     }
-    fn get_latest_block(&mut self) -> &Block {
+    fn get_latest_block(&self) -> &Block {
         &self.latest_block
     }
     fn get_latest_block_mut(&mut self) -> &mut Block {
@@ -164,7 +164,7 @@ impl State for Dynamic {
     fn get_balance_staked_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128> {
         &mut self.balance_staked
     }
-    fn get_latest_block(&mut self) -> &Block {
+    fn get_latest_block(&self) -> &Block {
         &self.latest_block
     }
     fn get_latest_block_mut(&mut self) -> &mut Block {

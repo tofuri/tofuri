@@ -165,7 +165,14 @@ fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
 }
 fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
-    Ok(json(serde_json::to_string(&types::api::State {
+    let mut random_queue = vec![];
+    for n in 0..8 {
+        if let Some(address) = dynamic.staker_n(node.time.timestamp_secs(), n) {
+            random_queue.push(hex::encode(address));
+        }
+    }
+    Ok(json(serde_json::to_string(&types::api::Dynamic {
+        random_queue,
         hashes: dynamic.hashes.len(),
         latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
         stakers: dynamic.stakers.iter().take(16).map(address::address::encode).collect(),
@@ -173,7 +180,7 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
 }
 fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
-    Ok(json(serde_json::to_string(&types::api::State {
+    Ok(json(serde_json::to_string(&types::api::Trusted {
         hashes: trusted.hashes.len(),
         latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
         stakers: trusted.stakers.iter().take(16).map(address::address::encode).collect(),

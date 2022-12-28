@@ -22,10 +22,10 @@ pub mod get {
     pub async fn hash(api: &str, height: &usize) -> Result<types::api::Hash, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/hash/{}", api, height)).await?.json().await?)
     }
-    pub async fn dynamic(api: &str) -> Result<types::api::State, Box<dyn Error>> {
+    pub async fn dynamic(api: &str) -> Result<types::api::Dynamic, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/dynamic", api)).await?.json().await?)
     }
-    pub async fn trusted(api: &str) -> Result<types::api::State, Box<dyn Error>> {
+    pub async fn trusted(api: &str) -> Result<types::api::Trusted, Box<dyn Error>> {
         Ok(reqwest::get(format!("{}/trusted", api)).await?.json().await?)
     }
     pub async fn options(api: &str) -> Result<types::api::Options, Box<dyn Error>> {

@@ -168,7 +168,7 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let mut random_queue = vec![];
     for n in 0..8 {
         if let Some(address) = dynamic.staker_n(node.time.timestamp_secs(), n) {
-            random_queue.push(hex::encode(address));
+            random_queue.push(address::address::encode(address));
         }
     }
     Ok(json(serde_json::to_string(&types::api::Dynamic {

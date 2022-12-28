@@ -6,7 +6,7 @@ use test::Bencher;
 #[bench]
 fn sign(b: &mut Bencher) {
     let key = Key::generate();
-    let hash = [0; 32];
+    let hash: [u8; 32] = rand::random();
     b.iter(|| key.sign(&hash).unwrap());
 }
 #[bench]

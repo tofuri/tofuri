@@ -139,7 +139,7 @@ impl Block {
             .map(|t| t.input_address().expect("valid input address"))
             .collect::<Vec<types::AddressBytes>>();
         if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
-            return Err("block includes multiple transactions from same input_public_key".into());
+            return Err("block includes multiple transactions from same input address".into());
         }
         let inputs = self
             .stakes
@@ -147,7 +147,7 @@ impl Block {
             .map(|s| s.input_address().expect("valid input address"))
             .collect::<Vec<types::AddressBytes>>();
         if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
-            return Err("block includes multiple stakes from same public_key".into());
+            return Err("block includes multiple stakes from same input address".into());
         }
         Ok(())
     }

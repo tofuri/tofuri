@@ -118,6 +118,9 @@ impl Blockchain {
         info!("{} {}", info_0, info_1);
     }
     pub fn try_add_transaction(&mut self, transaction: Transaction, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        if self.pending_transactions.iter().any(|x| x.hash() == transaction.hash()) {
+            return Err("transaction pending".into());
+        }
         self.validate_transaction(&transaction, self.states.dynamic.latest_block.timestamp, timestamp)?;
         let input_address = transaction.input_address().expect("valid input address");
         if let Some(index) = self
@@ -139,6 +142,9 @@ impl Blockchain {
         Ok(())
     }
     pub fn try_add_stake(&mut self, stake: Stake, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        if self.pending_stakes.iter().any(|x| x.hash() == stake.hash()) {
+            return Err("stake pending".into());
+        }
         self.validate_stake(&stake, self.states.dynamic.latest_block.timestamp, timestamp)?;
         let address = stake.input_address().expect("valid input address");
         if let Some(index) = self
@@ -220,9 +226,6 @@ impl Blockchain {
         Ok(())
     }
     fn validate_transaction(&self, transaction: &Transaction, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if self.pending_transactions.iter().any(|x| x.hash() == transaction.hash()) {
-            return Err("transaction pending".into());
-        }
         transaction.validate()?;
         let address = transaction.input_address().expect("valid input address");
         let balance = self.states.dynamic.balance(&address);
@@ -241,9 +244,6 @@ impl Blockchain {
         Ok(())
     }
     fn validate_stake(&self, stake: &Stake, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if self.pending_stakes.iter().any(|x| x.hash() == stake.hash()) {
-            return Err("stake pending".into());
-        }
         stake.validate()?;
         let address = stake.input_address().expect("valid input address");
         let balance = self.states.dynamic.balance(&address);

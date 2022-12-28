@@ -3,7 +3,7 @@ use colored::*;
 use log::{debug, info, warn};
 use pea_block::Block;
 use pea_core::constants::{
-    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, SYNC_BLOCKS_PER_TICK,
+    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, GENESIS_BETA, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, SYNC_BLOCKS_PER_TICK,
 };
 use pea_core::{types, util};
 use pea_db as db;
@@ -77,7 +77,7 @@ impl Blockchain {
         let (mut block, previous_beta) = if let Some(main) = self.tree.main() {
             (Block::new(main.0, timestamp), self.states.dynamic.latest_block.beta().unwrap())
         } else {
-            (Block::new([0; 32], timestamp), [0; 32])
+            (Block::new([0; 32], timestamp), GENESIS_BETA)
         };
         for transaction in self.pending_transactions.iter() {
             if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
@@ -196,7 +196,10 @@ impl Blockchain {
         if block.timestamp < latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return Err("block timestamp early".into());
         }
-        let previous_beta = Key::vrf_proof_to_hash(&latest_block.pi).unwrap();
+        let previous_beta = match Key::vrf_proof_to_hash(&latest_block.pi) {
+            Some(x) => x,
+            None => GENESIS_BETA,
+        };
         if let Some(a) = dynamic.staker(block.timestamp, latest_block) {
             if a != &address {
                 return Err("block staker address".into());

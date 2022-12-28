@@ -70,7 +70,7 @@ impl Dynamic {
         if let Some(beta) = previous_block.beta() {
             let n = offline(timestamp, previous_block.timestamp);
             let m = self.stakers.len();
-            if m == 0 {
+            if m == 0 || n >= m {
                 return None;
             }
             self.stakers.get(util::random(&beta, n, m))
@@ -86,12 +86,12 @@ impl Dynamic {
         if n == 0 {
             return None;
         }
-        let beta = self.latest_block.beta().unwrap();
         let n = offline(timestamp, self.latest_block.timestamp);
         let m = self.stakers.len();
-        if m == 0 {
+        if m == 0 || n > m {
             return None;
         }
+        let beta = self.latest_block.beta().unwrap();
         self.stakers.get(util::random(&beta, n - 1, m))
     }
 }
@@ -279,7 +279,10 @@ fn update_reward<T: State>(state: &mut T, block: &Block) {
     state.get_balance_mut().insert(address, balance);
 }
 fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32) {
-    let beta = state.get_latest_block().beta().unwrap();
+    let beta = match state.get_latest_block().beta() {
+        Some(x) => x,
+        None => return,
+    };
     for n in 0..offline(timestamp, previous_timestamp) {
         if state.get_stakers().is_empty() {
             break;
@@ -298,12 +301,13 @@ fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u
 }
 pub fn update<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, block: &Block, previous_timestamp: u32) {
     let hash = block.hash();
-    *state.get_latest_block_mut() = db::block::get(db, &hash).unwrap();
     state.get_hashes_mut().push(hash);
     state.update_penalty(block.timestamp, previous_timestamp);
     state.update_reward(block);
     state.update_balances(block);
     state.update_stakers(block);
+    // set latest_block after update_penalty()
+    *state.get_latest_block_mut() = db::block::get(db, &hash).unwrap();
 }
 pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]) {
     let mut previous_timestamp = match hashes.first() {

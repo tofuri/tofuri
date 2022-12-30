@@ -1,6 +1,6 @@
 use pea_core::constants::{AMOUNT_BYTES, DECIMAL_PLACES};
 use std::error::Error;
-pub fn to_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
+pub fn to_be_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
     if input == 0 {
         return [0; AMOUNT_BYTES];
     }
@@ -24,7 +24,7 @@ pub fn to_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
     output[AMOUNT_BYTES - 1] = (output[AMOUNT_BYTES - 1] & 0xf0) | size as u8;
     output
 }
-pub fn from_bytes(input: &[u8; AMOUNT_BYTES]) -> u128 {
+pub fn from_be_bytes(input: &[u8; AMOUNT_BYTES]) -> u128 {
     let size = input[AMOUNT_BYTES - 1] as usize & 0x0f;
     let mut bytes = [0; 16];
     for (i, v) in input.iter().enumerate().take(AMOUNT_BYTES) {
@@ -41,7 +41,7 @@ pub fn from_bytes(input: &[u8; AMOUNT_BYTES]) -> u128 {
     u128::from_be_bytes(bytes)
 }
 pub fn floor(input: u128) -> u128 {
-    from_bytes(&to_bytes(input))
+    from_be_bytes(&to_be_bytes(input))
 }
 pub fn to_string(num: u128) -> String {
     let mut string = format!("{}{}", "0".repeat(DECIMAL_PLACES as usize), num);
@@ -74,15 +74,15 @@ mod tests {
     use super::*;
     #[test]
     fn test_encode() {
-        assert_eq!([1, 0, 0, 8], to_bytes(0x10000000000000000));
+        assert_eq!([1, 0, 0, 8], to_be_bytes(0x10000000000000000));
     }
     #[test]
     fn test_decode() {
-        assert_eq!(0x10000000000000000, from_bytes(&[1, 0, 0, 8]));
+        assert_eq!(0x10000000000000000, from_be_bytes(&[1, 0, 0, 8]));
     }
     #[test]
     fn test_decode_max() {
-        assert_eq!(0xfffffff0000000000000000000000000, from_bytes(&[0xff, 0xff, 0xff, 0xff]));
+        assert_eq!(0xfffffff0000000000000000000000000, from_be_bytes(&[0xff, 0xff, 0xff, 0xff]));
     }
     #[test]
     fn test_to_string() {

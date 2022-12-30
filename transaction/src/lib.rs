@@ -80,8 +80,8 @@ impl Transaction {
         let mut bytes = [0; 32];
         bytes[0..20].copy_from_slice(&self.output_address);
         bytes[20..24].copy_from_slice(&self.timestamp.to_be_bytes());
-        bytes[24..28].copy_from_slice(&pea_int::to_bytes(self.amount));
-        bytes[28..32].copy_from_slice(&pea_int::to_bytes(self.fee));
+        bytes[24..28].copy_from_slice(&pea_int::to_be_bytes(self.amount));
+        bytes[28..32].copy_from_slice(&pea_int::to_be_bytes(self.fee));
         bytes
     }
     pub fn validate(&self) -> Result<(), Box<dyn Error>> {
@@ -108,8 +108,8 @@ impl Transaction {
     pub fn metadata(&self) -> Metadata {
         Metadata {
             output_address: self.output_address,
-            amount: pea_int::to_bytes(self.amount),
-            fee: pea_int::to_bytes(self.fee),
+            amount: pea_int::to_be_bytes(self.amount),
+            fee: pea_int::to_be_bytes(self.fee),
             timestamp: self.timestamp,
             signature: self.signature,
         }
@@ -139,8 +139,8 @@ impl Metadata {
     pub fn transaction(&self) -> Transaction {
         Transaction {
             output_address: self.output_address,
-            amount: pea_int::from_bytes(&self.amount),
-            fee: pea_int::from_bytes(&self.fee),
+            amount: pea_int::from_be_bytes(&self.amount),
+            fee: pea_int::from_be_bytes(&self.fee),
             timestamp: self.timestamp,
             signature: self.signature,
         }

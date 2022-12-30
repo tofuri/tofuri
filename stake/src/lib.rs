@@ -68,7 +68,7 @@ impl Stake {
     pub fn hash_input(&self) -> [u8; 9] {
         let mut bytes = [0; 9];
         bytes[0..4].copy_from_slice(&self.timestamp.to_be_bytes());
-        bytes[4..8].copy_from_slice(&pea_int::to_bytes(self.fee));
+        bytes[4..8].copy_from_slice(&pea_int::to_be_bytes(self.fee));
         bytes[8] = if self.deposit { 1 } else { 0 };
         bytes
     }
@@ -98,7 +98,7 @@ impl Stake {
     }
     pub fn metadata(&self) -> Metadata {
         Metadata {
-            fee: pea_int::to_bytes(self.fee),
+            fee: pea_int::to_be_bytes(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -126,7 +126,7 @@ pub struct Metadata {
 impl Metadata {
     pub fn stake(&self) -> Stake {
         Stake {
-            fee: pea_int::from_bytes(&self.fee),
+            fee: pea_int::from_be_bytes(&self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,

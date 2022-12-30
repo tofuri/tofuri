@@ -8,11 +8,11 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
     match message.topic.as_str() {
         "block" => {
             let block_b: BlockB = bincode::deserialize(&message.data)?;
-            node.blockchain.add_block(block_b)?;
+            node.blockchain.add_block(block_b, node.time.timestamp_secs())?;
         }
         "blocks" => {
             for block_b in bincode::deserialize::<Vec<BlockB>>(&message.data)? {
-                node.blockchain.add_block(block_b)?;
+                node.blockchain.add_block(block_b, node.time.timestamp_secs())?;
             }
         }
         "stake" => {

@@ -133,11 +133,12 @@ impl Blockchain {
         }
         info!("{} {}", info_0, info_1);
     }
-    pub fn add_block(&mut self, block_b: BlockB) -> Result<(), Box<dyn Error>> {
+    pub fn add_block(&mut self, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.pending_blocks.len() < self.pending_blocks_limit {
             return Err("pending blocks limit reached".into());
         }
         let block_a = block_b.a()?;
+        self.validate_block_0(&block_a, timestamp)?;
         self.pending_blocks.push(block_a);
         Ok(())
     }
@@ -182,7 +183,6 @@ impl Blockchain {
         Ok(())
     }
     pub fn validate_block_0(&self, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        let input_address = block_a.input_address();
         if self.tree.get(&block_a.hash).is_some() {
             return Err("block hash in tree".into());
         }
@@ -198,6 +198,33 @@ impl Blockchain {
             None => GENESIS_BETA,
         };
         Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
+        for stake_a in block_a.stakes.iter() {
+            self.validate_stake(stake_a, dynamic.latest_block.timestamp, timestamp)?;
+        }
+        for transaction_a in block_a.transactions.iter() {
+            self.validate_transaction(transaction_a, dynamic.latest_block.timestamp, timestamp)?;
+        }
+        let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
+        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
+            return Err("block includes multiple transactions from same input address".into());
+        }
+        let input_addresses = block_a.stakes.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
+        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
+            return Err("block includes multiple stakes from same input address".into());
+        }
+        Ok(())
+    }
+    pub fn validate_block_1(&self, block_a: &BlockA) -> Result<(), Box<dyn Error>> {
+        let input_address = block_a.input_address();
+        let dynamic = self.states.dynamic_fork(self, &block_a.previous_hash)?;
+        if let Some(hash) = self.offline.get(&input_address) {
+            if hash == &block_a.previous_hash {
+                return Err("block staker banned".into());
+            }
+        }
+        if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+            return Err("block timestamp early".into());
+        }
         if let Some(a) = dynamic.staker(block_a.timestamp) {
             if a != &input_address {
                 return Err("block staker address".into());
@@ -220,34 +247,6 @@ impl Blockchain {
                 return Err("stake mint timestamp".into());
             }
             return Ok(());
-        }
-        if block_a.previous_hash != dynamic.latest_block.hash {
-            return Err("block previous_hash not latest hash".into());
-        }
-        for stake_a in block_a.stakes.iter() {
-            self.validate_stake(stake_a, dynamic.latest_block.timestamp, timestamp)?;
-        }
-        for transaction_a in block_a.transactions.iter() {
-            self.validate_transaction(transaction_a, dynamic.latest_block.timestamp, timestamp)?;
-        }
-        let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
-        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
-            return Err("block includes multiple transactions from same input address".into());
-        }
-        let input_addresses = block_a.stakes.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
-        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
-            return Err("block includes multiple stakes from same input address".into());
-        }
-        Ok(())
-    }
-    pub fn validate_block_1(&self, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if let Some(hash) = self.offline.get(&input_address) {
-            if hash == &block_a.previous_hash {
-                return Err("block staker banned".into());
-            }
-        }
-        if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
-            return Err("block timestamp early".into());
         }
         Ok(())
     }

@@ -25,14 +25,14 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     if delay(node, 1) {
         node.blockchain.sync.handler();
     }
-    pending_blocks(node, timestamp);
+    pending_blocks(node);
     offline_staker(node, timestamp);
     grow(node, timestamp);
     sync(node);
     node.heartbeats += 1;
     lag(node, instant.elapsed());
 }
-fn pending_blocks(node: &mut Node, timestamp: u32) {
+fn pending_blocks(node: &mut Node) {
     let drain = node.blockchain.pending_blocks.drain(..);
     let mut vec: Vec<BlockA> = vec![];
     for block in drain {
@@ -42,7 +42,7 @@ fn pending_blocks(node: &mut Node, timestamp: u32) {
         vec.push(block);
     }
     loop {
-        if let Some(block) = vec.iter().find(|&x| match node.blockchain.validate_block_0(&x, timestamp) {
+        if let Some(block) = vec.iter().find(|&block_a| match node.blockchain.validate_block_1(&block_a) {
             Ok(()) => true,
             Err(err) => {
                 debug!("{}", err);

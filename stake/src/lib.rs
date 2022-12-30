@@ -39,15 +39,6 @@ impl StakeA {
             signature: self.signature,
         }
     }
-    pub fn validate_mint(&self) -> Result<(), Box<dyn Error>> {
-        if self.fee != 0 {
-            return Err("stake mint fee not zero".into());
-        }
-        if !self.deposit {
-            return Err("stake mint deposit".into());
-        }
-        Ok(())
-    }
 }
 impl StakeB {
     pub fn a(&self) -> Result<StakeA, Box<dyn Error>> {

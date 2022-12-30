@@ -181,13 +181,8 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_block(&self, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn validate_block_0(&self, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         let input_address = block_a.input_address();
-        if let Some(hash) = self.offline.get(&input_address) {
-            if hash == &block_a.previous_hash {
-                return Err("block staker banned".into());
-            }
-        }
         if self.tree.get(&block_a.hash).is_some() {
             return Err("block hash in tree".into());
         }
@@ -198,19 +193,16 @@ impl Blockchain {
             return Err("block previous_hash not in tree".into());
         }
         let dynamic = self.states.dynamic_fork(self, &block_a.previous_hash)?;
-        if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
-            return Err("block timestamp early".into());
-        }
         let previous_beta = match Key::vrf_proof_to_hash(&dynamic.latest_block.pi) {
             Some(x) => x,
             None => GENESIS_BETA,
         };
+        Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
         if let Some(a) = dynamic.staker(block_a.timestamp) {
             if a != &input_address {
                 return Err("block staker address".into());
             }
         } else {
-            Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
             if !block_a.transactions.is_empty() {
                 return Err("block mint transactions".into());
             }
@@ -218,7 +210,12 @@ impl Blockchain {
                 return Err("block mint stakes".into());
             }
             let stake_a = block_a.stakes.first().unwrap();
-            stake_a.validate_mint()?;
+            if stake_a.fee != 0 {
+                return Err("stake mint fee not zero".into());
+            }
+            if !stake_a.deposit {
+                return Err("stake mint deposit".into());
+            }
             if stake_a.timestamp != block_a.timestamp {
                 return Err("stake mint timestamp".into());
             }
@@ -233,7 +230,6 @@ impl Blockchain {
         for transaction_a in block_a.transactions.iter() {
             self.validate_transaction(transaction_a, dynamic.latest_block.timestamp, timestamp)?;
         }
-        Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
         let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
         if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
             return Err("block includes multiple transactions from same input address".into());
@@ -241,6 +237,17 @@ impl Blockchain {
         let input_addresses = block_a.stakes.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
         if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
             return Err("block includes multiple stakes from same input address".into());
+        }
+        Ok(())
+    }
+    pub fn validate_block_1(&self, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        if let Some(hash) = self.offline.get(&input_address) {
+            if hash == &block_a.previous_hash {
+                return Err("block staker banned".into());
+            }
+        }
+        if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+            return Err("block timestamp early".into());
         }
         Ok(())
     }

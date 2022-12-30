@@ -6,15 +6,6 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::{error::Error, fmt};
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Header {
-    pub previous_hash: types::Hash,
-    pub transaction_merkle_root: types::MerkleRoot,
-    pub stake_merkle_root: types::MerkleRoot,
-    pub timestamp: u32,
-    #[serde(with = "BigArray")]
-    pub pi: [u8; 81],
-}
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Block {
     pub previous_hash: types::Hash,
@@ -87,7 +78,7 @@ impl Block {
     }
     pub fn hash(&self) -> types::Hash {
         let mut hasher = Sha256::new();
-        hasher.update(&bincode::serialize(&self.header()).unwrap());
+        hasher.update(&self.hash_input());
         hasher.finalize().into()
     }
     pub fn fees(&self) -> u128 {
@@ -120,14 +111,14 @@ impl Block {
     pub fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
         types::CBMT::build_merkle_root(hashes)
     }
-    pub fn header(&self) -> Header {
-        Header {
-            previous_hash: self.previous_hash,
-            transaction_merkle_root: Block::merkle_root(&self.transaction_hashes()),
-            stake_merkle_root: Block::merkle_root(&self.stake_hashes()),
-            timestamp: self.timestamp,
-            pi: self.pi,
-        }
+    pub fn hash_input(&self) -> [u8; 181] {
+        let mut bytes = [0; 181];
+        bytes[0..32].copy_from_slice(&self.previous_hash);
+        bytes[32..64].copy_from_slice(&Block::merkle_root(&self.transaction_hashes()));
+        bytes[64..96].copy_from_slice(&Block::merkle_root(&self.stake_hashes()));
+        bytes[96..100].copy_from_slice(&self.timestamp.to_be_bytes());
+        bytes[100..181].copy_from_slice(&self.pi);
+        bytes
     }
     pub fn validate(&self, previous_beta: &[u8]) -> Result<(), Box<dyn Error>> {
         if self.verify(previous_beta).is_err() {

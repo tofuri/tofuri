@@ -4,12 +4,6 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::{error::Error, fmt};
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Header {
-    pub fee: types::CompressedAmount,
-    pub deposit: bool,
-    pub timestamp: u32,
-}
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Stake {
     pub fee: u128,
@@ -55,7 +49,7 @@ impl Stake {
     }
     pub fn hash(&self) -> types::Hash {
         let mut hasher = Sha256::new();
-        hasher.update(&bincode::serialize(&self.header()).unwrap());
+        hasher.update(&self.hash_input());
         hasher.finalize().into()
     }
     pub fn sign(&mut self, key: &Key) {
@@ -71,12 +65,12 @@ impl Stake {
         self.input_public_key()?;
         Ok(())
     }
-    pub fn header(&self) -> Header {
-        Header {
-            fee: pea_int::to_bytes(self.fee),
-            deposit: self.deposit,
-            timestamp: self.timestamp,
-        }
+    pub fn hash_input(&self) -> [u8; 9] {
+        let mut bytes = [0; 9];
+        bytes[0..4].copy_from_slice(&self.timestamp.to_be_bytes());
+        bytes[4..8].copy_from_slice(&pea_int::to_bytes(self.fee));
+        bytes[8] = if self.deposit { 1 } else { 0 };
+        bytes
     }
     pub fn validate(&self) -> Result<(), Box<dyn Error>> {
         if self.verify().is_err() {

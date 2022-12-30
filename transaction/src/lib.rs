@@ -60,7 +60,7 @@ impl Transaction {
     }
     pub fn hash(&self) -> types::Hash {
         let mut hasher = Sha256::new();
-        hasher.update(&bincode::serialize(&self.header()).unwrap());
+        hasher.update(&self.hash_input());
         hasher.finalize().into()
     }
     pub fn sign(&mut self, key: &Key) {
@@ -76,13 +76,13 @@ impl Transaction {
         self.input_public_key()?;
         Ok(())
     }
-    pub fn header(&self) -> Header {
-        Header {
-            output_address: self.output_address,
-            amount: pea_int::to_bytes(self.amount),
-            fee: pea_int::to_bytes(self.fee),
-            timestamp: self.timestamp,
-        }
+    pub fn hash_input(&self) -> [u8; 32] {
+        let mut bytes = [0; 32];
+        bytes[0..20].copy_from_slice(&self.output_address);
+        bytes[20..24].copy_from_slice(&self.timestamp.to_be_bytes());
+        bytes[24..28].copy_from_slice(&pea_int::to_bytes(self.amount));
+        bytes[28..32].copy_from_slice(&pea_int::to_bytes(self.fee));
+        bytes
     }
     pub fn validate(&self) -> Result<(), Box<dyn Error>> {
         if self.verify().is_err() {

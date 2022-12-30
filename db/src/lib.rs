@@ -7,7 +7,9 @@ fn descriptors() -> Vec<ColumnFamilyDescriptor> {
         ColumnFamilyDescriptor::new("transactions", options.clone()),
         ColumnFamilyDescriptor::new("stakes", options.clone()),
         ColumnFamilyDescriptor::new("stakers", options.clone()),
-        ColumnFamilyDescriptor::new("peers", options),
+        ColumnFamilyDescriptor::new("peers", options.clone()),
+        ColumnFamilyDescriptor::new("inputs", options.clone()),
+        ColumnFamilyDescriptor::new("betas", options),
     ]
 }
 pub fn open(path: &str) -> DBWithThreadMode<SingleThreaded> {
@@ -32,10 +34,10 @@ pub fn peers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("peers").unwrap()
 }
 pub fn inputs(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
-    db.cf_handle("inputs").unwrap() // hash, input_address
+    db.cf_handle("inputs").unwrap()
 }
 pub fn betas(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
-    db.cf_handle("betas").unwrap() // hash, gamma -> beta
+    db.cf_handle("betas").unwrap()
 }
 pub mod block {
     use super::{beta, stake, transaction};

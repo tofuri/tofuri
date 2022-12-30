@@ -31,6 +31,12 @@ pub fn stakers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
 pub fn peers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("peers").unwrap()
 }
+pub fn inputs(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("inputs").unwrap() // hash, input_address
+}
+pub fn betas(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("betas").unwrap() // hash, gamma -> beta
+}
 pub mod block {
     use super::{stake, transaction};
     use pea_block::{BlockB, BlockC};

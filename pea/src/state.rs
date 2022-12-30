@@ -258,15 +258,15 @@ fn update_stakers<T: State>(state: &mut T, block: &BlockA) {
     }
 }
 fn update_reward<T: State>(state: &mut T, block: &BlockA) {
-    let address = block.input_address();
-    let mut balance = state.balance(&address);
+    let input_address = block.input_address();
+    let mut balance = state.balance(&input_address);
     balance += block.reward();
     if let Some(stake) = block.stakes.first() {
         if stake.fee == 0 {
             balance += util::stake_amount(0);
         }
     }
-    state.get_balance_mut().insert(address, balance);
+    state.get_balance_mut().insert(input_address, balance);
 }
 fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32) {
     for n in 0..offline(timestamp, previous_timestamp) {

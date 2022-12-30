@@ -45,10 +45,10 @@ pub mod get {
     }
 }
 pub mod post {
-    use pea_stake::Stake;
-    use pea_transaction::Transaction;
+    use pea_stake::StakeB;
+    use pea_transaction::TransactionB;
     use std::error::Error;
-    pub async fn transaction(api: &str, transaction: &Transaction) -> Result<String, Box<dyn Error>> {
+    pub async fn transaction(api: &str, transaction: &TransactionB) -> Result<String, Box<dyn Error>> {
         Ok(reqwest::Client::new()
             .post(format!("{}/transaction", api))
             .body(hex::encode(bincode::serialize(transaction)?))
@@ -57,7 +57,7 @@ pub mod post {
             .json()
             .await?)
     }
-    pub async fn stake(api: &str, stake: &Stake) -> Result<String, Box<dyn Error>> {
+    pub async fn stake(api: &str, stake: &StakeB) -> Result<String, Box<dyn Error>> {
         Ok(reqwest::Client::new()
             .post(format!("{}/stake", api))
             .body(hex::encode(bincode::serialize(stake)?))

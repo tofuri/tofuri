@@ -8,8 +8,8 @@ use pea_core::constants::{
 use pea_core::{types, util};
 use pea_db as db;
 use pea_key::Key;
-use pea_stake::Stake;
-use pea_transaction::Transaction;
+use pea_stake::StakeB;
+use pea_transaction::TransactionB;
 use pea_tree::Tree;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::HashMap;
@@ -20,8 +20,8 @@ pub struct Blockchain {
     pub key: Key,
     pub tree: Tree,
     pub states: States,
-    pub pending_transactions: Vec<Transaction>,
-    pub pending_stakes: Vec<Stake>,
+    pub pending_transactions: Vec<TransactionB>,
+    pub pending_stakes: Vec<StakeB>,
     pub pending_blocks: Vec<BlockB>,
     pub sync: Sync,
     pub trust_fork_after_blocks: usize,
@@ -70,7 +70,7 @@ impl Blockchain {
                 return None;
             }
         } else {
-            let mut stake = Stake::new(true, 0, timestamp);
+            let mut stake = StakeB::new(true, 0, timestamp);
             stake.sign(&self.key);
             self.pending_stakes = vec![stake];
         }
@@ -117,7 +117,7 @@ impl Blockchain {
         }
         info!("{} {}", info_0, info_1);
     }
-    pub fn try_add_transaction(&mut self, transaction: Transaction, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn try_add_transaction(&mut self, transaction: TransactionB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.pending_transactions.iter().any(|x| x.hash() == transaction.hash()) {
             return Err("transaction pending".into());
         }
@@ -141,7 +141,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn try_add_stake(&mut self, stake: Stake, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn try_add_stake(&mut self, stake: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.pending_stakes.iter().any(|x| x.hash() == stake.hash()) {
             return Err("stake pending".into());
         }
@@ -225,7 +225,7 @@ impl Blockchain {
         block.validate(&previous_beta)?;
         Ok(())
     }
-    fn validate_transaction(&self, transaction: &Transaction, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_transaction(&self, transaction: &TransactionB, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
         transaction.validate()?;
         let address = transaction.input_address().expect("valid input address");
         let balance = self.states.dynamic.balance(&address);
@@ -243,7 +243,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn validate_stake(&self, stake: &Stake, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_stake(&self, stake: &StakeB, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
         stake.validate()?;
         let address = stake.input_address().expect("valid input address");
         let balance = self.states.dynamic.balance(&address);

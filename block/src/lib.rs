@@ -1,7 +1,7 @@
 use pea_core::{constants::COIN, types, util};
 use pea_key::Key;
-use pea_stake::Stake;
-use pea_transaction::Transaction;
+use pea_stake::StakeB;
+use pea_transaction::TransactionB;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
@@ -14,8 +14,8 @@ pub struct BlockA {
     pub signature: types::SignatureBytes,
     #[serde(with = "BigArray")]
     pub pi: [u8; 81],
-    pub transactions: Vec<Transaction>,
-    pub stakes: Vec<Stake>,
+    pub transactions: Vec<TransactionB>,
+    pub stakes: Vec<StakeB>,
     pub input_address: types::AddressBytes,
     pub beta: [u8; 32],
     pub hash: types::Hash,
@@ -40,8 +40,8 @@ pub struct BlockB {
     pub signature: types::SignatureBytes,
     #[serde(with = "BigArray")]
     pub pi: [u8; 81],
-    pub transactions: Vec<Transaction>,
-    pub stakes: Vec<Stake>,
+    pub transactions: Vec<TransactionB>,
+    pub stakes: Vec<StakeB>,
 }
 impl fmt::Debug for BlockB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -233,7 +233,7 @@ pub struct BlockC {
     pub stake_hashes: Vec<types::Hash>,
 }
 impl BlockC {
-    pub fn b(&self, transactions: Vec<Transaction>, stakes: Vec<Stake>) -> BlockB {
+    pub fn b(&self, transactions: Vec<TransactionB>, stakes: Vec<StakeB>) -> BlockB {
         BlockB {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,

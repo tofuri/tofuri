@@ -5,9 +5,9 @@ use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
 use pea_api::{get, post};
 use pea_core::constants::COIN;
-use pea_stake::Stake;
+use pea_stake::StakeB;
 use pea_time::Time;
-use pea_transaction::Transaction;
+use pea_transaction::TransactionB;
 use std::{ops::Range, process, time::Duration};
 pub struct Options {
     pub api: String,
@@ -178,7 +178,7 @@ impl Command {
                     }
                     let amount = balance - fee;
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let mut transaction = Transaction::new(key.address_bytes(), amount, fee, self.time.timestamp_secs());
+                    let mut transaction = TransactionB::new(key.address_bytes(), amount, fee, self.time.timestamp_secs());
                     transaction.sign(&subkey);
                     println!("{:?}", transaction);
                     match post::transaction(&self.api, &transaction).await {
@@ -287,7 +287,7 @@ impl Command {
         } {
             return;
         }
-        let mut transaction = Transaction::new(address::address::decode(&address).unwrap(), amount, fee, self.time.timestamp_secs());
+        let mut transaction = TransactionB::new(address::address::decode(&address).unwrap(), amount, fee, self.time.timestamp_secs());
         transaction.sign(&wallet.key);
         println!("Hash: {}", hex::encode(transaction.hash()).cyan());
         match post::transaction(&self.api, &transaction).await {
@@ -311,7 +311,7 @@ impl Command {
         if !send {
             return;
         }
-        let mut stake = Stake::new(deposit, fee, self.time.timestamp_secs());
+        let mut stake = StakeB::new(deposit, fee, self.time.timestamp_secs());
         stake.sign(&wallet.key);
         println!("Hash: {}", hex::encode(stake.hash()).cyan());
         match post::stake(&self.api, &stake).await {

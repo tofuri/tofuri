@@ -4,15 +4,8 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::{error::Error, fmt};
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Header {
-    pub output_address: types::AddressBytes,
-    pub amount: types::CompressedAmount,
-    pub fee: types::CompressedAmount,
-    pub timestamp: u32,
-}
 #[derive(Serialize, Deserialize, Clone)]
-pub struct Transaction {
+pub struct TransactionB {
     pub output_address: types::AddressBytes,
     pub amount: u128,
     pub fee: u128,
@@ -20,7 +13,7 @@ pub struct Transaction {
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
-impl fmt::Debug for Transaction {
+impl fmt::Debug for TransactionB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         #![allow(dead_code)]
         #[derive(Debug)]
@@ -48,9 +41,9 @@ impl fmt::Debug for Transaction {
         )
     }
 }
-impl Transaction {
-    pub fn new(public_key_output: types::AddressBytes, amount: u128, fee: u128, timestamp: u32) -> Transaction {
-        Transaction {
+impl TransactionB {
+    pub fn new(public_key_output: types::AddressBytes, amount: u128, fee: u128, timestamp: u32) -> TransactionB {
+        TransactionB {
             output_address: public_key_output,
             amount: pea_int::floor(amount),
             fee: pea_int::floor(fee),
@@ -105,8 +98,8 @@ impl Transaction {
         }
         Ok(())
     }
-    pub fn metadata(&self) -> Metadata {
-        Metadata {
+    pub fn c(&self) -> TransactionC {
+        TransactionC {
             output_address: self.output_address,
             amount: pea_int::to_be_bytes(self.amount),
             fee: pea_int::to_be_bytes(self.fee),
@@ -115,9 +108,9 @@ impl Transaction {
         }
     }
 }
-impl Default for Transaction {
+impl Default for TransactionB {
     fn default() -> Self {
-        Transaction {
+        TransactionB {
             output_address: [0; 20],
             amount: 0,
             fee: 0,
@@ -127,7 +120,7 @@ impl Default for Transaction {
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Metadata {
+pub struct TransactionC {
     pub output_address: types::AddressBytes,
     pub amount: types::CompressedAmount,
     pub fee: types::CompressedAmount,
@@ -135,9 +128,9 @@ pub struct Metadata {
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
-impl Metadata {
-    pub fn transaction(&self) -> Transaction {
-        Transaction {
+impl TransactionC {
+    pub fn b(&self) -> TransactionB {
+        TransactionB {
             output_address: self.output_address,
             amount: pea_int::from_be_bytes(&self.amount),
             fee: pea_int::from_be_bytes(&self.fee),
@@ -146,9 +139,9 @@ impl Metadata {
         }
     }
 }
-impl Default for Metadata {
+impl Default for TransactionC {
     fn default() -> Self {
-        Metadata {
+        TransactionC {
             output_address: [0; 20],
             amount: [0; AMOUNT_BYTES],
             fee: [0; AMOUNT_BYTES],
@@ -163,7 +156,7 @@ mod tests {
     #[test]
     fn test_hash() {
         assert_eq!(
-            Transaction::default().hash(),
+            TransactionB::default().hash(),
             [
                 102, 104, 122, 173, 248, 98, 189, 119, 108, 143, 193, 139, 142, 159, 142, 32, 8, 151, 20, 133, 110, 226, 51, 179, 144, 42, 89, 29, 13, 95, 41,
                 37
@@ -172,6 +165,6 @@ mod tests {
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(96, bincode::serialize(&Metadata::default()).unwrap().len());
+        assert_eq!(96, bincode::serialize(&TransactionC::default()).unwrap().len());
     }
 }

@@ -60,29 +60,29 @@ pub mod block {
     }
 }
 pub mod transaction {
-    use pea_transaction::{Metadata, Transaction};
+    use pea_transaction::{TransactionB, TransactionC};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(transaction: &Transaction, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::transactions(db), transaction.hash(), bincode::serialize(&transaction.metadata())?)?;
+    pub fn put(transaction: &TransactionB, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::transactions(db), transaction.hash(), bincode::serialize(&transaction.c())?)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Transaction, Box<dyn Error>> {
-        let transaction_metadata: Metadata = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
-        Ok(transaction_metadata.transaction())
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionB, Box<dyn Error>> {
+        let transaction_metadata: TransactionC = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
+        Ok(transaction_metadata.b())
     }
 }
 pub mod stake {
-    use pea_stake::{Metadata, Stake};
+    use pea_stake::{StakeB, StakeC};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(stake: &Stake, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::stakes(db), stake.hash(), bincode::serialize(&stake.metadata())?)?;
+    pub fn put(stake: &StakeB, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::stakes(db), stake.hash(), bincode::serialize(&stake.c())?)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Stake, Box<dyn Error>> {
-        let stake_metadata: Metadata = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
-        Ok(stake_metadata.stake())
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Box<dyn Error>> {
+        let stake_metadata: StakeC = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
+        Ok(stake_metadata.b())
     }
 }
 pub mod tree {

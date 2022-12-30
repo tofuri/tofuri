@@ -6,8 +6,8 @@ use log::error;
 use pea_address as address;
 use pea_core::types;
 use pea_db as db;
-use pea_stake::Stake;
-use pea_transaction::Transaction;
+use pea_stake::StakeB;
+use pea_transaction::TransactionB;
 use regex::Regex;
 use std::{error::Error, io::BufRead, time::Duration};
 use tokio::{
@@ -34,9 +34,9 @@ lazy_static! {
     static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
     static ref STAKE_BY_HASH: Regex = Regex::new(r" /stake/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
-    static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&Transaction::default()).unwrap()).len();
+    static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&TransactionB::default()).unwrap()).len();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
-    static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&Stake::default()).unwrap()).len();
+    static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&StakeB::default()).unwrap()).len();
     static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
     static ref PEER: Regex = Regex::new(r" /peer/.* ").unwrap();
 }
@@ -353,7 +353,7 @@ fn get_peer(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     Ok(text(string))
 }
 fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let transaction: Transaction = bincode::deserialize(&hex::decode(
+    let transaction: TransactionB = bincode::deserialize(&hex::decode(
         buffer
             .lines()
             .last()
@@ -377,7 +377,7 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
     Ok(json(serde_json::to_string(&status)?))
 }
 fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let stake: Stake = bincode::deserialize(&hex::decode(
+    let stake: StakeB = bincode::deserialize(&hex::decode(
         buffer.lines().last().ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
     let data = bincode::serialize(&stake).unwrap();

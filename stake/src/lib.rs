@@ -5,14 +5,14 @@ use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::{error::Error, fmt};
 #[derive(Serialize, Deserialize, Clone)]
-pub struct Stake {
+pub struct StakeB {
     pub fee: u128,
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
-impl fmt::Debug for Stake {
+impl fmt::Debug for StakeB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         #![allow(dead_code)]
         #[derive(Debug)]
@@ -38,9 +38,9 @@ impl fmt::Debug for Stake {
         )
     }
 }
-impl Stake {
-    pub fn new(deposit: bool, fee: u128, timestamp: u32) -> Stake {
-        Stake {
+impl StakeB {
+    pub fn new(deposit: bool, fee: u128, timestamp: u32) -> StakeB {
+        StakeB {
             fee: pea_int::floor(fee),
             deposit,
             timestamp,
@@ -96,8 +96,8 @@ impl Stake {
         }
         Ok(())
     }
-    pub fn metadata(&self) -> Metadata {
-        Metadata {
+    pub fn c(&self) -> StakeC {
+        StakeC {
             fee: pea_int::to_be_bytes(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
@@ -105,9 +105,9 @@ impl Stake {
         }
     }
 }
-impl Default for Stake {
+impl Default for StakeB {
     fn default() -> Self {
-        Stake {
+        StakeB {
             fee: 0,
             deposit: false,
             timestamp: 0,
@@ -116,16 +116,16 @@ impl Default for Stake {
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Metadata {
+pub struct StakeC {
     pub fee: types::CompressedAmount,
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
-impl Metadata {
-    pub fn stake(&self) -> Stake {
-        Stake {
+impl StakeC {
+    pub fn b(&self) -> StakeB {
+        StakeB {
             fee: pea_int::from_be_bytes(&self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
@@ -133,9 +133,9 @@ impl Metadata {
         }
     }
 }
-impl Default for Metadata {
+impl Default for StakeC {
     fn default() -> Self {
-        Metadata {
+        StakeC {
             fee: [0; AMOUNT_BYTES],
             deposit: false,
             timestamp: 0,
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn test_hash() {
         assert_eq!(
-            Stake::default().hash(),
+            StakeB::default().hash(),
             [
                 62, 112, 119, 253, 47, 102, 214, 137, 224, 206, 230, 167, 207, 91, 55, 191, 45, 202, 124, 151, 154, 243, 86, 208, 163, 28, 188, 92, 133, 96,
                 92, 125
@@ -158,6 +158,6 @@ mod tests {
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(73, bincode::serialize(&Metadata::default()).unwrap().len());
+        assert_eq!(73, bincode::serialize(&StakeC::default()).unwrap().len());
     }
 }

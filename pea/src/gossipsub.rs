@@ -1,8 +1,8 @@
 use crate::{multiaddr, node::Node};
 use libp2p::{gossipsub::GossipsubMessage, Multiaddr};
 use pea_block::BlockB;
-use pea_stake::Stake;
-use pea_transaction::Transaction;
+use pea_stake::StakeB;
+use pea_transaction::TransactionB;
 use std::error::Error;
 pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn Error>> {
     match message.topic.as_str() {
@@ -20,11 +20,11 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
             }
         }
         "stake" => {
-            let stake: Stake = bincode::deserialize(&message.data)?;
+            let stake: StakeB = bincode::deserialize(&message.data)?;
             node.blockchain.try_add_stake(stake, node.time.timestamp_secs())?;
         }
         "transaction" => {
-            let transaction: Transaction = bincode::deserialize(&message.data)?;
+            let transaction: TransactionB = bincode::deserialize(&message.data)?;
             node.blockchain.try_add_transaction(transaction, node.time.timestamp_secs())?;
         }
         "multiaddr" => {

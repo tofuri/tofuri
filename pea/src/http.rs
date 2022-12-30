@@ -235,22 +235,22 @@ fn get_height_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Er
             .get(8..)
             .ok_or("GET HEIGHT_BY_HASH 2")?,
     )?;
-    let block = db::block::get(&node.blockchain.db, &hash)?;
-    let height = node.blockchain.tree.height(&block.previous_hash);
+    let block_b = db::block::get(&node.blockchain.db, &hash)?;
+    let height = node.blockchain.tree.height(&block_b.previous_hash);
     Ok(json(serde_json::to_string(&height)?))
 }
 fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    let block = &node.blockchain.states.dynamic.latest_block;
+    let block_a = &node.blockchain.states.dynamic.latest_block;
     Ok(json(serde_json::to_string(&types::api::Block {
-        hash: hex::encode(block.hash),
-        previous_hash: hex::encode(block.previous_hash),
-        timestamp: block.timestamp,
-        address: address::address::encode(&block.input_address()),
-        signature: hex::encode(block.signature),
-        pi: hex::encode(block.pi),
-        beta: hex::encode(block.beta),
-        transactions: block.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
-        stakes: block.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
+        hash: hex::encode(block_a.hash),
+        previous_hash: hex::encode(block_a.previous_hash),
+        timestamp: block_a.timestamp,
+        address: address::address::encode(&block_a.input_address()),
+        signature: hex::encode(block_a.signature),
+        pi: hex::encode(block_a.pi),
+        beta: hex::encode(block_a.beta),
+        transactions: block_a.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
+        stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     })?))
 }
 fn get_hash_by_height(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
@@ -285,17 +285,17 @@ fn get_block_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
             .get(7..)
             .ok_or("GET BLOCK_BY_HASH 2")?,
     )?;
-    let block = db::block::get(&node.blockchain.db, &hash)?.a()?;
+    let block_a = db::block::get(&node.blockchain.db, &hash)?.a()?;
     Ok(json(serde_json::to_string(&types::api::Block {
-        hash: hex::encode(block.hash),
-        previous_hash: hex::encode(block.previous_hash),
-        timestamp: block.timestamp,
-        address: address::address::encode(&block.input_address()),
-        signature: hex::encode(block.signature),
-        pi: hex::encode(block.pi),
-        beta: hex::encode(block.beta),
-        transactions: block.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
-        stakes: block.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
+        hash: hex::encode(block_a.hash),
+        previous_hash: hex::encode(block_a.previous_hash),
+        timestamp: block_a.timestamp,
+        address: address::address::encode(&block_a.input_address()),
+        signature: hex::encode(block_a.signature),
+        pi: hex::encode(block_a.pi),
+        beta: hex::encode(block_a.beta),
+        transactions: block_a.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
+        stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     })?))
 }
 fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {

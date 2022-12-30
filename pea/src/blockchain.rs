@@ -76,9 +76,9 @@ impl Blockchain {
             hashes_dynamic[self.sync.index - hashes_trusted.len()]
         };
         debug!("{} {} {}", "Sync".cyan(), self.sync.index.to_string().yellow(), hex::encode(hash));
-        let block = db::block::get(&self.db, &hash).unwrap();
+        let block_b = db::block::get(&self.db, &hash).unwrap();
         self.sync.index += 1;
-        block
+        block_b
     }
     pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockB> {
         if let Some(address) = self.states.dynamic.staker(timestamp) {
@@ -111,7 +111,7 @@ impl Blockchain {
         Some(block)
     }
     pub fn accept_block(&mut self, block: &BlockA, forged: bool) {
-        db::block::put(&block.b(), &self.db).unwrap();
+        db::block::put(&block, &self.db).unwrap();
         if self.tree.insert(block.hash, block.previous_hash, block.timestamp).unwrap() {
             warn!("{} {}", "Forked".red(), hex::encode(block.hash));
         }

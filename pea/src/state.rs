@@ -301,9 +301,9 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
         None => 0,
     };
     for hash in hashes.iter() {
-        let block = db::block::get(db, hash).unwrap().a().unwrap();
-        state.update(db, &block, previous_timestamp);
-        previous_timestamp = block.timestamp;
+        let block_a = db::block::get(db, hash).unwrap().a().unwrap();
+        state.update(db, &block_a, previous_timestamp);
+        previous_timestamp = block_a.timestamp;
     }
 }
 fn offline(timestamp: u32, previous_timestamp: u32) -> usize {

@@ -217,9 +217,9 @@ impl Blockchain {
             if block_a.stakes.len() != 1 {
                 return Err("block mint stakes".into());
             }
-            let stake = block_a.stakes.first().unwrap();
-            stake.validate_mint()?;
-            if stake.timestamp != block_a.timestamp {
+            let stake_a = block_a.stakes.first().unwrap();
+            stake_a.validate_mint()?;
+            if stake_a.timestamp != block_a.timestamp {
                 return Err("stake mint timestamp".into());
             }
             return Ok(());

@@ -53,7 +53,7 @@ impl States {
         let start = Instant::now();
         let hashes_0 = &self.dynamic.hashes;
         if hashes_0.len() == trust_fork_after_blocks {
-            let block = db::block::get(db, hashes_0.first().unwrap()).unwrap();
+            let block = db::block::get(db, hashes_0.first().unwrap()).unwrap().a().unwrap();
             self.trusted.update(
                 db,
                 &block,

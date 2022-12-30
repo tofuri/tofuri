@@ -3,8 +3,18 @@ use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
-use std::{error::Error, fmt};
-#[derive(Serialize, Deserialize, Clone)]
+use std::error::Error;
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StakeA {
+    pub fee: u128,
+    pub deposit: bool,
+    pub timestamp: u32,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
+    pub input_address: types::AddressBytes,
+    pub hash: types::Hash,
+}
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StakeB {
     pub fee: u128,
     pub deposit: bool,
@@ -12,82 +22,24 @@ pub struct StakeB {
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
-impl fmt::Debug for StakeB {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        #![allow(dead_code)]
-        #[derive(Debug)]
-        struct Stake {
-            hash: String,
-            address: String,
-            fee: u128,
-            deposit: bool,
-            timestamp: u32,
-            signature: String,
-        }
-        write!(
-            f,
-            "{:?}",
-            Stake {
-                hash: hex::encode(self.hash()),
-                address: pea_address::address::encode(&self.input_address().expect("valid input address")),
-                fee: self.fee,
-                deposit: self.deposit,
-                timestamp: self.timestamp,
-                signature: hex::encode(self.signature),
-            }
-        )
-    }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct StakeC {
+    pub fee: types::CompressedAmount,
+    pub deposit: bool,
+    pub timestamp: u32,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
 }
-impl StakeB {
-    pub fn new(deposit: bool, fee: u128, timestamp: u32) -> StakeB {
+impl StakeA {
+    pub fn b(&self) -> StakeB {
         StakeB {
-            fee: pea_int::floor(fee),
-            deposit,
-            timestamp,
-            signature: [0; 64],
+            fee: self.fee,
+            deposit: self.deposit,
+            timestamp: self.timestamp,
+            signature: self.signature,
         }
-    }
-    pub fn hash(&self) -> types::Hash {
-        let mut hasher = Sha256::new();
-        hasher.update(&self.hash_input());
-        hasher.finalize().into()
-    }
-    pub fn sign(&mut self, key: &Key) {
-        self.signature = key.sign(&self.hash()).unwrap();
-    }
-    pub fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
-        Ok(Key::recover(&self.hash(), &self.signature)?)
-    }
-    pub fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
-        Ok(util::address(&self.input_public_key()?))
-    }
-    pub fn verify(&self) -> Result<(), Box<dyn Error>> {
-        self.input_public_key()?;
-        Ok(())
-    }
-    pub fn hash_input(&self) -> [u8; 9] {
-        let mut bytes = [0; 9];
-        bytes[0..4].copy_from_slice(&self.timestamp.to_be_bytes());
-        bytes[4..8].copy_from_slice(&pea_int::to_be_bytes(self.fee));
-        bytes[8] = if self.deposit { 1 } else { 0 };
-        bytes
-    }
-    pub fn validate(&self) -> Result<(), Box<dyn Error>> {
-        if self.verify().is_err() {
-            return Err("stake signature".into());
-        }
-        if self.fee == 0 {
-            return Err("stake fee zero".into());
-        }
-        if self.fee != pea_int::floor(self.fee) {
-            return Err("stake fee floor".into());
-        }
-        Ok(())
     }
     pub fn validate_mint(&self) -> Result<(), Box<dyn Error>> {
-        if self.verify().is_err() {
-            return Err("stake mint signature".into());
-        }
         if self.fee != 0 {
             return Err("stake mint fee not zero".into());
         }
@@ -96,12 +48,74 @@ impl StakeB {
         }
         Ok(())
     }
+}
+impl StakeB {
+    pub fn a(&self) -> Result<StakeA, Box<dyn Error>> {
+        Ok(StakeA {
+            fee: self.fee,
+            deposit: self.deposit,
+            timestamp: self.timestamp,
+            signature: self.signature,
+            input_address: self.input_address()?,
+            hash: self.hash(),
+        })
+    }
     pub fn c(&self) -> StakeC {
         StakeC {
             fee: pea_int::to_be_bytes(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
+        }
+    }
+    pub fn sign(deposit: bool, fee: u128, timestamp: u32, key: &Key) -> Result<StakeB, Box<dyn Error>> {
+        let mut stake_b = StakeB {
+            fee: pea_int::floor(fee),
+            deposit,
+            timestamp,
+            signature: [0; 64],
+        };
+        stake_b.signature = key.sign(&stake_b.hash())?;
+        Ok(stake_b)
+    }
+    pub fn hash(&self) -> types::Hash {
+        let mut hasher = Sha256::new();
+        hasher.update(&self.hash_input());
+        hasher.finalize().into()
+    }
+    fn hash_input(&self) -> [u8; 9] {
+        let mut bytes = [0; 9];
+        bytes[0..4].copy_from_slice(&self.timestamp.to_be_bytes());
+        bytes[4..8].copy_from_slice(&pea_int::to_be_bytes(self.fee));
+        bytes[8] = if self.deposit { 1 } else { 0 };
+        bytes
+    }
+    fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+        Ok(util::address(&self.input_public_key()?))
+    }
+    fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
+        Ok(Key::recover(&self.hash(), &self.signature)?)
+    }
+}
+impl StakeC {
+    pub fn b(&self) -> StakeB {
+        StakeB {
+            fee: pea_int::from_be_bytes(&self.fee),
+            deposit: self.deposit,
+            timestamp: self.timestamp,
+            signature: self.signature,
+        }
+    }
+}
+impl Default for StakeA {
+    fn default() -> Self {
+        StakeA {
+            fee: 0,
+            deposit: false,
+            timestamp: 0,
+            signature: [0; 64],
+            input_address: [0; 20],
+            hash: [0; 32],
         }
     }
 }
@@ -112,24 +126,6 @@ impl Default for StakeB {
             deposit: false,
             timestamp: 0,
             signature: [0; 64],
-        }
-    }
-}
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct StakeC {
-    pub fee: types::CompressedAmount,
-    pub deposit: bool,
-    pub timestamp: u32,
-    #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
-}
-impl StakeC {
-    pub fn b(&self) -> StakeB {
-        StakeB {
-            fee: pea_int::from_be_bytes(&self.fee),
-            deposit: self.deposit,
-            timestamp: self.timestamp,
-            signature: self.signature,
         }
     }
 }

@@ -2,7 +2,7 @@ use crate::{multiaddr, node::Node};
 use colored::*;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
-use pea_block::BlockB;
+use pea_block::BlockA;
 use pea_core::constants::SYNC_BLOCKS_PER_TICK;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
@@ -34,15 +34,15 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
 }
 fn pending_blocks(node: &mut Node, timestamp: u32) {
     let drain = node.blockchain.pending_blocks.drain(..);
-    let mut vec: Vec<BlockB> = vec![];
+    let mut vec: Vec<BlockA> = vec![];
     for block in drain {
-        if vec.iter().any(|a| a.hash() == block.hash()) {
+        if vec.iter().any(|a| a.hash == block.hash) {
             continue;
         }
         vec.push(block);
     }
     loop {
-        if let Some(block) = vec.iter().find(|a| match node.blockchain.validate_block(a, timestamp) {
+        if let Some(block) = vec.iter().find(|&x| match node.blockchain.validate_block(&x, timestamp) {
             Ok(()) => true,
             Err(err) => {
                 debug!("{}", err);
@@ -67,9 +67,8 @@ fn offline_staker(node: &mut Node, timestamp: u32) {
     }
     let dynamic = &node.blockchain.states.dynamic;
     if let Some(address) = dynamic.staker_offline(timestamp) {
-        let latest_hash = dynamic.latest_block.hash();
-        if let Some(hash) = node.blockchain.offline.insert(address.clone(), latest_hash) {
-            if hash == latest_hash {
+        if let Some(hash) = node.blockchain.offline.insert(address.clone(), dynamic.latest_block.hash) {
+            if hash == dynamic.latest_block.hash {
                 return;
             }
         }

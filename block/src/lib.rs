@@ -1,38 +1,27 @@
 use pea_core::{constants::COIN, types, util};
 use pea_key::Key;
-use pea_stake::StakeB;
-use pea_transaction::TransactionB;
+use pea_stake::{StakeA, StakeB};
+use pea_transaction::{TransactionA, TransactionB};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
-use std::{error::Error, fmt};
-#[derive(Serialize, Deserialize, Clone)]
+use std::error::Error;
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockA {
+    pub hash: types::Hash,
     pub previous_hash: types::Hash,
     pub timestamp: u32,
-    #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
+    pub beta: [u8; 32],
     #[serde(with = "BigArray")]
     pub pi: [u8; 81],
-    pub transactions: Vec<TransactionB>,
-    pub stakes: Vec<StakeB>,
-    pub input_address: types::AddressBytes,
-    pub beta: [u8; 32],
-    pub hash: types::Hash,
+    #[serde(with = "BigArray")]
+    pub input_public_key: types::PublicKeyBytes,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
+    pub transactions: Vec<TransactionA>,
+    pub stakes: Vec<StakeA>,
 }
-impl BlockA {
-    pub fn b(&self) -> BlockB {
-        BlockB {
-            previous_hash: self.previous_hash,
-            timestamp: self.timestamp,
-            signature: self.signature,
-            pi: self.pi,
-            transactions: self.transactions.clone(),
-            stakes: self.stakes.clone(),
-        }
-    }
-}
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockB {
     pub previous_hash: types::Hash,
     pub timestamp: u32,
@@ -42,184 +31,6 @@ pub struct BlockB {
     pub pi: [u8; 81],
     pub transactions: Vec<TransactionB>,
     pub stakes: Vec<StakeB>,
-}
-impl fmt::Debug for BlockB {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        #![allow(dead_code)]
-        #[derive(Debug)]
-        struct Block {
-            hash: String,
-            previous_hash: String,
-            timestamp: u32,
-            address: String,
-            signature: String,
-            pi: String,
-            transactions: Vec<String>,
-            stakes: Vec<String>,
-        }
-        write!(
-            f,
-            "{:?}",
-            Block {
-                hash: hex::encode(self.hash()),
-                previous_hash: hex::encode(self.previous_hash),
-                timestamp: self.timestamp,
-                address: pea_address::address::encode(&self.input_address().expect("valid input address")),
-                signature: hex::encode(self.signature),
-                pi: hex::encode(self.pi),
-                transactions: self.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
-                stakes: self.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
-            }
-        )
-    }
-}
-impl BlockB {
-    pub fn new(previous_hash: types::Hash, timestamp: u32) -> BlockB {
-        BlockB {
-            previous_hash,
-            timestamp,
-            signature: [0; 64],
-            pi: [0; 81],
-            transactions: vec![],
-            stakes: vec![],
-        }
-    }
-    pub fn sign(&mut self, key: &Key, previous_beta: &[u8]) {
-        self.pi = key.vrf_prove(previous_beta).unwrap();
-        self.signature = key.sign(&self.hash()).unwrap();
-    }
-    pub fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
-        Ok(Key::recover(&self.hash(), &self.signature)?)
-    }
-    pub fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
-        Ok(util::address(&self.input_public_key()?))
-    }
-    pub fn beta(&self) -> Option<[u8; 32]> {
-        Key::vrf_proof_to_hash(&self.pi)
-    }
-    pub fn verify(&self, previous_beta: &[u8]) -> Result<(), Box<dyn Error>> {
-        let y = self.input_public_key()?;
-        Key::vrf_verify(&y, &self.pi, previous_beta).ok_or("invalid proof")?;
-        Ok(())
-    }
-    pub fn hash(&self) -> types::Hash {
-        let mut hasher = Sha256::new();
-        hasher.update(&self.hash_input());
-        hasher.finalize().into()
-    }
-    pub fn fees(&self) -> u128 {
-        let mut fees = 0;
-        for transaction in self.transactions.iter() {
-            fees += transaction.fee;
-        }
-        for stake in self.stakes.iter() {
-            fees += stake.fee;
-        }
-        fees
-    }
-    pub fn reward(&self) -> u128 {
-        self.fees() + COIN
-    }
-    pub fn transaction_hashes(&self) -> Vec<types::Hash> {
-        let mut transaction_hashes = vec![];
-        for transaction in self.transactions.iter() {
-            transaction_hashes.push(transaction.hash());
-        }
-        transaction_hashes
-    }
-    pub fn stake_hashes(&self) -> Vec<types::Hash> {
-        let mut stake_hashes = vec![];
-        for stake in self.stakes.iter() {
-            stake_hashes.push(stake.hash());
-        }
-        stake_hashes
-    }
-    pub fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
-        types::CBMT::build_merkle_root(hashes)
-    }
-    pub fn hash_input(&self) -> [u8; 181] {
-        let mut bytes = [0; 181];
-        bytes[0..32].copy_from_slice(&self.previous_hash);
-        bytes[32..64].copy_from_slice(&BlockB::merkle_root(&self.transaction_hashes()));
-        bytes[64..96].copy_from_slice(&BlockB::merkle_root(&self.stake_hashes()));
-        bytes[96..100].copy_from_slice(&self.timestamp.to_be_bytes());
-        bytes[100..181].copy_from_slice(&self.pi);
-        bytes
-    }
-    pub fn validate(&self, previous_beta: &[u8]) -> Result<(), Box<dyn Error>> {
-        if self.verify(previous_beta).is_err() {
-            return Err("block signature".into());
-        }
-        let inputs = self
-            .transactions
-            .iter()
-            .map(|t| t.input_address().expect("valid input address"))
-            .collect::<Vec<types::AddressBytes>>();
-        if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
-            return Err("block includes multiple transactions from same input address".into());
-        }
-        let inputs = self
-            .stakes
-            .iter()
-            .map(|s| s.input_address().expect("valid input address"))
-            .collect::<Vec<types::AddressBytes>>();
-        if (1..inputs.len()).any(|i| inputs[i..].contains(&inputs[i - 1])) {
-            return Err("block includes multiple stakes from same input address".into());
-        }
-        Ok(())
-    }
-    pub fn validate_mint(&self, previous_beta: &[u8]) -> Result<(), Box<dyn Error>> {
-        if self.verify(previous_beta).is_err() {
-            return Err("block signature".into());
-        }
-        if !self.transactions.is_empty() {
-            return Err("block mint transactions".into());
-        }
-        if self.stakes.len() != 1 {
-            return Err("block mint stakes".into());
-        }
-        let stake = self.stakes.first().unwrap();
-        stake.validate_mint()?;
-        if stake.timestamp != self.timestamp {
-            return Err("stake mint timestamp".into());
-        }
-        Ok(())
-    }
-    pub fn a(&self) -> BlockA {
-        BlockA {
-            previous_hash: self.previous_hash,
-            timestamp: self.timestamp,
-            signature: self.signature,
-            pi: self.pi,
-            transactions: self.transactions.clone(),
-            stakes: self.stakes.clone(),
-            input_address: self.input_address().unwrap(),
-            beta: self.beta().unwrap(),
-            hash: self.hash(),
-        }
-    }
-    pub fn c(&self) -> BlockC {
-        BlockC {
-            previous_hash: self.previous_hash,
-            timestamp: self.timestamp,
-            signature: self.signature,
-            pi: self.pi,
-            transaction_hashes: self.transaction_hashes(),
-            stake_hashes: self.stake_hashes(),
-        }
-    }
-}
-impl Default for BlockB {
-    fn default() -> Self {
-        BlockB {
-            previous_hash: [0; 32],
-            timestamp: 0,
-            signature: [0; 64],
-            pi: [0; 81],
-            transactions: vec![],
-            stakes: vec![],
-        }
-    }
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BlockC {
@@ -232,6 +43,132 @@ pub struct BlockC {
     pub transaction_hashes: Vec<types::Hash>,
     pub stake_hashes: Vec<types::Hash>,
 }
+impl BlockA {
+    pub fn b(&self) -> BlockB {
+        let mut transactions = vec![];
+        let mut stakes = vec![];
+        for transaction in self.transactions.iter() {
+            transactions.push(transaction.b())
+        }
+        for stake in self.stakes.iter() {
+            stakes.push(stake.b());
+        }
+        BlockB {
+            previous_hash: self.previous_hash,
+            timestamp: self.timestamp,
+            signature: self.signature,
+            pi: self.pi,
+            transactions,
+            stakes,
+        }
+    }
+    pub fn input_address(&self) -> types::AddressBytes {
+        util::address(&self.input_public_key)
+    }
+    pub fn reward(&self) -> u128 {
+        self.fees() + COIN
+    }
+    fn fees(&self) -> u128 {
+        let mut fees = 0;
+        for transaction in self.transactions.iter() {
+            fees += transaction.fee;
+        }
+        for stake in self.stakes.iter() {
+            fees += stake.fee;
+        }
+        fees
+    }
+}
+impl BlockB {
+    pub fn a(&self) -> Result<BlockA, Box<dyn Error>> {
+        let mut transactions = vec![];
+        let mut stakes = vec![];
+        for transaction in self.transactions.iter() {
+            transactions.push(transaction.a()?)
+        }
+        for stake in self.stakes.iter() {
+            stakes.push(stake.a()?);
+        }
+        Ok(BlockA {
+            hash: self.hash(),
+            previous_hash: self.previous_hash,
+            timestamp: self.timestamp,
+            beta: self.beta()?,
+            pi: self.pi,
+            input_public_key: self.input_public_key()?,
+            signature: self.signature,
+            transactions,
+            stakes,
+        })
+    }
+    pub fn c(&self) -> BlockC {
+        BlockC {
+            previous_hash: self.previous_hash,
+            timestamp: self.timestamp,
+            signature: self.signature,
+            pi: self.pi,
+            transaction_hashes: self.transaction_hashes(),
+            stake_hashes: self.stake_hashes(),
+        }
+    }
+    pub fn sign(
+        previous_hash: types::Hash,
+        timestamp: u32,
+        transactions: Vec<TransactionB>,
+        stakes: Vec<StakeB>,
+        key: &Key,
+        previous_beta: &[u8],
+    ) -> Result<BlockB, Box<dyn Error>> {
+        let mut block_b = BlockB {
+            previous_hash,
+            timestamp,
+            signature: [0; 64],
+            pi: [0; 81],
+            transactions,
+            stakes,
+        };
+        block_b.pi = key.vrf_prove(previous_beta).ok_or("failed to generate proof")?;
+        block_b.signature = key.sign(&block_b.hash())?;
+        Ok(block_b)
+    }
+    pub fn hash(&self) -> types::Hash {
+        let mut hasher = Sha256::new();
+        hasher.update(&self.hash_input());
+        hasher.finalize().into()
+    }
+    fn hash_input(&self) -> [u8; 181] {
+        let mut bytes = [0; 181];
+        bytes[0..32].copy_from_slice(&self.previous_hash);
+        bytes[32..64].copy_from_slice(&BlockB::merkle_root(&self.transaction_hashes()));
+        bytes[64..96].copy_from_slice(&BlockB::merkle_root(&self.stake_hashes()));
+        bytes[96..100].copy_from_slice(&self.timestamp.to_be_bytes());
+        bytes[100..181].copy_from_slice(&self.pi);
+        bytes
+    }
+    fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
+        types::CBMT::build_merkle_root(hashes)
+    }
+    fn transaction_hashes(&self) -> Vec<types::Hash> {
+        let mut transaction_hashes = vec![];
+        for transaction in self.transactions.iter() {
+            transaction_hashes.push(transaction.hash());
+        }
+        transaction_hashes
+    }
+    fn stake_hashes(&self) -> Vec<types::Hash> {
+        let mut stake_hashes = vec![];
+        for stake in self.stakes.iter() {
+            stake_hashes.push(stake.hash());
+        }
+        stake_hashes
+    }
+    fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
+        Ok(Key::recover(&self.hash(), &self.signature)?)
+    }
+    fn beta(&self) -> Result<[u8; 32], Box<dyn Error>> {
+        Key::vrf_proof_to_hash(&self.pi).ok_or("invalid beta".into())
+    }
+}
 impl BlockC {
     pub fn b(&self, transactions: Vec<TransactionB>, stakes: Vec<StakeB>) -> BlockB {
         BlockB {
@@ -241,6 +178,33 @@ impl BlockC {
             pi: self.pi,
             transactions,
             stakes,
+        }
+    }
+}
+impl Default for BlockA {
+    fn default() -> Self {
+        BlockA {
+            hash: [0; 32],
+            previous_hash: [0; 32],
+            timestamp: 0,
+            beta: [0; 32],
+            pi: [0; 81],
+            input_public_key: [0; 33],
+            signature: [0; 64],
+            transactions: vec![],
+            stakes: vec![],
+        }
+    }
+}
+impl Default for BlockB {
+    fn default() -> Self {
+        BlockB {
+            previous_hash: [0; 32],
+            timestamp: 0,
+            signature: [0; 64],
+            pi: [0; 81],
+            transactions: vec![],
+            stakes: vec![],
         }
     }
 }
@@ -273,8 +237,7 @@ mod tests {
     #[test]
     fn test_u256_from_beta() {
         let key = Key::from_slice(&[0xcd; 32]);
-        let mut block = BlockB::default();
-        block.sign(&key, &[0; 32]);
+        let block = BlockB::sign([0; 32], 0, vec![], vec![], &key, &[0; 32]).unwrap();
         assert_eq!(
             util::u256(&block.beta().unwrap()),
             util::U256::from_dec_str("92526807160300854379423726328595779761032533927961162464096185194601493188181").unwrap()

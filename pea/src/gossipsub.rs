@@ -7,25 +7,21 @@ use std::error::Error;
 pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn Error>> {
     match message.topic.as_str() {
         "block" => {
-            let block: BlockB = bincode::deserialize(&message.data)?;
-            if node.blockchain.pending_blocks.len() < node.blockchain.pending_blocks_limit {
-                node.blockchain.pending_blocks.push(block);
-            }
+            let block_b: BlockB = bincode::deserialize(&message.data)?;
+            node.blockchain.add_block(block_b)?;
         }
         "blocks" => {
-            for block in bincode::deserialize::<Vec<BlockB>>(&message.data)? {
-                if node.blockchain.pending_blocks.len() < node.blockchain.pending_blocks_limit {
-                    node.blockchain.pending_blocks.push(block);
-                }
+            for block_b in bincode::deserialize::<Vec<BlockB>>(&message.data)? {
+                node.blockchain.add_block(block_b)?;
             }
         }
         "stake" => {
-            let stake: StakeB = bincode::deserialize(&message.data)?;
-            node.blockchain.try_add_stake(stake, node.time.timestamp_secs())?;
+            let stake_b: StakeB = bincode::deserialize(&message.data)?;
+            node.blockchain.add_stake(stake_b, node.time.timestamp_secs())?;
         }
         "transaction" => {
-            let transaction: TransactionB = bincode::deserialize(&message.data)?;
-            node.blockchain.try_add_transaction(transaction, node.time.timestamp_secs())?;
+            let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
+            node.blockchain.add_transaction(transaction_b, node.time.timestamp_secs())?;
         }
         "multiaddr" => {
             for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {

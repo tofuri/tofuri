@@ -1,15 +1,15 @@
 use crate::{state::Dynamic, states::States, sync::Sync};
 use colored::*;
 use log::{debug, info, warn};
-use pea_block::BlockB;
+use pea_block::{BlockA, BlockB};
 use pea_core::constants::{
     BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, GENESIS_BETA, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, SYNC_BLOCKS_PER_TICK,
 };
 use pea_core::{types, util};
 use pea_db as db;
 use pea_key::Key;
-use pea_stake::StakeB;
-use pea_transaction::TransactionB;
+use pea_stake::{StakeA, StakeB};
+use pea_transaction::{TransactionA, TransactionB};
 use pea_tree::Tree;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::HashMap;
@@ -20,9 +20,9 @@ pub struct Blockchain {
     pub key: Key,
     pub tree: Tree,
     pub states: States,
-    pub pending_transactions: Vec<TransactionB>,
-    pub pending_stakes: Vec<StakeB>,
-    pub pending_blocks: Vec<BlockB>,
+    pending_transactions: Vec<TransactionA>,
+    pending_stakes: Vec<StakeA>,
+    pub pending_blocks: Vec<BlockA>,
     pub sync: Sync,
     pub trust_fork_after_blocks: usize,
     pub pending_blocks_limit: usize,
@@ -64,107 +64,6 @@ impl Blockchain {
             0
         }
     }
-    pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockB> {
-        if let Some(address) = self.states.dynamic.staker(timestamp) {
-            if address != &self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
-                return None;
-            }
-        } else {
-            let mut stake = StakeB::new(true, 0, timestamp);
-            stake.sign(&self.key);
-            self.pending_stakes = vec![stake];
-        }
-        let (mut block, previous_beta) = if let Some(main) = self.tree.main() {
-            (BlockB::new(main.0, timestamp), self.states.dynamic.latest_block.beta().unwrap())
-        } else {
-            (BlockB::new([0; 32], timestamp), GENESIS_BETA)
-        };
-        for transaction in self.pending_transactions.iter() {
-            if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
-                block.transactions.push(transaction.clone());
-            }
-        }
-        for stake in self.pending_stakes.iter() {
-            if block.stakes.len() < BLOCK_STAKES_LIMIT {
-                block.stakes.push(stake.clone());
-            }
-        }
-        block.sign(&self.key, &previous_beta);
-        self.accept_block(&block, true);
-        Some(block)
-    }
-    pub fn accept_block(&mut self, block: &BlockB, forged: bool) {
-        db::block::put(block, &self.db).unwrap();
-        let hash = block.hash();
-        if self.tree.insert(hash, block.previous_hash, block.timestamp).unwrap() {
-            warn!("{} {}", "Forked".red(), hex::encode(hash));
-        }
-        self.tree.sort_branches();
-        self.states
-            .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
-        let info_0 = if forged { "Forged".magenta() } else { "Accept".green() };
-        let info_1 = hex::encode(hash);
-        if let Some(main) = self.tree.main() {
-            if hash == main.0 {
-                self.pending_transactions.clear();
-                self.pending_stakes.clear();
-                if !forged {
-                    self.sync.new += 1;
-                }
-                info!("{} {} {}", info_0, main.1.to_string().yellow(), info_1);
-                return;
-            }
-        }
-        info!("{} {}", info_0, info_1);
-    }
-    pub fn try_add_transaction(&mut self, transaction: TransactionB, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if self.pending_transactions.iter().any(|x| x.hash() == transaction.hash()) {
-            return Err("transaction pending".into());
-        }
-        self.validate_transaction(&transaction, self.states.dynamic.latest_block.timestamp, timestamp)?;
-        let input_address = transaction.input_address().expect("valid input address");
-        if let Some(index) = self
-            .pending_transactions
-            .iter()
-            .position(|x| x.input_address().expect("valid input address") == input_address)
-        {
-            if transaction.fee <= self.pending_transactions[index].fee {
-                return Err("transaction fee too low".into());
-            }
-            self.pending_transactions.remove(index);
-        }
-        info!("Transaction {}", hex::encode(&transaction.hash()).green());
-        self.pending_transactions.push(transaction);
-        self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
-        while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
-            self.pending_transactions.remove(self.pending_transactions.len() - 1);
-        }
-        Ok(())
-    }
-    pub fn try_add_stake(&mut self, stake: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if self.pending_stakes.iter().any(|x| x.hash() == stake.hash()) {
-            return Err("stake pending".into());
-        }
-        self.validate_stake(&stake, self.states.dynamic.latest_block.timestamp, timestamp)?;
-        let address = stake.input_address().expect("valid input address");
-        if let Some(index) = self
-            .pending_stakes
-            .iter()
-            .position(|x| x.input_address().expect("valid input address") == address)
-        {
-            if stake.fee <= self.pending_stakes[index].fee {
-                return Err("stake fee too low".into());
-            }
-            self.pending_stakes.remove(index);
-        }
-        info!("Stake {}", hex::encode(&stake.hash()).green());
-        self.pending_stakes.push(stake);
-        self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
-        while self.pending_stakes.len() > PENDING_STAKES_LIMIT {
-            self.pending_stakes.remove(self.pending_stakes.len() - 1);
-        }
-        Ok(())
-    }
     pub fn sync_block(&mut self) -> BlockB {
         let hashes_trusted = &self.states.trusted.hashes;
         let hashes_dynamic = &self.states.dynamic.hashes;
@@ -181,90 +80,227 @@ impl Blockchain {
         self.sync.index += 1;
         block
     }
-    pub fn validate_block(&self, block: &BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        let address = block.input_address()?;
-        if let Some(hash) = self.offline.get(&address) {
-            if hash == &block.previous_hash {
+    pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockB> {
+        if let Some(address) = self.states.dynamic.staker(timestamp) {
+            if address != &self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+                return None;
+            }
+        } else {
+            let stake = StakeB::sign(true, 0, timestamp, &self.key).unwrap();
+            self.pending_stakes = vec![stake.a().unwrap()];
+        }
+        let mut transactions = vec![];
+        let mut stakes = vec![];
+        for transaction_a in self.pending_transactions.iter() {
+            if transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
+                transactions.push(transaction_a.b());
+            }
+        }
+        for stake_a in self.pending_stakes.iter() {
+            if stakes.len() < BLOCK_STAKES_LIMIT {
+                stakes.push(stake_a.b());
+            }
+        }
+        let block = if let Some(main) = self.tree.main() {
+            BlockB::sign(main.0, timestamp, transactions, stakes, &self.key, &self.states.dynamic.latest_block.beta)
+        } else {
+            BlockB::sign([0; 32], timestamp, transactions, stakes, &self.key, &GENESIS_BETA)
+        }
+        .unwrap();
+        self.accept_block(&block.a().unwrap(), true);
+        Some(block)
+    }
+    pub fn accept_block(&mut self, block: &BlockA, forged: bool) {
+        db::block::put(&block.b(), &self.db).unwrap();
+        if self.tree.insert(block.hash, block.previous_hash, block.timestamp).unwrap() {
+            warn!("{} {}", "Forked".red(), hex::encode(block.hash));
+        }
+        self.tree.sort_branches();
+        self.states
+            .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
+        let info_0 = if forged { "Forged".magenta() } else { "Accept".green() };
+        let info_1 = hex::encode(block.hash);
+        if let Some(main) = self.tree.main() {
+            if block.hash == main.0 {
+                self.pending_transactions.clear();
+                self.pending_stakes.clear();
+                if !forged {
+                    self.sync.new += 1;
+                }
+                info!("{} {} {}", info_0, main.1.to_string().yellow(), info_1);
+                return;
+            }
+        }
+        info!("{} {}", info_0, info_1);
+    }
+    pub fn add_block(&mut self, block_b: BlockB) -> Result<(), Box<dyn Error>> {
+        if self.pending_blocks.len() < self.pending_blocks_limit {
+            return Err("pending blocks limit reached".into());
+        }
+        let block_a = block_b.a()?;
+        self.pending_blocks.push(block_a);
+        Ok(())
+    }
+    pub fn add_transaction(&mut self, transaction_b: TransactionB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        let transaction_a = transaction_b.a()?;
+        self.validate_transaction(&transaction_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
+        if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
+            return Err("transaction pending".into());
+        }
+        if let Some(index) = self.pending_transactions.iter().position(|x| x.input_address == transaction_a.input_address) {
+            if transaction_a.fee <= self.pending_transactions[index].fee {
+                return Err("transaction fee too low".into());
+            }
+            self.pending_transactions.remove(index);
+        }
+        info!("Transaction {}", hex::encode(&transaction_a.hash).green());
+        self.pending_transactions.push(transaction_a);
+        self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
+        while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
+            self.pending_transactions.remove(self.pending_transactions.len() - 1);
+        }
+        Ok(())
+    }
+    pub fn add_stake(&mut self, stake_b: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        let stake_a = stake_b.a()?;
+        self.validate_stake(&stake_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
+        if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
+            return Err("stake pending".into());
+        }
+        if let Some(index) = self.pending_stakes.iter().position(|x| x.input_address == stake_a.input_address) {
+            if stake_a.fee <= self.pending_stakes[index].fee {
+                return Err("stake fee too low".into());
+            }
+            self.pending_stakes.remove(index);
+        }
+        info!("Stake {}", hex::encode(&stake_a.hash).green());
+        self.pending_stakes.push(stake_a);
+        self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
+        while self.pending_stakes.len() > PENDING_STAKES_LIMIT {
+            self.pending_stakes.remove(self.pending_stakes.len() - 1);
+        }
+        Ok(())
+    }
+    pub fn validate_block(&self, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        let input_address = block_a.input_address();
+        if let Some(hash) = self.offline.get(&input_address) {
+            if hash == &block_a.previous_hash {
                 return Err("block staker banned".into());
             }
         }
-        if self.tree.get(&block.hash()).is_some() {
+        if self.tree.get(&block_a.hash).is_some() {
             return Err("block hash in tree".into());
         }
-        if block.timestamp > timestamp + self.time_delta {
+        if block_a.timestamp > timestamp + self.time_delta {
             return Err("block timestamp future".into());
         }
-        if block.previous_hash != [0; 32] && self.tree.get(&block.previous_hash).is_none() {
+        if block_a.previous_hash != [0; 32] && self.tree.get(&block_a.previous_hash).is_none() {
             return Err("block previous_hash not in tree".into());
         }
-        let dynamic = self.states.dynamic_fork(self, &block.previous_hash)?;
-        if block.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+        let dynamic = self.states.dynamic_fork(self, &block_a.previous_hash)?;
+        if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return Err("block timestamp early".into());
         }
         let previous_beta = match Key::vrf_proof_to_hash(&dynamic.latest_block.pi) {
             Some(x) => x,
             None => GENESIS_BETA,
         };
-        if let Some(a) = dynamic.staker(block.timestamp) {
-            if a != &address {
+        if let Some(a) = dynamic.staker(block_a.timestamp) {
+            if a != &input_address {
                 return Err("block staker address".into());
             }
         } else {
-            block.validate_mint(&previous_beta)?;
+            Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
+            if !block_a.transactions.is_empty() {
+                return Err("block mint transactions".into());
+            }
+            if block_a.stakes.len() != 1 {
+                return Err("block mint stakes".into());
+            }
+            let stake = block_a.stakes.first().unwrap();
+            stake.validate_mint()?;
+            if stake.timestamp != block_a.timestamp {
+                return Err("stake mint timestamp".into());
+            }
             return Ok(());
         }
-        if block.previous_hash != dynamic.latest_block.hash() {
+        if block_a.previous_hash != dynamic.latest_block.hash {
             return Err("block previous_hash not latest hash".into());
         }
-        for stake in block.stakes.iter() {
-            self.validate_stake(stake, dynamic.latest_block.timestamp, timestamp)?;
+        for stake_a in block_a.stakes.iter() {
+            self.validate_stake(stake_a, dynamic.latest_block.timestamp, timestamp)?;
         }
-        for transaction in block.transactions.iter() {
-            self.validate_transaction(transaction, dynamic.latest_block.timestamp, timestamp)?;
+        for transaction_a in block_a.transactions.iter() {
+            self.validate_transaction(transaction_a, dynamic.latest_block.timestamp, timestamp)?;
         }
-        block.validate(&previous_beta)?;
+        Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
+        let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
+        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
+            return Err("block includes multiple transactions from same input address".into());
+        }
+        let input_addresses = block_a.stakes.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
+        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
+            return Err("block includes multiple stakes from same input address".into());
+        }
         Ok(())
     }
-    fn validate_transaction(&self, transaction: &TransactionB, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        transaction.validate()?;
-        let address = transaction.input_address().expect("valid input address");
-        let balance = self.states.dynamic.balance(&address);
-        if transaction.timestamp > timestamp + self.time_delta {
+    fn validate_transaction(&self, transaction_a: &TransactionA, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        if transaction_a.amount == 0 {
+            return Err("transaction amount zero".into());
+        }
+        if transaction_a.fee == 0 {
+            return Err("transaction fee zero".into());
+        }
+        if transaction_a.amount != pea_int::floor(transaction_a.amount) {
+            return Err("transaction amount floor".into());
+        }
+        if transaction_a.fee != pea_int::floor(transaction_a.fee) {
+            return Err("transaction fee floor".into());
+        }
+        if transaction_a.input_address == transaction_a.output_address {
+            return Err("transaction input output".into());
+        }
+        let balance = self.states.dynamic.balance(&transaction_a.input_address);
+        if transaction_a.timestamp > timestamp + self.time_delta {
             return Err("transaction timestamp future".into());
         }
-        if transaction.timestamp < previous_block_timestamp {
+        if transaction_a.timestamp < previous_block_timestamp {
             return Err("transaction timestamp ancient".into());
         }
-        if transaction.amount + transaction.fee > balance {
+        if transaction_a.amount + transaction_a.fee > balance {
             return Err("transaction too expensive".into());
         }
-        if db::transaction::get(&self.db, &transaction.hash()).is_ok() {
+        if db::transaction::get(&self.db, &transaction_a.hash).is_ok() {
             return Err("transaction in chain".into());
         }
         Ok(())
     }
-    fn validate_stake(&self, stake: &StakeB, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        stake.validate()?;
-        let address = stake.input_address().expect("valid input address");
-        let balance = self.states.dynamic.balance(&address);
-        let balance_staked = self.states.dynamic.balance_staked(&address);
-        if stake.timestamp > timestamp + self.time_delta {
+    fn validate_stake(&self, stake_a: &StakeA, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        if stake_a.fee == 0 {
+            return Err("stake fee zero".into());
+        }
+        if stake_a.fee != pea_int::floor(stake_a.fee) {
+            return Err("stake fee floor".into());
+        }
+        if stake_a.timestamp > timestamp + self.time_delta {
             return Err("stake timestamp future".into());
         }
-        if stake.timestamp < previous_block_timestamp {
+        if stake_a.timestamp < previous_block_timestamp {
             return Err("stake timestamp ancient".into());
         }
-        if stake.deposit {
-            if util::stake_amount(self.states.dynamic.stakers.len()) + stake.fee > balance {
+        let balance = self.states.dynamic.balance(&stake_a.input_address);
+        let balance_staked = self.states.dynamic.balance_staked(&stake_a.input_address);
+        if stake_a.deposit {
+            if util::stake_amount(self.states.dynamic.stakers.len()) + stake_a.fee > balance {
                 return Err("stake deposit too expensive".into());
             }
             if balance_staked != 0 {
                 return Err("already staking".into());
             }
-        } else if stake.fee > balance {
+        } else if stake_a.fee > balance {
             return Err("stake withdraw fee too expensive".into());
         }
-        if db::stake::get(&self.db, &stake.hash()).is_ok() {
+        if db::stake::get(&self.db, &stake_a.hash).is_ok() {
             return Err("stake in chain".into());
         }
         Ok(())

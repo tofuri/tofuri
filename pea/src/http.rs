@@ -242,15 +242,15 @@ fn get_height_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Er
 fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let block = &node.blockchain.states.dynamic.latest_block;
     Ok(json(serde_json::to_string(&types::api::Block {
-        hash: hex::encode(block.hash()),
+        hash: hex::encode(block.hash),
         previous_hash: hex::encode(block.previous_hash),
         timestamp: block.timestamp,
-        address: address::address::encode(&block.input_address().expect("valid input address")),
+        address: address::address::encode(&block.input_address()),
         signature: hex::encode(block.signature),
         pi: hex::encode(block.pi),
-        beta: hex::encode(block.beta().unwrap()),
-        transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
-        stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
+        beta: hex::encode(block.beta),
+        transactions: block.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
+        stakes: block.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     })?))
 }
 fn get_hash_by_height(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
@@ -285,17 +285,17 @@ fn get_block_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
             .get(7..)
             .ok_or("GET BLOCK_BY_HASH 2")?,
     )?;
-    let block = db::block::get(&node.blockchain.db, &hash)?;
+    let block = db::block::get(&node.blockchain.db, &hash)?.a()?;
     Ok(json(serde_json::to_string(&types::api::Block {
-        hash: hex::encode(block.hash()),
+        hash: hex::encode(block.hash),
         previous_hash: hex::encode(block.previous_hash),
         timestamp: block.timestamp,
-        address: address::address::encode(&block.input_address().expect("valid input address")),
+        address: address::address::encode(&block.input_address()),
         signature: hex::encode(block.signature),
         pi: hex::encode(block.pi),
-        beta: hex::encode(block.beta().unwrap()),
-        transactions: block.transactions.iter().map(|x| hex::encode(x.hash())).collect(),
-        stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
+        beta: hex::encode(block.beta),
+        transactions: block.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
+        stakes: block.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     })?))
 }
 fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
@@ -308,10 +308,10 @@ fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<d
             .get(13..)
             .ok_or("GET TRANSACTION_BY_HASH 2")?,
     )?;
-    let transaction = db::transaction::get(&node.blockchain.db, &hash)?;
+    let transaction = db::transaction::get(&node.blockchain.db, &hash)?.a()?;
     Ok(json(serde_json::to_string(&types::api::Transaction {
-        hash: hex::encode(transaction.hash()),
-        input_address: address::address::encode(&transaction.input_address().expect("valid input address")),
+        hash: hex::encode(transaction.hash),
+        input_address: address::address::encode(&transaction.input_address),
         output_address: address::address::encode(&transaction.output_address),
         amount: pea_int::to_string(transaction.amount),
         fee: pea_int::to_string(transaction.fee),
@@ -329,10 +329,10 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
             .get(7..)
             .ok_or("GET STAKE_BY_HASH 2")?,
     )?;
-    let stake = db::stake::get(&node.blockchain.db, &hash)?;
+    let stake = db::stake::get(&node.blockchain.db, &hash)?.a()?;
     Ok(json(serde_json::to_string(&types::api::Stake {
-        hash: hex::encode(stake.hash()),
-        address: address::address::encode(&stake.input_address().expect("valid input address")),
+        hash: hex::encode(stake.hash),
+        address: address::address::encode(&stake.input_address),
         fee: pea_int::to_string(stake.fee),
         deposit: stake.deposit,
         timestamp: stake.timestamp,
@@ -353,7 +353,7 @@ fn get_peer(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     Ok(text(string))
 }
 fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let transaction: TransactionB = bincode::deserialize(&hex::decode(
+    let transaction_b: TransactionB = bincode::deserialize(&hex::decode(
         buffer
             .lines()
             .last()
@@ -361,8 +361,8 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
             .get(0..*TRANSACTION_SERIALIZED)
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
-    let data = bincode::serialize(&transaction).unwrap();
-    let status = match node.blockchain.try_add_transaction(transaction, node.time.timestamp_secs()) {
+    let data = bincode::serialize(&transaction_b).unwrap();
+    let status = match node.blockchain.add_transaction(transaction_b, node.time.timestamp_secs()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("transaction") {
                 node.gossipsub_publish("transaction", data);
@@ -377,11 +377,11 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
     Ok(json(serde_json::to_string(&status)?))
 }
 fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let stake: StakeB = bincode::deserialize(&hex::decode(
+    let stake_b: StakeB = bincode::deserialize(&hex::decode(
         buffer.lines().last().ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
-    let data = bincode::serialize(&stake).unwrap();
-    let status = match node.blockchain.try_add_stake(stake, node.time.timestamp_secs()) {
+    let data = bincode::serialize(&stake_b).unwrap();
+    let status = match node.blockchain.add_stake(stake_b, node.time.timestamp_secs()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("stake") {
                 node.gossipsub_publish("stake", data);

@@ -178,8 +178,7 @@ impl Command {
                     }
                     let amount = balance - fee;
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let mut transaction = TransactionB::new(key.address_bytes(), amount, fee, self.time.timestamp_secs());
-                    transaction.sign(&subkey);
+                    let transaction = TransactionB::sign(key.address_bytes(), amount, fee, self.time.timestamp_secs(), &subkey).unwrap();
                     println!("{:?}", transaction);
                     match post::transaction(&self.api, &transaction).await {
                         Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
@@ -287,10 +286,16 @@ impl Command {
         } {
             return;
         }
-        let mut transaction = TransactionB::new(address::address::decode(&address).unwrap(), amount, fee, self.time.timestamp_secs());
-        transaction.sign(&wallet.key);
-        println!("Hash: {}", hex::encode(transaction.hash()).cyan());
-        match post::transaction(&self.api, &transaction).await {
+        let transaction_b = TransactionB::sign(
+            address::address::decode(&address).unwrap(),
+            amount,
+            fee,
+            self.time.timestamp_secs(),
+            &wallet.key,
+        )
+        .unwrap();
+        println!("Hash: {}", hex::encode(transaction_b.hash()).cyan());
+        match post::transaction(&self.api, &transaction_b).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
             Err(err) => println!("{}", err.to_string().red()),
         };
@@ -311,10 +316,9 @@ impl Command {
         if !send {
             return;
         }
-        let mut stake = StakeB::new(deposit, fee, self.time.timestamp_secs());
-        stake.sign(&wallet.key);
-        println!("Hash: {}", hex::encode(stake.hash()).cyan());
-        match post::stake(&self.api, &stake).await {
+        let stake_b = StakeB::sign(deposit, fee, self.time.timestamp_secs(), &wallet.key).unwrap();
+        println!("Hash: {}", hex::encode(stake_b.hash()).cyan());
+        match post::stake(&self.api, &stake_b).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
             Err(err) => println!("{}", err.to_string().red()),
         };

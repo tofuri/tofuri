@@ -1,7 +1,7 @@
 use crate::{state::Dynamic, states::States, sync::Sync};
 use colored::*;
 use log::{debug, info, warn};
-use pea_block::Block;
+use pea_block::BlockB;
 use pea_core::constants::{
     BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, GENESIS_BETA, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, SYNC_BLOCKS_PER_TICK,
 };
@@ -22,7 +22,7 @@ pub struct Blockchain {
     pub states: States,
     pub pending_transactions: Vec<Transaction>,
     pub pending_stakes: Vec<Stake>,
-    pub pending_blocks: Vec<Block>,
+    pub pending_blocks: Vec<BlockB>,
     pub sync: Sync,
     pub trust_fork_after_blocks: usize,
     pub pending_blocks_limit: usize,
@@ -64,7 +64,7 @@ impl Blockchain {
             0
         }
     }
-    pub fn forge_block(&mut self, timestamp: u32) -> Option<Block> {
+    pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockB> {
         if let Some(address) = self.states.dynamic.staker(timestamp) {
             if address != &self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
                 return None;
@@ -75,9 +75,9 @@ impl Blockchain {
             self.pending_stakes = vec![stake];
         }
         let (mut block, previous_beta) = if let Some(main) = self.tree.main() {
-            (Block::new(main.0, timestamp), self.states.dynamic.latest_block.beta().unwrap())
+            (BlockB::new(main.0, timestamp), self.states.dynamic.latest_block.beta().unwrap())
         } else {
-            (Block::new([0; 32], timestamp), GENESIS_BETA)
+            (BlockB::new([0; 32], timestamp), GENESIS_BETA)
         };
         for transaction in self.pending_transactions.iter() {
             if block.transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
@@ -93,7 +93,7 @@ impl Blockchain {
         self.accept_block(&block, true);
         Some(block)
     }
-    pub fn accept_block(&mut self, block: &Block, forged: bool) {
+    pub fn accept_block(&mut self, block: &BlockB, forged: bool) {
         db::block::put(block, &self.db).unwrap();
         let hash = block.hash();
         if self.tree.insert(hash, block.previous_hash, block.timestamp).unwrap() {
@@ -165,7 +165,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn sync_block(&mut self) -> Block {
+    pub fn sync_block(&mut self) -> BlockB {
         let hashes_trusted = &self.states.trusted.hashes;
         let hashes_dynamic = &self.states.dynamic.hashes;
         if self.sync.index >= hashes_trusted.len() + hashes_dynamic.len() {
@@ -181,7 +181,7 @@ impl Blockchain {
         self.sync.index += 1;
         block
     }
-    pub fn validate_block(&self, block: &Block, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn validate_block(&self, block: &BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         let address = block.input_address()?;
         if let Some(hash) = self.offline.get(&address) {
             if hash == &block.previous_hash {

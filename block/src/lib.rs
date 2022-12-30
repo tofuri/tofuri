@@ -7,7 +7,33 @@ use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::{error::Error, fmt};
 #[derive(Serialize, Deserialize, Clone)]
-pub struct Block {
+pub struct BlockA {
+    pub previous_hash: types::Hash,
+    pub timestamp: u32,
+    #[serde(with = "BigArray")]
+    pub signature: types::SignatureBytes,
+    #[serde(with = "BigArray")]
+    pub pi: [u8; 81],
+    pub transactions: Vec<Transaction>,
+    pub stakes: Vec<Stake>,
+    pub input_address: types::AddressBytes,
+    pub beta: [u8; 32],
+    pub hash: types::Hash,
+}
+impl BlockA {
+    pub fn b(&self) -> BlockB {
+        BlockB {
+            previous_hash: self.previous_hash,
+            timestamp: self.timestamp,
+            signature: self.signature,
+            pi: self.pi,
+            transactions: self.transactions.clone(),
+            stakes: self.stakes.clone(),
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct BlockB {
     pub previous_hash: types::Hash,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
@@ -17,7 +43,7 @@ pub struct Block {
     pub transactions: Vec<Transaction>,
     pub stakes: Vec<Stake>,
 }
-impl fmt::Debug for Block {
+impl fmt::Debug for BlockB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         #![allow(dead_code)]
         #[derive(Debug)]
@@ -47,9 +73,9 @@ impl fmt::Debug for Block {
         )
     }
 }
-impl Block {
-    pub fn new(previous_hash: types::Hash, timestamp: u32) -> Block {
-        Block {
+impl BlockB {
+    pub fn new(previous_hash: types::Hash, timestamp: u32) -> BlockB {
+        BlockB {
             previous_hash,
             timestamp,
             signature: [0; 64],
@@ -114,8 +140,8 @@ impl Block {
     pub fn hash_input(&self) -> [u8; 181] {
         let mut bytes = [0; 181];
         bytes[0..32].copy_from_slice(&self.previous_hash);
-        bytes[32..64].copy_from_slice(&Block::merkle_root(&self.transaction_hashes()));
-        bytes[64..96].copy_from_slice(&Block::merkle_root(&self.stake_hashes()));
+        bytes[32..64].copy_from_slice(&BlockB::merkle_root(&self.transaction_hashes()));
+        bytes[64..96].copy_from_slice(&BlockB::merkle_root(&self.stake_hashes()));
         bytes[96..100].copy_from_slice(&self.timestamp.to_be_bytes());
         bytes[100..181].copy_from_slice(&self.pi);
         bytes
@@ -159,8 +185,21 @@ impl Block {
         }
         Ok(())
     }
-    pub fn metadata(&self) -> Metadata {
-        Metadata {
+    pub fn a(&self) -> BlockA {
+        BlockA {
+            previous_hash: self.previous_hash,
+            timestamp: self.timestamp,
+            signature: self.signature,
+            pi: self.pi,
+            transactions: self.transactions.clone(),
+            stakes: self.stakes.clone(),
+            input_address: self.input_address().unwrap(),
+            beta: self.beta().unwrap(),
+            hash: self.hash(),
+        }
+    }
+    pub fn c(&self) -> BlockC {
+        BlockC {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -170,9 +209,9 @@ impl Block {
         }
     }
 }
-impl Default for Block {
+impl Default for BlockB {
     fn default() -> Self {
-        Block {
+        BlockB {
             previous_hash: [0; 32],
             timestamp: 0,
             signature: [0; 64],
@@ -183,7 +222,7 @@ impl Default for Block {
     }
 }
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Metadata {
+pub struct BlockC {
     pub previous_hash: types::Hash,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
@@ -193,9 +232,9 @@ pub struct Metadata {
     pub transaction_hashes: Vec<types::Hash>,
     pub stake_hashes: Vec<types::Hash>,
 }
-impl Metadata {
-    pub fn block(&self, transactions: Vec<Transaction>, stakes: Vec<Stake>) -> Block {
-        Block {
+impl BlockC {
+    pub fn b(&self, transactions: Vec<Transaction>, stakes: Vec<Stake>) -> BlockB {
+        BlockB {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -205,9 +244,9 @@ impl Metadata {
         }
     }
 }
-impl Default for Metadata {
+impl Default for BlockC {
     fn default() -> Self {
-        Metadata {
+        BlockC {
             previous_hash: [0; 32],
             timestamp: 0,
             signature: [0; 64],
@@ -223,18 +262,18 @@ mod tests {
     #[test]
     fn test_hash() {
         assert_eq!(
-            Block::default().hash(),
+            BlockB::default().hash(),
             [219, 36, 84, 162, 32, 189, 146, 241, 148, 53, 36, 177, 50, 142, 92, 103, 125, 225, 26, 208, 20, 86, 5, 216, 113, 32, 54, 141, 75, 147, 221, 219]
         );
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(197, bincode::serialize(&Metadata::default()).unwrap().len());
+        assert_eq!(197, bincode::serialize(&BlockC::default()).unwrap().len());
     }
     #[test]
     fn test_u256_from_beta() {
         let key = Key::from_slice(&[0xcd; 32]);
-        let mut block = Block::default();
+        let mut block = BlockB::default();
         block.sign(&key, &[0; 32]);
         assert_eq!(
             util::u256(&block.beta().unwrap()),

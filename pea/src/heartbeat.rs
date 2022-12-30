@@ -2,7 +2,7 @@ use crate::{multiaddr, node::Node};
 use colored::*;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
-use pea_block::Block;
+use pea_block::BlockB;
 use pea_core::constants::SYNC_BLOCKS_PER_TICK;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
@@ -34,7 +34,7 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
 }
 fn pending_blocks(node: &mut Node, timestamp: u32) {
     let drain = node.blockchain.pending_blocks.drain(..);
-    let mut vec: Vec<Block> = vec![];
+    let mut vec: Vec<BlockB> = vec![];
     for block in drain {
         if vec.iter().any(|a| a.hash() == block.hash()) {
             continue;

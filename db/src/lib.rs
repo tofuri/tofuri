@@ -33,30 +33,30 @@ pub fn peers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
 }
 pub mod block {
     use super::{stake, transaction};
-    use pea_block::{Block, Metadata};
+    use pea_block::{BlockB, BlockC};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(block: &Block, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+    pub fn put(block: &BlockB, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         for transaction in block.transactions.iter() {
             transaction::put(transaction, db)?;
         }
         for stake in block.stakes.iter() {
             stake::put(stake, db)?;
         }
-        db.put_cf(super::blocks(db), &block.hash(), bincode::serialize(&block.metadata())?)?;
+        db.put_cf(super::blocks(db), &block.hash(), bincode::serialize(&block.c())?)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block, Box<dyn Error>> {
-        let block_metadata: Metadata = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockB, Box<dyn Error>> {
+        let c: BlockC = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
         let mut transactions = vec![];
-        for hash in block_metadata.transaction_hashes.iter() {
+        for hash in c.transaction_hashes.iter() {
             transactions.push(transaction::get(db, hash)?);
         }
         let mut stakes = vec![];
-        for hash in block_metadata.stake_hashes.iter() {
+        for hash in c.stake_hashes.iter() {
             stakes.push(stake::get(db, hash)?);
         }
-        Ok(block_metadata.block(transactions, stakes))
+        Ok(c.b(transactions, stakes))
     }
 }
 pub mod transaction {
@@ -86,7 +86,7 @@ pub mod stake {
     }
 }
 pub mod tree {
-    use pea_block::Metadata;
+    use pea_block::BlockC;
     use pea_core::types;
     use pea_tree::Tree;
     use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
@@ -97,7 +97,7 @@ pub mod tree {
         for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
-            let block_metadata: Metadata = bincode::deserialize(&bytes).unwrap();
+            let block_metadata: BlockC = bincode::deserialize(&bytes).unwrap();
             match map.get(&block_metadata.previous_hash) {
                 Some(vec) => {
                     let mut vec = vec.clone();

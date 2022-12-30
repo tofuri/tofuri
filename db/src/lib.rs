@@ -38,7 +38,7 @@ pub fn betas(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("betas").unwrap() // hash, gamma -> beta
 }
 pub mod block {
-    use super::{stake, transaction};
+    use super::{beta, stake, transaction};
     use pea_block::{BlockA, BlockB, BlockC};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
@@ -52,7 +52,17 @@ pub mod block {
         db.put_cf(super::blocks(db), &block_a.hash, bincode::serialize(&block_a.b().c())?)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockB, Box<dyn Error>> {
+    pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Box<dyn Error>> {
+        let block_b = get_b(db, hash)?;
+        if let Ok(beta) = beta::get(db, hash) {
+            Ok(block_b.a(Some(beta))?)
+        } else {
+            let block_a = block_b.a(None)?;
+            beta::put(hash, &block_a.beta, db)?;
+            Ok(block_a)
+        }
+    }
+    pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockB, Box<dyn Error>> {
         let block_c: BlockC = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
         let mut transactions = vec![];
         for hash in block_c.transaction_hashes.iter() {
@@ -166,5 +176,17 @@ pub mod peer {
             peers.push(std::str::from_utf8(&peer).unwrap().to_string());
         }
         peers
+    }
+}
+pub mod beta {
+    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use std::error::Error;
+    pub fn put(block_hash: &[u8], beta: &[u8; 32], db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::betas(db), block_hash, beta)?;
+        Ok(())
+    }
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, block_hash: &[u8]) -> Result<[u8; 32], Box<dyn Error>> {
+        let beta = db.get_cf(super::betas(db), block_hash)?.ok_or("beta not found")?;
+        Ok(beta.try_into().unwrap())
     }
 }

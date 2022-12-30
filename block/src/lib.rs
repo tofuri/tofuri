@@ -80,7 +80,7 @@ impl BlockA {
     }
 }
 impl BlockB {
-    pub fn a(&self) -> Result<BlockA, Box<dyn Error>> {
+    pub fn a(&self, beta: Option<[u8; 32]>) -> Result<BlockA, Box<dyn Error>> {
         let mut transactions = vec![];
         let mut stakes = vec![];
         for transaction in self.transactions.iter() {
@@ -89,11 +89,15 @@ impl BlockB {
         for stake in self.stakes.iter() {
             stakes.push(stake.a()?);
         }
+        let beta = match beta {
+            Some(x) => x,
+            None => self.beta()?,
+        };
         Ok(BlockA {
             hash: self.hash(),
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
-            beta: self.beta()?,
+            beta,
             pi: self.pi,
             input_public_key: self.input_public_key()?,
             signature: self.signature,

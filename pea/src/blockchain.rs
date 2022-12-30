@@ -76,7 +76,7 @@ impl Blockchain {
             hashes_dynamic[self.sync.index - hashes_trusted.len()]
         };
         debug!("{} {} {}", "Sync".cyan(), self.sync.index.to_string().yellow(), hex::encode(hash));
-        let block_b = db::block::get(&self.db, &hash).unwrap();
+        let block_b = db::block::get_b(&self.db, &hash).unwrap();
         self.sync.index += 1;
         block_b
     }
@@ -107,7 +107,7 @@ impl Blockchain {
             BlockB::sign([0; 32], timestamp, transactions, stakes, &self.key, &GENESIS_BETA)
         }
         .unwrap();
-        self.accept_block(&block.a().unwrap(), true);
+        self.accept_block(&block.a(None).unwrap(), true);
         Some(block)
     }
     pub fn accept_block(&mut self, block: &BlockA, forged: bool) {
@@ -137,7 +137,7 @@ impl Blockchain {
         if self.pending_blocks.len() < self.pending_blocks_limit {
             return Err("pending blocks limit reached".into());
         }
-        let block_a = block_b.a()?;
+        let block_a = block_b.a(None)?;
         self.validate_block_0(&block_a, timestamp)?;
         self.pending_blocks.push(block_a);
         Ok(())

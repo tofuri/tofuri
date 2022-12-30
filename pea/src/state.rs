@@ -5,6 +5,7 @@ use pea_core::{constants::BLOCK_TIME_MAX, types};
 use pea_db as db;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
+use std::time::Instant;
 pub trait State {
     fn get_hashes_mut(&mut self) -> &mut Vec<types::Hash>;
     fn get_stakers(&self) -> &VecDeque<types::AddressBytes>;
@@ -63,7 +64,9 @@ impl Dynamic {
             balance_staked: trusted.balance_staked.clone(),
             latest_block: BlockA::default(),
         };
+        let start = Instant::now();
         dynamic.load(db, hashes);
+        println!("{:?}", start.elapsed());
         dynamic
     }
     pub fn staker_n(&self, timestamp: u32, mut n: isize) -> Option<&types::AddressBytes> {
@@ -293,15 +296,15 @@ pub fn update<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, bl
     state.update_balances(block);
     state.update_stakers(block);
     // set latest_block after update_penalty()
-    *state.get_latest_block_mut() = db::block::get(db, &hash).unwrap().a().unwrap();
+    *state.get_latest_block_mut() = db::block::get_a(db, &hash).unwrap();
 }
 pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]) {
     let mut previous_timestamp = match hashes.first() {
-        Some(hash) => db::block::get(db, hash).unwrap().timestamp,
+        Some(hash) => db::block::get_b(db, hash).unwrap().timestamp,
         None => 0,
     };
     for hash in hashes.iter() {
-        let block_a = db::block::get(db, hash).unwrap().a().unwrap();
+        let block_a = db::block::get_a(db, hash).unwrap();
         state.update(db, &block_a, previous_timestamp);
         previous_timestamp = block_a.timestamp;
     }

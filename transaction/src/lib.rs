@@ -94,6 +94,21 @@ impl TransactionA {
     pub fn hash(&self) -> types::Hash {
         hash(self)
     }
+    pub fn sign(public_key_output: types::AddressBytes, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<TransactionA, Box<dyn Error>> {
+        let mut transaction_a = TransactionA {
+            input_address: [0; 20],
+            output_address: public_key_output,
+            amount: pea_int::floor(amount),
+            fee: pea_int::floor(fee),
+            timestamp,
+            hash: [0; 32],
+            signature: [0; 64],
+        };
+        transaction_a.hash = transaction_a.hash();
+        transaction_a.signature = key.sign(&transaction_a.hash)?;
+        transaction_a.input_address = key.address_bytes();
+        Ok(transaction_a)
+    }
 }
 impl TransactionB {
     pub fn a(&self, input_address: Option<types::AddressBytes>) -> Result<TransactionA, Box<dyn Error>> {
@@ -122,17 +137,6 @@ impl TransactionB {
     }
     pub fn hash(&self) -> types::Hash {
         hash(self)
-    }
-    pub fn sign(public_key_output: types::AddressBytes, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<TransactionB, Box<dyn Error>> {
-        let mut transaction_b = TransactionB {
-            output_address: public_key_output,
-            amount: pea_int::floor(amount),
-            fee: pea_int::floor(fee),
-            timestamp,
-            signature: [0; 64],
-        };
-        transaction_b.signature = key.sign(&transaction_b.hash())?;
-        Ok(transaction_b)
     }
     fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
         Ok(util::address(&self.input_public_key()?))

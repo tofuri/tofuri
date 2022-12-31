@@ -83,6 +83,20 @@ impl StakeA {
     pub fn hash(&self) -> types::Hash {
         hash(self)
     }
+    pub fn sign(deposit: bool, fee: u128, timestamp: u32, key: &Key) -> Result<StakeA, Box<dyn Error>> {
+        let mut stake_a = StakeA {
+            fee: pea_int::floor(fee),
+            deposit,
+            timestamp,
+            signature: [0; 64],
+            input_address: [0; 20],
+            hash: [0; 32],
+        };
+        stake_a.hash = stake_a.hash();
+        stake_a.signature = key.sign(&stake_a.hash)?;
+        stake_a.input_address = key.address_bytes();
+        Ok(stake_a)
+    }
 }
 impl StakeB {
     pub fn a(&self, input_address: Option<types::AddressBytes>) -> Result<StakeA, Box<dyn Error>> {
@@ -109,16 +123,6 @@ impl StakeB {
     }
     pub fn hash(&self) -> types::Hash {
         hash(self)
-    }
-    pub fn sign(deposit: bool, fee: u128, timestamp: u32, key: &Key) -> Result<StakeB, Box<dyn Error>> {
-        let mut stake_b = StakeB {
-            fee: pea_int::floor(fee),
-            deposit,
-            timestamp,
-            signature: [0; 64],
-        };
-        stake_b.signature = key.sign(&stake_b.hash())?;
-        Ok(stake_b)
     }
     fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
         Ok(util::address(&self.input_public_key()?))

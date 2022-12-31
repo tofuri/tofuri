@@ -5,9 +5,9 @@ use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
 use pea_api::{get, post};
 use pea_core::constants::COIN;
-use pea_stake::StakeB;
+use pea_stake::StakeA;
 use pea_time::Time;
-use pea_transaction::TransactionB;
+use pea_transaction::TransactionA;
 use std::{ops::Range, process, time::Duration};
 pub struct Options {
     pub api: String,
@@ -178,9 +178,9 @@ impl Command {
                     }
                     let amount = balance - fee;
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let transaction = TransactionB::sign(key.address_bytes(), amount, fee, self.time.timestamp_secs(), &subkey).unwrap();
-                    println!("{:?}", transaction);
-                    match post::transaction(&self.api, &transaction).await {
+                    let transaction_a = TransactionA::sign(key.address_bytes(), amount, fee, self.time.timestamp_secs(), &subkey).unwrap();
+                    println!("{:?}", transaction_a);
+                    match post::transaction(&self.api, &transaction_a.b().c()).await {
                         Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
                         Err(err) => println!("{}", err.to_string().red()),
                     };
@@ -286,7 +286,7 @@ impl Command {
         } {
             return;
         }
-        let transaction_b = TransactionB::sign(
+        let transaction_a = TransactionA::sign(
             address::address::decode(&address).unwrap(),
             amount,
             fee,
@@ -294,8 +294,8 @@ impl Command {
             &wallet.key,
         )
         .unwrap();
-        println!("Hash: {}", hex::encode(transaction_b.hash()).cyan());
-        match post::transaction(&self.api, &transaction_b).await {
+        println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
+        match post::transaction(&self.api, &transaction_a.b().c()).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
             Err(err) => println!("{}", err.to_string().red()),
         };
@@ -316,9 +316,9 @@ impl Command {
         if !send {
             return;
         }
-        let stake_b = StakeB::sign(deposit, fee, self.time.timestamp_secs(), &wallet.key).unwrap();
-        println!("Hash: {}", hex::encode(stake_b.hash()).cyan());
-        match post::stake(&self.api, &stake_b).await {
+        let stake_a = StakeA::sign(deposit, fee, self.time.timestamp_secs(), &wallet.key).unwrap();
+        println!("Hash: {}", hex::encode(stake_a.hash).cyan());
+        match post::stake(&self.api, &stake_a.b().c()).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
             Err(err) => println!("{}", err.to_string().red()),
         };

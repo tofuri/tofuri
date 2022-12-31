@@ -41,13 +41,17 @@ impl StakeA {
     }
 }
 impl StakeB {
-    pub fn a(&self) -> Result<StakeA, Box<dyn Error>> {
+    pub fn a(&self, input_address: Option<types::AddressBytes>) -> Result<StakeA, Box<dyn Error>> {
+        let input_address = match input_address {
+            Some(x) => x,
+            None => self.input_address()?,
+        };
         Ok(StakeA {
             fee: self.fee,
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
-            input_address: self.input_address()?,
+            input_address,
             hash: self.hash(),
         })
     }

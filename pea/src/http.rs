@@ -308,7 +308,7 @@ fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<d
             .get(13..)
             .ok_or("GET TRANSACTION_BY_HASH 2")?,
     )?;
-    let transaction = db::transaction::get(&node.blockchain.db, &hash)?.a()?;
+    let transaction = db::transaction::get_a(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Transaction {
         hash: hex::encode(transaction.hash),
         input_address: address::address::encode(&transaction.input_address),
@@ -329,7 +329,7 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
             .get(7..)
             .ok_or("GET STAKE_BY_HASH 2")?,
     )?;
-    let stake = db::stake::get(&node.blockchain.db, &hash)?.a()?;
+    let stake = db::stake::get_a(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Stake {
         hash: hex::encode(stake.hash),
         address: address::address::encode(&stake.input_address),

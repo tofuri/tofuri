@@ -45,14 +45,18 @@ impl TransactionA {
     }
 }
 impl TransactionB {
-    pub fn a(&self) -> Result<TransactionA, Box<dyn Error>> {
+    pub fn a(&self, input_address: Option<types::AddressBytes>) -> Result<TransactionA, Box<dyn Error>> {
+        let input_address = match input_address {
+            Some(x) => x,
+            None => self.input_address()?,
+        };
         Ok(TransactionA {
             output_address: self.output_address,
             amount: self.amount,
             fee: self.fee,
             timestamp: self.timestamp,
             signature: self.signature,
-            input_address: self.input_address()?,
+            input_address,
             hash: self.hash(),
         })
     }

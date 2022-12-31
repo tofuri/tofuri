@@ -8,7 +8,8 @@ fn descriptors() -> Vec<ColumnFamilyDescriptor> {
         ColumnFamilyDescriptor::new("stakes", options.clone()),
         ColumnFamilyDescriptor::new("stakers", options.clone()),
         ColumnFamilyDescriptor::new("peers", options.clone()),
-        ColumnFamilyDescriptor::new("inputs", options.clone()),
+        ColumnFamilyDescriptor::new("input addresses", options.clone()),
+        ColumnFamilyDescriptor::new("input public keys", options.clone()),
         ColumnFamilyDescriptor::new("betas", options),
     ]
 }
@@ -33,14 +34,17 @@ pub fn stakers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
 pub fn peers(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("peers").unwrap()
 }
-pub fn inputs(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
-    db.cf_handle("inputs").unwrap()
+pub fn input_addresses(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("input addresses").unwrap()
+}
+pub fn input_public_keys(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("input public keys").unwrap()
 }
 pub fn betas(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("betas").unwrap()
 }
 pub mod block {
-    use super::{beta, stake, transaction};
+    use super::{beta, input_public_key, stake, transaction};
     use pea_block::{BlockA, BlockB, BlockC};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
@@ -55,29 +59,48 @@ pub mod block {
         Ok(())
     }
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Box<dyn Error>> {
-        let block_b = get_b(db, hash)?;
-        if let Ok(beta) = beta::get(db, hash) {
-            Ok(block_b.a(Some(beta))?)
-        } else {
-            let block_a = block_b.a(None)?;
-            beta::put(hash, &block_a.beta, db)?;
-            Ok(block_a)
+        let block_c: BlockC = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
+        let mut transactions = vec![];
+        let mut stakes = vec![];
+        for hash in block_c.transaction_hashes.iter() {
+            transactions.push(transaction::get_a(db, hash)?);
         }
+        for hash in block_c.stake_hashes.iter() {
+            stakes.push(stake::get_a(db, hash)?);
+        }
+        let beta = match beta::get(db, hash) {
+            Ok(x) => Some(x),
+            Err(_) => None,
+        };
+        let input_public_key = match input_public_key::get(db, hash) {
+            Ok(x) => Some(x),
+            Err(_) => None,
+        };
+        let block_b = get_b(db, hash)?;
+        let block_a = block_b.a(beta, input_public_key, Some(transactions), Some(stakes))?;
+        if beta.is_none() {
+            beta::put(hash, &block_a.beta, db)?;
+        }
+        if input_public_key.is_none() {
+            input_public_key::put(hash, &block_a.input_public_key, db)?;
+        }
+        Ok(block_a)
     }
     pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockB, Box<dyn Error>> {
         let block_c: BlockC = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
         let mut transactions = vec![];
         for hash in block_c.transaction_hashes.iter() {
-            transactions.push(transaction::get(db, hash)?);
+            transactions.push(transaction::get_b(db, hash)?);
         }
         let mut stakes = vec![];
         for hash in block_c.stake_hashes.iter() {
-            stakes.push(stake::get(db, hash)?);
+            stakes.push(stake::get_b(db, hash)?);
         }
         Ok(block_c.b(transactions, stakes))
     }
 }
 pub mod transaction {
+    use super::input_address;
     use pea_transaction::{TransactionA, TransactionB, TransactionC};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
@@ -85,12 +108,24 @@ pub mod transaction {
         db.put_cf(super::transactions(db), transaction_a.hash, bincode::serialize(&transaction_a.b().c())?)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionB, Box<dyn Error>> {
+    pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionA, Box<dyn Error>> {
+        let input_address = match input_address::get(db, hash) {
+            Ok(x) => Some(x),
+            Err(_) => None,
+        };
+        let transaction_a = get_b(db, hash)?.a(input_address)?;
+        if input_address.is_none() {
+            input_address::put(hash, &transaction_a.input_address, db)?;
+        }
+        Ok(transaction_a)
+    }
+    pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionB, Box<dyn Error>> {
         let transaction_c: TransactionC = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
         Ok(transaction_c.b())
     }
 }
 pub mod stake {
+    use super::input_address;
     use pea_stake::{StakeA, StakeB, StakeC};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
@@ -98,7 +133,18 @@ pub mod stake {
         db.put_cf(super::stakes(db), stake_a.hash, bincode::serialize(&stake_a.b().c())?)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Box<dyn Error>> {
+    pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeA, Box<dyn Error>> {
+        let input_address = match input_address::get(db, hash) {
+            Ok(x) => Some(x),
+            Err(_) => None,
+        };
+        let stake_a = get_b(db, hash)?.a(input_address)?;
+        if input_address.is_none() {
+            input_address::put(hash, &stake_a.input_address, db)?;
+        }
+        Ok(stake_a)
+    }
+    pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Box<dyn Error>> {
         let stake_c: StakeC = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
         Ok(stake_c.b())
     }
@@ -178,6 +224,32 @@ pub mod peer {
             peers.push(std::str::from_utf8(&peer).unwrap().to_string());
         }
         peers
+    }
+}
+pub mod input_address {
+    use pea_core::types;
+    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use std::error::Error;
+    pub fn put(hash: &[u8], input_address: &types::AddressBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::input_addresses(db), hash, input_address)?;
+        Ok(())
+    }
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<types::AddressBytes, Box<dyn Error>> {
+        let input_address = db.get_cf(super::input_addresses(db), hash)?.ok_or("input address not found")?;
+        Ok(input_address.try_into().unwrap())
+    }
+}
+pub mod input_public_key {
+    use pea_core::types;
+    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use std::error::Error;
+    pub fn put(hash: &[u8], input_public_key: &types::PublicKeyBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::input_public_keys(db), hash, input_public_key)?;
+        Ok(())
+    }
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
+        let input_public_key = db.get_cf(super::input_public_keys(db), hash)?.ok_or("input public key not found")?;
+        Ok(input_public_key.try_into().unwrap())
     }
 }
 pub mod beta {

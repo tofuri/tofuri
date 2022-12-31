@@ -5,6 +5,7 @@ use pea_core::{constants::BLOCK_TIME_MAX, types};
 use pea_db as db;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
+use std::time::Instant;
 pub trait State {
     fn get_hashes_mut(&mut self) -> &mut Vec<types::Hash>;
     fn get_stakers(&self) -> &VecDeque<types::AddressBytes>;
@@ -63,7 +64,9 @@ impl Dynamic {
             balance_staked: trusted.balance_staked.clone(),
             latest_block: BlockA::default(),
         };
+        let start = Instant::now();
         dynamic.load(db, hashes);
+        println!("{:?}", start.elapsed());
         dynamic
     }
     pub fn staker_n(&self, timestamp: u32, mut n: isize) -> Option<&types::AddressBytes> {

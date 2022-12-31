@@ -87,7 +87,7 @@ impl Blockchain {
             }
         } else {
             let stake = StakeB::sign(true, 0, timestamp, &self.key).unwrap();
-            self.pending_stakes = vec![stake.a().unwrap()];
+            self.pending_stakes = vec![stake.a(None).unwrap()];
         }
         let mut transactions = vec![];
         let mut stakes = vec![];
@@ -107,7 +107,7 @@ impl Blockchain {
             BlockB::sign([0; 32], timestamp, transactions, stakes, &self.key, &GENESIS_BETA)
         }
         .unwrap();
-        self.accept_block(&block.a(None).unwrap(), true);
+        self.accept_block(&block.a(None, None, None, None).unwrap(), true);
         Some(block)
     }
     pub fn accept_block(&mut self, block: &BlockA, forged: bool) {
@@ -137,13 +137,13 @@ impl Blockchain {
         if self.pending_blocks.len() < self.pending_blocks_limit {
             return Err("pending blocks limit reached".into());
         }
-        let block_a = block_b.a(None)?;
+        let block_a = block_b.a(None, None, None, None)?;
         self.validate_block_0(&block_a, timestamp)?;
         self.pending_blocks.push(block_a);
         Ok(())
     }
     pub fn add_transaction(&mut self, transaction_b: TransactionB, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        let transaction_a = transaction_b.a()?;
+        let transaction_a = transaction_b.a(None)?;
         self.validate_transaction(&transaction_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
             return Err("transaction pending".into());
@@ -163,7 +163,7 @@ impl Blockchain {
         Ok(())
     }
     pub fn add_stake(&mut self, stake_b: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        let stake_a = stake_b.a()?;
+        let stake_a = stake_b.a(None)?;
         self.validate_stake(&stake_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
             return Err("stake pending".into());
@@ -276,7 +276,7 @@ impl Blockchain {
         if transaction_a.amount + transaction_a.fee > balance {
             return Err("transaction too expensive".into());
         }
-        if db::transaction::get(&self.db, &transaction_a.hash).is_ok() {
+        if db::transaction::get_b(&self.db, &transaction_a.hash).is_ok() {
             return Err("transaction in chain".into());
         }
         Ok(())
@@ -306,7 +306,7 @@ impl Blockchain {
         } else if stake_a.fee > balance {
             return Err("stake withdraw fee too expensive".into());
         }
-        if db::stake::get(&self.db, &stake_a.hash).is_ok() {
+        if db::stake::get_b(&self.db, &stake_a.hash).is_ok() {
             return Err("stake in chain".into());
         }
         Ok(())

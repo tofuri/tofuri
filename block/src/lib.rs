@@ -6,6 +6,61 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::error::Error;
+pub trait Block {
+    fn get_previous_hash(&self) -> &types::Hash;
+    fn get_merkle_root_transaction(&self) -> types::MerkleRoot;
+    fn get_merkle_root_stake(&self) -> types::MerkleRoot;
+    fn get_timestamp(&self) -> u32;
+    fn get_pi(&self) -> &[u8; 81];
+    fn hash(&self) -> types::Hash;
+    fn hash_input(&self) -> [u8; 181];
+}
+impl Block for BlockA {
+    fn get_previous_hash(&self) -> &types::Hash {
+        &self.previous_hash
+    }
+    fn get_merkle_root_transaction(&self) -> types::MerkleRoot {
+        merkle_root(&self.transaction_hashes())
+    }
+    fn get_merkle_root_stake(&self) -> types::MerkleRoot {
+        merkle_root(&self.stake_hashes())
+    }
+    fn get_timestamp(&self) -> u32 {
+        self.timestamp
+    }
+    fn get_pi(&self) -> &[u8; 81] {
+        &self.pi
+    }
+    fn hash(&self) -> types::Hash {
+        hash(self)
+    }
+    fn hash_input(&self) -> [u8; 181] {
+        hash_input(self)
+    }
+}
+impl Block for BlockB {
+    fn get_previous_hash(&self) -> &types::Hash {
+        &self.previous_hash
+    }
+    fn get_merkle_root_transaction(&self) -> types::MerkleRoot {
+        merkle_root(&self.transaction_hashes())
+    }
+    fn get_merkle_root_stake(&self) -> types::MerkleRoot {
+        merkle_root(&self.stake_hashes())
+    }
+    fn get_timestamp(&self) -> u32 {
+        self.timestamp
+    }
+    fn get_pi(&self) -> &[u8; 81] {
+        &self.pi
+    }
+    fn hash(&self) -> types::Hash {
+        hash(self)
+    }
+    fn hash_input(&self) -> [u8; 181] {
+        hash_input(self)
+    }
+}
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockA {
     pub hash: types::Hash,
@@ -44,6 +99,9 @@ pub struct BlockC {
     pub stake_hashes: Vec<types::Hash>,
 }
 impl BlockA {
+    pub fn hash(&self) -> types::Hash {
+        hash(self)
+    }
     pub fn b(&self) -> BlockB {
         let mut transactions = vec![];
         let mut stakes = vec![];
@@ -78,8 +136,17 @@ impl BlockA {
         }
         fees
     }
+    fn transaction_hashes(&self) -> Vec<types::Hash> {
+        self.transactions.iter().map(|x| x.hash()).collect()
+    }
+    fn stake_hashes(&self) -> Vec<types::Hash> {
+        self.stakes.iter().map(|x| x.hash()).collect()
+    }
 }
 impl BlockB {
+    pub fn hash(&self) -> types::Hash {
+        hash(self)
+    }
     pub fn a(
         &self,
         beta: Option<[u8; 32]>,
@@ -160,36 +227,11 @@ impl BlockB {
         block_b.signature = key.sign(&block_b.hash())?;
         Ok(block_b)
     }
-    pub fn hash(&self) -> types::Hash {
-        let mut hasher = Sha256::new();
-        hasher.update(&self.hash_input());
-        hasher.finalize().into()
-    }
-    fn hash_input(&self) -> [u8; 181] {
-        let mut bytes = [0; 181];
-        bytes[0..32].copy_from_slice(&self.previous_hash);
-        bytes[32..64].copy_from_slice(&BlockB::merkle_root(&self.transaction_hashes()));
-        bytes[64..96].copy_from_slice(&BlockB::merkle_root(&self.stake_hashes()));
-        bytes[96..100].copy_from_slice(&self.timestamp.to_be_bytes());
-        bytes[100..181].copy_from_slice(&self.pi);
-        bytes
-    }
-    fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
-        types::CBMT::build_merkle_root(hashes)
-    }
     fn transaction_hashes(&self) -> Vec<types::Hash> {
-        let mut transaction_hashes = vec![];
-        for transaction in self.transactions.iter() {
-            transaction_hashes.push(transaction.hash());
-        }
-        transaction_hashes
+        self.transactions.iter().map(|x| x.hash()).collect()
     }
     fn stake_hashes(&self) -> Vec<types::Hash> {
-        let mut stake_hashes = vec![];
-        for stake in self.stakes.iter() {
-            stake_hashes.push(stake.hash());
-        }
-        stake_hashes
+        self.stakes.iter().map(|x| x.hash()).collect()
     }
     fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
         Ok(Key::recover(&self.hash(), &self.signature)?)
@@ -248,6 +290,23 @@ impl Default for BlockC {
             stake_hashes: vec![],
         }
     }
+}
+fn hash<T: Block>(block: &T) -> types::Hash {
+    let mut hasher = Sha256::new();
+    hasher.update(&block.hash_input());
+    hasher.finalize().into()
+}
+fn hash_input<T: Block>(block: &T) -> [u8; 181] {
+    let mut bytes = [0; 181];
+    bytes[0..32].copy_from_slice(block.get_previous_hash());
+    bytes[32..64].copy_from_slice(&block.get_merkle_root_transaction());
+    bytes[64..96].copy_from_slice(&block.get_merkle_root_stake());
+    bytes[96..100].copy_from_slice(&block.get_timestamp().to_be_bytes());
+    bytes[100..181].copy_from_slice(block.get_pi());
+    bytes
+}
+fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
+    types::CBMT::build_merkle_root(hashes)
 }
 #[cfg(test)]
 mod tests {

@@ -4,6 +4,54 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::error::Error;
+pub trait Transaction {
+    fn get_output_address(&self) -> &types::AddressBytes;
+    fn get_timestamp(&self) -> u32;
+    fn get_amount(&self) -> u128;
+    fn get_fee(&self) -> u128;
+    fn hash(&self) -> types::Hash;
+    fn hash_input(&self) -> [u8; 32];
+}
+impl Transaction for TransactionA {
+    fn get_output_address(&self) -> &types::AddressBytes {
+        &self.output_address
+    }
+    fn get_timestamp(&self) -> u32 {
+        self.timestamp
+    }
+    fn get_amount(&self) -> u128 {
+        self.amount
+    }
+    fn get_fee(&self) -> u128 {
+        self.fee
+    }
+    fn hash(&self) -> types::Hash {
+        hash(self)
+    }
+    fn hash_input(&self) -> [u8; 32] {
+        hash_input(self)
+    }
+}
+impl Transaction for TransactionB {
+    fn get_output_address(&self) -> &types::AddressBytes {
+        &self.output_address
+    }
+    fn get_timestamp(&self) -> u32 {
+        self.timestamp
+    }
+    fn get_amount(&self) -> u128 {
+        self.amount
+    }
+    fn get_fee(&self) -> u128 {
+        self.fee
+    }
+    fn hash(&self) -> types::Hash {
+        hash(self)
+    }
+    fn hash_input(&self) -> [u8; 32] {
+        hash_input(self)
+    }
+}
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TransactionA {
     pub input_address: types::AddressBytes,
@@ -34,6 +82,9 @@ pub struct TransactionC {
     pub signature: types::SignatureBytes,
 }
 impl TransactionA {
+    pub fn hash(&self) -> types::Hash {
+        hash(self)
+    }
     pub fn b(&self) -> TransactionB {
         TransactionB {
             output_address: self.output_address,
@@ -45,6 +96,9 @@ impl TransactionA {
     }
 }
 impl TransactionB {
+    pub fn hash(&self) -> types::Hash {
+        hash(self)
+    }
     pub fn a(&self, input_address: Option<types::AddressBytes>) -> Result<TransactionA, Box<dyn Error>> {
         let input_address = match input_address {
             Some(x) => x,
@@ -80,25 +134,25 @@ impl TransactionB {
         transaction_b.signature = key.sign(&transaction_b.hash())?;
         Ok(transaction_b)
     }
-    pub fn hash(&self) -> types::Hash {
-        let mut hasher = Sha256::new();
-        hasher.update(&self.hash_input());
-        hasher.finalize().into()
-    }
-    fn hash_input(&self) -> [u8; 32] {
-        let mut bytes = [0; 32];
-        bytes[0..20].copy_from_slice(&self.output_address);
-        bytes[20..24].copy_from_slice(&self.timestamp.to_be_bytes());
-        bytes[24..28].copy_from_slice(&pea_int::to_be_bytes(self.amount));
-        bytes[28..32].copy_from_slice(&pea_int::to_be_bytes(self.fee));
-        bytes
-    }
     fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
         Ok(util::address(&self.input_public_key()?))
     }
     fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
         Ok(Key::recover(&self.hash(), &self.signature)?)
     }
+}
+fn hash<T: Transaction>(transaction: &T) -> types::Hash {
+    let mut hasher = Sha256::new();
+    hasher.update(&transaction.hash_input());
+    hasher.finalize().into()
+}
+fn hash_input<T: Transaction>(transaction: &T) -> [u8; 32] {
+    let mut bytes = [0; 32];
+    bytes[0..20].copy_from_slice(transaction.get_output_address());
+    bytes[20..24].copy_from_slice(&transaction.get_timestamp().to_be_bytes());
+    bytes[24..28].copy_from_slice(&pea_int::to_be_bytes(transaction.get_amount()));
+    bytes[28..32].copy_from_slice(&pea_int::to_be_bytes(transaction.get_fee()));
+    bytes
 }
 impl TransactionC {
     pub fn b(&self) -> TransactionB {

@@ -14,6 +14,7 @@ pub trait Block {
     fn get_pi(&self) -> &types::Pi;
     fn hash(&self) -> types::Hash;
     fn hash_input(&self) -> [u8; 181];
+    fn beta(&self) -> Result<types::Beta, Box<dyn Error>>;
 }
 impl Block for BlockA {
     fn get_previous_hash(&self) -> &types::Hash {
@@ -37,6 +38,9 @@ impl Block for BlockA {
     fn hash_input(&self) -> [u8; 181] {
         hash_input(self)
     }
+    fn beta(&self) -> Result<types::Beta, Box<dyn Error>> {
+        beta(self)
+    }
 }
 impl Block for BlockB {
     fn get_previous_hash(&self) -> &types::Hash {
@@ -59,6 +63,9 @@ impl Block for BlockB {
     }
     fn hash_input(&self) -> [u8; 181] {
         hash_input(self)
+    }
+    fn beta(&self) -> Result<types::Beta, Box<dyn Error>> {
+        beta(self)
     }
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -120,6 +127,32 @@ impl BlockA {
     pub fn hash(&self) -> types::Hash {
         hash(self)
     }
+    pub fn sign(
+        previous_hash: types::Hash,
+        timestamp: u32,
+        transactions: Vec<TransactionA>,
+        stakes: Vec<StakeA>,
+        key: &Key,
+        previous_beta: &[u8],
+    ) -> Result<BlockA, Box<dyn Error>> {
+        let pi = key.vrf_prove(previous_beta).ok_or("failed to generate proof")?;
+        let mut block_a = BlockA {
+            hash: [0; 32],
+            previous_hash,
+            timestamp,
+            beta: [0; 32],
+            pi,
+            input_public_key: [0; 33],
+            signature: [0; 64],
+            transactions,
+            stakes,
+        };
+        block_a.beta = block_a.beta()?;
+        block_a.hash = block_a.hash();
+        block_a.signature = key.sign(&block_a.hash)?;
+        block_a.input_public_key = key.public_key_bytes();
+        Ok(block_a)
+    }
     pub fn input_address(&self) -> types::AddressBytes {
         util::address(&self.input_public_key)
     }
@@ -178,26 +211,6 @@ impl BlockB {
     pub fn hash(&self) -> types::Hash {
         hash(self)
     }
-    pub fn sign(
-        previous_hash: types::Hash,
-        timestamp: u32,
-        transactions: Vec<TransactionB>,
-        stakes: Vec<StakeB>,
-        key: &Key,
-        previous_beta: &[u8],
-    ) -> Result<BlockB, Box<dyn Error>> {
-        let mut block_b = BlockB {
-            previous_hash,
-            timestamp,
-            signature: [0; 64],
-            pi: [0; 81],
-            transactions,
-            stakes,
-        };
-        block_b.pi = key.vrf_prove(previous_beta).ok_or("failed to generate proof")?;
-        block_b.signature = key.sign(&block_b.hash())?;
-        Ok(block_b)
-    }
     fn transaction_hashes(&self) -> Vec<types::Hash> {
         self.transactions.iter().map(|x| x.hash()).collect()
     }
@@ -206,9 +219,6 @@ impl BlockB {
     }
     fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
         Ok(Key::recover(&self.hash(), &self.signature)?)
-    }
-    fn beta(&self) -> Result<[u8; 32], Box<dyn Error>> {
-        Key::vrf_proof_to_hash(&self.pi).ok_or("invalid beta".into())
     }
 }
 impl BlockC {
@@ -309,6 +319,9 @@ fn hash_input<T: Block>(block: &T) -> [u8; 181] {
 fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
     types::CBMT::build_merkle_root(hashes)
 }
+fn beta<T: Block>(block: &T) -> Result<types::Beta, Box<dyn Error>> {
+    Key::vrf_proof_to_hash(block.get_pi()).ok_or("invalid beta".into())
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -326,9 +339,9 @@ mod tests {
     #[test]
     fn test_u256_from_beta() {
         let key = Key::from_slice(&[0xcd; 32]);
-        let block = BlockB::sign([0; 32], 0, vec![], vec![], &key, &[0; 32]).unwrap();
+        let block_a = BlockA::sign([0; 32], 0, vec![], vec![], &key, &[0; 32]).unwrap();
         assert_eq!(
-            util::u256(&block.beta().unwrap()),
+            util::u256(&block_a.beta),
             util::U256::from_dec_str("92526807160300854379423726328595779761032533927961162464096185194601493188181").unwrap()
         );
     }

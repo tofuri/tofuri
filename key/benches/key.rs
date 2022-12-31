@@ -26,8 +26,8 @@ fn prove(b: &mut Bencher) {
 fn proof_to_hash(b: &mut Bencher) {
     let key = Key::generate();
     let alpha: [u8; 32] = rand::random();
-    let beta = key.vrf_prove(&alpha).unwrap();
-    b.iter(|| Key::vrf_proof_to_hash(&beta).unwrap());
+    let pi = key.vrf_prove(&alpha).unwrap();
+    b.iter(|| Key::vrf_proof_to_hash(&pi).unwrap());
 }
 #[bench]
 fn verify(b: &mut Bencher) {

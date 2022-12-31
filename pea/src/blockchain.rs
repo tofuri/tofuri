@@ -80,7 +80,7 @@ impl Blockchain {
         self.sync.index += 1;
         block_b
     }
-    pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockB> {
+    pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockA> {
         if let Some(address) = self.states.dynamic.staker(timestamp) {
             if address != &self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
                 return None;
@@ -91,37 +91,39 @@ impl Blockchain {
         }
         let mut transactions = vec![];
         let mut stakes = vec![];
-        for transaction_a in self.pending_transactions.iter() {
-            if transactions.len() < BLOCK_TRANSACTIONS_LIMIT {
-                transactions.push(transaction_a.b());
+        for transaction_a in self.pending_transactions.clone() {
+            if transactions.len() >= BLOCK_TRANSACTIONS_LIMIT {
+                break;
             }
+            transactions.push(transaction_a);
         }
-        for stake_a in self.pending_stakes.iter() {
-            if stakes.len() < BLOCK_STAKES_LIMIT {
-                stakes.push(stake_a.b());
+        for stake_a in self.pending_stakes.clone() {
+            if stakes.len() >= BLOCK_STAKES_LIMIT {
+                break;
             }
+            stakes.push(stake_a);
         }
-        let block_b = if let Some(main) = self.tree.main() {
-            BlockB::sign(main.0, timestamp, transactions, stakes, &self.key, &self.states.dynamic.latest_block.beta)
+        let block_a = if let Some(main) = self.tree.main() {
+            BlockA::sign(main.0, timestamp, transactions, stakes, &self.key, &self.states.dynamic.latest_block.beta)
         } else {
-            BlockB::sign([0; 32], timestamp, transactions, stakes, &self.key, &GENESIS_BETA)
+            BlockA::sign([0; 32], timestamp, transactions, stakes, &self.key, &GENESIS_BETA)
         }
         .unwrap();
-        self.accept_block(&block_b.a().unwrap(), true);
-        Some(block_b)
+        self.accept_block(&block_a, true);
+        Some(block_a)
     }
-    pub fn accept_block(&mut self, block: &BlockA, forged: bool) {
-        db::block::put(&block, &self.db).unwrap();
-        if self.tree.insert(block.hash, block.previous_hash, block.timestamp).unwrap() {
-            warn!("{} {}", "Forked".red(), hex::encode(block.hash));
+    pub fn accept_block(&mut self, block_a: &BlockA, forged: bool) {
+        db::block::put(&block_a, &self.db).unwrap();
+        if self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap() {
+            warn!("{} {}", "Forked".red(), hex::encode(block_a.hash));
         }
         self.tree.sort_branches();
         self.states
             .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
         let info_0 = if forged { "Forged".magenta() } else { "Accept".green() };
-        let info_1 = hex::encode(block.hash);
+        let info_1 = hex::encode(block_a.hash);
         if let Some(main) = self.tree.main() {
-            if block.hash == main.0 {
+            if block_a.hash == main.0 {
                 self.pending_transactions.clear();
                 self.pending_stakes.clear();
                 if !forged {

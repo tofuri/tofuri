@@ -180,7 +180,7 @@ impl Command {
                     println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
                     let transaction_a = TransactionA::sign(key.address_bytes(), amount, fee, self.time.timestamp_secs(), &subkey).unwrap();
                     println!("{:?}", transaction_a);
-                    match post::transaction(&self.api, &transaction_a.b().c()).await {
+                    match post::transaction(&self.api, &transaction_a.b()).await {
                         Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
                         Err(err) => println!("{}", err.to_string().red()),
                     };
@@ -295,7 +295,7 @@ impl Command {
         )
         .unwrap();
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
-        match post::transaction(&self.api, &transaction_a.b().c()).await {
+        match post::transaction(&self.api, &transaction_a.b()).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
             Err(err) => println!("{}", err.to_string().red()),
         };

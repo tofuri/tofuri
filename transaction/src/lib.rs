@@ -7,8 +7,8 @@ use std::error::Error;
 pub trait Transaction {
     fn get_output_address(&self) -> &types::AddressBytes;
     fn get_timestamp(&self) -> u32;
-    fn get_amount(&self) -> u128;
-    fn get_fee(&self) -> u128;
+    fn get_amount_bytes(&self) -> types::CompressedAmount;
+    fn get_fee_bytes(&self) -> types::CompressedAmount;
     fn hash(&self) -> types::Hash;
     fn hash_input(&self) -> [u8; 32];
 }
@@ -19,11 +19,11 @@ impl Transaction for TransactionA {
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount(&self) -> u128 {
-        self.amount
+    fn get_amount_bytes(&self) -> types::CompressedAmount {
+        pea_int::to_be_bytes(self.amount)
     }
-    fn get_fee(&self) -> u128 {
-        self.fee
+    fn get_fee_bytes(&self) -> types::CompressedAmount {
+        pea_int::to_be_bytes(self.fee)
     }
     fn hash(&self) -> types::Hash {
         hash(self)
@@ -39,10 +39,10 @@ impl Transaction for TransactionB {
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount(&self) -> u128 {
+    fn get_amount_bytes(&self) -> types::CompressedAmount {
         self.amount
     }
-    fn get_fee(&self) -> u128 {
+    fn get_fee_bytes(&self) -> types::CompressedAmount {
         self.fee
     }
     fn hash(&self) -> types::Hash {
@@ -63,17 +63,8 @@ pub struct TransactionA {
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct TransactionB {
-    pub output_address: types::AddressBytes,
-    pub amount: u128,
-    pub fee: u128,
-    pub timestamp: u32,
-    #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
-}
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TransactionC {
+pub struct TransactionB {
     pub output_address: types::AddressBytes,
     pub amount: types::CompressedAmount,
     pub fee: types::CompressedAmount,
@@ -85,8 +76,8 @@ impl TransactionA {
     pub fn b(&self) -> TransactionB {
         TransactionB {
             output_address: self.output_address,
-            amount: self.amount,
-            fee: self.fee,
+            amount: pea_int::to_be_bytes(self.amount),
+            fee: pea_int::to_be_bytes(self.fee),
             timestamp: self.timestamp,
             signature: self.signature,
         }
@@ -118,22 +109,13 @@ impl TransactionB {
         };
         Ok(TransactionA {
             output_address: self.output_address,
-            amount: self.amount,
-            fee: self.fee,
+            amount: pea_int::from_be_bytes(&self.amount),
+            fee: pea_int::from_be_bytes(&self.fee),
             timestamp: self.timestamp,
             signature: self.signature,
             input_address,
             hash: self.hash(),
         })
-    }
-    pub fn c(&self) -> TransactionC {
-        TransactionC {
-            output_address: self.output_address,
-            amount: pea_int::to_be_bytes(self.amount),
-            fee: pea_int::to_be_bytes(self.fee),
-            timestamp: self.timestamp,
-            signature: self.signature,
-        }
     }
     pub fn hash(&self) -> types::Hash {
         hash(self)
@@ -154,20 +136,9 @@ fn hash_input<T: Transaction>(transaction: &T) -> [u8; 32] {
     let mut bytes = [0; 32];
     bytes[0..20].copy_from_slice(transaction.get_output_address());
     bytes[20..24].copy_from_slice(&transaction.get_timestamp().to_be_bytes());
-    bytes[24..28].copy_from_slice(&pea_int::to_be_bytes(transaction.get_amount()));
-    bytes[28..32].copy_from_slice(&pea_int::to_be_bytes(transaction.get_fee()));
+    bytes[24..28].copy_from_slice(&transaction.get_amount_bytes());
+    bytes[28..32].copy_from_slice(&transaction.get_fee_bytes());
     bytes
-}
-impl TransactionC {
-    pub fn b(&self) -> TransactionB {
-        TransactionB {
-            output_address: self.output_address,
-            amount: pea_int::from_be_bytes(&self.amount),
-            fee: pea_int::from_be_bytes(&self.fee),
-            timestamp: self.timestamp,
-            signature: self.signature,
-        }
-    }
 }
 impl Default for TransactionA {
     fn default() -> Self {
@@ -185,17 +156,6 @@ impl Default for TransactionA {
 impl Default for TransactionB {
     fn default() -> Self {
         TransactionB {
-            output_address: [0; 20],
-            amount: 0,
-            fee: 0,
-            timestamp: 0,
-            signature: [0; 64],
-        }
-    }
-}
-impl Default for TransactionC {
-    fn default() -> Self {
-        TransactionC {
             output_address: [0; 20],
             amount: [0; AMOUNT_BYTES],
             fee: [0; AMOUNT_BYTES],
@@ -219,6 +179,6 @@ mod tests {
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(96, bincode::serialize(&TransactionC::default()).unwrap().len());
+        assert_eq!(96, bincode::serialize(&TransactionB::default()).unwrap().len());
     }
 }

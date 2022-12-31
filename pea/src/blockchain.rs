@@ -9,7 +9,7 @@ use pea_core::{types, util};
 use pea_db as db;
 use pea_key::Key;
 use pea_stake::{StakeA, StakeC};
-use pea_transaction::{TransactionA, TransactionC};
+use pea_transaction::{TransactionA, TransactionB};
 use pea_tree::Tree;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::HashMap;
@@ -143,8 +143,8 @@ impl Blockchain {
         self.pending_blocks.push(block_a);
         Ok(())
     }
-    pub fn pending_transactions_push(&mut self, transaction_c: TransactionC, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        let transaction_a = transaction_c.b().a(None)?;
+    pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        let transaction_a = transaction_b.a(None)?;
         self.validate_transaction(&transaction_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
             return Err("transaction pending".into());

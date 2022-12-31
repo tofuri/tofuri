@@ -7,7 +7,7 @@ use pea_address as address;
 use pea_core::types;
 use pea_db as db;
 use pea_stake::StakeC;
-use pea_transaction::TransactionC;
+use pea_transaction::TransactionB;
 use regex::Regex;
 use std::{error::Error, io::BufRead, time::Duration};
 use tokio::{
@@ -34,7 +34,7 @@ lazy_static! {
     static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
     static ref STAKE_BY_HASH: Regex = Regex::new(r" /stake/[0-9A-Fa-f]* ").unwrap();
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
-    static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&TransactionC::default()).unwrap()).len();
+    static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&TransactionB::default()).unwrap()).len();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
     static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&StakeC::default()).unwrap()).len();
     static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
@@ -353,7 +353,7 @@ fn get_peer(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
     Ok(text(string))
 }
 fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let transaction_c: TransactionC = bincode::deserialize(&hex::decode(
+    let transaction_b: TransactionB = bincode::deserialize(&hex::decode(
         buffer
             .lines()
             .last()
@@ -361,8 +361,8 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
             .get(0..*TRANSACTION_SERIALIZED)
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
-    let data = bincode::serialize(&transaction_c).unwrap();
-    let status = match node.blockchain.pending_transactions_push(transaction_c, node.time.timestamp_secs()) {
+    let data = bincode::serialize(&transaction_b).unwrap();
+    let status = match node.blockchain.pending_transactions_push(transaction_b, node.time.timestamp_secs()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("transaction") {
                 node.gossipsub_publish("transaction", data);

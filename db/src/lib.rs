@@ -103,11 +103,11 @@ pub mod block {
 }
 pub mod transaction {
     use super::input_address;
-    use pea_transaction::{TransactionA, TransactionB, TransactionC};
+    use pea_transaction::{TransactionA, TransactionB};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
     pub fn put(transaction_a: &TransactionA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::transactions(db), transaction_a.hash, bincode::serialize(&transaction_a.b().c())?)?;
+        db.put_cf(super::transactions(db), transaction_a.hash, bincode::serialize(&transaction_a.b())?)?;
         Ok(())
     }
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionA, Box<dyn Error>> {
@@ -122,8 +122,8 @@ pub mod transaction {
         Ok(transaction_a)
     }
     pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionB, Box<dyn Error>> {
-        let transaction_c: TransactionC = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
-        Ok(transaction_c.b())
+        let transaction_b: TransactionB = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
+        Ok(transaction_b)
     }
 }
 pub mod stake {

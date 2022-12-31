@@ -308,15 +308,15 @@ fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<d
             .get(13..)
             .ok_or("GET TRANSACTION_BY_HASH 2")?,
     )?;
-    let transaction = db::transaction::get_a(&node.blockchain.db, &hash)?;
+    let transaction_a = db::transaction::get_a(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Transaction {
-        hash: hex::encode(transaction.hash),
-        input_address: address::address::encode(&transaction.input_address),
-        output_address: address::address::encode(&transaction.output_address),
-        amount: pea_int::to_string(transaction.amount),
-        fee: pea_int::to_string(transaction.fee),
-        timestamp: transaction.timestamp,
-        signature: hex::encode(transaction.signature),
+        hash: hex::encode(transaction_a.hash),
+        input_address: address::address::encode(&transaction_a.input_address),
+        output_address: address::address::encode(&transaction_a.output_address),
+        amount: pea_int::to_string(transaction_a.amount),
+        fee: pea_int::to_string(transaction_a.fee),
+        timestamp: transaction_a.timestamp,
+        signature: hex::encode(transaction_a.signature),
     })?))
 }
 fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
@@ -329,14 +329,14 @@ fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
             .get(7..)
             .ok_or("GET STAKE_BY_HASH 2")?,
     )?;
-    let stake = db::stake::get_a(&node.blockchain.db, &hash)?;
+    let stake_a = db::stake::get_a(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Stake {
-        hash: hex::encode(stake.hash),
-        address: address::address::encode(&stake.input_address),
-        fee: pea_int::to_string(stake.fee),
-        deposit: stake.deposit,
-        timestamp: stake.timestamp,
-        signature: hex::encode(stake.signature),
+        hash: hex::encode(stake_a.hash),
+        address: address::address::encode(&stake_a.input_address),
+        fee: pea_int::to_string(stake_a.fee),
+        deposit: stake_a.deposit,
+        timestamp: stake_a.timestamp,
+        signature: hex::encode(stake_a.signature),
     })?))
 }
 fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {

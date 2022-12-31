@@ -20,8 +20,8 @@ pub struct Blockchain {
     pub key: Key,
     pub tree: Tree,
     pub states: States,
-    pending_transactions: Vec<TransactionA>,
-    pending_stakes: Vec<StakeA>,
+    pub pending_transactions: Vec<TransactionA>,
+    pub pending_stakes: Vec<StakeA>,
     pub pending_blocks: Vec<BlockA>,
     pub sync: Sync,
     pub trust_fork_after_blocks: usize,
@@ -135,7 +135,7 @@ impl Blockchain {
         }
         info!("{} {}", info_0, info_1);
     }
-    pub fn add_block(&mut self, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn pending_blocks_push(&mut self, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.pending_blocks.len() < self.pending_blocks_limit {
             return Err("pending blocks limit reached".into());
         }
@@ -144,7 +144,7 @@ impl Blockchain {
         self.pending_blocks.push(block_a);
         Ok(())
     }
-    pub fn add_transaction(&mut self, transaction_b: TransactionB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         let transaction_a = transaction_b.a(None)?;
         self.validate_transaction(&transaction_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
@@ -164,7 +164,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn add_stake(&mut self, stake_b: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn pending_stakes_push(&mut self, stake_b: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         let stake_a = stake_b.a(None)?;
         self.validate_stake(&stake_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {

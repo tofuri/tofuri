@@ -362,7 +362,7 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
     let data = bincode::serialize(&transaction_b).unwrap();
-    let status = match node.blockchain.add_transaction(transaction_b, node.time.timestamp_secs()) {
+    let status = match node.blockchain.pending_transactions_push(transaction_b, node.time.timestamp_secs()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("transaction") {
                 node.gossipsub_publish("transaction", data);
@@ -381,7 +381,7 @@ fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Er
         buffer.lines().last().ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
     let data = bincode::serialize(&stake_b).unwrap();
-    let status = match node.blockchain.add_stake(stake_b, node.time.timestamp_secs()) {
+    let status = match node.blockchain.pending_stakes_push(stake_b, node.time.timestamp_secs()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("stake") {
                 node.gossipsub_publish("stake", data);

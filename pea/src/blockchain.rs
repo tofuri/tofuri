@@ -101,14 +101,14 @@ impl Blockchain {
                 stakes.push(stake_a.b());
             }
         }
-        let block = if let Some(main) = self.tree.main() {
+        let block_b = if let Some(main) = self.tree.main() {
             BlockB::sign(main.0, timestamp, transactions, stakes, &self.key, &self.states.dynamic.latest_block.beta)
         } else {
             BlockB::sign([0; 32], timestamp, transactions, stakes, &self.key, &GENESIS_BETA)
         }
         .unwrap();
-        self.accept_block(&block.a().unwrap(), true);
-        Some(block)
+        self.accept_block(&block_b.a().unwrap(), true);
+        Some(block_b)
     }
     pub fn accept_block(&mut self, block: &BlockA, forged: bool) {
         db::block::put(&block, &self.db).unwrap();

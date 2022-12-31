@@ -76,8 +76,7 @@ pub mod block {
             Ok(x) => Some(x),
             Err(_) => None,
         };
-        let block_b = block_c.b(vec![], vec![]);
-        let block_a = block_b.a(beta, input_public_key, Some(transactions), Some(stakes))?;
+        let block_a = block_c.a(transactions, stakes, beta, input_public_key)?;
         if beta.is_none() {
             beta::put(hash, &block_a.beta, db)?;
         }

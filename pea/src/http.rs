@@ -235,8 +235,8 @@ fn get_height_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Er
             .get(8..)
             .ok_or("GET HEIGHT_BY_HASH 2")?,
     )?;
-    let block_b = db::block::get_b(&node.blockchain.db, &hash)?;
-    let height = node.blockchain.tree.height(&block_b.previous_hash);
+    let block_c = db::block::get_c(&node.blockchain.db, &hash)?;
+    let height = node.blockchain.tree.height(&block_c.previous_hash);
     Ok(json(serde_json::to_string(&height)?))
 }
 fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {

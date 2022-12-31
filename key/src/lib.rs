@@ -51,7 +51,7 @@ impl Key {
         let public_key_bytes: types::PublicKeyBytes = SECP256K1.recover_ecdsa(&message, &signature)?.serialize();
         Ok(public_key_bytes)
     }
-    pub fn vrf_prove(&self, alpha: &[u8]) -> Option<[u8; 81]> {
+    pub fn vrf_prove(&self, alpha: &[u8]) -> Option<types::Pi> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
         let pi = vrf.prove(&self.secret_key_bytes(), alpha);
         if let Err(_) = pi {

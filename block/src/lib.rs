@@ -11,7 +11,7 @@ pub trait Block {
     fn get_merkle_root_transaction(&self) -> types::MerkleRoot;
     fn get_merkle_root_stake(&self) -> types::MerkleRoot;
     fn get_timestamp(&self) -> u32;
-    fn get_pi(&self) -> &[u8; 81];
+    fn get_pi(&self) -> &types::Pi;
     fn hash(&self) -> types::Hash;
     fn hash_input(&self) -> [u8; 181];
 }
@@ -28,7 +28,7 @@ impl Block for BlockA {
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_pi(&self) -> &[u8; 81] {
+    fn get_pi(&self) -> &types::Pi {
         &self.pi
     }
     fn hash(&self) -> types::Hash {
@@ -51,7 +51,7 @@ impl Block for BlockB {
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_pi(&self) -> &[u8; 81] {
+    fn get_pi(&self) -> &types::Pi {
         &self.pi
     }
     fn hash(&self) -> types::Hash {
@@ -68,7 +68,7 @@ pub struct BlockA {
     pub timestamp: u32,
     pub beta: [u8; 32],
     #[serde(with = "BigArray")]
-    pub pi: [u8; 81],
+    pub pi: types::Pi,
     #[serde(with = "BigArray")]
     pub input_public_key: types::PublicKeyBytes,
     #[serde(with = "BigArray")]
@@ -83,7 +83,7 @@ pub struct BlockB {
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
     #[serde(with = "BigArray")]
-    pub pi: [u8; 81],
+    pub pi: types::Pi,
     pub transactions: Vec<TransactionB>,
     pub stakes: Vec<StakeB>,
 }
@@ -94,7 +94,7 @@ pub struct BlockC {
     #[serde(with = "BigArray")]
     pub signature: types::SignatureBytes,
     #[serde(with = "BigArray")]
-    pub pi: [u8; 81],
+    pub pi: types::Pi,
     pub transaction_hashes: Vec<types::Hash>,
     pub stake_hashes: Vec<types::Hash>,
 }

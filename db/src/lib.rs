@@ -256,13 +256,14 @@ pub mod input_public_key {
     }
 }
 pub mod beta {
+    use pea_core::types;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(block_hash: &[u8], beta: &[u8; 32], db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+    pub fn put(block_hash: &[u8], beta: &types::Beta, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::betas(db), block_hash, beta)?;
         Ok(())
     }
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, block_hash: &[u8]) -> Result<[u8; 32], Box<dyn Error>> {
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, block_hash: &[u8]) -> Result<types::Beta, Box<dyn Error>> {
         let beta = db.get_cf(super::betas(db), block_hash)?.ok_or("beta not found")?;
         Ok(beta.try_into().unwrap())
     }

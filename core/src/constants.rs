@@ -1,3 +1,4 @@
+use crate::types;
 pub const BLOCK_TRANSACTIONS_LIMIT: usize = BLOCK_TIME_MIN as usize * 100;
 pub const BLOCK_STAKES_LIMIT: usize = BLOCK_TIME_MIN as usize;
 pub const PENDING_TRANSACTIONS_LIMIT: usize = BLOCK_TRANSACTIONS_LIMIT;
@@ -13,4 +14,4 @@ pub const TIME_DELTA: u32 = 1; // ping delay & perception of time
 pub const BLOCK_TIME_MAX: u32 = BLOCK_TIME_MIN + TIME_DELTA;
 pub const EXTENSION: &str = "pea";
 pub const AMOUNT_BYTES: usize = 4;
-pub const GENESIS_BETA: [u8; 32] = [0; 32];
+pub const GENESIS_BETA: types::Beta = [0; 32];

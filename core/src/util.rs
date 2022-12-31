@@ -9,19 +9,19 @@ use std::{
 construct_uint! {
     pub struct U256(4);
 }
-pub fn u256(hash: &[u8; 32]) -> U256 {
+pub fn u256(hash: &types::Hash) -> U256 {
     U256::from_big_endian(hash)
 }
-pub fn u256_m(hash: &[u8; 32], m: usize) -> usize {
+pub fn u256_m(hash: &types::Hash, m: usize) -> usize {
     (u256(hash) % m).as_usize()
 }
-pub fn hash_n(hash: &[u8; 32], n: u128) -> [u8; 32] {
+pub fn hash_n(hash: &types::Hash, n: u128) -> types::Hash {
     let mut hasher = Sha256::new();
     hasher.update(hash);
     hasher.update(n.to_be_bytes());
     hasher.finalize().into()
 }
-pub fn random(beta: &[u8; 32], n: usize, m: usize) -> usize {
+pub fn random(beta: &types::Beta, n: usize, m: usize) -> usize {
     u256_m(&hash_n(beta, n as u128), m)
 }
 pub fn timestamp() -> u32 {

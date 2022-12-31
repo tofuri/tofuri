@@ -59,7 +59,7 @@ impl Key {
         }
         Some(pi.unwrap().try_into().unwrap())
     }
-    pub fn vrf_proof_to_hash(pi: &[u8]) -> Option<[u8; 32]> {
+    pub fn vrf_proof_to_hash(pi: &[u8]) -> Option<types::Beta> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
         let beta = vrf.proof_to_hash(pi);
         if let Err(_) = beta {
@@ -67,7 +67,7 @@ impl Key {
         }
         Some(beta.unwrap().try_into().unwrap())
     }
-    pub fn vrf_verify(y: &[u8], pi: &[u8], alpha: &[u8]) -> Option<[u8; 32]> {
+    pub fn vrf_verify(y: &[u8], pi: &[u8], alpha: &[u8]) -> Option<types::Beta> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
         let beta = vrf.verify(y, pi, alpha);
         if let Err(_) = beta {

@@ -99,9 +99,6 @@ pub struct BlockC {
     pub stake_hashes: Vec<types::Hash>,
 }
 impl BlockA {
-    pub fn hash(&self) -> types::Hash {
-        hash(self)
-    }
     pub fn b(&self) -> BlockB {
         let mut transactions = vec![];
         let mut stakes = vec![];
@@ -119,6 +116,9 @@ impl BlockA {
             transactions,
             stakes,
         }
+    }
+    pub fn hash(&self) -> types::Hash {
+        hash(self)
     }
     pub fn input_address(&self) -> types::AddressBytes {
         util::address(&self.input_public_key)
@@ -144,9 +144,6 @@ impl BlockA {
     }
 }
 impl BlockB {
-    pub fn hash(&self) -> types::Hash {
-        hash(self)
-    }
     pub fn a(
         &self,
         beta: Option<[u8; 32]>,
@@ -206,6 +203,9 @@ impl BlockB {
             transaction_hashes: self.transaction_hashes(),
             stake_hashes: self.stake_hashes(),
         }
+    }
+    pub fn hash(&self) -> types::Hash {
+        hash(self)
     }
     pub fn sign(
         previous_hash: types::Hash,

@@ -82,9 +82,6 @@ pub struct TransactionC {
     pub signature: types::SignatureBytes,
 }
 impl TransactionA {
-    pub fn hash(&self) -> types::Hash {
-        hash(self)
-    }
     pub fn b(&self) -> TransactionB {
         TransactionB {
             output_address: self.output_address,
@@ -94,11 +91,11 @@ impl TransactionA {
             signature: self.signature,
         }
     }
-}
-impl TransactionB {
     pub fn hash(&self) -> types::Hash {
         hash(self)
     }
+}
+impl TransactionB {
     pub fn a(&self, input_address: Option<types::AddressBytes>) -> Result<TransactionA, Box<dyn Error>> {
         let input_address = match input_address {
             Some(x) => x,
@@ -122,6 +119,9 @@ impl TransactionB {
             timestamp: self.timestamp,
             signature: self.signature,
         }
+    }
+    pub fn hash(&self) -> types::Hash {
+        hash(self)
     }
     pub fn sign(public_key_output: types::AddressBytes, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<TransactionB, Box<dyn Error>> {
         let mut transaction_b = TransactionB {

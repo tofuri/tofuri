@@ -72,9 +72,6 @@ pub struct StakeC {
     pub signature: types::SignatureBytes,
 }
 impl StakeA {
-    pub fn hash(&self) -> types::Hash {
-        hash(self)
-    }
     pub fn b(&self) -> StakeB {
         StakeB {
             fee: self.fee,
@@ -83,11 +80,11 @@ impl StakeA {
             signature: self.signature,
         }
     }
-}
-impl StakeB {
     pub fn hash(&self) -> types::Hash {
         hash(self)
     }
+}
+impl StakeB {
     pub fn a(&self, input_address: Option<types::AddressBytes>) -> Result<StakeA, Box<dyn Error>> {
         let input_address = match input_address {
             Some(x) => x,
@@ -109,6 +106,9 @@ impl StakeB {
             timestamp: self.timestamp,
             signature: self.signature,
         }
+    }
+    pub fn hash(&self) -> types::Hash {
+        hash(self)
     }
     pub fn sign(deposit: bool, fee: u128, timestamp: u32, key: &Key) -> Result<StakeB, Box<dyn Error>> {
         let mut stake_b = StakeB {

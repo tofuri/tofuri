@@ -128,11 +128,11 @@ pub mod transaction {
 }
 pub mod stake {
     use super::input_address;
-    use pea_stake::{StakeA, StakeB, StakeC};
+    use pea_stake::{StakeA, StakeB};
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
     pub fn put(stake_a: &StakeA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::stakes(db), stake_a.hash, bincode::serialize(&stake_a.b().c())?)?;
+        db.put_cf(super::stakes(db), stake_a.hash, bincode::serialize(&stake_a.b())?)?;
         Ok(())
     }
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeA, Box<dyn Error>> {
@@ -147,8 +147,8 @@ pub mod stake {
         Ok(stake_a)
     }
     pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Box<dyn Error>> {
-        let stake_c: StakeC = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
-        Ok(stake_c.b())
+        let stake_b: StakeB = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
+        Ok(stake_b)
     }
 }
 pub mod tree {

@@ -6,7 +6,7 @@ use log::error;
 use pea_address as address;
 use pea_core::types;
 use pea_db as db;
-use pea_stake::StakeC;
+use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use regex::Regex;
 use std::{error::Error, io::BufRead, time::Duration};
@@ -36,7 +36,7 @@ lazy_static! {
     static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
     static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&TransactionB::default()).unwrap()).len();
     static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
-    static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&StakeC::default()).unwrap()).len();
+    static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&StakeB::default()).unwrap()).len();
     static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
     static ref PEER: Regex = Regex::new(r" /peer/.* ").unwrap();
 }
@@ -377,11 +377,11 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
     Ok(json(serde_json::to_string(&status)?))
 }
 fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let stake_c: StakeC = bincode::deserialize(&hex::decode(
+    let stake_b: StakeB = bincode::deserialize(&hex::decode(
         buffer.lines().last().ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
-    let data = bincode::serialize(&stake_c).unwrap();
-    let status = match node.blockchain.pending_stakes_push(stake_c, node.time.timestamp_secs()) {
+    let data = bincode::serialize(&stake_b).unwrap();
+    let status = match node.blockchain.pending_stakes_push(stake_b, node.time.timestamp_secs()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("stake") {
                 node.gossipsub_publish("stake", data);

@@ -7,7 +7,7 @@ use std::error::Error;
 pub trait Stake {
     fn get_timestamp(&self) -> u32;
     fn get_deposit(&self) -> bool;
-    fn get_fee(&self) -> u128;
+    fn get_fee_bytes(&self) -> types::CompressedAmount;
     fn hash(&self) -> types::Hash;
     fn hash_input(&self) -> [u8; 9];
 }
@@ -18,8 +18,8 @@ impl Stake for StakeA {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee(&self) -> u128 {
-        self.fee
+    fn get_fee_bytes(&self) -> types::CompressedAmount {
+        pea_int::to_be_bytes(self.fee)
     }
     fn hash(&self) -> types::Hash {
         hash(self)
@@ -35,7 +35,7 @@ impl Stake for StakeB {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee(&self) -> u128 {
+    fn get_fee_bytes(&self) -> types::CompressedAmount {
         self.fee
     }
     fn hash(&self) -> types::Hash {
@@ -55,16 +55,8 @@ pub struct StakeA {
     pub input_address: types::AddressBytes,
     pub hash: types::Hash,
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct StakeB {
-    pub fee: u128,
-    pub deposit: bool,
-    pub timestamp: u32,
-    #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
-}
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct StakeC {
+pub struct StakeB {
     pub fee: types::CompressedAmount,
     pub deposit: bool,
     pub timestamp: u32,
@@ -74,7 +66,7 @@ pub struct StakeC {
 impl StakeA {
     pub fn b(&self) -> StakeB {
         StakeB {
-            fee: self.fee,
+            fee: pea_int::to_be_bytes(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -105,21 +97,13 @@ impl StakeB {
             None => self.input_address()?,
         };
         Ok(StakeA {
-            fee: self.fee,
+            fee: pea_int::from_be_bytes(&self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
             input_address,
             hash: self.hash(),
         })
-    }
-    pub fn c(&self) -> StakeC {
-        StakeC {
-            fee: pea_int::to_be_bytes(self.fee),
-            deposit: self.deposit,
-            timestamp: self.timestamp,
-            signature: self.signature,
-        }
     }
     pub fn hash(&self) -> types::Hash {
         hash(self)
@@ -139,19 +123,9 @@ fn hash<T: Stake>(stake: &T) -> types::Hash {
 fn hash_input<T: Stake>(stake: &T) -> [u8; 9] {
     let mut bytes = [0; 9];
     bytes[0..4].copy_from_slice(&stake.get_timestamp().to_be_bytes());
-    bytes[4..8].copy_from_slice(&pea_int::to_be_bytes(stake.get_fee()));
+    bytes[4..8].copy_from_slice(&stake.get_fee_bytes());
     bytes[8] = if stake.get_deposit() { 1 } else { 0 };
     bytes
-}
-impl StakeC {
-    pub fn b(&self) -> StakeB {
-        StakeB {
-            fee: pea_int::from_be_bytes(&self.fee),
-            deposit: self.deposit,
-            timestamp: self.timestamp,
-            signature: self.signature,
-        }
-    }
 }
 impl Default for StakeA {
     fn default() -> Self {
@@ -168,16 +142,6 @@ impl Default for StakeA {
 impl Default for StakeB {
     fn default() -> Self {
         StakeB {
-            fee: 0,
-            deposit: false,
-            timestamp: 0,
-            signature: [0; 64],
-        }
-    }
-}
-impl Default for StakeC {
-    fn default() -> Self {
-        StakeC {
             fee: [0; AMOUNT_BYTES],
             deposit: false,
             timestamp: 0,
@@ -200,6 +164,6 @@ mod tests {
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(73, bincode::serialize(&StakeC::default()).unwrap().len());
+        assert_eq!(73, bincode::serialize(&StakeB::default()).unwrap().len());
     }
 }

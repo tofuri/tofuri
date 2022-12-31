@@ -318,7 +318,7 @@ impl Command {
         }
         let stake_a = StakeA::sign(deposit, fee, self.time.timestamp_secs(), &wallet.key).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
-        match post::stake(&self.api, &stake_a.b().c()).await {
+        match post::stake(&self.api, &stake_a.b()).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
             Err(err) => println!("{}", err.to_string().red()),
         };

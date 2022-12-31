@@ -8,7 +8,7 @@ use pea_core::constants::{
 use pea_core::{types, util};
 use pea_db as db;
 use pea_key::Key;
-use pea_stake::{StakeA, StakeC};
+use pea_stake::{StakeA, StakeB};
 use pea_transaction::{TransactionA, TransactionB};
 use pea_tree::Tree;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -163,8 +163,8 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn pending_stakes_push(&mut self, stake_c: StakeC, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        let stake_a = stake_c.b().a(None)?;
+    pub fn pending_stakes_push(&mut self, stake_b: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        let stake_a = stake_b.a(None)?;
         self.validate_stake(&stake_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
             return Err("stake pending".into());

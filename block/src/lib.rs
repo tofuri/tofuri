@@ -180,7 +180,7 @@ impl BlockB {
             }
         };
         let mut block_a = BlockA {
-            hash: self.hash(),
+            hash: [0; 32],
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
             beta,
@@ -190,8 +190,7 @@ impl BlockB {
             transactions,
             stakes,
         };
-        let block_b = block_a.b();
-        block_a.hash = block_b.hash();
+        block_a.hash = block_a.hash();
         Ok(block_a)
     }
     pub fn c(&self) -> BlockC {

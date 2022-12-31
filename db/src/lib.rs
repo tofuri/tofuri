@@ -59,7 +59,7 @@ pub mod block {
         Ok(())
     }
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Box<dyn Error>> {
-        let block_c: BlockC = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
+        let block_c = get_c(db, hash)?;
         let mut transactions = vec![];
         let mut stakes = vec![];
         for hash in block_c.transaction_hashes.iter() {
@@ -76,7 +76,7 @@ pub mod block {
             Ok(x) => Some(x),
             Err(_) => None,
         };
-        let block_b = get_b(db, hash)?;
+        let block_b = block_c.b(vec![], vec![]);
         let block_a = block_b.a(beta, input_public_key, Some(transactions), Some(stakes))?;
         if beta.is_none() {
             beta::put(hash, &block_a.beta, db)?;
@@ -87,7 +87,7 @@ pub mod block {
         Ok(block_a)
     }
     pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockB, Box<dyn Error>> {
-        let block_c: BlockC = bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?;
+        let block_c = get_c(db, hash)?;
         let mut transactions = vec![];
         for hash in block_c.transaction_hashes.iter() {
             transactions.push(transaction::get_b(db, hash)?);
@@ -97,6 +97,9 @@ pub mod block {
             stakes.push(stake::get_b(db, hash)?);
         }
         Ok(block_c.b(transactions, stakes))
+    }
+    pub fn get_c(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockC, Box<dyn Error>> {
+        Ok(bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?)
     }
 }
 pub mod transaction {

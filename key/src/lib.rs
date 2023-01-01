@@ -3,7 +3,6 @@ use secp256k1::{
     ecdsa::{RecoverableSignature, RecoveryId},
     rand, Message, PublicKey, SecretKey, SECP256K1,
 };
-use sha2::{Digest, Sha256};
 use std::error::Error;
 use vrf::openssl::{CipherSuite, ECVRF};
 use vrf::VRF;
@@ -76,10 +75,7 @@ impl Key {
         Some(beta.unwrap().try_into().unwrap())
     }
     pub fn subkey(&self, n: u128) -> Key {
-        let mut hasher = Sha256::new();
-        hasher.update(self.secret_key_bytes());
-        hasher.update(n.to_be_bytes());
-        Key::from_slice(&hasher.finalize().into())
+        Key::from_slice(&util::hash_n(&self.secret_key_bytes(), n))
     }
 }
 #[cfg(test)]

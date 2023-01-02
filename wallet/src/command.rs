@@ -8,7 +8,7 @@ use pea_core::constants::COIN;
 use pea_stake::StakeA;
 use pea_time::Time;
 use pea_transaction::TransactionA;
-use std::{ops::Range, process, time::Duration};
+use std::{process, time::Duration};
 pub struct Options {
     pub api: String,
     pub time_api: bool,
@@ -95,7 +95,6 @@ impl Command {
                 Self::data(self.wallet.as_ref().unwrap());
                 true
             }
-            "Subkeys" => self.subkeys().await,
             _ => {
                 process::exit(0);
             }
@@ -112,82 +111,6 @@ impl Command {
     }
     fn decrypt(&mut self) {
         self.wallet = Some(Wallet::import("", "").unwrap());
-    }
-    async fn subkeys(&mut self) -> bool {
-        match Select::new(">>", vec!["Balance", "Withdraw", "Back"]).prompt().unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }) {
-            "Balance" => {
-                self.subkeys_balance().await;
-                true
-            }
-            "Withdraw" => {
-                self.subkeys_withdraw().await;
-                true
-            }
-            "Back" => false,
-            _ => process::exit(0),
-        }
-    }
-    fn inquire_subkeys_range() -> Range<usize> {
-        let start = CustomType::<usize>::new("Range Start:")
-            .with_error_message("Please type a valid number")
-            .with_help_message("The start of the range of subkeys to check")
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            });
-        let end = CustomType::<usize>::new("Range End:")
-            .with_error_message("Please type a valid number")
-            .with_help_message("The end of the range of subkeys to check")
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            });
-        start..end
-    }
-    async fn subkeys_balance(&self) {
-        let key = &self.wallet.as_ref().unwrap().key;
-        for n in Self::inquire_subkeys_range() {
-            let subkey = key.subkey(n as u128);
-            let address = address::address::encode(&subkey.address_bytes());
-            println!("{} {}", n.to_string().red(), address.green());
-            Self::balance(&self.api, &address).await;
-        }
-    }
-    async fn subkeys_withdraw(&self) {
-        let fee = Self::inquire_fee();
-        let key = &self.wallet.as_ref().unwrap().key;
-        for n in Self::inquire_subkeys_range() {
-            let subkey = key.subkey(n as u128);
-            let address = address::address::encode(&subkey.address_bytes());
-            println!("{} {}", n.to_string().red(), address.green());
-            match get::balance(&self.api, &address).await {
-                Ok(balance_string) => {
-                    let balance = pea_int::from_string(&balance_string).unwrap();
-                    if balance == 0 {
-                        continue;
-                    }
-                    println!("Account balance: {}", balance_string.yellow());
-                    if balance <= fee {
-                        println!("{}", "Insufficient balance".red());
-                        continue;
-                    }
-                    let amount = balance - fee;
-                    println!("Withdrawing: {} = {} - {}", amount.to_string().yellow(), balance, fee);
-                    let transaction_a = TransactionA::sign(key.address_bytes(), amount, fee, self.time.timestamp_secs(), &subkey).unwrap();
-                    println!("{:?}", transaction_a);
-                    match post::transaction(&self.api, &transaction_a.b()).await {
-                        Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
-                        Err(err) => println!("{}", err.to_string().red()),
-                    };
-                }
-                Err(err) => println!("{}", err.to_string().red()),
-            };
-        }
     }
     async fn api(api: &str) {
         match get::index(api).await {

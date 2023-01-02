@@ -74,9 +74,6 @@ impl Key {
         }
         Some(beta.unwrap().try_into().unwrap())
     }
-    pub fn subkey(&self, n: u128) -> Key {
-        Key::from_slice(&util::hash_n(&self.secret_key_bytes(), n))
-    }
 }
 #[cfg(test)]
 mod tests {
@@ -102,24 +99,5 @@ mod tests {
         let pi = key.vrf_prove(&alpha).unwrap();
         let beta = Key::vrf_verify(&key.public_key_bytes(), &pi, &alpha);
         assert!(beta.unwrap() == Key::vrf_proof_to_hash(&pi).unwrap());
-    }
-    #[test]
-    fn test_subkey() {
-        let key = Key::from_slice(&[0xcd; 32]);
-        let subkey_0 = key.subkey(0);
-        let subkey_1 = key.subkey(1);
-        let subkey_2 = key.subkey(2);
-        assert_eq!(
-            subkey_0.address_bytes(),
-            [190, 145, 6, 8, 189, 220, 228, 13, 142, 153, 216, 125, 251, 230, 246, 105, 229, 80, 237, 207]
-        );
-        assert_eq!(
-            subkey_1.address_bytes(),
-            [180, 66, 245, 82, 35, 64, 201, 93, 8, 163, 181, 206, 108, 109, 193, 89, 147, 174, 49, 46]
-        );
-        assert_eq!(
-            subkey_2.address_bytes(),
-            [231, 247, 240, 206, 100, 51, 5, 128, 78, 61, 77, 247, 151, 132, 96, 108, 168, 174, 70, 226]
-        );
     }
 }

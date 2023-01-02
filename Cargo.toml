@@ -7,7 +7,7 @@ members = [
     "db",
     "int",
     "key",
-    #"pay",
+    "pay",
     "pea",
     "stake",
     "time",

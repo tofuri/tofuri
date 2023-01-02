@@ -3,15 +3,11 @@ use colored::*;
 use futures::FutureExt;
 use log::{error, info};
 use pea_address as address;
-use pea_api::{
-    get::{self},
-    post,
-};
+use pea_api::get::{self};
 use pea_core::{types, util};
 use pea_key::Key;
 use pea_pay_core::{Charge, ChargeStatus, Payment};
 use pea_pay_db as db;
-use pea_transaction::Transaction;
 use pea_wallet::Wallet;
 use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
 use std::{
@@ -34,25 +30,24 @@ pub struct Options<'a> {
 }
 pub struct PaymentProcessor {
     pub db: DBWithThreadMode<SingleThreaded>,
-    pub wallet: Wallet,
+    pub key: Key,
     pub api: String,
     pub bind_api: String,
     pub confirmations: usize,
     pub expires: u32,
     pub tps: f64,
-    // charges: HashMap<usize, Charge>,
-    charges: HashMap<types::Hash, Charge>,
+    charges: HashMap<types::AddressBytes, Charge>,
     chain: Vec<types::api::Block>,
-    subkey: usize,
+    subkey: u128,
 }
 impl PaymentProcessor {
     pub fn new(options: Options) -> Self {
         let wallet = PaymentProcessor::wallet(options.tempkey, options.wallet, options.passphrase);
-        info!("Address {}", pea_address::address::encode(&wallet.key.address()).green());
+        info!("Address {}", pea_address::address::encode(&wallet.key.address_bytes()).green());
         let db = PaymentProcessor::db(options.tempdb);
         Self {
             db,
-            wallet,
+            key: wallet.key,
             api: options.api,
             bind_api: options.bind_api,
             confirmations: options.confirmations,
@@ -77,39 +72,29 @@ impl PaymentProcessor {
             false => Wallet::import(wallet, passphrase).unwrap(),
         }
     }
-    pub fn get_charges(&self) -> Vec<(String, Payment)> {
+    pub fn get_charges(&self) -> Vec<Payment> {
         let mut payments = vec![];
-        for (hash, charge) in self.charges.iter() {
-            payments.push((hex::encode(hash), Payment::from(charge)));
+        for charge in self.charges.values() {
+            payments.push(charge.payment(&self.key));
         }
         payments
     }
     pub fn get_charge(&self, hash: &[u8]) -> Option<Payment> {
-        self.charges.get(hash).map(Payment::from)
-    }
-    pub async fn send(&self, address: &str, amount: u128, fee: u128) -> Result<(), Box<dyn Error>> {
-        let mut transaction = Transaction::new(address::address::decode(address).unwrap(), amount, fee, util::timestamp());
-        transaction.sign(&self.wallet.key);
-        post::transaction(&self.api, &transaction).await?;
-        Ok(())
+        self.charges.get(hash).map(|x| x.payment(&self.key))
     }
     pub fn withdraw() {}
-    pub fn charge(&mut self, amount: u128) -> (String, Payment) {
-        let key = self.wallet.key.subkey(self.subkey);
-        let timestamp = util::timestamp();
+    pub fn charge(&mut self, amount: u128) -> Payment {
         let charge = Charge {
-            secret_key_bytes: key.secret_key(),
             amount,
-            timestamp,
+            timestamp: util::timestamp(),
             status: ChargeStatus::Pending,
             subkey: self.subkey,
         };
-        let payment = Payment::from(&charge);
-        let hash = charge.hash();
-        db::charge::put(&self.db, &charge).unwrap();
-        self.charges.insert(hash, charge);
+        let payment = charge.payment(&self.key);
+        db::charge::put(&self.db, &self.key, &charge).unwrap();
+        self.charges.insert(charge.address_bytes(&self.key), charge);
         self.subkey += 1;
-        (hex::encode(hash), payment)
+        payment
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
         self.update_chain().await?;
@@ -126,7 +111,7 @@ impl PaymentProcessor {
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
             for charge in self.charges.values() {
-                let address = address::address::encode(&Key::from_secret_key_bytes(&charge.secret_key_bytes).address());
+                let address = address::address::encode(&charge.address_bytes(&self.key));
                 if transaction.output_address == address {
                     let amount = match map.get(&address) {
                         Some(a) => *a,
@@ -138,7 +123,7 @@ impl PaymentProcessor {
         }
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
-            let address = address::address::encode(&Key::from_secret_key_bytes(&charge.secret_key_bytes).address());
+            let address = address::address::encode(&charge.address_bytes(&self.key));
             let res = {
                 let amount = match map.get(&address) {
                     Some(a) => *a,
@@ -148,16 +133,16 @@ impl PaymentProcessor {
             };
             if res {
                 charge.status = ChargeStatus::Completed;
-                db::charge::put(&self.db, charge).unwrap();
+                db::charge::put(&self.db, &self.key, charge).unwrap();
                 charges.push(charge);
             } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < util::timestamp() - self.expires {
                 charge.status = ChargeStatus::Expired;
-                db::charge::put(&self.db, charge).unwrap();
+                db::charge::put(&self.db, &self.key, charge).unwrap();
             }
         }
         let mut payments = vec![];
         for charge in charges {
-            payments.push(Payment::from(charge))
+            payments.push(charge.payment(&self.key))
         }
         Ok(payments)
     }

@@ -1,7 +1,6 @@
 use rocksdb::{ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Options, SingleThreaded, DB};
 fn descriptors() -> Vec<ColumnFamilyDescriptor> {
-    let mut options = Options::default();
-    options.set_max_write_buffer_number(16);
+    let options = Options::default();
     vec![ColumnFamilyDescriptor::new("charges", options)]
 }
 pub fn open(path: &str) -> DBWithThreadMode<SingleThreaded> {
@@ -14,11 +13,12 @@ pub fn charges(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("charges").unwrap()
 }
 pub mod charge {
+    use pea_key::Key;
     use pea_pay_core::Charge;
     use rocksdb::{DBWithThreadMode, SingleThreaded};
     use std::error::Error;
-    pub fn put(db: &DBWithThreadMode<SingleThreaded>, charge: &Charge) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::charges(db), charge.hash(), bincode::serialize(charge)?)?;
+    pub fn put(db: &DBWithThreadMode<SingleThreaded>, key: &Key, charge: &Charge) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::charges(db), charge.address_bytes(key), bincode::serialize(charge)?)?;
         Ok(())
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Charge, Box<dyn Error>> {

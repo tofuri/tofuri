@@ -1,7 +1,6 @@
 use rocksdb::{ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Options, SingleThreaded, DB};
 fn descriptors() -> Vec<ColumnFamilyDescriptor> {
-    let mut options = Options::default();
-    options.set_max_write_buffer_number(16);
+    let options = Options::default();
     vec![
         ColumnFamilyDescriptor::new("blocks", options.clone()),
         ColumnFamilyDescriptor::new("transactions", options.clone()),

@@ -87,8 +87,8 @@ fn get_charge_new(payment_processor: &mut PaymentProcessor, first: &str) -> Resu
         .get(12..)
         .ok_or("GET CHARGE 2")?
         .parse()?;
-    let (hash, payment) = payment_processor.charge(amount);
-    Ok(json(serde_json::to_string(&(hash, payment))?))
+    let payment = payment_processor.charge(amount);
+    Ok(json(serde_json::to_string(&payment)?))
 }
 fn c404() -> Result<String, Box<dyn Error>> {
     Ok("HTTP/1.1 404 Not Found".to_string())

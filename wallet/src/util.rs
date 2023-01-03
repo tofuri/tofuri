@@ -55,27 +55,27 @@ pub fn decrypt(salt: &Salt, nonce: &Nonce, ciphertext: &Ciphertext, passphrase: 
     }
 }
 pub fn default_path() -> &'static Path {
-    Path::new("./peacash/wallets")
+    Path::new("./peacash-wallet")
 }
 pub fn save(salt: Salt, nonce: Nonce, ciphertext: Ciphertext, filename: &str) -> Result<(), Box<dyn Error>> {
-    let mut bytes = [0; 228];
+    let mut bytes = [0; 92];
     bytes[0..32].copy_from_slice(&salt);
     bytes[32..44].copy_from_slice(&nonce);
-    bytes[44..228].copy_from_slice(&ciphertext);
+    bytes[44..92].copy_from_slice(&ciphertext);
     let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
     let mut file = File::create(path)?;
     file.write_all(hex::encode(bytes).as_bytes())?;
     Ok(())
 }
-pub fn read_exact(path: impl AsRef<Path>) -> Result<[u8; 92], Box<dyn Error>> {
-    let mut file = File::open(path)?;
-    let mut bytes = [0; 184];
-    file.read_exact(&mut bytes)?;
-    let vec = hex::decode(bytes).unwrap();
-    Ok(vec.try_into().unwrap())
-}
 pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Box<dyn Error>> {
+    fn read_exact(path: impl AsRef<Path>) -> Result<[u8; 92], Box<dyn Error>> {
+        let mut file = File::open(path)?;
+        let mut bytes = [0; 184];
+        file.read_exact(&mut bytes)?;
+        let vec = hex::decode(bytes).unwrap();
+        Ok(vec.try_into().unwrap())
+    }
     fn attempt(slice: &[u8], passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Box<dyn Error>> {
         let salt: Salt = slice[0..32].try_into()?;
         let nonce: Nonce = slice[32..44].try_into()?;
@@ -88,7 +88,16 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         process::exit(0);
     }
     if !filename.is_empty() && !passphrase.is_empty() {
-        return match load(filename, passphrase) {
+        let mut path = default_path().join(filename);
+        path.set_extension(EXTENSION);
+        let bytes = match read_exact(path) {
+            Ok(x) => x,
+            Err(err) => {
+                println!("{}", err.to_string().red());
+                process::exit(0);
+            }
+        };
+        return match attempt(&bytes, passphrase) {
             Ok(x) => Ok(x),
             Err(_) => {
                 println!("{}", INCORRECT.red());
@@ -97,7 +106,9 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         };
     }
     let filename = crate::inquire::wallet_select()?;
-    let bytes = match read_exact(default_path().join(filename)) {
+    let mut path = default_path().join(filename);
+    path.set_extension(EXTENSION);
+    let bytes = match read_exact(path) {
         Ok(x) => x,
         Err(err) => {
             println!("{}", err.to_string().red());

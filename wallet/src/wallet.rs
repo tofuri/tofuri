@@ -34,7 +34,7 @@ impl Wallet {
     pub async fn select(&mut self) -> bool {
         let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
         if self.key.is_some() {
-            let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Encrypted", "Subkeys"];
+            let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Hex"];
             v.append(&mut vec);
             vec = v;
         };
@@ -78,7 +78,7 @@ impl Wallet {
                 self.key();
                 true
             }
-            "Encrypted" => {
+            "Hex" => {
                 self.data();
                 true
             }

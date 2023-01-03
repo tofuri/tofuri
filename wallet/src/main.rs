@@ -1,6 +1,9 @@
 use clap::Parser;
 use colored::*;
-use pea_wallet::wallet::{Options, Wallet};
+use pea_wallet::{
+    util::{clear, press_any_key_to_continue},
+    wallet::{Options, Wallet},
+};
 use std::error::Error;
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
@@ -18,11 +21,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
     println!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), env!("GIT_HASH").magenta());
     let args = Args::parse();
-    let mut command = Wallet::new(Options { api: args.api });
+    let mut wallet = Wallet::new(Options { api: args.api });
     loop {
-        if command.select().await {
-            Wallet::press_any_key_to_continue();
+        if wallet.inquire_select().await {
+            press_any_key_to_continue();
         }
-        Wallet::clear();
+        clear();
     }
 }

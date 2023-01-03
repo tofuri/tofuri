@@ -1,10 +1,9 @@
-use crate::util::{load, Ciphertext, Nonce, Salt};
+use crate::util::{inquire_address, inquire_amount, inquire_deposit, inquire_fee, inquire_search, inquire_send, load, Ciphertext, Nonce, Salt};
 use colored::*;
-use crossterm::{event, terminal};
-use inquire::{Confirm, CustomType, Select};
+use inquire::{Confirm, Select};
 use pea_address as address;
 use pea_api::{get, post};
-use pea_core::{constants::COIN, util};
+use pea_core::util;
 use pea_key::Key;
 use pea_stake::StakeA;
 use pea_transaction::TransactionA;
@@ -29,7 +28,7 @@ impl Wallet {
             api: options.api,
         }
     }
-    pub async fn select(&mut self) -> bool {
+    pub async fn inquire_select(&mut self) -> bool {
         let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
         if self.key.is_some() {
             let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Encrypted", "Subkeys"];
@@ -85,15 +84,6 @@ impl Wallet {
             }
         }
     }
-    pub fn press_any_key_to_continue() {
-        println!("{}", "Press any key to continue...".magenta().italic());
-        terminal::enable_raw_mode().unwrap();
-        event::read().unwrap();
-        terminal::disable_raw_mode().unwrap();
-    }
-    pub fn clear() {
-        print!("\x1B[2J\x1B[1;1H");
-    }
     fn decrypt(&mut self) {
         let (salt, nonce, ciphertext, key) = load("", "").unwrap();
         self.salt = salt;
@@ -131,65 +121,10 @@ impl Wallet {
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    fn inquire_address() -> String {
-        CustomType::<String>::new("Address:")
-            .with_error_message("Please enter a valid address")
-            .with_help_message("Type the hex encoded address with 0x as prefix")
-            .with_parser(&|x| match address::address::decode(x) {
-                Ok(y) => Ok(address::address::encode(&y)),
-                Err(_) => Err(()),
-            })
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            })
-    }
-    fn inquire_amount() -> u128 {
-        (CustomType::<f64>::new("Amount:")
-            .with_formatter(&|i| format!("{:.18} pea", i))
-            .with_error_message("Please type a valid number")
-            .with_help_message("Type the amount to send using a decimal point as a separator")
-            .with_parser(&|x| match x.parse::<f64>() {
-                Ok(f) => Ok(pea_int::floor((f * COIN as f64) as u128) as f64 / COIN as f64),
-                Err(_) => Err(()),
-            })
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            })
-            * COIN as f64) as u128
-    }
-    fn inquire_fee() -> u128 {
-        CustomType::<u128>::new("Fee:")
-            .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
-            .with_error_message("Please type a valid number")
-            .with_help_message("Type the fee to use in satoshis")
-            .with_parser(&|x| match x.parse::<u128>() {
-                Ok(u) => Ok(pea_int::floor(u)),
-                Err(_) => Err(()),
-            })
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            })
-    }
-    fn inquire_deposit() -> bool {
-        match Select::new(">>", vec!["deposit", "withdraw"]).prompt().unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }) {
-            "deposit" => true,
-            "withdraw" => false,
-            _ => false,
-        }
-    }
     async fn transaction(&self) {
-        let address = Self::inquire_address();
-        let amount = Self::inquire_amount();
-        let fee = Self::inquire_fee();
+        let address = inquire_address();
+        let amount = inquire_amount();
+        let fee = inquire_fee();
         if !match Confirm::new("Send?").prompt() {
             Ok(b) => b,
             Err(err) => {
@@ -213,19 +148,10 @@ impl Wallet {
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    fn inquire_send() -> bool {
-        match Confirm::new("Send?").prompt() {
-            Ok(b) => b,
-            Err(err) => {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            }
-        }
-    }
     async fn stake(&self) {
-        let deposit = Self::inquire_deposit();
-        let fee = Self::inquire_fee();
-        let send = Self::inquire_send();
+        let deposit = inquire_deposit();
+        let fee = inquire_fee();
+        let send = inquire_send();
         if !send {
             return;
         }
@@ -236,27 +162,8 @@ impl Wallet {
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    fn address(&self) {
-        println!("{}", address::address::encode(&self.key.as_ref().unwrap().address_bytes()).green());
-    }
-    fn inquire_search() -> String {
-        CustomType::<String>::new("Search:")
-            .with_error_message("Please enter a valid Address, Hash or Number.")
-            .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
-            .with_parser(&|x| {
-                if address::address::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
-                    return Ok(x.to_string());
-                }
-                Err(())
-            })
-            .prompt()
-            .unwrap_or_else(|err| {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            })
-    }
     async fn search(&self) {
-        let search = Self::inquire_search();
+        let search = inquire_search();
         if address::address::decode(&search).is_ok() {
             match get::balance(&self.api, &search).await {
                 Ok(balance) => match get::balance_staked(&self.api, &search).await {
@@ -289,6 +196,9 @@ impl Wallet {
             };
         }
         println!("{}", "Nothing found".red());
+    }
+    fn address(&self) {
+        println!("{}", address::address::encode(&self.key.as_ref().unwrap().address_bytes()).green());
     }
     fn key(&self) {
         println!("{}", "Are you being watched?".yellow());

@@ -4,8 +4,12 @@ use chacha20poly1305::{
     ChaCha20Poly1305,
 };
 use colored::*;
-use inquire::{validator::Validation, Password, PasswordDisplayMode, Select};
-use pea_core::{constants::EXTENSION, types};
+use crossterm::{event, terminal};
+use inquire::{validator::Validation, Confirm, CustomType, Password, PasswordDisplayMode, Select};
+use pea_core::{
+    constants::{COIN, EXTENSION},
+    types,
+};
 use pea_key::Key;
 use std::{
     error::Error,
@@ -248,4 +252,93 @@ fn inquire_wallet_import() -> Result<Key, Box<dyn Error>> {
             process::exit(0)
         });
     Ok(Key::from_slice(&pea_address::secret::decode(&secret)?))
+}
+pub fn inquire_send() -> bool {
+    match Confirm::new("Send?").prompt() {
+        Ok(b) => b,
+        Err(err) => {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        }
+    }
+}
+pub fn inquire_search() -> String {
+    CustomType::<String>::new("Search:")
+        .with_error_message("Please enter a valid Address, Hash or Number.")
+        .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
+        .with_parser(&|x| {
+            if pea_address::address::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
+                return Ok(x.to_string());
+            }
+            Err(())
+        })
+        .prompt()
+        .unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        })
+}
+pub fn inquire_address() -> String {
+    CustomType::<String>::new("Address:")
+        .with_error_message("Please enter a valid address")
+        .with_help_message("Type the hex encoded address with 0x as prefix")
+        .with_parser(&|x| match pea_address::address::decode(x) {
+            Ok(y) => Ok(pea_address::address::encode(&y)),
+            Err(_) => Err(()),
+        })
+        .prompt()
+        .unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        })
+}
+pub fn inquire_amount() -> u128 {
+    (CustomType::<f64>::new("Amount:")
+        .with_formatter(&|i| format!("{:.18} pea", i))
+        .with_error_message("Please type a valid number")
+        .with_help_message("Type the amount to send using a decimal point as a separator")
+        .with_parser(&|x| match x.parse::<f64>() {
+            Ok(f) => Ok(pea_int::floor((f * COIN as f64) as u128) as f64 / COIN as f64),
+            Err(_) => Err(()),
+        })
+        .prompt()
+        .unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        })
+        * COIN as f64) as u128
+}
+pub fn inquire_fee() -> u128 {
+    CustomType::<u128>::new("Fee:")
+        .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
+        .with_error_message("Please type a valid number")
+        .with_help_message("Type the fee to use in satoshis")
+        .with_parser(&|x| match x.parse::<u128>() {
+            Ok(u) => Ok(pea_int::floor(u)),
+            Err(_) => Err(()),
+        })
+        .prompt()
+        .unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        })
+}
+pub fn inquire_deposit() -> bool {
+    match Select::new(">>", vec!["deposit", "withdraw"]).prompt().unwrap_or_else(|err| {
+        println!("{}", err.to_string().red());
+        process::exit(0)
+    }) {
+        "deposit" => true,
+        "withdraw" => false,
+        _ => false,
+    }
+}
+pub fn press_any_key_to_continue() {
+    println!("{}", "Press any key to continue...".magenta().italic());
+    terminal::enable_raw_mode().unwrap();
+    event::read().unwrap();
+    terminal::disable_raw_mode().unwrap();
+}
+pub fn clear() {
+    print!("\x1B[2J\x1B[1;1H");
 }

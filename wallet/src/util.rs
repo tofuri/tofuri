@@ -84,7 +84,7 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         Ok((salt, nonce, ciphertext, key))
     }
     if filename.is_empty() ^ passphrase.is_empty() {
-        println!("{}", "To use autodecrypt you must specify both --wallet and --passphrase!".red());
+        println!("{}", "To use autodecrypt you must specify both --wallet and --passphrase".red());
         process::exit(0);
     }
     if !filename.is_empty() && !passphrase.is_empty() {
@@ -108,6 +108,8 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
     let filename = crate::inquire::wallet_select()?;
     let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
+    clear();
+    println!("{}", path.to_string_lossy().green());
     let bytes = match read_exact(path) {
         Ok(x) => x,
         Err(err) => {

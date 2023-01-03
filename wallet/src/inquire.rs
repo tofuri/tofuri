@@ -5,7 +5,7 @@ use pea_core::constants::{COIN, EXTENSION};
 use pea_key::Key;
 use std::{error::Error, path::PathBuf, process};
 const GENERATE: &str = "Generate new wallet";
-const IMPORT: &str = "Import existing wallet";
+const IMPORT: &str = "Import wallet";
 pub fn wallet_select() -> Result<String, Box<dyn Error>> {
     let mut filenames = filenames()?;
     filenames.push(GENERATE.to_string());

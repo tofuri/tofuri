@@ -15,8 +15,8 @@ use libp2p::{
 use log::{debug, error, info, warn};
 use pea_core::{constants::BLOCK_TIME_MIN, types, util};
 use pea_db as db;
+use pea_key::Key;
 use pea_time::Time;
-use pea_wallet::Wallet;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use sha2::{Digest, Sha256};
 use std::{
@@ -72,10 +72,10 @@ pub struct Node {
 }
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
-        let wallet = Node::wallet(options.tempkey, options.wallet, options.passphrase);
-        info!("Address {}", pea_address::address::encode(&wallet.key.address_bytes()).green());
+        let key = Node::key(options.tempkey, options.wallet, options.passphrase);
+        info!("Address {}", pea_address::address::encode(&key.address_bytes()).green());
         let db = Node::db(options.tempdb);
-        let blockchain = Blockchain::new(db, wallet.key, options.trust, options.pending, options.time_delta);
+        let blockchain = Blockchain::new(db, key, options.trust, options.pending, options.time_delta);
         let swarm = Node::swarm(options.max_established, options.timeout).await.unwrap();
         let known = Node::known(&blockchain.db, options.peer);
         Node {
@@ -109,10 +109,10 @@ impl Node {
         };
         db::open(path)
     }
-    fn wallet(tempkey: bool, wallet: &str, passphrase: &str) -> Wallet {
+    fn key(tempkey: bool, wallet: &str, passphrase: &str) -> Key {
         match tempkey {
-            true => Wallet::new(),
-            false => Wallet::import(wallet, passphrase).unwrap(),
+            true => Key::generate(),
+            false => pea_wallet::util::load(wallet, passphrase).unwrap().3,
         }
     }
     async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Box<dyn Error>> {

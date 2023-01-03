@@ -1,52 +1,37 @@
-use crate::Wallet;
+use crate::util::{load, Ciphertext, Nonce, Salt};
 use colored::*;
 use crossterm::{event, terminal};
 use inquire::{Confirm, CustomType, Select};
 use pea_address as address;
 use pea_api::{get, post};
-use pea_core::constants::COIN;
+use pea_core::{constants::COIN, util};
+use pea_key::Key;
 use pea_stake::StakeA;
-use pea_time::Time;
 use pea_transaction::TransactionA;
-use std::{process, time::Duration};
+use std::process;
 pub struct Options {
     pub api: String,
-    pub time_api: bool,
 }
-pub struct Command {
+pub struct Wallet {
+    key: Option<Key>,
+    salt: Salt,
+    nonce: Nonce,
+    ciphertext: Ciphertext,
     api: String,
-    pub time_api: bool,
-    wallet: Option<Wallet>,
-    pub time: Time,
 }
-impl Command {
-    pub fn new(options: Options) -> Command {
-        Command {
+impl Wallet {
+    pub fn new(options: Options) -> Wallet {
+        Wallet {
+            key: None,
+            salt: [0; 32],
+            nonce: [0; 12],
+            ciphertext: [0; 48],
             api: options.api,
-            time_api: options.time_api,
-            wallet: None,
-            time: Time::new(),
-        }
-    }
-    pub async fn sync_time(&mut self) {
-        if self.time.sync().await {
-            println!(
-                "Successfully adjusted for time difference. System clock is {} the world clock.",
-                format!(
-                    "{:?} {}",
-                    Duration::from_micros(self.time.diff.abs() as u64),
-                    if self.time.diff.is_negative() { "behind" } else { "ahead of" }
-                )
-                .to_string()
-                .yellow()
-            );
-        } else {
-            println!("{}", "Failed to adjust for time difference!".red());
         }
     }
     pub async fn select(&mut self) -> bool {
         let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
-        if self.wallet.is_some() {
+        if self.key.is_some() {
             let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Encrypted", "Subkeys"];
             v.append(&mut vec);
             vec = v;
@@ -60,39 +45,39 @@ impl Command {
                 false
             }
             "Search" => {
-                Self::search(&self.api).await;
+                self.search().await;
                 true
             }
             "Height" => {
-                Self::height(&self.api).await;
+                self.height().await;
                 true
             }
             "API" => {
-                Self::api(&self.api).await;
+                self.api().await;
                 true
             }
             "Address" => {
-                Self::address(self.wallet.as_ref().unwrap());
+                self.address();
                 true
             }
             "Balance" => {
-                Self::balance(&self.api, &address::address::encode(&self.wallet.as_ref().unwrap().key.address_bytes())).await;
+                self.balance().await;
                 true
             }
             "Send" => {
-                self.transaction(self.wallet.as_ref().unwrap()).await;
+                self.transaction().await;
                 true
             }
             "Stake" => {
-                self.stake(self.wallet.as_ref().unwrap()).await;
+                self.stake().await;
                 true
             }
             "Secret" => {
-                Self::key(self.wallet.as_ref().unwrap());
+                self.key();
                 true
             }
             "Encrypted" => {
-                Self::data(self.wallet.as_ref().unwrap());
+                self.data();
                 true
             }
             _ => {
@@ -110,14 +95,18 @@ impl Command {
         print!("\x1B[2J\x1B[1;1H");
     }
     fn decrypt(&mut self) {
-        self.wallet = Some(Wallet::import("", "").unwrap());
+        let (salt, nonce, ciphertext, key) = load("", "").unwrap();
+        self.salt = salt;
+        self.nonce = nonce;
+        self.ciphertext = ciphertext;
+        self.key = Some(key);
     }
-    async fn api(api: &str) {
-        match get::index(api).await {
+    async fn api(&self) {
+        match get::index(&self.api).await {
             Ok(info) => println!("{}", info.green()),
             Err(err) => println!("{}", err.to_string().red()),
         };
-        match get::sync(api).await {
+        match get::sync(&self.api).await {
             Ok(sync) => {
                 println!("Synchronize {}", sync.status.yellow());
                 println!("Height {}", sync.height.to_string().yellow());
@@ -126,17 +115,18 @@ impl Command {
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    async fn balance(api: &str, address: &str) {
-        match get::balance(api, address).await {
-            Ok(balance) => match get::balance_staked(api, address).await {
+    async fn balance(&self) {
+        let address = address::address::encode(&self.key.as_ref().unwrap().address_bytes());
+        match get::balance(&self.api, &address).await {
+            Ok(balance) => match get::balance_staked(&self.api, &address).await {
                 Ok(balance_staked) => println!("Account balance: {}, locked: {}", balance.yellow(), balance_staked.yellow()),
                 Err(err) => println!("{}", err.to_string().red()),
             },
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    async fn height(api: &str) {
-        match get::height(api).await {
+    async fn height(&self) {
+        match get::height(&self.api).await {
             Ok(height) => println!("Latest block height is {}.", height.to_string().yellow()),
             Err(err) => println!("{}", err.to_string().red()),
         };
@@ -196,7 +186,7 @@ impl Command {
             _ => false,
         }
     }
-    async fn transaction(&self, wallet: &Wallet) {
+    async fn transaction(&self) {
         let address = Self::inquire_address();
         let amount = Self::inquire_amount();
         let fee = Self::inquire_fee();
@@ -213,8 +203,8 @@ impl Command {
             address::address::decode(&address).unwrap(),
             amount,
             fee,
-            self.time.timestamp_secs(),
-            &wallet.key,
+            util::timestamp(),
+            self.key.as_ref().unwrap(),
         )
         .unwrap();
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
@@ -232,22 +222,22 @@ impl Command {
             }
         }
     }
-    async fn stake(&self, wallet: &Wallet) {
+    async fn stake(&self) {
         let deposit = Self::inquire_deposit();
         let fee = Self::inquire_fee();
         let send = Self::inquire_send();
         if !send {
             return;
         }
-        let stake_a = StakeA::sign(deposit, fee, self.time.timestamp_secs(), &wallet.key).unwrap();
+        let stake_a = StakeA::sign(deposit, fee, util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
         match post::stake(&self.api, &stake_a.b()).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
             Err(err) => println!("{}", err.to_string().red()),
         };
     }
-    fn address(wallet: &Wallet) {
-        println!("{}", address::address::encode(&wallet.key.address_bytes()).green());
+    fn address(&self) {
+        println!("{}", address::address::encode(&self.key.as_ref().unwrap().address_bytes()).green());
     }
     fn inquire_search() -> String {
         CustomType::<String>::new("Search:")
@@ -265,28 +255,34 @@ impl Command {
                 process::exit(0)
             })
     }
-    async fn search(api: &str) {
+    async fn search(&self) {
         let search = Self::inquire_search();
         if address::address::decode(&search).is_ok() {
-            Self::balance(api, &search).await;
+            match get::balance(&self.api, &search).await {
+                Ok(balance) => match get::balance_staked(&self.api, &search).await {
+                    Ok(balance_staked) => println!("Address found\nAccount balance: {}, locked: {}", balance.yellow(), balance_staked.yellow()),
+                    Err(err) => println!("{}", err.to_string().red()),
+                },
+                Err(err) => println!("{}", err.to_string().red()),
+            };
             return;
         } else if search.len() == 64 {
-            if let Ok(block) = get::block(api, &search).await {
-                println!("{:?}", block);
+            if let Ok(block) = get::block(&self.api, &search).await {
+                println!("Block found\n{:?}", block);
                 return;
             };
-            if let Ok(transaction) = get::transaction(api, &search).await {
-                println!("{:?}", transaction);
+            if let Ok(transaction) = get::transaction(&self.api, &search).await {
+                println!("Transaction found\n{:?}", transaction);
                 return;
             };
-            if let Ok(stake) = get::stake(api, &search).await {
-                println!("{:?}", stake);
+            if let Ok(stake) = get::stake(&self.api, &search).await {
+                println!("Stake found\n{:?}", stake);
                 return;
             };
         } else if search.parse::<usize>().is_ok() {
-            if let Ok(hash) = get::hash(api, &search.parse::<usize>().unwrap()).await {
-                if let Ok(block) = get::block(api, &hash).await {
-                    println!("{:?}", block);
+            if let Ok(hash) = get::hash(&self.api, &search.parse::<usize>().unwrap()).await {
+                if let Ok(block) = get::block(&self.api, &hash).await {
+                    println!("Block found{:?}", block);
                     return;
                 };
                 return;
@@ -294,7 +290,7 @@ impl Command {
         }
         println!("{}", "Nothing found".red());
     }
-    fn key(wallet: &Wallet) {
+    fn key(&self) {
         println!("{}", "Are you being watched?".yellow());
         println!("{}", "Never share your secret key!".yellow());
         println!("{}", "Anyone who has it can access your funds from anywhere.".italic());
@@ -306,15 +302,15 @@ impl Command {
                 process::exit(0)
             }
         } {
-            println!("{}", address::secret::encode(&wallet.key.secret_key_bytes()).red());
+            println!("{}", address::secret::encode(&self.key.as_ref().unwrap().secret_key_bytes()).red());
         }
     }
-    fn data(wallet: &Wallet) {
+    fn data(&self) {
         println!(
             "{}{}{}",
-            hex::encode(&wallet.salt).red(),
-            hex::encode(&wallet.nonce).red(),
-            hex::encode(&wallet.ciphertext).red()
+            hex::encode(&self.salt).red(),
+            hex::encode(&self.nonce).red(),
+            hex::encode(&self.ciphertext).red()
         );
     }
 }

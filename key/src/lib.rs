@@ -1,7 +1,7 @@
 use pea_core::{types, util};
 use secp256k1::{
     ecdsa::{RecoverableSignature, RecoveryId},
-    rand, Message, PublicKey, SecretKey, SECP256K1,
+    Message, PublicKey, SecretKey, SECP256K1,
 };
 use std::error::Error;
 use vrf::openssl::{CipherSuite, ECVRF};

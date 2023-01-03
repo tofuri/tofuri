@@ -2996,6 +2996,7 @@ version = "0.3.0"
 dependencies = [
  "hex",
  "pea-core",
+ "rand 0.8.5",
  "secp256k1",
  "vrf",
 ]
@@ -3080,6 +3081,7 @@ dependencies = [
  "pea-stake",
  "pea-time",
  "pea-transaction",
+ "rand 0.8.5",
  "tokio",
  "zxcvbn",
 ]

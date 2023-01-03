@@ -1,7 +1,6 @@
 #![feature(test)]
 extern crate test;
 use pea_key::Key;
-use secp256k1::rand;
 use test::Bencher;
 #[bench]
 fn sign(b: &mut Bencher) {

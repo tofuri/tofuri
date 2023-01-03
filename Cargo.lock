@@ -3079,7 +3079,6 @@ dependencies = [
  "pea-int",
  "pea-key",
  "pea-stake",
- "pea-time",
  "pea-transaction",
  "rand 0.8.5",
  "tokio",

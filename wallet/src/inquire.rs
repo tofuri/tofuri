@@ -10,24 +10,24 @@ pub fn wallet_select() -> Result<String, Box<dyn Error>> {
     let mut filenames = filenames()?;
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());
-    let name = Select::new(">>", filenames.to_vec()).prompt().unwrap_or_else(|err| {
+    let filename = Select::new(">>", filenames.to_vec()).prompt().unwrap_or_else(|err| {
         println!("{}", err.to_string().red());
         process::exit(0)
     });
-    if name.as_str() == GENERATE {
-        let name = wallet_name()?;
+    if filename.as_str() == GENERATE {
+        let filename = wallet_name()?;
         let key = Key::generate();
         let (salt, nonce, ciphertext) = encrypt(&key)?;
-        save(salt, nonce, ciphertext, &name)?;
-        return Ok(name);
-    } else if name.as_str() == IMPORT {
+        save(salt, nonce, ciphertext, &filename)?;
+        return Ok(filename);
+    } else if filename.as_str() == IMPORT {
         let key = wallet_import()?;
-        let name = wallet_name()?;
+        let filename = wallet_name()?;
         let (salt, nonce, ciphertext) = encrypt(&key)?;
-        save(salt, nonce, ciphertext, &name)?;
-        return Ok(name);
+        save(salt, nonce, ciphertext, &filename)?;
+        return Ok(filename);
     };
-    Ok(name)
+    Ok(filename)
 }
 pub fn wallet_name() -> Result<String, Box<dyn Error>> {
     let filenames = filenames()?;

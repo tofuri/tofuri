@@ -23,7 +23,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     let mut wallet = Wallet::new(Options { api: args.api });
     loop {
-        if wallet.inquire_select().await {
+        if wallet.select().await {
             press_any_key_to_continue();
         }
         clear();

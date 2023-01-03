@@ -1,4 +1,7 @@
-use crate::util::{inquire_address, inquire_amount, inquire_deposit, inquire_fee, inquire_search, inquire_send, load, Ciphertext, Nonce, Salt};
+use crate::{
+    inquire::{address, amount, deposit, fee, search, send},
+    util::{load, Ciphertext, Nonce, Salt},
+};
 use colored::*;
 use inquire::{Confirm, Select};
 use pea_address as address;
@@ -28,7 +31,7 @@ impl Wallet {
             api: options.api,
         }
     }
-    pub async fn inquire_select(&mut self) -> bool {
+    pub async fn select(&mut self) -> bool {
         let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
         if self.key.is_some() {
             let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Encrypted", "Subkeys"];
@@ -122,9 +125,9 @@ impl Wallet {
         };
     }
     async fn transaction(&self) {
-        let address = inquire_address();
-        let amount = inquire_amount();
-        let fee = inquire_fee();
+        let address = address();
+        let amount = amount();
+        let fee = fee();
         if !match Confirm::new("Send?").prompt() {
             Ok(b) => b,
             Err(err) => {
@@ -149,9 +152,9 @@ impl Wallet {
         };
     }
     async fn stake(&self) {
-        let deposit = inquire_deposit();
-        let fee = inquire_fee();
-        let send = inquire_send();
+        let deposit = deposit();
+        let fee = fee();
+        let send = send();
         if !send {
             return;
         }
@@ -163,7 +166,7 @@ impl Wallet {
         };
     }
     async fn search(&self) {
-        let search = inquire_search();
+        let search = search();
         if address::address::decode(&search).is_ok() {
             match get::balance(&self.api, &search).await {
                 Ok(balance) => match get::balance_staked(&self.api, &search).await {

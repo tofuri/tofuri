@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use libp2p::Multiaddr;
 use log::error;
 use pea_address as address;
-use pea_core::types;
+use pea_core::{types, util};
 use pea_db as db;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
@@ -143,10 +143,8 @@ fn get_index() -> Result<String, Box<dyn Error>> {
     )))
 }
 fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    let timestamp = (node.time.timestamp_micros() * 1_000) as i64;
-    let datetime = Utc.timestamp_nanos(timestamp);
     Ok(json(serde_json::to_string(&types::api::Info {
-        time: datetime.to_rfc2822(),
+        time: Utc.timestamp_nanos(chrono::offset::Utc::now().timestamp_micros() * 1_000).to_rfc2822(),
         address: address::address::encode(&node.blockchain.key.address_bytes()),
         uptime: format!("{}", node.uptime()),
         heartbeats: node.heartbeats,
@@ -167,7 +165,7 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
     let mut random_queue = vec![];
     for n in 0..8 {
-        if let Some(address) = dynamic.staker_n(node.time.timestamp_secs(), n) {
+        if let Some(address) = dynamic.staker_n(util::timestamp(), n) {
             random_queue.push(address::address::encode(address));
         }
     }
@@ -199,7 +197,6 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
         host: node.host.clone(),
         tempdb: node.tempdb,
         tempkey: node.tempkey,
-        time_api: node.time_api,
         dev: node.dev,
     })?))
 }
@@ -362,7 +359,7 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
             .ok_or("POST TRANSACTION 2")?,
     )?)?;
     let data = bincode::serialize(&transaction_b).unwrap();
-    let status = match node.blockchain.pending_transactions_push(transaction_b, node.time.timestamp_secs()) {
+    let status = match node.blockchain.pending_transactions_push(transaction_b, util::timestamp()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("transaction") {
                 node.gossipsub_publish("transaction", data);
@@ -381,7 +378,7 @@ fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Er
         buffer.lines().last().ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
     )?)?;
     let data = bincode::serialize(&stake_b).unwrap();
-    let status = match node.blockchain.pending_stakes_push(stake_b, node.time.timestamp_secs()) {
+    let status = match node.blockchain.pending_stakes_push(stake_b, util::timestamp()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("stake") {
                 node.gossipsub_publish("stake", data);

@@ -12,11 +12,10 @@ use libp2p::{
     swarm::{ConnectionHandlerUpgrErr, ConnectionLimits, SwarmBuilder, SwarmEvent},
     tcp, Multiaddr, PeerId, Swarm, Transport,
 };
-use log::{debug, error, info, warn};
+use log::{debug, error, info};
 use pea_core::{constants::BLOCK_TIME_MIN, types, util};
 use pea_db as db;
 use pea_key::Key;
-use pea_time::Time;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use sha2::{Digest, Sha256};
 use std::{
@@ -65,8 +64,6 @@ pub struct Node {
     pub max_established: Option<u32>,
     pub tempdb: bool,
     pub tempkey: bool,
-    pub time: Time,
-    pub time_api: bool,
     pub dev: bool,
     pub timeout: u64,
 }
@@ -95,8 +92,6 @@ impl Node {
             max_established: options.max_established,
             tempdb: options.tempdb,
             tempkey: options.tempkey,
-            time: Time::new(),
-            time_api: options.time_api,
             dev: options.dev,
             timeout: options.timeout,
         }
@@ -201,26 +196,7 @@ impl Node {
             _ => {}
         }
     }
-    pub async fn sync_time(&mut self) {
-        if self.time.sync().await {
-            info!(
-                "Successfully adjusted for time difference. System clock is {} the world clock.",
-                format!(
-                    "{:?} {}",
-                    Duration::from_micros(self.time.diff.abs() as u64),
-                    if self.time.diff.is_negative() { "behind" } else { "ahead of" }
-                )
-                .to_string()
-                .yellow()
-            );
-        } else {
-            warn!("{}", "Failed to adjust for time difference!".red());
-        }
-    }
     pub async fn start(&mut self) {
-        if self.time_api {
-            self.sync_time().await;
-        }
         self.blockchain.load();
         info!(
             "Blockchain height is {}",
@@ -323,7 +299,7 @@ impl Node {
             return "never".to_string();
         }
         let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let diff = self.time.timestamp_secs().saturating_sub(timestamp);
+        let diff = util::timestamp().saturating_sub(timestamp);
         let now = "just now";
         let mut string = util::duration_to_string(diff, now);
         if string != now {
@@ -340,7 +316,7 @@ impl Node {
             return "waiting to start".to_string();
         }
         let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let mut diff = self.time.timestamp_secs().saturating_sub(timestamp) as f32;
+        let mut diff = util::timestamp().saturating_sub(timestamp) as f32;
         diff /= BLOCK_TIME_MIN as f32;
         diff /= self.blockchain.sync.bps;
         let mut string = util::duration_to_string(diff as u32, completed);

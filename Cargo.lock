@@ -2902,7 +2902,6 @@ dependencies = [
  "pea-key",
  "pea-logger",
  "pea-stake",
- "pea-time",
  "pea-transaction",
  "pea-tree",
  "pea-wallet",
@@ -3024,16 +3023,6 @@ dependencies = [
  "serde",
  "serde-big-array",
  "sha2 0.10.6",
-]
-
-[[package]]
-name = "pea-time"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "reqwest",
- "serde",
- "tokio",
 ]
 
 [[package]]

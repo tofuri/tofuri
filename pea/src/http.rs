@@ -20,7 +20,7 @@ lazy_static! {
 }
 pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, String), Box<dyn Error>> {
     let mut buffer = [0; 1024];
-    let bytes = timeout(Duration::from_millis(node.timeout), stream.read(&mut buffer)).await??;
+    let bytes = timeout(Duration::from_millis(1), stream.read(&mut buffer)).await??;
     let first = buffer.lines().next().ok_or("next line")??;
     let vec: Vec<&str> = first.split(' ').collect();
     let method = vec.get(0).ok_or("method")?;

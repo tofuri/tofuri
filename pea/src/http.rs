@@ -8,7 +8,6 @@ use pea_core::{types, util};
 use pea_db as db;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
-use regex::Regex;
 use std::{error::Error, io::BufRead, time::Duration};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -16,94 +15,107 @@ use tokio::{
     time::timeout,
 };
 lazy_static! {
-    static ref GET: Regex = Regex::new(r"^GET .* HTTP/1.1$").unwrap();
-    static ref POST: Regex = Regex::new(r"^POST .* HTTP/1.1$").unwrap();
-    static ref INDEX: Regex = Regex::new(r" / ").unwrap();
-    static ref INFO: Regex = Regex::new(r" /info ").unwrap();
-    static ref SYNC: Regex = Regex::new(r" /sync ").unwrap();
-    static ref DYNAMIC: Regex = Regex::new(r" /dynamic ").unwrap();
-    static ref TRUSTED: Regex = Regex::new(r" /trusted ").unwrap();
-    static ref OPTIONS: Regex = Regex::new(r" /options ").unwrap();
-    static ref BALANCE: Regex = Regex::new(r" /balance/0[xX][0-9A-Fa-f]* ").unwrap();
-    static ref BALANCE_STAKED: Regex = Regex::new(r" /balance_staked/0[xX][0-9A-Fa-f]* ").unwrap();
-    static ref HEIGHT: Regex = Regex::new(r" /height ").unwrap();
-    static ref HEIGHT_BY_HASH: Regex = Regex::new(r" /height/[0-9A-Fa-f]* ").unwrap();
-    static ref BLOCK_LATEST: Regex = Regex::new(r" /block/latest ").unwrap();
-    static ref HASH_BY_HEIGHT: Regex = Regex::new(r" /hash/[0-9]* ").unwrap();
-    static ref BLOCK_BY_HASH: Regex = Regex::new(r" /block/[0-9A-Fa-f]* ").unwrap();
-    static ref TRANSACTION_BY_HASH: Regex = Regex::new(r" /transaction/[0-9A-Fa-f]* ").unwrap();
-    static ref STAKE_BY_HASH: Regex = Regex::new(r" /stake/[0-9A-Fa-f]* ").unwrap();
-    static ref TRANSACTION: Regex = Regex::new(r" /transaction ").unwrap();
     static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&TransactionB::default()).unwrap()).len();
-    static ref STAKE: Regex = Regex::new(r" /stake ").unwrap();
     static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&StakeB::default()).unwrap()).len();
-    static ref PEERS: Regex = Regex::new(r" /peers ").unwrap();
-    static ref PEER: Regex = Regex::new(r" /peer/.* ").unwrap();
 }
 pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, String), Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let bytes = timeout(Duration::from_millis(node.timeout), stream.read(&mut buffer)).await??;
-    let first = buffer.lines().next().ok_or("http request first line")??;
+    let first = buffer.lines().next().ok_or("next line")??;
+    let vec: Vec<&str> = first.split(' ').collect();
+    let method = vec.get(0).ok_or("method")?;
+    let path = vec.get(1).ok_or("path")?;
+    let args: Vec<&str> = path.split("/").filter(|&x| x != "").collect();
     write(
         &mut stream,
-        if GET.is_match(&first) {
-            get(node, &first)
-        } else if POST.is_match(&first) {
-            post(node, &first, &buffer)
-        } else {
-            c405()
+        match *method {
+            "GET" => get(node, args),
+            "POST" => post(node, args, &buffer),
+            _ => c405(),
         }?,
     )
     .await?;
     stream.flush().await?;
     Ok((bytes, first))
 }
-fn get(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    if INDEX.is_match(first) {
-        get_index()
-    } else if INFO.is_match(first) {
-        get_info(node)
-    } else if SYNC.is_match(first) {
-        get_sync(node)
-    } else if DYNAMIC.is_match(first) {
-        get_dynamic(node)
-    } else if TRUSTED.is_match(first) {
-        get_trusted(node)
-    } else if OPTIONS.is_match(first) {
-        get_options(node)
-    } else if BALANCE.is_match(first) {
-        get_balance(node, first)
-    } else if BALANCE_STAKED.is_match(first) {
-        get_staked_balance(node, first)
-    } else if HEIGHT.is_match(first) {
-        get_height(node)
-    } else if HEIGHT_BY_HASH.is_match(first) {
-        get_height_by_hash(node, first)
-    } else if BLOCK_LATEST.is_match(first) {
-        get_block_latest(node)
-    } else if HASH_BY_HEIGHT.is_match(first) {
-        get_hash_by_height(node, first)
-    } else if BLOCK_BY_HASH.is_match(first) {
-        get_block_by_hash(node, first)
-    } else if TRANSACTION_BY_HASH.is_match(first) {
-        get_transaction_by_hash(node, first)
-    } else if STAKE_BY_HASH.is_match(first) {
-        get_stake_by_hash(node, first)
-    } else if PEERS.is_match(first) {
-        get_peers(node)
-    } else if PEER.is_match(first) {
-        get_peer(node, first)
-    } else {
-        c404()
+fn get(node: &mut Node, args: Vec<&str>) -> Result<String, Box<dyn Error>> {
+    match args.get(0) {
+        Some(a) => match *a {
+            "info" => get_info(node),
+            "sync" => get_sync(node),
+            "dynamic" => get_dynamic(node),
+            "trusted" => get_trusted(node),
+            "options" => get_options(node),
+            "balance" => match args.get(1) {
+                Some(b) => match address::address::decode(b) {
+                    Ok(c) => get_balance(node, c),
+                    Err(_) => c400(),
+                },
+                None => c400(),
+            },
+            "balance_staked" => match args.get(1) {
+                Some(b) => match address::address::decode(b) {
+                    Ok(c) => get_balance_staked(node, c),
+                    Err(_) => c400(),
+                },
+                None => c400(),
+            },
+            "height" => match args.get(1) {
+                Some(b) => match hex::decode(b) {
+                    Ok(c) => get_hash_height(node, c),
+                    Err(_) => c400(),
+                },
+                None => get_height(node),
+            },
+            "hash" => match args.get(1) {
+                Some(b) => match b.parse::<usize>() {
+                    Ok(c) => get_height_hash(node, c),
+                    Err(_) => c400(),
+                },
+                None => get_height(node),
+            },
+            "block" => match args.get(1) {
+                Some(b) => match *b {
+                    "latest" => get_block_latest(node),
+                    c => match hex::decode(c) {
+                        Ok(d) => get_block_by_hash(node, d),
+                        Err(_) => c400(),
+                    },
+                },
+                None => c400(),
+            },
+            "transaction" => match args.get(1) {
+                Some(b) => match hex::decode(b) {
+                    Ok(c) => get_transaction_by_hash(node, c),
+                    Err(_) => c400(),
+                },
+                None => c400(),
+            },
+            "stake" => match args.get(1) {
+                Some(b) => match hex::decode(b) {
+                    Ok(c) => get_stake_by_hash(node, c),
+                    Err(_) => c400(),
+                },
+                None => c400(),
+            },
+            "peer" => match args.get(1..) {
+                Some(b) => get_peer(node, b),
+                None => c400(),
+            },
+            "peers" => get_peers(node),
+            _ => c404(),
+        },
+        None => get_index(),
     }
 }
-fn post(node: &mut Node, first: &str, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    if TRANSACTION.is_match(first) {
-        post_transaction(node, buffer)
-    } else if STAKE.is_match(first) {
-        post_stake(node, buffer)
-    } else {
-        c404()
+fn post(node: &mut Node, args: Vec<&str>, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
+    match args.get(0) {
+        Some(a) => match *a {
+            "transaction" => post_transaction(node, buffer),
+            "stake" => post_stake(node, buffer),
+            _ => c404(),
+        },
+        None => c400(),
     }
 }
 async fn write(stream: &mut TcpStream, string: String) -> Result<(), Box<dyn Error>> {
@@ -200,38 +212,19 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
         dev: node.dev,
     })?))
 }
-fn get_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let address = address::address::decode(BALANCE.find(first).ok_or("GET BALANCE 1")?.as_str().trim().get(9..).ok_or("GET BALANCE 2")?)?;
-    let balance = node.blockchain.states.dynamic.balance(&address);
+fn get_balance(node: &mut Node, address_bytes: types::AddressBytes) -> Result<String, Box<dyn Error>> {
+    let balance = node.blockchain.states.dynamic.balance(&address_bytes);
     Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
 }
-fn get_staked_balance(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let address = address::address::decode(
-        BALANCE_STAKED
-            .find(first)
-            .ok_or("GET BALANCE_STAKED 1")?
-            .as_str()
-            .trim()
-            .get(16..)
-            .ok_or("GET BALANCE_STAKED 2")?,
-    )?;
-    let balance = node.blockchain.states.dynamic.balance_staked(&address);
+fn get_balance_staked(node: &mut Node, address_bytes: types::AddressBytes) -> Result<String, Box<dyn Error>> {
+    let balance = node.blockchain.states.dynamic.balance_staked(&address_bytes);
     Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
 }
 fn get_height(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let height = node.blockchain.height();
     Ok(json(serde_json::to_string(&height)?))
 }
-fn get_height_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let hash = hex::decode(
-        HEIGHT_BY_HASH
-            .find(first)
-            .ok_or("GET HEIGHT_BY_HASH 1")?
-            .as_str()
-            .trim()
-            .get(8..)
-            .ok_or("GET HEIGHT_BY_HASH 2")?,
-    )?;
+fn get_hash_height(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let block_c = db::block::get_c(&node.blockchain.db, &hash)?;
     let height = node.blockchain.tree.height(&block_c.previous_hash);
     Ok(json(serde_json::to_string(&height)?))
@@ -250,20 +243,12 @@ fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
         stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     })?))
 }
-fn get_hash_by_height(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let height = HASH_BY_HEIGHT
-        .find(first)
-        .ok_or("GET HASH_BY_HEIGHT 1")?
-        .as_str()
-        .trim()
-        .get(6..)
-        .ok_or("GET HASH_BY_HEIGHT 2")?
-        .parse::<usize>()?;
+fn get_height_hash(node: &mut Node, height: usize) -> Result<String, Box<dyn Error>> {
     let states = &node.blockchain.states;
     let hashes_trusted = &states.trusted.hashes;
     let hashes_dynamic = &states.dynamic.hashes;
     if height >= hashes_trusted.len() + hashes_dynamic.len() {
-        return Err("GET HASH_BY_HEIGHT 3".into());
+        return Err("GET HEIGHT_HASH".into());
     }
     let hash = if height < hashes_trusted.len() {
         hashes_trusted[height]
@@ -272,16 +257,7 @@ fn get_hash_by_height(node: &mut Node, first: &str) -> Result<String, Box<dyn Er
     };
     Ok(json(serde_json::to_string(&hex::encode(hash))?))
 }
-fn get_block_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let hash = hex::decode(
-        BLOCK_BY_HASH
-            .find(first)
-            .ok_or("GET BLOCK_BY_HASH 1")?
-            .as_str()
-            .trim()
-            .get(7..)
-            .ok_or("GET BLOCK_BY_HASH 2")?,
-    )?;
+fn get_block_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let block_a = db::block::get_a(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Block {
         hash: hex::encode(block_a.hash),
@@ -295,16 +271,7 @@ fn get_block_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Err
         stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     })?))
 }
-fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let hash = hex::decode(
-        TRANSACTION_BY_HASH
-            .find(first)
-            .ok_or("GET TRANSACTION_BY_HASH 1")?
-            .as_str()
-            .trim()
-            .get(13..)
-            .ok_or("GET TRANSACTION_BY_HASH 2")?,
-    )?;
+fn get_transaction_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let transaction_a = db::transaction::get_a(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Transaction {
         hash: hex::encode(transaction_a.hash),
@@ -316,16 +283,7 @@ fn get_transaction_by_hash(node: &mut Node, first: &str) -> Result<String, Box<d
         signature: hex::encode(transaction_a.signature),
     })?))
 }
-fn get_stake_by_hash(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let hash = hex::decode(
-        STAKE_BY_HASH
-            .find(first)
-            .ok_or("GET STAKE_BY_HASH 1")?
-            .as_str()
-            .trim()
-            .get(7..)
-            .ok_or("GET STAKE_BY_HASH 2")?,
-    )?;
+fn get_stake_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let stake_a = db::stake::get_a(&node.blockchain.db, &hash)?;
     Ok(json(serde_json::to_string(&types::api::Stake {
         hash: hex::encode(stake_a.hash),
@@ -340,10 +298,8 @@ fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let peers: Vec<&Multiaddr> = node.connections.keys().collect();
     Ok(json(serde_json::to_string(&peers)?))
 }
-fn get_peer(node: &mut Node, first: &str) -> Result<String, Box<dyn Error>> {
-    let str = first.get(9..).ok_or("multiaddr 1")?;
-    let str = str.get(..str.len() - 9).ok_or("multiaddr 2")?;
-    let multiaddr = str.parse::<Multiaddr>()?;
+fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
+    let multiaddr = format!("/{}", slice.join("/")).parse::<Multiaddr>()?;
     let multiaddr = multiaddr::filter_ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
     let string = multiaddr.to_string();
     node.unknown.insert(multiaddr);
@@ -391,6 +347,9 @@ fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Er
         }
     };
     Ok(json(serde_json::to_string(&status)?))
+}
+fn c400() -> Result<String, Box<dyn Error>> {
+    Ok("HTTP/1.1 400 Bad Request".to_string())
 }
 fn c404() -> Result<String, Box<dyn Error>> {
     Ok("HTTP/1.1 404 Not Found".to_string())

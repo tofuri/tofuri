@@ -2905,7 +2905,6 @@ dependencies = [
  "pea-transaction",
  "pea-tree",
  "pea-wallet",
- "regex",
  "rocksdb",
  "serde",
  "serde_json",

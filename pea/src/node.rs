@@ -65,7 +65,6 @@ pub struct Node {
     pub tempdb: bool,
     pub tempkey: bool,
     pub dev: bool,
-    pub timeout: u64,
 }
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
@@ -93,7 +92,6 @@ impl Node {
             tempdb: options.tempdb,
             tempkey: options.tempkey,
             dev: options.dev,
-            timeout: options.timeout,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

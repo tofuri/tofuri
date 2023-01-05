@@ -18,8 +18,11 @@ lazy_static! {
     static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&TransactionB::default()).unwrap()).len();
     static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&StakeB::default()).unwrap()).len();
 }
-fn parse_body(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
-    Ok(buffer.lines().last().ok_or("empty body")??)
+fn parse_body(buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
+    let str = std::str::from_utf8(buffer)?;
+    let vec = str.split("\n\n").collect::<Vec<&str>>();
+    let body = vec.get(1).ok_or("empty body")?;
+    Ok(body.to_string())
 }
 fn parse_request_line(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
     Ok(buffer.lines().next().ok_or("empty request line")??)

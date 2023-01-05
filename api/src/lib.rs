@@ -68,8 +68,7 @@ pub mod get {
         Ok(serde_json::from_str(&request(api, Method::GET, &format!("/block/{}", hash), None).await?)?)
     }
     pub async fn latest_block(api: &str) -> Result<types::api::Block, Box<dyn Error>> {
-        let string = request(api, Method::GET, "/block/latest", None).await?;
-        Ok(serde_json::from_str(&string)?)
+        Ok(serde_json::from_str(&request(api, Method::GET, "/block/latest", None).await?)?)
     }
     pub async fn transaction(api: &str, hash: &str) -> Result<types::api::Transaction, Box<dyn Error>> {
         Ok(serde_json::from_str(

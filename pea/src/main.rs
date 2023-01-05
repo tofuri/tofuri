@@ -79,6 +79,20 @@ async fn main() {
     println!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), env!("GIT_HASH").magenta());
     let mut args = Args::parse();
     logger::init(args.debug);
+    if args.dev {
+        if args.tempdb == TEMP_DB {
+            args.tempdb = DEV_TEMP_DB;
+        }
+        if args.tempkey == TEMP_KEY {
+            args.tempkey = DEV_TEMP_KEY;
+        }
+        if args.bind_api == BIND_API {
+            args.bind_api = DEV_BIND_API.to_string();
+        }
+        if args.host == HOST {
+            args.host = DEV_HOST.to_string();
+        }
+    }
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
@@ -98,18 +112,6 @@ async fn main() {
     info!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
     if args.dev {
         warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
-        if args.tempdb == TEMP_DB {
-            args.tempdb = DEV_TEMP_DB;
-        }
-        if args.tempkey == TEMP_KEY {
-            args.tempkey = DEV_TEMP_KEY;
-        }
-        if args.bind_api == BIND_API {
-            args.bind_api = DEV_BIND_API.to_string();
-        }
-        if args.host == HOST {
-            args.host = DEV_HOST.to_string();
-        }
     }
     let mut node = Node::new(Options {
         tempdb: args.tempdb,

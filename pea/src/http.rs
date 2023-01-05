@@ -18,11 +18,17 @@ lazy_static! {
     static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&TransactionB::default()).unwrap()).len();
     static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&StakeB::default()).unwrap()).len();
 }
+fn parse_body(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
+    Ok(buffer.lines().last().ok_or("empty body")??)
+}
+fn parse_request_line(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
+    Ok(buffer.lines().last().ok_or("empty request line")??)
+}
 pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, String), Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buffer)).await??;
-    let first = buffer.lines().next().ok_or("next line")??;
-    let vec: Vec<&str> = first.split(' ').collect();
+    let request_line = parse_request_line(&buffer)?;
+    let vec: Vec<&str> = request_line.split(' ').collect();
     let method = vec.get(0).ok_or("method")?;
     let path = vec.get(1).ok_or("path")?;
     let args: Vec<&str> = path.split("/").filter(|&x| x != "").collect();
@@ -30,13 +36,13 @@ pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, S
         &mut stream,
         match *method {
             "GET" => get(node, args),
-            "POST" => post(node, args, &buffer),
+            "POST" => post(node, args, parse_body(&buffer)?),
             _ => c405(),
         }?,
     )
     .await?;
     stream.flush().await?;
-    Ok((bytes, first))
+    Ok((bytes, request_line))
 }
 fn get(node: &mut Node, args: Vec<&str>) -> Result<String, Box<dyn Error>> {
     match args.get(0) {
@@ -108,11 +114,11 @@ fn get(node: &mut Node, args: Vec<&str>) -> Result<String, Box<dyn Error>> {
         None => get_index(),
     }
 }
-fn post(node: &mut Node, args: Vec<&str>, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
+fn post(node: &mut Node, args: Vec<&str>, body: String) -> Result<String, Box<dyn Error>> {
     match args.get(0) {
         Some(a) => match *a {
-            "transaction" => post_transaction(node, buffer),
-            "stake" => post_stake(node, buffer),
+            "transaction" => post_transaction(node, body),
+            "stake" => post_stake(node, body),
             _ => c404(),
         },
         None => c400(),
@@ -305,15 +311,8 @@ fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
     node.unknown.insert(multiaddr);
     Ok(text(string))
 }
-fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let transaction_b: TransactionB = bincode::deserialize(&hex::decode(
-        buffer
-            .lines()
-            .last()
-            .ok_or("POST TRANSACTION 1")??
-            .get(0..*TRANSACTION_SERIALIZED)
-            .ok_or("POST TRANSACTION 2")?,
-    )?)?;
+fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
+    let transaction_b: TransactionB = bincode::deserialize(&hex::decode(body.get(0..*TRANSACTION_SERIALIZED).ok_or("POST TRANSACTION")?)?)?;
     let data = bincode::serialize(&transaction_b).unwrap();
     let status = match node.blockchain.pending_transactions_push(transaction_b, util::timestamp()) {
         Ok(()) => {
@@ -329,10 +328,8 @@ fn post_transaction(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<
     };
     Ok(json(serde_json::to_string(&status)?))
 }
-fn post_stake(node: &mut Node, buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let stake_b: StakeB = bincode::deserialize(&hex::decode(
-        buffer.lines().last().ok_or("POST STAKE 1")??.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE 2")?,
-    )?)?;
+fn post_stake(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
+    let stake_b: StakeB = bincode::deserialize(&hex::decode(body.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE")?)?)?;
     let data = bincode::serialize(&stake_b).unwrap();
     let status = match node.blockchain.pending_stakes_push(stake_b, util::timestamp()) {
         Ok(()) => {

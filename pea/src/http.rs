@@ -22,7 +22,7 @@ fn parse_body(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
     Ok(buffer.lines().last().ok_or("empty body")??)
 }
 fn parse_request_line(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
-    Ok(buffer.lines().last().ok_or("empty request line")??)
+    Ok(buffer.lines().next().ok_or("empty request line")??)
 }
 pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, String), Box<dyn Error>> {
     let mut buffer = [0; 1024];

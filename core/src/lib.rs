@@ -1,4 +1,4 @@
-pub type CompressedAmount = [u8; AMOUNT_BYTES];
+pub type AmountBytes = [u8; AMOUNT_BYTES];
 pub type Hash = [u8; 32];
 pub type Checksum = [u8; 4];
 pub type MerkleRoot = [u8; 32];

@@ -7,7 +7,7 @@ use std::error::Error;
 pub trait Stake {
     fn get_timestamp(&self) -> u32;
     fn get_deposit(&self) -> bool;
-    fn get_fee_bytes(&self) -> CompressedAmount;
+    fn get_fee_bytes(&self) -> AmountBytes;
     fn hash(&self) -> Hash;
     fn hash_input(&self) -> [u8; 9];
 }
@@ -18,7 +18,7 @@ impl Stake for StakeA {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee_bytes(&self) -> CompressedAmount {
+    fn get_fee_bytes(&self) -> AmountBytes {
         pea_int::to_be_bytes(self.fee)
     }
     fn hash(&self) -> Hash {
@@ -35,7 +35,7 @@ impl Stake for StakeB {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee_bytes(&self) -> CompressedAmount {
+    fn get_fee_bytes(&self) -> AmountBytes {
         self.fee
     }
     fn hash(&self) -> Hash {
@@ -57,7 +57,7 @@ pub struct StakeA {
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StakeB {
-    pub fee: CompressedAmount,
+    pub fee: AmountBytes,
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]

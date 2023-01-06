@@ -7,8 +7,8 @@ use std::error::Error;
 pub trait Transaction {
     fn get_output_address(&self) -> &AddressBytes;
     fn get_timestamp(&self) -> u32;
-    fn get_amount_bytes(&self) -> CompressedAmount;
-    fn get_fee_bytes(&self) -> CompressedAmount;
+    fn get_amount_bytes(&self) -> AmountBytes;
+    fn get_fee_bytes(&self) -> AmountBytes;
     fn hash(&self) -> Hash;
     fn hash_input(&self) -> [u8; 32];
 }
@@ -19,10 +19,10 @@ impl Transaction for TransactionA {
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount_bytes(&self) -> CompressedAmount {
+    fn get_amount_bytes(&self) -> AmountBytes {
         pea_int::to_be_bytes(self.amount)
     }
-    fn get_fee_bytes(&self) -> CompressedAmount {
+    fn get_fee_bytes(&self) -> AmountBytes {
         pea_int::to_be_bytes(self.fee)
     }
     fn hash(&self) -> Hash {
@@ -39,10 +39,10 @@ impl Transaction for TransactionB {
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount_bytes(&self) -> CompressedAmount {
+    fn get_amount_bytes(&self) -> AmountBytes {
         self.amount
     }
-    fn get_fee_bytes(&self) -> CompressedAmount {
+    fn get_fee_bytes(&self) -> AmountBytes {
         self.fee
     }
     fn hash(&self) -> Hash {
@@ -66,8 +66,8 @@ pub struct TransactionA {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransactionB {
     pub output_address: AddressBytes,
-    pub amount: CompressedAmount,
-    pub fee: CompressedAmount,
+    pub amount: AmountBytes,
+    pub fee: AmountBytes,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: SignatureBytes,

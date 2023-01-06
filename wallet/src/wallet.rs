@@ -1,6 +1,6 @@
 use crate::{
     inquire::{address, amount, deposit, fee, search, send},
-    util::{load, Ciphertext, Nonce, Salt},
+    util::{self, Ciphertext, Nonce, Salt},
 };
 use colored::*;
 use inquire::{Confirm, Select};
@@ -10,9 +10,6 @@ use pea_key::Key;
 use pea_stake::StakeA;
 use pea_transaction::TransactionA;
 use std::process;
-pub fn timestamp() -> u32 {
-    chrono::offset::Utc::now().timestamp() as u32
-}
 pub struct Options {
     pub api: String,
 }
@@ -90,7 +87,7 @@ impl Wallet {
         }
     }
     fn decrypt(&mut self) {
-        let (salt, nonce, ciphertext, key) = load("", "").unwrap();
+        let (salt, nonce, ciphertext, key) = util::load("", "").unwrap();
         self.salt = salt;
         self.nonce = nonce;
         self.ciphertext = ciphertext;
@@ -143,7 +140,7 @@ impl Wallet {
             address::address::decode(&address).unwrap(),
             amount,
             fee,
-            timestamp(),
+            util::timestamp(),
             self.key.as_ref().unwrap(),
         )
         .unwrap();
@@ -160,7 +157,7 @@ impl Wallet {
         if !send {
             return;
         }
-        let stake_a = StakeA::sign(deposit, fee, timestamp(), self.key.as_ref().unwrap()).unwrap();
+        let stake_a = StakeA::sign(deposit, fee, util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
         match post::stake(&self.api, &stake_a.b()).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),

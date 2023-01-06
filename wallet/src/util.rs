@@ -14,6 +14,9 @@ use std::{
     path::Path,
     process,
 };
+pub fn timestamp() -> u32 {
+    chrono::offset::Utc::now().timestamp() as u32
+}
 const INCORRECT: &str = "Incorrect passphrase";
 pub type Salt = [u8; 32];
 pub type Nonce = [u8; 12];

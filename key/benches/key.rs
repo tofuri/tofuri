@@ -16,12 +16,14 @@ fn recover(b: &mut Bencher) {
     b.iter(|| Key::recover(&hash, &signature_bytes).unwrap());
 }
 #[bench]
+#[cfg(feature = "vrf")]
 fn prove(b: &mut Bencher) {
     let key = Key::generate();
     let alpha: [u8; 32] = rand::random();
     b.iter(|| key.vrf_prove(&alpha).unwrap());
 }
 #[bench]
+#[cfg(feature = "vrf")]
 fn proof_to_hash(b: &mut Bencher) {
     let key = Key::generate();
     let alpha: [u8; 32] = rand::random();
@@ -29,6 +31,7 @@ fn proof_to_hash(b: &mut Bencher) {
     b.iter(|| Key::vrf_proof_to_hash(&pi).unwrap());
 }
 #[bench]
+#[cfg(feature = "vrf")]
 fn verify(b: &mut Bencher) {
     let key = Key::generate();
     let alpha: [u8; 32] = rand::random();

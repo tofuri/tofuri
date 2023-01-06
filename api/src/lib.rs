@@ -1,7 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use serde::{Deserialize, Serialize};
 pub type Index = String;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Info {

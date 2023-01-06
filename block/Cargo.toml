@@ -7,11 +7,11 @@ description = "エンドウ"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]
-pea-address = { path = "../address" }
-pea-core = { path = "../core" }
-pea-key = { path = "../key", features = ["vrf"]}
-pea-stake = { path = "../stake" }
-pea-transaction = { path = "../transaction" }
+pea-address = { version = "0.6", path = "../address" }
+pea-core = { version = "0.6", path = "../core" }
+pea-key = { version = "0.6", path = "../key", features = ["vrf"]}
+pea-stake = { version = "0.7", path = "../stake" }
+pea-transaction = { version = "0.8", path = "../transaction" }
 serde = { version = "1.0.137", features = ["derive"] }
 serde-big-array = "0.4.1"
 sha2 = "0.10.6"

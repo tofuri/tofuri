@@ -7,10 +7,10 @@ description = "エンドウ"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]
-pea-address = { path = "../address" }
-pea-int = { path = "../int" }
-pea-core = { path = "../core" }
-pea-key = { path = "../key" }
+pea-address = { version = "0.6", path = "../address" }
+pea-int = { version = "0.4", path = "../int" }
+pea-core = { version = "0.6", path = "../core" }
+pea-key = { version = "0.6", path = "../key" }
 serde = { version = "1.0.137", features = ["derive"] }
 serde-big-array = "0.4.1"
 sha2 = "0.10.6"

@@ -7,8 +7,8 @@ description = "エンドウ"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]
-pea-stake = { path = "../stake" }
-pea-transaction = { path = "../transaction" }
+pea-stake = { version = "0.7", path = "../stake" }
+pea-transaction = { version = "0.8", path = "../transaction" }
 serde = { version = "1.0.137", features = ["derive"] }
 tokio = { version = "1.23.0", features = ["full"] }
 serde_json = "1.0.82"

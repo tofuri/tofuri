@@ -7,12 +7,12 @@ description = "エンドウ"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]
-pea-int = { path = "../int" }
-pea-block = { path = "../block" }
-pea-core = { path = "../core" }
-pea-stake = { path = "../stake" }
-pea-transaction = { path = "../transaction" }
-pea-tree = { path = "../tree" }
+pea-int = { version = "0.4", path = "../int" }
+pea-block = { version = "0.6", path = "../block" }
+pea-core = { version = "0.6", path = "../core" }
+pea-stake = { version = "0.7", path = "../stake" }
+pea-transaction = { version = "0.8", path = "../transaction" }
+pea-tree = { version = "0.4", path = "../tree" }
 rocksdb = "0.19.0"
 bincode = "1.3.3"
 tempdir = "0.3.7"

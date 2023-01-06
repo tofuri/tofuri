@@ -1,20 +1,18 @@
 [package]
 name = "pea-db"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
 repository = "https://github.com/peacash/peacash"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-pea-int = { version = "0.3.0", path = "../int" }
-pea-block = { version = "0.5.0", path = "../block" }
-pea-core = { version = "0.5.0", path = "../core" }
-pea-stake = { version = "0.6.0", path = "../stake" }
-pea-transaction = { version = "0.7.0", path = "../transaction" }
-pea-tree = { version = "0.3.0", path = "../tree" }
+pea-int = { version = "0.4.0", path = "../int" }
+pea-block = { version = "0.6.0", path = "../block" }
+pea-core = { version = "0.6.0", path = "../core" }
+pea-stake = { version = "0.7.0", path = "../stake" }
+pea-transaction = { version = "0.8.0", path = "../transaction" }
+pea-tree = { version = "0.4.0", path = "../tree" }
 rocksdb = "0.19.0"
 bincode = "1.3.3"
 tempdir = "0.3.7"

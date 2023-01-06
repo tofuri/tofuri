@@ -97,7 +97,7 @@ impl StakeB {
             None => self.input_address()?,
         };
         Ok(StakeA {
-            fee: pea_int::from_be_bytes(&self.fee),
+            fee: pea_int::from_be_slice(&self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,

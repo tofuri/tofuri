@@ -2846,6 +2846,9 @@ dependencies = [
 [[package]]
 name = "pea-int"
 version = "0.3.0"
+dependencies = [
+ "pea-core",
+]
 
 [[package]]
 name = "pea-key"

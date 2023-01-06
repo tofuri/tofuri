@@ -109,8 +109,8 @@ impl TransactionB {
         };
         Ok(TransactionA {
             output_address: self.output_address,
-            amount: pea_int::from_be_bytes(&self.amount),
-            fee: pea_int::from_be_bytes(&self.fee),
+            amount: pea_int::from_be_slice(&self.amount),
+            fee: pea_int::from_be_slice(&self.fee),
             timestamp: self.timestamp,
             signature: self.signature,
             input_address,

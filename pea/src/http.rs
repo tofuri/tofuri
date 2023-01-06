@@ -224,11 +224,11 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
 }
 fn get_balance(node: &mut Node, address_bytes: AddressBytes) -> Result<String, Box<dyn Error>> {
     let balance = node.blockchain.states.dynamic.balance(&address_bytes);
-    Ok(json(serde_json::to_string(&pea_int::to_string(balance, DECIMAL_PLACES))?))
+    Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
 }
 fn get_balance_staked(node: &mut Node, address_bytes: AddressBytes) -> Result<String, Box<dyn Error>> {
     let balance = node.blockchain.states.dynamic.balance_staked(&address_bytes);
-    Ok(json(serde_json::to_string(&pea_int::to_string(balance, DECIMAL_PLACES))?))
+    Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
 }
 fn get_height(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let height = node.blockchain.height();
@@ -287,8 +287,8 @@ fn get_transaction_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box
         hash: hex::encode(transaction_a.hash),
         input_address: address::address::encode(&transaction_a.input_address),
         output_address: address::address::encode(&transaction_a.output_address),
-        amount: pea_int::to_string(transaction_a.amount, DECIMAL_PLACES),
-        fee: pea_int::to_string(transaction_a.fee, DECIMAL_PLACES),
+        amount: pea_int::to_string(transaction_a.amount),
+        fee: pea_int::to_string(transaction_a.fee),
         timestamp: transaction_a.timestamp,
         signature: hex::encode(transaction_a.signature),
     })?))
@@ -298,7 +298,7 @@ fn get_stake_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn E
     Ok(json(serde_json::to_string(&api::Stake {
         hash: hex::encode(stake_a.hash),
         address: address::address::encode(&stake_a.input_address),
-        fee: pea_int::to_string(stake_a.fee, DECIMAL_PLACES),
+        fee: pea_int::to_string(stake_a.fee),
         deposit: stake_a.deposit,
         timestamp: stake_a.timestamp,
         signature: hex::encode(stake_a.signature),

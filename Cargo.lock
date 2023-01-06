@@ -2878,7 +2878,7 @@ dependencies = [
 
 [[package]]
 name = "pea-stake"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "bincode",
  "hex",
@@ -2893,7 +2893,7 @@ dependencies = [
 
 [[package]]
 name = "pea-transaction"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "bincode",
  "hex",

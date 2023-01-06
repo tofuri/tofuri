@@ -16,7 +16,7 @@ pea-block = { version = "0.6.0", path = "../block" }
 pea-core = { version = "0.6.0", path = "../core" }
 pea-db = { version = "0.7.0", path = "../db" }
 pea-logger = { version = "0.1.1", path = "../logger" }
-pea-key = { version = "0.6.0", path = "../key" }
+pea-key = { version = "0.6.1", path = "../key" }
 pea-stake = { version = "0.7.0", path = "../stake" }
 pea-transaction = { version = "0.8.0", path = "../transaction" }
 pea-tree = { version = "0.4.0", path = "../tree" }

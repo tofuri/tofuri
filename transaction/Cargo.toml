@@ -1,6 +1,6 @@
 [package]
 name = "pea-transaction"
-version = "0.8.1"
+version = "0.8.2"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
@@ -10,7 +10,7 @@ repository = "https://github.com/peacash/peacash"
 pea-address = { version = "0.6.0", path = "../address" }
 pea-int = { version = "0.4.0", path = "../int" }
 pea-core = { version = "0.6.0", path = "../core" }
-pea-key = { version = "0.6.0", path = "../key" }
+pea-key = { version = "0.6.1", path = "../key" }
 serde = { version = "1.0.137", features = ["derive"] }
 serde-big-array = "0.4.1"
 sha2 = "0.10.6"

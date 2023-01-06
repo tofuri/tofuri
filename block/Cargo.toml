@@ -1,6 +1,6 @@
 [package]
 name = "pea-block"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
@@ -9,7 +9,7 @@ repository = "https://github.com/peacash/peacash"
 [dependencies]
 pea-address = { version = "0.6.0", path = "../address" }
 pea-core = { version = "0.6.0", path = "../core" }
-pea-key = { version = "0.6.0", path = "../key", features = ["vrf"]}
+pea-key = { version = "0.6.1", path = "../key", features = ["vrf"]}
 pea-stake = { version = "0.7.1", path = "../stake" }
 pea-transaction = { version = "0.8.1", path = "../transaction" }
 serde = { version = "1.0.137", features = ["derive"] }

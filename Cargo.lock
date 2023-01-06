@@ -2808,7 +2808,7 @@ dependencies = [
 
 [[package]]
 name = "pea-block"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "merkle-cbt",
  "pea-address",
@@ -2849,9 +2849,8 @@ dependencies = [
 
 [[package]]
 name = "pea-key"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
- "hex",
  "pea-core",
  "rand 0.8.5",
  "secp256k1",
@@ -2871,7 +2870,7 @@ dependencies = [
 
 [[package]]
 name = "pea-stake"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "pea-address",
  "pea-core",
@@ -2884,7 +2883,7 @@ dependencies = [
 
 [[package]]
 name = "pea-transaction"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "pea-address",
  "pea-core",
@@ -2901,7 +2900,7 @@ version = "0.4.0"
 
 [[package]]
 name = "pea-wallet"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "argon2",
  "chacha20poly1305 0.10.1",

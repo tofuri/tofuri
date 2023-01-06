@@ -7,17 +7,6 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::error::Error;
-pub struct Hasher;
-impl Merge for Hasher {
-    type Item = [u8; 32];
-    fn merge(left: &Self::Item, right: &Self::Item) -> Self::Item {
-        let mut hasher = Sha256::new();
-        hasher.update(left);
-        hasher.update(right);
-        hasher.finalize().into()
-    }
-}
-pub type CBMT = ExCBMT<[u8; 32], Hasher>;
 pub trait Block {
     fn get_previous_hash(&self) -> &Hash;
     fn get_merkle_root_transaction(&self) -> MerkleRoot;
@@ -329,6 +318,17 @@ fn hash_input<T: Block>(block: &T) -> [u8; 181] {
     bytes
 }
 fn merkle_root(hashes: &[Hash]) -> MerkleRoot {
+    struct Hasher;
+    impl Merge for Hasher {
+        type Item = [u8; 32];
+        fn merge(left: &Self::Item, right: &Self::Item) -> Self::Item {
+            let mut hasher = Sha256::new();
+            hasher.update(left);
+            hasher.update(right);
+            hasher.finalize().into()
+        }
+    }
+    type CBMT = ExCBMT<[u8; 32], Hasher>;
     CBMT::build_merkle_root(hashes)
 }
 fn beta<T: Block>(block: &T) -> Result<Beta, Box<dyn Error>> {

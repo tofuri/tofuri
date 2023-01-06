@@ -1,6 +1,7 @@
 use crate::util::{encrypt, filenames, save};
 use colored::*;
 use inquire::{validator::Validation, Confirm, CustomType, Password, PasswordDisplayMode, Select};
+use pea_address::address;
 use pea_core::*;
 use pea_key::Key;
 use std::{error::Error, path::PathBuf, process};
@@ -143,7 +144,7 @@ pub fn search() -> String {
         .with_error_message("Please enter a valid Address, Hash or Number.")
         .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
         .with_parser(&|x| {
-            if pea_address::address::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
+            if address::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
                 return Ok(x.to_string());
             }
             Err(())
@@ -158,8 +159,8 @@ pub fn address() -> String {
     CustomType::<String>::new("Address:")
         .with_error_message("Please enter a valid address")
         .with_help_message("Type the hex encoded address with 0x as prefix")
-        .with_parser(&|x| match pea_address::address::decode(x) {
-            Ok(y) => Ok(pea_address::address::encode(&y)),
+        .with_parser(&|x| match address::decode(x) {
+            Ok(y) => Ok(address::encode(&y)),
             Err(_) => Err(()),
         })
         .prompt()

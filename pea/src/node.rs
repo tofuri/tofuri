@@ -13,6 +13,7 @@ use libp2p::{
     tcp, Multiaddr, PeerId, Swarm, Transport,
 };
 use log::{debug, error, info};
+use pea_address::address;
 use pea_core::*;
 use pea_db as db;
 use pea_key::Key;
@@ -69,7 +70,7 @@ pub struct Node {
 impl Node {
     pub async fn new(options: Options<'_>) -> Node {
         let key = Node::key(options.tempkey, options.wallet, options.passphrase);
-        info!("Address {}", pea_address::address::encode(&key.address_bytes()).green());
+        info!("Address {}", address::encode(&key.address_bytes()).green());
         let db = Node::db(options.tempdb);
         let blockchain = Blockchain::new(db, key, options.trust, options.pending, options.time_delta);
         let swarm = Node::swarm(options.max_established, options.timeout).await.unwrap();

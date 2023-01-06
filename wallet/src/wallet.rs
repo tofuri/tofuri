@@ -4,7 +4,7 @@ use crate::{
 };
 use colored::*;
 use inquire::{Confirm, Select};
-use pea_address as address;
+use pea_address::{address, secret};
 use pea_api::{get, post};
 use pea_key::Key;
 use pea_stake::StakeA;
@@ -108,7 +108,7 @@ impl Wallet {
         };
     }
     async fn balance(&self) {
-        let address = address::address::encode(&self.key.as_ref().unwrap().address_bytes());
+        let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
         match get::balance(&self.api, &address).await {
             Ok(balance) => match get::balance_staked(&self.api, &address).await {
                 Ok(balance_staked) => println!("Account balance: {}, locked: {}", balance.yellow(), balance_staked.yellow()),
@@ -136,14 +136,7 @@ impl Wallet {
         } {
             return;
         }
-        let transaction_a = TransactionA::sign(
-            address::address::decode(&address).unwrap(),
-            amount,
-            fee,
-            util::timestamp(),
-            self.key.as_ref().unwrap(),
-        )
-        .unwrap();
+        let transaction_a = TransactionA::sign(address::decode(&address).unwrap(), amount, fee, util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
         match post::transaction(&self.api, &transaction_a.b()).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
@@ -166,7 +159,7 @@ impl Wallet {
     }
     async fn search(&self) {
         let search = search();
-        if address::address::decode(&search).is_ok() {
+        if address::decode(&search).is_ok() {
             match get::balance(&self.api, &search).await {
                 Ok(balance) => match get::balance_staked(&self.api, &search).await {
                     Ok(balance_staked) => println!("Address found\nAccount balance: {}, locked: {}", balance.yellow(), balance_staked.yellow()),
@@ -200,7 +193,7 @@ impl Wallet {
         println!("{}", "Nothing found".red());
     }
     fn address(&self) {
-        println!("{}", address::address::encode(&self.key.as_ref().unwrap().address_bytes()).green());
+        println!("{}", address::encode(&self.key.as_ref().unwrap().address_bytes()).green());
     }
     fn key(&self) {
         println!("{}", "Are you being watched?".yellow());
@@ -214,7 +207,7 @@ impl Wallet {
                 process::exit(0)
             }
         } {
-            println!("{}", address::secret::encode(&self.key.as_ref().unwrap().secret_key_bytes()).red());
+            println!("{}", secret::encode(&self.key.as_ref().unwrap().secret_key_bytes()).red());
         }
     }
     fn data(&self) {

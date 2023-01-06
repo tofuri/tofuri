@@ -2,6 +2,7 @@ use crate::{multiaddr, node::Node, util};
 use colored::*;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
+use pea_address::address;
 use pea_block::BlockA;
 use pea_core::*;
 use std::time::Duration;
@@ -72,7 +73,7 @@ fn offline_staker(node: &mut Node, timestamp: u32) {
                 return;
             }
         }
-        warn!("Banned offline staker {}", pea_address::address::encode(&address).green());
+        warn!("Banned offline staker {}", address::encode(&address).green());
     }
 }
 fn dial_known(node: &mut Node) {

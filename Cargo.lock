@@ -2791,6 +2791,7 @@ name = "pea-address"
 version = "0.5.0"
 dependencies = [
  "hex",
+ "pea-core",
  "sha2 0.10.6",
 ]
 

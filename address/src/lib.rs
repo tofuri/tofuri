@@ -1,9 +1,6 @@
+use pea_core::*;
 use sha2::{Digest, Sha256};
 use std::error::Error;
-pub type AddressBytes = [u8; 20];
-pub type SecretKeyBytes = [u8; 32];
-pub const PREFIX_ADDRESS: &str = "0x";
-pub const PREFIX_SECRET_KEY: &str = "SECRETx";
 pub fn checksum(bytes: &[u8]) -> [u8; 4] {
     let mut hasher = Sha256::new();
     hasher.update(bytes);

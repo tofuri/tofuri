@@ -9,5 +9,6 @@ repository = "https://github.com/peacash/peacash"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+pea-core = { version = "0.5.0", path = "../core" }
 hex = "0.4.3"
 sha2 = "0.10.6"

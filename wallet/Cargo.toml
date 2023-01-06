@@ -16,15 +16,15 @@ pea-api = { version = "0.6", path = "../api" }
 pea-key = { version = "0.6", path = "../key" }
 pea-stake = { version = "0.7", path = "../stake" }
 pea-transaction = { version = "0.8", path = "../transaction" }
-chacha20poly1305 = "0.10.1"
-inquire = "0.3.0"
-colored = "2.0.0"
-argon2 = "0.4.1"
-zxcvbn = "2.2.1"
-chrono = "0.4.23"
-hex = "0.4.3"
-crossterm = "0.25.0"
-log = "0.4.17"
-tokio = { version = "1.23.0", features = ["full"] }
-clap = { version = "3.2.6", features = ["derive"] }
-rand = "0.8.5"
+chacha20poly1305 = "0.10"
+inquire = "0.3"
+colored = "2.0"
+argon2 = "0.4"
+zxcvbn = "2.2"
+chrono = "0.4"
+hex = "0.4"
+crossterm = "0.25"
+log = "0.4"
+tokio = { version = "1.24", features = ["full"] }
+clap = { version = "3.2", features = ["derive"] }
+rand = "0.8"

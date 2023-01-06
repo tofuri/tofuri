@@ -22,3 +22,4 @@ pub const BLOCK_TIME_MAX: u32 = BLOCK_TIME_MIN + TIME_DELTA;
 pub const EXTENSION: &str = "pea";
 pub const AMOUNT_BYTES: usize = 4;
 pub const GENESIS_BETA: Beta = [0; 32];
+pub const RECOVERY_ID: i32 = 0;

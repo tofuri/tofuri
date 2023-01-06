@@ -1,3 +1,4 @@
+use pea_core::*;
 use secp256k1::{
     ecdsa::{RecoverableSignature, RecoveryId},
     Message, PublicKey, SecretKey, SECP256K1,
@@ -9,16 +10,6 @@ use vrf::{
     openssl::{CipherSuite, ECVRF},
     VRF,
 };
-#[cfg(feature = "vrf")]
-type Pi = [u8; 81];
-#[cfg(feature = "vrf")]
-type Beta = [u8; 32];
-type SecretKeyBytes = [u8; 32];
-type PublicKeyBytes = [u8; 33];
-type AddressBytes = [u8; 20];
-type SignatureBytes = [u8; 64];
-type Hash = [u8; 32];
-const RECOVERY_ID: i32 = 0;
 #[derive(Debug)]
 pub struct Key {
     pub secret_key: SecretKey,

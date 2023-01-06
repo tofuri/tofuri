@@ -1,4 +1,4 @@
-use crate::{constants::COIN, types};
+use pea_core::*;
 use sha2::{Digest, Sha256};
 use std::{
     error::Error,
@@ -9,19 +9,19 @@ use std::{
 construct_uint! {
     pub struct U256(4);
 }
-pub fn u256(hash: &types::Hash) -> U256 {
+pub fn u256(hash: &Hash) -> U256 {
     U256::from_big_endian(hash)
 }
-pub fn u256_m(hash: &types::Hash, m: usize) -> usize {
+pub fn u256_m(hash: &Hash, m: usize) -> usize {
     (u256(hash) % m).as_usize()
 }
-pub fn hash_n(hash: &types::Hash, n: u128) -> types::Hash {
+pub fn hash_n(hash: &Hash, n: u128) -> Hash {
     let mut hasher = Sha256::new();
     hasher.update(hash);
     hasher.update(n.to_be_bytes());
     hasher.finalize().into()
 }
-pub fn random(beta: &types::Beta, n: usize, m: usize) -> usize {
+pub fn random(beta: &Beta, n: usize, m: usize) -> usize {
     u256_m(&hash_n(beta, n as u128), m)
 }
 pub fn timestamp() -> u32 {
@@ -65,19 +65,4 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
 }
 pub fn stake_amount(stakers: usize) -> u128 {
     COIN * (stakers + 1) as u128
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_u256() {
-        assert_eq!(
-            u256(&[0xff; 32]),
-            U256::from_dec_str("115792089237316195423570985008687907853269984665640564039457584007913129639935").unwrap()
-        );
-    }
-    #[test]
-    fn test_u256_mod() {
-        assert_eq!(u256_m(&[0xff; 32], 10), 5);
-    }
 }

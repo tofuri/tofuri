@@ -1,4 +1,4 @@
-use pea_core::{constants::AMOUNT_BYTES, types};
+use pea_core::*;
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -7,8 +7,8 @@ use std::error::Error;
 pub trait Stake {
     fn get_timestamp(&self) -> u32;
     fn get_deposit(&self) -> bool;
-    fn get_fee_bytes(&self) -> types::CompressedAmount;
-    fn hash(&self) -> types::Hash;
+    fn get_fee_bytes(&self) -> CompressedAmount;
+    fn hash(&self) -> Hash;
     fn hash_input(&self) -> [u8; 9];
 }
 impl Stake for StakeA {
@@ -18,10 +18,10 @@ impl Stake for StakeA {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee_bytes(&self) -> types::CompressedAmount {
+    fn get_fee_bytes(&self) -> CompressedAmount {
         pea_int::to_be_bytes(self.fee)
     }
-    fn hash(&self) -> types::Hash {
+    fn hash(&self) -> Hash {
         hash(self)
     }
     fn hash_input(&self) -> [u8; 9] {
@@ -35,10 +35,10 @@ impl Stake for StakeB {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee_bytes(&self) -> types::CompressedAmount {
+    fn get_fee_bytes(&self) -> CompressedAmount {
         self.fee
     }
-    fn hash(&self) -> types::Hash {
+    fn hash(&self) -> Hash {
         hash(self)
     }
     fn hash_input(&self) -> [u8; 9] {
@@ -51,17 +51,17 @@ pub struct StakeA {
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
-    pub input_address: types::AddressBytes,
-    pub hash: types::Hash,
+    pub signature: SignatureBytes,
+    pub input_address: AddressBytes,
+    pub hash: Hash,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StakeB {
-    pub fee: types::CompressedAmount,
+    pub fee: CompressedAmount,
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
+    pub signature: SignatureBytes,
 }
 impl StakeA {
     pub fn b(&self) -> StakeB {
@@ -72,7 +72,7 @@ impl StakeA {
             signature: self.signature,
         }
     }
-    pub fn hash(&self) -> types::Hash {
+    pub fn hash(&self) -> Hash {
         hash(self)
     }
     pub fn sign(deposit: bool, fee: u128, timestamp: u32, key: &Key) -> Result<StakeA, Box<dyn Error>> {
@@ -91,7 +91,7 @@ impl StakeA {
     }
 }
 impl StakeB {
-    pub fn a(&self, input_address: Option<types::AddressBytes>) -> Result<StakeA, Box<dyn Error>> {
+    pub fn a(&self, input_address: Option<AddressBytes>) -> Result<StakeA, Box<dyn Error>> {
         let input_address = match input_address {
             Some(x) => x,
             None => self.input_address()?,
@@ -105,17 +105,17 @@ impl StakeB {
             hash: self.hash(),
         })
     }
-    pub fn hash(&self) -> types::Hash {
+    pub fn hash(&self) -> Hash {
         hash(self)
     }
-    fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+    fn input_address(&self) -> Result<AddressBytes, Box<dyn Error>> {
         Ok(Key::address(&self.input_public_key()?))
     }
-    fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
+    fn input_public_key(&self) -> Result<PublicKeyBytes, Box<dyn Error>> {
         Ok(Key::recover(&self.hash(), &self.signature)?)
     }
 }
-fn hash<T: Stake>(stake: &T) -> types::Hash {
+fn hash<T: Stake>(stake: &T) -> Hash {
     let mut hasher = Sha256::new();
     hasher.update(&stake.hash_input());
     hasher.finalize().into()

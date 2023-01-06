@@ -1,7 +1,7 @@
 use crate::{
     behaviour::{Behaviour, OutEvent},
     blockchain::Blockchain,
-    gossipsub, heartbeat, http, multiaddr,
+    gossipsub, heartbeat, http, multiaddr, util,
 };
 use colored::*;
 use libp2p::{
@@ -13,7 +13,7 @@ use libp2p::{
     tcp, Multiaddr, PeerId, Swarm, Transport,
 };
 use log::{debug, error, info};
-use pea_core::{constants::BLOCK_TIME_MIN, types, util};
+use pea_core::*;
 use pea_db as db;
 use pea_key::Key;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
@@ -50,7 +50,7 @@ pub struct Options<'a> {
 pub struct Node {
     pub swarm: Swarm<Behaviour>,
     pub blockchain: Blockchain,
-    pub message_data_hashes: Vec<types::Hash>,
+    pub message_data_hashes: Vec<Hash>,
     pub heartbeats: usize,
     pub lag: f64,
     pub tps: f64,

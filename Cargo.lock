@@ -2782,6 +2782,7 @@ dependencies = [
  "sha2 0.10.6",
  "tempdir",
  "tokio",
+ "uint",
  "void",
 ]
 
@@ -2826,15 +2827,6 @@ dependencies = [
 [[package]]
 name = "pea-core"
 version = "0.5.0"
-dependencies = [
- "bincode",
- "chrono",
- "hex",
- "serde",
- "serde-big-array",
- "sha2 0.10.6",
- "uint",
-]
 
 [[package]]
 name = "pea-db"

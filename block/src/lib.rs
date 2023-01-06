@@ -1,5 +1,5 @@
 use merkle_cbt::{merkle_tree::Merge, CBMT as ExCBMT};
-use pea_core::{constants::COIN, types};
+use pea_core::*;
 use pea_key::Key;
 use pea_stake::{StakeA, StakeB};
 use pea_transaction::{TransactionA, TransactionB};
@@ -19,103 +19,103 @@ impl Merge for Hasher {
 }
 pub type CBMT = ExCBMT<[u8; 32], Hasher>;
 pub trait Block {
-    fn get_previous_hash(&self) -> &types::Hash;
-    fn get_merkle_root_transaction(&self) -> types::MerkleRoot;
-    fn get_merkle_root_stake(&self) -> types::MerkleRoot;
+    fn get_previous_hash(&self) -> &Hash;
+    fn get_merkle_root_transaction(&self) -> MerkleRoot;
+    fn get_merkle_root_stake(&self) -> MerkleRoot;
     fn get_timestamp(&self) -> u32;
-    fn get_pi(&self) -> &types::Pi;
-    fn hash(&self) -> types::Hash;
+    fn get_pi(&self) -> &Pi;
+    fn hash(&self) -> Hash;
     fn hash_input(&self) -> [u8; 181];
-    fn beta(&self) -> Result<types::Beta, Box<dyn Error>>;
+    fn beta(&self) -> Result<Beta, Box<dyn Error>>;
 }
 impl Block for BlockA {
-    fn get_previous_hash(&self) -> &types::Hash {
+    fn get_previous_hash(&self) -> &Hash {
         &self.previous_hash
     }
-    fn get_merkle_root_transaction(&self) -> types::MerkleRoot {
+    fn get_merkle_root_transaction(&self) -> MerkleRoot {
         merkle_root(&self.transaction_hashes())
     }
-    fn get_merkle_root_stake(&self) -> types::MerkleRoot {
+    fn get_merkle_root_stake(&self) -> MerkleRoot {
         merkle_root(&self.stake_hashes())
     }
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_pi(&self) -> &types::Pi {
+    fn get_pi(&self) -> &Pi {
         &self.pi
     }
-    fn hash(&self) -> types::Hash {
+    fn hash(&self) -> Hash {
         hash(self)
     }
     fn hash_input(&self) -> [u8; 181] {
         hash_input(self)
     }
-    fn beta(&self) -> Result<types::Beta, Box<dyn Error>> {
+    fn beta(&self) -> Result<Beta, Box<dyn Error>> {
         beta(self)
     }
 }
 impl Block for BlockB {
-    fn get_previous_hash(&self) -> &types::Hash {
+    fn get_previous_hash(&self) -> &Hash {
         &self.previous_hash
     }
-    fn get_merkle_root_transaction(&self) -> types::MerkleRoot {
+    fn get_merkle_root_transaction(&self) -> MerkleRoot {
         merkle_root(&self.transaction_hashes())
     }
-    fn get_merkle_root_stake(&self) -> types::MerkleRoot {
+    fn get_merkle_root_stake(&self) -> MerkleRoot {
         merkle_root(&self.stake_hashes())
     }
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_pi(&self) -> &types::Pi {
+    fn get_pi(&self) -> &Pi {
         &self.pi
     }
-    fn hash(&self) -> types::Hash {
+    fn hash(&self) -> Hash {
         hash(self)
     }
     fn hash_input(&self) -> [u8; 181] {
         hash_input(self)
     }
-    fn beta(&self) -> Result<types::Beta, Box<dyn Error>> {
+    fn beta(&self) -> Result<Beta, Box<dyn Error>> {
         beta(self)
     }
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockA {
-    pub hash: types::Hash,
-    pub previous_hash: types::Hash,
+    pub hash: Hash,
+    pub previous_hash: Hash,
     pub timestamp: u32,
     pub beta: [u8; 32],
     #[serde(with = "BigArray")]
-    pub pi: types::Pi,
+    pub pi: Pi,
     #[serde(with = "BigArray")]
-    pub input_public_key: types::PublicKeyBytes,
+    pub input_public_key: PublicKeyBytes,
     #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
+    pub signature: SignatureBytes,
     pub transactions: Vec<TransactionA>,
     pub stakes: Vec<StakeA>,
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockB {
-    pub previous_hash: types::Hash,
+    pub previous_hash: Hash,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
+    pub signature: SignatureBytes,
     #[serde(with = "BigArray")]
-    pub pi: types::Pi,
+    pub pi: Pi,
     pub transactions: Vec<TransactionB>,
     pub stakes: Vec<StakeB>,
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BlockC {
-    pub previous_hash: types::Hash,
+    pub previous_hash: Hash,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
+    pub signature: SignatureBytes,
     #[serde(with = "BigArray")]
-    pub pi: types::Pi,
-    pub transaction_hashes: Vec<types::Hash>,
-    pub stake_hashes: Vec<types::Hash>,
+    pub pi: Pi,
+    pub transaction_hashes: Vec<Hash>,
+    pub stake_hashes: Vec<Hash>,
 }
 impl BlockA {
     pub fn b(&self) -> BlockB {
@@ -136,11 +136,11 @@ impl BlockA {
             stakes,
         }
     }
-    pub fn hash(&self) -> types::Hash {
+    pub fn hash(&self) -> Hash {
         hash(self)
     }
     pub fn sign(
-        previous_hash: types::Hash,
+        previous_hash: Hash,
         timestamp: u32,
         transactions: Vec<TransactionA>,
         stakes: Vec<StakeA>,
@@ -165,7 +165,7 @@ impl BlockA {
         block_a.input_public_key = key.public_key_bytes();
         Ok(block_a)
     }
-    pub fn input_address(&self) -> types::AddressBytes {
+    pub fn input_address(&self) -> AddressBytes {
         Key::address(&self.input_public_key)
     }
     pub fn reward(&self) -> u128 {
@@ -181,10 +181,10 @@ impl BlockA {
         }
         fees
     }
-    fn transaction_hashes(&self) -> Vec<types::Hash> {
+    fn transaction_hashes(&self) -> Vec<Hash> {
         self.transactions.iter().map(|x| x.hash()).collect()
     }
-    fn stake_hashes(&self) -> Vec<types::Hash> {
+    fn stake_hashes(&self) -> Vec<Hash> {
         self.stakes.iter().map(|x| x.hash()).collect()
     }
 }
@@ -220,16 +220,16 @@ impl BlockB {
             stake_hashes: self.stake_hashes(),
         }
     }
-    pub fn hash(&self) -> types::Hash {
+    pub fn hash(&self) -> Hash {
         hash(self)
     }
-    fn transaction_hashes(&self) -> Vec<types::Hash> {
+    fn transaction_hashes(&self) -> Vec<Hash> {
         self.transactions.iter().map(|x| x.hash()).collect()
     }
-    fn stake_hashes(&self) -> Vec<types::Hash> {
+    fn stake_hashes(&self) -> Vec<Hash> {
         self.stakes.iter().map(|x| x.hash()).collect()
     }
-    fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
+    fn input_public_key(&self) -> Result<PublicKeyBytes, Box<dyn Error>> {
         Ok(Key::recover(&self.hash(), &self.signature)?)
     }
 }
@@ -239,7 +239,7 @@ impl BlockC {
         transactions: Vec<TransactionA>,
         stakes: Vec<StakeA>,
         beta: Option<[u8; 32]>,
-        input_public_key: Option<types::PublicKeyBytes>,
+        input_public_key: Option<PublicKeyBytes>,
     ) -> Result<BlockA, Box<dyn Error>> {
         let block_b = self.b(vec![], vec![]);
         let beta = match beta {
@@ -314,7 +314,7 @@ impl Default for BlockC {
         }
     }
 }
-fn hash<T: Block>(block: &T) -> types::Hash {
+fn hash<T: Block>(block: &T) -> Hash {
     let mut hasher = Sha256::new();
     hasher.update(&block.hash_input());
     hasher.finalize().into()
@@ -328,16 +328,15 @@ fn hash_input<T: Block>(block: &T) -> [u8; 181] {
     bytes[100..181].copy_from_slice(block.get_pi());
     bytes
 }
-fn merkle_root(hashes: &[types::Hash]) -> types::MerkleRoot {
+fn merkle_root(hashes: &[Hash]) -> MerkleRoot {
     CBMT::build_merkle_root(hashes)
 }
-fn beta<T: Block>(block: &T) -> Result<types::Beta, Box<dyn Error>> {
+fn beta<T: Block>(block: &T) -> Result<Beta, Box<dyn Error>> {
     Key::vrf_proof_to_hash(block.get_pi()).ok_or("invalid beta".into())
 }
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pea_core::util;
     #[test]
     fn test_hash() {
         assert_eq!(
@@ -348,14 +347,5 @@ mod tests {
     #[test]
     fn test_serialize_len() {
         assert_eq!(197, bincode::serialize(&BlockC::default()).unwrap().len());
-    }
-    #[test]
-    fn test_u256_from_beta() {
-        let key = Key::from_slice(&[0xcd; 32]);
-        let block_a = BlockA::sign([0; 32], 0, vec![], vec![], &key, &[0; 32]).unwrap();
-        assert_eq!(
-            util::u256(&block_a.beta),
-            util::U256::from_dec_str("92526807160300854379423726328595779761032533927961162464096185194601493188181").unwrap()
-        );
     }
 }

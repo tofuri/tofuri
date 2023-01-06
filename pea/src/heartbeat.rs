@@ -1,9 +1,9 @@
-use crate::{multiaddr, node::Node};
+use crate::{multiaddr, node::Node, util};
 use colored::*;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use log::{debug, info, warn};
 use pea_block::BlockA;
-use pea_core::{constants::SYNC_BLOCKS_PER_TICK, util};
+use pea_core::*;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
     (node.heartbeats as f64 % (node.tps * seconds as f64)) as usize == 0

@@ -1,61 +1,60 @@
+use crate::util;
 use pea_block::BlockA;
-use pea_core::constants::COIN;
-use pea_core::util;
-use pea_core::{constants::BLOCK_TIME_MAX, types};
+use pea_core::*;
 use pea_db as db;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::collections::{HashMap, VecDeque};
 pub trait State {
-    fn get_hashes_mut(&mut self) -> &mut Vec<types::Hash>;
-    fn get_stakers(&self) -> &VecDeque<types::AddressBytes>;
-    fn get_stakers_mut(&mut self) -> &mut VecDeque<types::AddressBytes>;
-    fn get_balance(&self) -> &HashMap<types::AddressBytes, u128>;
-    fn get_balance_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128>;
-    fn get_balance_staked(&self) -> &HashMap<types::AddressBytes, u128>;
-    fn get_balance_staked_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128>;
+    fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;
+    fn get_stakers(&self) -> &VecDeque<AddressBytes>;
+    fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes>;
+    fn get_balance(&self) -> &HashMap<AddressBytes, u128>;
+    fn get_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128>;
+    fn get_balance_staked(&self) -> &HashMap<AddressBytes, u128>;
+    fn get_balance_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128>;
     fn get_latest_block(&self) -> &BlockA;
     fn get_latest_block_mut(&mut self) -> &mut BlockA;
-    fn balance(&self, address: &types::AddressBytes) -> u128;
-    fn balance_staked(&self, address: &types::AddressBytes) -> u128;
+    fn balance(&self, address: &AddressBytes) -> u128;
+    fn balance_staked(&self, address: &AddressBytes) -> u128;
     fn update_balances(&mut self, block: &BlockA);
     fn update_stakers(&mut self, block: &BlockA);
     fn update_reward(&mut self, block: &BlockA);
     fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32);
     fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32);
-    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]);
+    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
 }
 #[derive(Default, Debug, Clone)]
 pub struct Trusted {
-    pub hashes: Vec<types::Hash>,
-    pub stakers: VecDeque<types::AddressBytes>,
-    balance: HashMap<types::AddressBytes, u128>,
-    balance_staked: HashMap<types::AddressBytes, u128>,
+    pub hashes: Vec<Hash>,
+    pub stakers: VecDeque<AddressBytes>,
+    balance: HashMap<AddressBytes, u128>,
+    balance_staked: HashMap<AddressBytes, u128>,
     pub latest_block: BlockA,
 }
 #[derive(Default, Debug, Clone)]
 pub struct Dynamic {
-    pub hashes: Vec<types::Hash>,
-    pub stakers: VecDeque<types::AddressBytes>,
-    balance: HashMap<types::AddressBytes, u128>,
-    balance_staked: HashMap<types::AddressBytes, u128>,
+    pub hashes: Vec<Hash>,
+    pub stakers: VecDeque<AddressBytes>,
+    balance: HashMap<AddressBytes, u128>,
+    balance_staked: HashMap<AddressBytes, u128>,
     pub latest_block: BlockA,
 }
 impl Trusted {
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
         update(self, db, block, previous_timestamp)
     }
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]) {
+    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
     }
 }
 impl Dynamic {
-    pub fn balance(&self, address: &types::AddressBytes) -> u128 {
+    pub fn balance(&self, address: &AddressBytes) -> u128 {
         balance(self, address)
     }
-    pub fn balance_staked(&self, address: &types::AddressBytes) -> u128 {
+    pub fn balance_staked(&self, address: &AddressBytes) -> u128 {
         balance_staked(self, address)
     }
-    pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash], trusted: &Trusted) -> Dynamic {
+    pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash], trusted: &Trusted) -> Dynamic {
         let mut dynamic = Self {
             hashes: vec![],
             stakers: trusted.stakers.clone(),
@@ -66,7 +65,7 @@ impl Dynamic {
         dynamic.load(db, hashes);
         dynamic
     }
-    pub fn staker_n(&self, timestamp: u32, mut n: isize) -> Option<&types::AddressBytes> {
+    pub fn staker_n(&self, timestamp: u32, mut n: isize) -> Option<&AddressBytes> {
         n += offline(timestamp, self.latest_block.timestamp) as isize;
         if n < 0 {
             return None;
@@ -78,33 +77,33 @@ impl Dynamic {
         }
         self.stakers.get(util::random(&self.latest_block.beta, n, m))
     }
-    pub fn staker(&self, timestamp: u32) -> Option<&types::AddressBytes> {
+    pub fn staker(&self, timestamp: u32) -> Option<&AddressBytes> {
         self.staker_n(timestamp, 0)
     }
-    pub fn staker_offline(&self, timestamp: u32) -> Option<&types::AddressBytes> {
+    pub fn staker_offline(&self, timestamp: u32) -> Option<&AddressBytes> {
         self.staker_n(timestamp, -1)
     }
 }
 impl State for Trusted {
-    fn get_hashes_mut(&mut self) -> &mut Vec<types::Hash> {
+    fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
         &mut self.hashes
     }
-    fn get_stakers(&self) -> &VecDeque<types::AddressBytes> {
+    fn get_stakers(&self) -> &VecDeque<AddressBytes> {
         &self.stakers
     }
-    fn get_stakers_mut(&mut self) -> &mut VecDeque<types::AddressBytes> {
+    fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
         &mut self.stakers
     }
-    fn get_balance(&self) -> &HashMap<types::AddressBytes, u128> {
+    fn get_balance(&self) -> &HashMap<AddressBytes, u128> {
         &self.balance
     }
-    fn get_balance_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128> {
+    fn get_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.balance
     }
-    fn get_balance_staked(&self) -> &HashMap<types::AddressBytes, u128> {
+    fn get_balance_staked(&self) -> &HashMap<AddressBytes, u128> {
         &self.balance_staked
     }
-    fn get_balance_staked_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128> {
+    fn get_balance_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.balance_staked
     }
     fn get_latest_block(&self) -> &BlockA {
@@ -113,10 +112,10 @@ impl State for Trusted {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
-    fn balance(&self, address: &types::AddressBytes) -> u128 {
+    fn balance(&self, address: &AddressBytes) -> u128 {
         balance(self, address)
     }
-    fn balance_staked(&self, address: &types::AddressBytes) -> u128 {
+    fn balance_staked(&self, address: &AddressBytes) -> u128 {
         balance_staked(self, address)
     }
     fn update_balances(&mut self, block: &BlockA) {
@@ -134,30 +133,30 @@ impl State for Trusted {
     fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
         update(self, db, block, previous_timestamp)
     }
-    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]) {
+    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
     }
 }
 impl State for Dynamic {
-    fn get_hashes_mut(&mut self) -> &mut Vec<types::Hash> {
+    fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
         &mut self.hashes
     }
-    fn get_stakers(&self) -> &VecDeque<types::AddressBytes> {
+    fn get_stakers(&self) -> &VecDeque<AddressBytes> {
         &self.stakers
     }
-    fn get_stakers_mut(&mut self) -> &mut VecDeque<types::AddressBytes> {
+    fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
         &mut self.stakers
     }
-    fn get_balance(&self) -> &HashMap<types::AddressBytes, u128> {
+    fn get_balance(&self) -> &HashMap<AddressBytes, u128> {
         &self.balance
     }
-    fn get_balance_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128> {
+    fn get_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.balance
     }
-    fn get_balance_staked(&self) -> &HashMap<types::AddressBytes, u128> {
+    fn get_balance_staked(&self) -> &HashMap<AddressBytes, u128> {
         &self.balance_staked
     }
-    fn get_balance_staked_mut(&mut self) -> &mut HashMap<types::AddressBytes, u128> {
+    fn get_balance_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.balance_staked
     }
     fn get_latest_block(&self) -> &BlockA {
@@ -166,10 +165,10 @@ impl State for Dynamic {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
-    fn balance(&self, address: &types::AddressBytes) -> u128 {
+    fn balance(&self, address: &AddressBytes) -> u128 {
         balance(self, address)
     }
-    fn balance_staked(&self, address: &types::AddressBytes) -> u128 {
+    fn balance_staked(&self, address: &AddressBytes) -> u128 {
         balance_staked(self, address)
     }
     fn update_balances(&mut self, block: &BlockA) {
@@ -187,17 +186,17 @@ impl State for Dynamic {
     fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
         update(self, db, block, previous_timestamp)
     }
-    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]) {
+    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
     }
 }
-fn balance<T: State>(state: &T, address: &types::AddressBytes) -> u128 {
+fn balance<T: State>(state: &T, address: &AddressBytes) -> u128 {
     match state.get_balance().get(address) {
         Some(b) => *b,
         None => 0,
     }
 }
-fn balance_staked<T: State>(state: &T, address: &types::AddressBytes) -> u128 {
+fn balance_staked<T: State>(state: &T, address: &AddressBytes) -> u128 {
     match state.get_balance_staked().get(address) {
         Some(b) => *b,
         None => 0,
@@ -241,7 +240,7 @@ fn update_balances<T: State>(state: &mut T, block: &BlockA) {
         }
     }
 }
-fn update_staker<T: State>(state: &mut T, address: types::AddressBytes) {
+fn update_staker<T: State>(state: &mut T, address: AddressBytes) {
     let balance_staked = state.balance_staked(&address);
     let any = state.get_stakers().iter().any(|x| x == &address);
     if !any && balance_staked >= COIN {
@@ -295,7 +294,7 @@ pub fn update<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, bl
     // set latest_block after update_penalty()
     *state.get_latest_block_mut() = db::block::get_a(db, &hash).unwrap();
 }
-pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[types::Hash]) {
+pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
     let mut previous_timestamp = match hashes.first() {
         Some(hash) => db::block::get_b(db, hash).unwrap().timestamp,
         None => 0,

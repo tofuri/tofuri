@@ -1,11 +1,8 @@
-use crate::{state::Dynamic, states::States, sync::Sync};
+use crate::{state::Dynamic, states::States, sync::Sync, util};
 use colored::*;
 use log::{debug, info, warn};
 use pea_block::{BlockA, BlockB};
-use pea_core::constants::{
-    BLOCK_STAKES_LIMIT, BLOCK_TIME_MIN, BLOCK_TRANSACTIONS_LIMIT, GENESIS_BETA, PENDING_STAKES_LIMIT, PENDING_TRANSACTIONS_LIMIT, SYNC_BLOCKS_PER_TICK,
-};
-use pea_core::{types, util};
+use pea_core::*;
 use pea_db as db;
 use pea_key::Key;
 use pea_stake::{StakeA, StakeB};
@@ -27,7 +24,7 @@ pub struct Blockchain {
     pub trust_fork_after_blocks: usize,
     pub pending_blocks_limit: usize,
     pub time_delta: u32,
-    pub offline: HashMap<types::AddressBytes, types::Hash>,
+    pub offline: HashMap<AddressBytes, Hash>,
 }
 impl Blockchain {
     pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize, pending_blocks_limit: usize, time_delta: u32) -> Self {
@@ -205,11 +202,11 @@ impl Blockchain {
         for transaction_a in block_a.transactions.iter() {
             self.validate_transaction(transaction_a, dynamic.latest_block.timestamp, timestamp)?;
         }
-        let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
+        let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<AddressBytes>>();
         if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
             return Err("block includes multiple transactions from same input address".into());
         }
-        let input_addresses = block_a.stakes.iter().map(|x| x.input_address).collect::<Vec<types::AddressBytes>>();
+        let input_addresses = block_a.stakes.iter().map(|x| x.input_address).collect::<Vec<AddressBytes>>();
         if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
             return Err("block includes multiple stakes from same input address".into());
         }

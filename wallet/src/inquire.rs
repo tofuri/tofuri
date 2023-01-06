@@ -1,7 +1,7 @@
 use crate::util::{encrypt, filenames, save};
 use colored::*;
 use inquire::{validator::Validation, Confirm, CustomType, Password, PasswordDisplayMode, Select};
-use pea_core::constants::{COIN, EXTENSION};
+use pea_core::*;
 use pea_key::Key;
 use std::{error::Error, path::PathBuf, process};
 const GENERATE: &str = "Generate new wallet";

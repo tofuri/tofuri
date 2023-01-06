@@ -1,11 +1,11 @@
-use crate::{multiaddr, node::Node};
+use crate::{multiaddr, node::Node, util};
 use chrono::{TimeZone, Utc};
 use lazy_static::lazy_static;
 use libp2p::Multiaddr;
 use log::error;
 use pea_address as address;
 use pea_api as api;
-use pea_core::{constants::DECIMAL_PLACES, types, util};
+use pea_core::*;
 use pea_db as db;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
@@ -222,11 +222,11 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
         dev: node.dev,
     })?))
 }
-fn get_balance(node: &mut Node, address_bytes: types::AddressBytes) -> Result<String, Box<dyn Error>> {
+fn get_balance(node: &mut Node, address_bytes: AddressBytes) -> Result<String, Box<dyn Error>> {
     let balance = node.blockchain.states.dynamic.balance(&address_bytes);
     Ok(json(serde_json::to_string(&pea_int::to_string(balance, DECIMAL_PLACES))?))
 }
-fn get_balance_staked(node: &mut Node, address_bytes: types::AddressBytes) -> Result<String, Box<dyn Error>> {
+fn get_balance_staked(node: &mut Node, address_bytes: AddressBytes) -> Result<String, Box<dyn Error>> {
     let balance = node.blockchain.states.dynamic.balance_staked(&address_bytes);
     Ok(json(serde_json::to_string(&pea_int::to_string(balance, DECIMAL_PLACES))?))
 }

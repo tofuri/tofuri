@@ -6,11 +6,13 @@ use colored::*;
 use inquire::{Confirm, Select};
 use pea_address as address;
 use pea_api::{get, post};
-use pea_core::util;
 use pea_key::Key;
 use pea_stake::StakeA;
 use pea_transaction::TransactionA;
 use std::process;
+pub fn timestamp() -> u32 {
+    chrono::offset::Utc::now().timestamp() as u32
+}
 pub struct Options {
     pub api: String,
 }
@@ -141,7 +143,7 @@ impl Wallet {
             address::address::decode(&address).unwrap(),
             amount,
             fee,
-            util::timestamp(),
+            timestamp(),
             self.key.as_ref().unwrap(),
         )
         .unwrap();
@@ -158,7 +160,7 @@ impl Wallet {
         if !send {
             return;
         }
-        let stake_a = StakeA::sign(deposit, fee, util::timestamp(), self.key.as_ref().unwrap()).unwrap();
+        let stake_a = StakeA::sign(deposit, fee, timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
         match post::stake(&self.api, &stake_a.b()).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),

@@ -1,6 +1,7 @@
 #![feature(test)]
 extern crate test;
-use pea_core::{types, util};
+use pea::util;
+use pea_core::*;
 use sha2::{Digest, Sha256};
 use test::Bencher;
 #[bench]
@@ -19,6 +20,6 @@ fn u256(b: &mut Bencher) {
 fn random(b: &mut Bencher) {
     let mut hasher = Sha256::new();
     hasher.update([0; 32]);
-    let beta: types::Beta = hasher.finalize().into();
+    let beta: Beta = hasher.finalize().into();
     b.iter(|| util::random(&beta, 0, 10));
 }

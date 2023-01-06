@@ -1,7 +1,7 @@
+use crate::util;
 use crate::{multiaddr, node::Node};
 use libp2p::{gossipsub::GossipsubMessage, Multiaddr};
 use pea_block::BlockB;
-use pea_core::util;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use std::error::Error;

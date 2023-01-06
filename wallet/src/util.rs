@@ -5,7 +5,7 @@ use chacha20poly1305::{
 };
 use colored::*;
 use crossterm::{event, terminal};
-use pea_core::{constants::EXTENSION, types};
+use pea_core::*;
 use pea_key::Key;
 use std::{
     error::Error,
@@ -18,7 +18,7 @@ const INCORRECT: &str = "Incorrect passphrase";
 pub type Salt = [u8; 32];
 pub type Nonce = [u8; 12];
 pub type Ciphertext = [u8; 48];
-pub fn argon2_key_derivation(password: &[u8], salt: &[u8; 32]) -> types::Hash {
+pub fn argon2_key_derivation(password: &[u8], salt: &[u8; 32]) -> Hash {
     let mut builder = ParamsBuilder::new();
     builder.m_cost(1024).unwrap();
     builder.t_cost(1).unwrap();

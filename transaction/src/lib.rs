@@ -1,31 +1,31 @@
-use pea_core::{constants::AMOUNT_BYTES, types};
+use pea_core::*;
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use sha2::{Digest, Sha256};
 use std::error::Error;
 pub trait Transaction {
-    fn get_output_address(&self) -> &types::AddressBytes;
+    fn get_output_address(&self) -> &AddressBytes;
     fn get_timestamp(&self) -> u32;
-    fn get_amount_bytes(&self) -> types::CompressedAmount;
-    fn get_fee_bytes(&self) -> types::CompressedAmount;
-    fn hash(&self) -> types::Hash;
+    fn get_amount_bytes(&self) -> CompressedAmount;
+    fn get_fee_bytes(&self) -> CompressedAmount;
+    fn hash(&self) -> Hash;
     fn hash_input(&self) -> [u8; 32];
 }
 impl Transaction for TransactionA {
-    fn get_output_address(&self) -> &types::AddressBytes {
+    fn get_output_address(&self) -> &AddressBytes {
         &self.output_address
     }
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount_bytes(&self) -> types::CompressedAmount {
+    fn get_amount_bytes(&self) -> CompressedAmount {
         pea_int::to_be_bytes(self.amount)
     }
-    fn get_fee_bytes(&self) -> types::CompressedAmount {
+    fn get_fee_bytes(&self) -> CompressedAmount {
         pea_int::to_be_bytes(self.fee)
     }
-    fn hash(&self) -> types::Hash {
+    fn hash(&self) -> Hash {
         hash(self)
     }
     fn hash_input(&self) -> [u8; 32] {
@@ -33,19 +33,19 @@ impl Transaction for TransactionA {
     }
 }
 impl Transaction for TransactionB {
-    fn get_output_address(&self) -> &types::AddressBytes {
+    fn get_output_address(&self) -> &AddressBytes {
         &self.output_address
     }
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount_bytes(&self) -> types::CompressedAmount {
+    fn get_amount_bytes(&self) -> CompressedAmount {
         self.amount
     }
-    fn get_fee_bytes(&self) -> types::CompressedAmount {
+    fn get_fee_bytes(&self) -> CompressedAmount {
         self.fee
     }
-    fn hash(&self) -> types::Hash {
+    fn hash(&self) -> Hash {
         hash(self)
     }
     fn hash_input(&self) -> [u8; 32] {
@@ -54,23 +54,23 @@ impl Transaction for TransactionB {
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TransactionA {
-    pub input_address: types::AddressBytes,
-    pub output_address: types::AddressBytes,
+    pub input_address: AddressBytes,
+    pub output_address: AddressBytes,
     pub amount: u128,
     pub fee: u128,
     pub timestamp: u32,
-    pub hash: types::Hash,
+    pub hash: Hash,
     #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
+    pub signature: SignatureBytes,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransactionB {
-    pub output_address: types::AddressBytes,
-    pub amount: types::CompressedAmount,
-    pub fee: types::CompressedAmount,
+    pub output_address: AddressBytes,
+    pub amount: CompressedAmount,
+    pub fee: CompressedAmount,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: types::SignatureBytes,
+    pub signature: SignatureBytes,
 }
 impl TransactionA {
     pub fn b(&self) -> TransactionB {
@@ -82,10 +82,10 @@ impl TransactionA {
             signature: self.signature,
         }
     }
-    pub fn hash(&self) -> types::Hash {
+    pub fn hash(&self) -> Hash {
         hash(self)
     }
-    pub fn sign(public_key_output: types::AddressBytes, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<TransactionA, Box<dyn Error>> {
+    pub fn sign(public_key_output: AddressBytes, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<TransactionA, Box<dyn Error>> {
         let mut transaction_a = TransactionA {
             input_address: [0; 20],
             output_address: public_key_output,
@@ -102,7 +102,7 @@ impl TransactionA {
     }
 }
 impl TransactionB {
-    pub fn a(&self, input_address: Option<types::AddressBytes>) -> Result<TransactionA, Box<dyn Error>> {
+    pub fn a(&self, input_address: Option<AddressBytes>) -> Result<TransactionA, Box<dyn Error>> {
         let input_address = match input_address {
             Some(x) => x,
             None => self.input_address()?,
@@ -117,17 +117,17 @@ impl TransactionB {
             hash: self.hash(),
         })
     }
-    pub fn hash(&self) -> types::Hash {
+    pub fn hash(&self) -> Hash {
         hash(self)
     }
-    fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
+    fn input_address(&self) -> Result<AddressBytes, Box<dyn Error>> {
         Ok(Key::address(&self.input_public_key()?))
     }
-    fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
+    fn input_public_key(&self) -> Result<PublicKeyBytes, Box<dyn Error>> {
         Ok(Key::recover(&self.hash(), &self.signature)?)
     }
 }
-fn hash<T: Transaction>(transaction: &T) -> types::Hash {
+fn hash<T: Transaction>(transaction: &T) -> Hash {
     let mut hasher = Sha256::new();
     hasher.update(&transaction.hash_input());
     hasher.finalize().into()

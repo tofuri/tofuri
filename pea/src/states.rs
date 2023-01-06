@@ -4,7 +4,7 @@ use crate::{
 };
 use colored::*;
 use log::debug;
-use pea_core::types;
+use pea_core::*;
 use pea_db as db;
 use rocksdb::{DBWithThreadMode, SingleThreaded};
 use std::{error::Error, time::Instant};
@@ -20,7 +20,7 @@ impl States {
             trusted: Trusted::default(),
         }
     }
-    pub fn dynamic_fork(&self, blockchain: &Blockchain, previous_hash: &types::Hash) -> Result<Dynamic, Box<dyn Error>> {
+    pub fn dynamic_fork(&self, blockchain: &Blockchain, previous_hash: &Hash) -> Result<Dynamic, Box<dyn Error>> {
         if previous_hash == &[0; 32] {
             return Ok(Dynamic::default());
         }
@@ -49,7 +49,7 @@ impl States {
         }
         Ok(Dynamic::from(&blockchain.db, &hashes, &self.trusted))
     }
-    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[types::Hash], trust_fork_after_blocks: usize) {
+    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[Hash], trust_fork_after_blocks: usize) {
         let start = Instant::now();
         let hashes_0 = &self.dynamic.hashes;
         if hashes_0.len() == trust_fork_after_blocks {

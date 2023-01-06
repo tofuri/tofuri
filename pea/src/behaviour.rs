@@ -4,7 +4,7 @@ use libp2p::{
     identify, identity, mdns, ping,
     swarm::NetworkBehaviour,
 };
-use pea_core::constants::PROTOCOL_VERSION;
+use pea_core::*;
 use std::error::Error;
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "OutEvent")]

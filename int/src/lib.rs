@@ -1,10 +1,10 @@
-use pea_core::constants::{AMOUNT_BYTES, DECIMAL_PLACES};
 use std::error::Error;
-pub fn to_be_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
-    if input == 0 {
-        return [0; AMOUNT_BYTES];
+pub const BYTES: usize = 4;
+pub fn to_be_bytes(u: u128) -> [u8; BYTES] {
+    if u == 0 {
+        return [0; BYTES];
     }
-    let bytes = input.to_be_bytes();
+    let bytes = u.to_be_bytes();
     let mut i = 0;
     for byte in bytes {
         if byte != 0 {
@@ -13,26 +13,26 @@ pub fn to_be_bytes(input: u128) -> [u8; AMOUNT_BYTES] {
         i += 1;
     }
     let size = 15 - i;
-    let mut output = [0; AMOUNT_BYTES];
-    for (j, v) in output.iter_mut().enumerate().take(AMOUNT_BYTES) {
+    let mut output = [0; BYTES];
+    for (j, v) in output.iter_mut().enumerate().take(BYTES) {
         let k = i + j;
         if k == 16 {
             break;
         }
         *v = bytes[k];
     }
-    output[AMOUNT_BYTES - 1] = (output[AMOUNT_BYTES - 1] & 0xf0) | size as u8;
+    output[BYTES - 1] = (output[BYTES - 1] & 0xf0) | size as u8;
     output
 }
-pub fn from_be_bytes(input: &[u8; AMOUNT_BYTES]) -> u128 {
-    let size = input[AMOUNT_BYTES - 1] as usize & 0x0f;
+pub fn from_be_bytes(b: &[u8; BYTES]) -> u128 {
+    let size = b[BYTES - 1] as usize & 0x0f;
     let mut bytes = [0; 16];
-    for (i, v) in input.iter().enumerate().take(AMOUNT_BYTES) {
+    for (i, v) in b.iter().enumerate().take(BYTES) {
         let j = 15 - size + i;
         if j == 16 {
             break;
         }
-        if i == AMOUNT_BYTES - 1 {
+        if i == BYTES - 1 {
             bytes[j] = v & 0xf0;
             break;
         }
@@ -40,12 +40,12 @@ pub fn from_be_bytes(input: &[u8; AMOUNT_BYTES]) -> u128 {
     }
     u128::from_be_bytes(bytes)
 }
-pub fn floor(input: u128) -> u128 {
-    from_be_bytes(&to_be_bytes(input))
+pub fn floor(u: u128) -> u128 {
+    from_be_bytes(&to_be_bytes(u))
 }
-pub fn to_string(num: u128) -> String {
-    let mut string = format!("{}{}", "0".repeat(DECIMAL_PLACES as usize), num);
-    string.insert(string.len() - DECIMAL_PLACES as usize, '.');
+pub fn to_string(u: u128, decimal_places: usize) -> String {
+    let mut string = format!("{}{}", "0".repeat(decimal_places), u);
+    string.insert(string.len() - decimal_places, '.');
     string = string.trim_start_matches('0').trim_end_matches('0').trim_end_matches('.').to_string();
     if string.starts_with('.') {
         let mut s = "0".to_string();
@@ -57,14 +57,14 @@ pub fn to_string(num: u128) -> String {
     }
     string
 }
-pub fn from_string(str: &str) -> Result<u128, Box<dyn Error>> {
-    let (mut string, diff) = match str.split_once(".") {
+pub fn from_str(s: &str, decimal_places: usize) -> Result<u128, Box<dyn Error>> {
+    let (mut string, diff) = match s.split_once(".") {
         Some((a, b)) => {
             let mut string = a.to_string();
             string.push_str(b);
-            (string, DECIMAL_PLACES as usize - b.len())
+            (string, decimal_places - b.len())
         }
-        None => (str.to_string(), DECIMAL_PLACES as usize),
+        None => (s.to_string(), decimal_places),
     };
     string.push_str(&"0".repeat(diff));
     Ok(string.parse()?)
@@ -86,20 +86,20 @@ mod tests {
     }
     #[test]
     fn test_to_string() {
-        assert_eq!("10.01", to_string(10_010_000_000_000_000_000));
-        assert_eq!("1", to_string(1_000_000_000_000_000_000));
-        assert_eq!("10", to_string(10_000_000_000_000_000_000));
-        assert_eq!("0.1", to_string(100_000_000_000_000_000));
-        assert_eq!("0", to_string(0));
+        assert_eq!("10.01", to_string(10_010_000_000_000_000_000, 18));
+        assert_eq!("1", to_string(1_000_000_000_000_000_000, 18));
+        assert_eq!("10", to_string(10_000_000_000_000_000_000, 18));
+        assert_eq!("0.1", to_string(100_000_000_000_000_000, 18));
+        assert_eq!("0", to_string(0, 18));
     }
     #[test]
     fn test_from_string() {
-        assert_eq!(10_010_000_000_000_000_000, from_string("010.010").unwrap());
-        assert_eq!(1_000_000_000_000_000_000, from_string("1").unwrap());
-        assert_eq!(10_000_000_000_000_000_000, from_string("10").unwrap());
-        assert_eq!(10_000_000_000_000_000_000, from_string("10.").unwrap());
-        assert_eq!(10_000_000_000_000_000_000, from_string("10.0").unwrap());
-        assert_eq!(100_000_000_000_000_000, from_string(".1").unwrap());
-        assert_eq!(0, from_string("0").unwrap());
+        assert_eq!(10_010_000_000_000_000_000, from_str("010.010", 18).unwrap());
+        assert_eq!(1_000_000_000_000_000_000, from_str("1", 18).unwrap());
+        assert_eq!(10_000_000_000_000_000_000, from_str("10", 18).unwrap());
+        assert_eq!(10_000_000_000_000_000_000, from_str("10.", 18).unwrap());
+        assert_eq!(10_000_000_000_000_000_000, from_str("10.0", 18).unwrap());
+        assert_eq!(100_000_000_000_000_000, from_str(".1", 18).unwrap());
+        assert_eq!(0, from_str("0", 18).unwrap());
     }
 }

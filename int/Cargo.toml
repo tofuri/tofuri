@@ -1,6 +1,6 @@
 [package]
 name = "pea-int"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
@@ -9,4 +9,3 @@ repository = "https://github.com/peacash/peacash"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pea-core = { version = "0.4.0", path = "../core" }

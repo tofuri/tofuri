@@ -1,11 +1,11 @@
-use pea_core::types;
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::fmt;
-type Branch = (types::Hash, usize, u32);
+type Hash = [u8; 32];
+type Branch = (Hash, usize, u32);
+#[derive(Debug)]
 pub struct Tree {
     branches: Vec<Branch>,
-    hashes: HashMap<types::Hash, types::Hash>,
+    hashes: HashMap<Hash, Hash>,
 }
 impl Tree {
     pub fn new() -> Tree {
@@ -20,7 +20,7 @@ impl Tree {
     pub fn size(&self) -> usize {
         self.hashes.len()
     }
-    pub fn hashes(&self, trust_fork_after_blocks: usize) -> (Vec<types::Hash>, Vec<types::Hash>) {
+    pub fn hashes(&self, trust_fork_after_blocks: usize) -> (Vec<Hash>, Vec<Hash>) {
         let mut trusted = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;
@@ -44,7 +44,7 @@ impl Tree {
         let dynamic = trusted.drain(start..len).collect();
         (trusted, dynamic)
     }
-    pub fn hashes_dynamic(&self, trust_fork_after_blocks: usize) -> Vec<types::Hash> {
+    pub fn hashes_dynamic(&self, trust_fork_after_blocks: usize) -> Vec<Hash> {
         let mut vec = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.0;
@@ -64,10 +64,10 @@ impl Tree {
         vec.reverse();
         vec
     }
-    pub fn get(&self, hash: &types::Hash) -> Option<&types::Hash> {
+    pub fn get(&self, hash: &Hash) -> Option<&Hash> {
         self.hashes.get(hash)
     }
-    pub fn insert(&mut self, hash: types::Hash, previous_hash: types::Hash, timestamp: u32) -> Option<bool> {
+    pub fn insert(&mut self, hash: Hash, previous_hash: Hash, timestamp: u32) -> Option<bool> {
         if self.hashes.insert(hash, previous_hash).is_some() {
             return None;
         }
@@ -90,7 +90,7 @@ impl Tree {
             x => x,
         });
     }
-    pub fn height(&self, previous_hash: &types::Hash) -> usize {
+    pub fn height(&self, previous_hash: &Hash) -> usize {
         let mut hash = previous_hash;
         let mut height = 0;
         loop {
@@ -112,32 +112,6 @@ impl Tree {
     pub fn clear(&mut self) {
         self.branches.clear();
         self.hashes.clear();
-    }
-}
-impl fmt::Debug for Tree {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        #![allow(dead_code)]
-        #[derive(Debug)]
-        struct Tree {
-            branches: Vec<(String, usize, u32)>,
-            hashes: HashMap<String, String>,
-        }
-        write!(
-            f,
-            "{:?}",
-            Tree {
-                branches: self
-                    .branches
-                    .iter()
-                    .map(|(hash, height, timestamp)| (hex::encode(hash), *height, *timestamp))
-                    .collect(),
-                hashes: self
-                    .hashes
-                    .iter()
-                    .map(|(hash, previous_hash)| (hex::encode(hash), hex::encode(previous_hash)))
-                    .collect(),
-            }
-        )
     }
 }
 impl Default for Tree {

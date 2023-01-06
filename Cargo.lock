@@ -2753,7 +2753,7 @@ checksum = "cf1c2c742266c2f1041c914ba65355a83ae8747b05f208319784083583494b4b"
 
 [[package]]
 name = "pea"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bincode",
  "chrono",
@@ -2786,7 +2786,7 @@ dependencies = [
 
 [[package]]
 name = "pea-address"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "hex",
  "pea-core",
@@ -2795,7 +2795,7 @@ dependencies = [
 
 [[package]]
 name = "pea-api"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bincode",
  "hex",
@@ -2809,7 +2809,7 @@ dependencies = [
 
 [[package]]
 name = "pea-block"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "bincode",
  "hex",
@@ -2825,7 +2825,7 @@ dependencies = [
 
 [[package]]
 name = "pea-core"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "bincode",
  "chrono",
@@ -2839,7 +2839,7 @@ dependencies = [
 
 [[package]]
 name = "pea-db"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "bincode",
  "pea-block",
@@ -2854,14 +2854,11 @@ dependencies = [
 
 [[package]]
 name = "pea-int"
-version = "0.2.1"
-dependencies = [
- "pea-core",
-]
+version = "0.3.0"
 
 [[package]]
 name = "pea-key"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "hex",
  "pea-core",
@@ -2882,21 +2879,6 @@ dependencies = [
 
 [[package]]
 name = "pea-stake"
-version = "0.4.1"
-dependencies = [
- "bincode",
- "hex",
- "pea-address",
- "pea-core",
- "pea-int",
- "pea-key",
- "serde",
- "serde-big-array",
- "sha2 0.10.6",
-]
-
-[[package]]
-name = "pea-transaction"
 version = "0.5.0"
 dependencies = [
  "bincode",
@@ -2911,17 +2893,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "pea-tree"
-version = "0.2.2"
+name = "pea-transaction"
+version = "0.6.0"
 dependencies = [
  "bincode",
  "hex",
+ "pea-address",
  "pea-core",
+ "pea-int",
+ "pea-key",
+ "serde",
+ "serde-big-array",
+ "sha2 0.10.6",
 ]
 
 [[package]]
+name = "pea-tree"
+version = "0.3.0"
+
+[[package]]
 name = "pea-wallet"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "argon2",
  "chacha20poly1305 0.10.1",

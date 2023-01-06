@@ -1,6 +1,6 @@
 [package]
 name = "pea-key"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 license = "MIT"
 description = "エンドウ"
@@ -9,7 +9,7 @@ repository = "https://github.com/peacash/peacash"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pea-core = { version = "0.4.0", path = "../core" }
+pea-core = { version = "0.5.0", path = "../core" }
 secp256k1 = { version = "0.25.0", features = ["rand-std","recovery","global-context"] }
 vrf = "0.2.4"
 hex = "0.4.3"

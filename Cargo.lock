@@ -2797,10 +2797,8 @@ dependencies = [
 
 [[package]]
 name = "pea-api"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
- "bincode",
- "hex",
  "pea-stake",
  "pea-transaction",
  "serde",
@@ -2812,8 +2810,6 @@ dependencies = [
 name = "pea-block"
 version = "0.6.0"
 dependencies = [
- "bincode",
- "hex",
  "merkle-cbt",
  "pea-address",
  "pea-core",
@@ -2875,10 +2871,8 @@ dependencies = [
 
 [[package]]
 name = "pea-stake"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
- "bincode",
- "hex",
  "pea-address",
  "pea-core",
  "pea-int",
@@ -2890,10 +2884,8 @@ dependencies = [
 
 [[package]]
 name = "pea-transaction"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
- "bincode",
- "hex",
  "pea-address",
  "pea-core",
  "pea-int",

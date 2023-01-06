@@ -16,8 +16,8 @@ use tokio::{
     time::timeout,
 };
 lazy_static! {
-    static ref TRANSACTION_SERIALIZED: usize = hex::encode(bincode::serialize(&TransactionB::default()).unwrap()).len();
-    static ref STAKE_SERIALIZED: usize = hex::encode(bincode::serialize(&StakeB::default()).unwrap()).len();
+    static ref TRANSACTION_SERIALIZED: usize = serde_json::to_string(&TransactionB::default()).unwrap().len();
+    static ref STAKE_SERIALIZED: usize = serde_json::to_string(&StakeB::default()).unwrap().len();
 }
 fn parse_body(buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
     let str = std::str::from_utf8(buffer)?;

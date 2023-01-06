@@ -167,12 +167,12 @@ pub mod post {
     use std::error::Error;
     pub async fn transaction(api: &str, transaction_b: &TransactionB) -> Result<String, Box<dyn Error>> {
         Ok(serde_json::from_str(
-            &request(api, Method::POST, "/transaction", Some(&hex::encode(bincode::serialize(transaction_b)?))).await?,
+            &request(api, Method::POST, "/transaction", Some(&serde_json::to_string(transaction_b)?)).await?,
         )?)
     }
     pub async fn stake(api: &str, stake_b: &StakeB) -> Result<String, Box<dyn Error>> {
         Ok(serde_json::from_str(
-            &request(api, Method::POST, "/stake", Some(&hex::encode(bincode::serialize(stake_b)?))).await?,
+            &request(api, Method::POST, "/stake", Some(&serde_json::to_string(stake_b)?)).await?,
         )?)
     }
 }

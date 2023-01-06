@@ -177,8 +177,4 @@ mod tests {
             ]
         );
     }
-    #[test]
-    fn test_serialize_len() {
-        assert_eq!(96, bincode::serialize(&TransactionB::default()).unwrap().len());
-    }
 }

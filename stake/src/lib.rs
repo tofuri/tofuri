@@ -162,8 +162,4 @@ mod tests {
             ]
         );
     }
-    #[test]
-    fn test_serialize_len() {
-        assert_eq!(73, bincode::serialize(&StakeB::default()).unwrap().len());
-    }
 }

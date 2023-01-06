@@ -344,8 +344,4 @@ mod tests {
             [219, 36, 84, 162, 32, 189, 146, 241, 148, 53, 36, 177, 50, 142, 92, 103, 125, 225, 26, 208, 20, 86, 5, 216, 113, 32, 54, 141, 75, 147, 221, 219]
         );
     }
-    #[test]
-    fn test_serialize_len() {
-        assert_eq!(197, bincode::serialize(&BlockC::default()).unwrap().len());
-    }
 }

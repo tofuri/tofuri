@@ -99,6 +99,10 @@ pub mod block {
     pub fn get_c(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockC, Box<dyn Error>> {
         Ok(bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?)
     }
+    #[test]
+    fn test_serialize_len() {
+        assert_eq!(197, bincode::serialize(&BlockC::default()).unwrap().len());
+    }
 }
 pub mod transaction {
     use super::input_address;
@@ -124,6 +128,10 @@ pub mod transaction {
         let transaction_b: TransactionB = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
         Ok(transaction_b)
     }
+    #[test]
+    fn test_serialize_len() {
+        assert_eq!(96, bincode::serialize(&TransactionB::default()).unwrap().len());
+    }
 }
 pub mod stake {
     use super::input_address;
@@ -148,6 +156,10 @@ pub mod stake {
     pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Box<dyn Error>> {
         let stake_b: StakeB = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
         Ok(stake_b)
+    }
+    #[test]
+    fn test_serialize_len() {
+        assert_eq!(73, bincode::serialize(&StakeB::default()).unwrap().len());
     }
 }
 pub mod tree {

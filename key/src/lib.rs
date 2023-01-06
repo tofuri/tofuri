@@ -102,6 +102,13 @@ impl Key {
 mod tests {
     use super::*;
     #[test]
+    fn test_address() {
+        assert_eq!(
+            Key::address(&[0; 33]),
+            [127, 156, 158, 49, 172, 130, 86, 202, 47, 37, 133, 131, 223, 38, 45, 188, 125, 111, 104, 242]
+        );
+    }
+    #[test]
     fn test_sign_verify() {
         let key = Key::generate();
         let hash = [0; 32];

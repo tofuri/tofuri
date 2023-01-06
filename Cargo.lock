@@ -2812,6 +2812,7 @@ version = "0.5.0"
 dependencies = [
  "bincode",
  "hex",
+ "merkle-cbt",
  "pea-address",
  "pea-core",
  "pea-key",
@@ -2829,7 +2830,6 @@ dependencies = [
  "bincode",
  "chrono",
  "hex",
- "merkle-cbt",
  "serde",
  "serde-big-array",
  "sha2 0.10.6",

@@ -70,13 +70,6 @@ pub fn stake_amount(stakers: usize) -> u128 {
 mod tests {
     use super::*;
     #[test]
-    fn test_address() {
-        assert_eq!(
-            address(&[0; 33]),
-            [127, 156, 158, 49, 172, 130, 86, 202, 47, 37, 133, 131, 223, 38, 45, 188, 125, 111, 104, 242]
-        );
-    }
-    #[test]
     fn test_u256() {
         assert_eq!(
             u256(&[0xff; 32]),

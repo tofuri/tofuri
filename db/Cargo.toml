@@ -8,7 +8,7 @@ repository = "https://github.com/peacash/peacash"
 
 [dependencies]
 pea-int = { version = "0.4.0", path = "../int" }
-pea-block = { version = "0.6.0", path = "../block" }
+pea-block = { version = "0.6.1", path = "../block" }
 pea-core = { version = "0.6.0", path = "../core" }
 pea-stake = { version = "0.7.1", path = "../stake" }
 pea-transaction = { version = "0.8.1", path = "../transaction" }

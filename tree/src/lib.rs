@@ -83,10 +83,7 @@ impl Tree {
     }
     pub fn sort_branches(&mut self) {
         self.branches.sort_by(|a, b| match b.1.cmp(&a.1) {
-            Ordering::Equal => {
-                // let a_block = Block::get()
-                a.2.cmp(&b.2)
-            }
+            Ordering::Equal => a.2.cmp(&b.2),
             x => x,
         });
     }

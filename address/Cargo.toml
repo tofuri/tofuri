@@ -7,6 +7,6 @@ description = "エンドウ"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]
-pea-core = { path = "../core" }
+pea-core = { version = "0.6", path = "../core" }
 hex = "0.4.3"
 sha2 = "0.10.6"

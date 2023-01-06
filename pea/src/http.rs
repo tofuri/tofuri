@@ -6,6 +6,7 @@ use log::error;
 use pea_address as address;
 use pea_core::{constants::DECIMAL_PLACES, types, util};
 use pea_db as db;
+use pea_api as api;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use std::{error::Error, io::BufRead, time::Duration};
@@ -164,7 +165,7 @@ fn get_index() -> Result<String, Box<dyn Error>> {
     )))
 }
 fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    Ok(json(serde_json::to_string(&types::api::Info {
+    Ok(json(serde_json::to_string(&api::Info {
         time: Utc.timestamp_nanos(chrono::offset::Utc::now().timestamp_micros() * 1_000).to_rfc2822(),
         address: address::address::encode(&node.blockchain.key.address_bytes()),
         uptime: format!("{}", node.uptime()),
@@ -176,7 +177,7 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
 fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let last = node.last_seen();
     let status = node.sync_status();
-    Ok(json(serde_json::to_string(&types::api::Sync {
+    Ok(json(serde_json::to_string(&api::Sync {
         status,
         height: node.blockchain.height(),
         last_seen: last,
@@ -190,7 +191,7 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
             random_queue.push(address::address::encode(address));
         }
     }
-    Ok(json(serde_json::to_string(&types::api::Dynamic {
+    Ok(json(serde_json::to_string(&api::Dynamic {
         random_queue,
         hashes: dynamic.hashes.len(),
         latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
@@ -199,14 +200,14 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
 }
 fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
-    Ok(json(serde_json::to_string(&types::api::Trusted {
+    Ok(json(serde_json::to_string(&api::Trusted {
         hashes: trusted.hashes.len(),
         latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
         stakers: trusted.stakers.iter().take(16).map(address::address::encode).collect(),
     })?))
 }
 fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    Ok(json(serde_json::to_string(&types::api::Options {
+    Ok(json(serde_json::to_string(&api::Options {
         mint: node.mint,
         trust: node.blockchain.trust_fork_after_blocks,
         pending: node.blockchain.pending_blocks_limit,
@@ -240,7 +241,7 @@ fn get_hash_height(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Err
 }
 fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let block_a = &node.blockchain.states.dynamic.latest_block;
-    Ok(json(serde_json::to_string(&types::api::Block {
+    Ok(json(serde_json::to_string(&api::Block {
         hash: hex::encode(block_a.hash),
         previous_hash: hex::encode(block_a.previous_hash),
         timestamp: block_a.timestamp,
@@ -268,7 +269,7 @@ fn get_height_hash(node: &mut Node, height: usize) -> Result<String, Box<dyn Err
 }
 fn get_block_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let block_a = db::block::get_a(&node.blockchain.db, &hash)?;
-    Ok(json(serde_json::to_string(&types::api::Block {
+    Ok(json(serde_json::to_string(&api::Block {
         hash: hex::encode(block_a.hash),
         previous_hash: hex::encode(block_a.previous_hash),
         timestamp: block_a.timestamp,
@@ -282,7 +283,7 @@ fn get_block_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn E
 }
 fn get_transaction_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let transaction_a = db::transaction::get_a(&node.blockchain.db, &hash)?;
-    Ok(json(serde_json::to_string(&types::api::Transaction {
+    Ok(json(serde_json::to_string(&api::Transaction {
         hash: hex::encode(transaction_a.hash),
         input_address: address::address::encode(&transaction_a.input_address),
         output_address: address::address::encode(&transaction_a.output_address),
@@ -294,7 +295,7 @@ fn get_transaction_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box
 }
 fn get_stake_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let stake_a = db::stake::get_a(&node.blockchain.db, &hash)?;
-    Ok(json(serde_json::to_string(&types::api::Stake {
+    Ok(json(serde_json::to_string(&api::Stake {
         hash: hex::encode(stake_a.hash),
         address: address::address::encode(&stake_a.input_address),
         fee: pea_int::to_string(stake_a.fee, DECIMAL_PLACES),

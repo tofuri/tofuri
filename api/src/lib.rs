@@ -1,6 +1,85 @@
 use std::error::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
+use serde::{Deserialize, Serialize};
+pub type Index = String;
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Info {
+    pub time: String,
+    pub address: String,
+    pub uptime: String,
+    pub heartbeats: usize,
+    pub tree_size: usize,
+    pub lag: f64,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Sync {
+    pub status: String,
+    pub height: usize,
+    pub last_seen: String,
+}
+pub type Height = usize;
+pub type Amount = String;
+pub type Hash = String;
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Dynamic {
+    pub random_queue: Vec<String>,
+    pub hashes: usize,
+    pub latest_hashes: Vec<String>,
+    pub stakers: Vec<String>,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Trusted {
+    pub hashes: usize,
+    pub latest_hashes: Vec<String>,
+    pub stakers: Vec<String>,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Options {
+    pub mint: bool,
+    pub tempdb: bool,
+    pub tempkey: bool,
+    pub trust: usize,
+    pub pending: usize,
+    pub ban_offline: usize,
+    pub time_delta: u32,
+    pub max_established: Option<u32>,
+    pub tps: f64,
+    pub bind_api: String,
+    pub host: String,
+    pub dev: bool,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Block {
+    pub hash: String,
+    pub previous_hash: String,
+    pub timestamp: u32,
+    pub address: String,
+    pub signature: String,
+    pub pi: String,
+    pub beta: String,
+    pub transactions: Vec<String>,
+    pub stakes: Vec<String>,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Transaction {
+    pub hash: String,
+    pub input_address: String,
+    pub output_address: String,
+    pub amount: Amount,
+    pub fee: Amount,
+    pub timestamp: u32,
+    pub signature: String,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Stake {
+    pub hash: String,
+    pub address: String,
+    pub fee: Amount,
+    pub deposit: bool,
+    pub timestamp: u32,
+    pub signature: String,
+}
 enum Method {
     GET,
     POST,
@@ -33,52 +112,51 @@ fn parse_body(buffer: String) -> Result<String, Box<dyn Error>> {
 }
 pub mod get {
     use super::*;
-    use pea_core::types;
     use std::error::Error;
-    pub async fn index(api: &str) -> Result<types::api::Index, Box<dyn Error>> {
+    pub async fn index(api: &str) -> Result<Index, Box<dyn Error>> {
         Ok(request(api, Method::GET, "/", None).await?)
     }
-    pub async fn info(api: &str) -> Result<types::api::Info, Box<dyn Error>> {
+    pub async fn info(api: &str) -> Result<Info, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/info", None).await?)?)
     }
-    pub async fn sync(api: &str) -> Result<types::api::Sync, Box<dyn Error>> {
+    pub async fn sync(api: &str) -> Result<Sync, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/sync", None).await?)?)
     }
-    pub async fn height(api: &str) -> Result<types::api::Height, Box<dyn Error>> {
+    pub async fn height(api: &str) -> Result<Height, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/height", None).await?)?)
     }
-    pub async fn balance(api: &str, address: &str) -> Result<types::api::Amount, Box<dyn Error>> {
+    pub async fn balance(api: &str, address: &str) -> Result<Amount, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, &format!("/balance/{}", address), None).await?)?)
     }
-    pub async fn balance_staked(api: &str, address: &str) -> Result<types::api::Amount, Box<dyn Error>> {
+    pub async fn balance_staked(api: &str, address: &str) -> Result<Amount, Box<dyn Error>> {
         Ok(serde_json::from_str(
             &request(api, Method::GET, &format!("/balance_staked/{}", address), None).await?,
         )?)
     }
-    pub async fn hash(api: &str, height: &usize) -> Result<types::api::Hash, Box<dyn Error>> {
+    pub async fn hash(api: &str, height: &usize) -> Result<Hash, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, &format!("/hash/{}", height), None).await?)?)
     }
-    pub async fn dynamic(api: &str) -> Result<types::api::Dynamic, Box<dyn Error>> {
+    pub async fn dynamic(api: &str) -> Result<Dynamic, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/dynamic", None).await?)?)
     }
-    pub async fn trusted(api: &str) -> Result<types::api::Trusted, Box<dyn Error>> {
+    pub async fn trusted(api: &str) -> Result<Trusted, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/trusted", None).await?)?)
     }
-    pub async fn options(api: &str) -> Result<types::api::Options, Box<dyn Error>> {
+    pub async fn options(api: &str) -> Result<Options, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/options", None).await?)?)
     }
-    pub async fn block(api: &str, hash: &str) -> Result<types::api::Block, Box<dyn Error>> {
+    pub async fn block(api: &str, hash: &str) -> Result<Block, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, &format!("/block/{}", hash), None).await?)?)
     }
-    pub async fn latest_block(api: &str) -> Result<types::api::Block, Box<dyn Error>> {
+    pub async fn latest_block(api: &str) -> Result<Block, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/block/latest", None).await?)?)
     }
-    pub async fn transaction(api: &str, hash: &str) -> Result<types::api::Transaction, Box<dyn Error>> {
+    pub async fn transaction(api: &str, hash: &str) -> Result<Transaction, Box<dyn Error>> {
         Ok(serde_json::from_str(
             &request(api, Method::GET, &format!("/transaction/{}", hash), None).await?,
         )?)
     }
-    pub async fn stake(api: &str, hash: &str) -> Result<types::api::Stake, Box<dyn Error>> {
+    pub async fn stake(api: &str, hash: &str) -> Result<Stake, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, &format!("/stake/{}", hash), None).await?)?)
     }
 }

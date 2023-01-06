@@ -1,4 +1,9 @@
 use sha2::{Digest, Sha256};
+use std::error::Error;
+pub type AddressBytes = [u8; 20];
+pub type SecretKeyBytes = [u8; 32];
+pub const PREFIX_ADDRESS: &str = "0x";
+pub const PREFIX_SECRET_KEY: &str = "SECRETx";
 pub fn checksum(bytes: &[u8]) -> [u8; 4] {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
@@ -9,16 +14,14 @@ pub fn checksum(bytes: &[u8]) -> [u8; 4] {
 }
 pub mod address {
     use super::*;
-    use pea_core::{constants::PREFIX_ADDRESS, types};
-    use std::error::Error;
-    pub fn encode(address: &types::AddressBytes) -> String {
+    pub fn encode(address: &AddressBytes) -> String {
         [PREFIX_ADDRESS, &hex::encode(address), &hex::encode(checksum(address))].concat()
     }
-    pub fn decode(str: &str) -> Result<types::AddressBytes, Box<dyn Error>> {
+    pub fn decode(str: &str) -> Result<AddressBytes, Box<dyn Error>> {
         let decoded = hex::decode(str.replacen(PREFIX_ADDRESS, "", 1))?;
-        let address: types::AddressBytes = decoded.get(0..20).ok_or("invalid address")?.try_into().unwrap();
-        if checksum(&address) == decoded.get(20..).ok_or("invalid address checksum")? {
-            Ok(address)
+        let address_bytes: AddressBytes = decoded.get(0..20).ok_or("invalid address")?.try_into().unwrap();
+        if checksum(&address_bytes) == decoded.get(20..).ok_or("invalid address checksum")? {
+            Ok(address_bytes)
         } else {
             Err("checksum mismatch".into())
         }
@@ -38,16 +41,14 @@ pub mod address {
 }
 pub mod secret {
     use super::*;
-    use pea_core::{constants::PREFIX_ADDRESS_KEY, types};
-    use std::error::Error;
-    pub fn encode(secret_key: &types::SecretKeyBytes) -> String {
-        [PREFIX_ADDRESS_KEY, &hex::encode(secret_key), &hex::encode(checksum(secret_key))].concat()
+    pub fn encode(secret_key: &SecretKeyBytes) -> String {
+        [PREFIX_SECRET_KEY, &hex::encode(secret_key), &hex::encode(checksum(secret_key))].concat()
     }
-    pub fn decode(str: &str) -> Result<types::SecretKeyBytes, Box<dyn Error>> {
-        let decoded = hex::decode(str.replacen(PREFIX_ADDRESS_KEY, "", 1))?;
-        let secret_key: types::SecretKeyBytes = decoded.get(0..32).ok_or("invalid secret key")?.try_into().unwrap();
-        if checksum(&secret_key) == decoded.get(32..).ok_or("invalid secret key checksum")? {
-            Ok(secret_key)
+    pub fn decode(str: &str) -> Result<SecretKeyBytes, Box<dyn Error>> {
+        let decoded = hex::decode(str.replacen(PREFIX_SECRET_KEY, "", 1))?;
+        let secret_key_bytes: SecretKeyBytes = decoded.get(0..32).ok_or("invalid secret key")?.try_into().unwrap();
+        if checksum(&secret_key_bytes) == decoded.get(32..).ok_or("invalid secret key checksum")? {
+            Ok(secret_key_bytes)
         } else {
             Err("checksum mismatch".into())
         }

@@ -1,4 +1,4 @@
-use pea_core::{constants::AMOUNT_BYTES, types, util};
+use pea_core::{constants::AMOUNT_BYTES, types};
 use pea_key::Key;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -109,7 +109,7 @@ impl StakeB {
         hash(self)
     }
     fn input_address(&self) -> Result<types::AddressBytes, Box<dyn Error>> {
-        Ok(util::address(&self.input_public_key()?))
+        Ok(Key::address(&self.input_public_key()?))
     }
     fn input_public_key(&self) -> Result<types::PublicKeyBytes, Box<dyn Error>> {
         Ok(Key::recover(&self.hash(), &self.signature)?)

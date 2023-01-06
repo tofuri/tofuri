@@ -1,4 +1,4 @@
-use pea_core::{constants::COIN, types, util};
+use pea_core::{constants::COIN, types};
 use pea_key::Key;
 use pea_stake::{StakeA, StakeB};
 use pea_transaction::{TransactionA, TransactionB};
@@ -154,7 +154,7 @@ impl BlockA {
         Ok(block_a)
     }
     pub fn input_address(&self) -> types::AddressBytes {
-        util::address(&self.input_public_key)
+        Key::address(&self.input_public_key)
     }
     pub fn reward(&self) -> u128 {
         self.fees() + COIN
@@ -325,6 +325,7 @@ fn beta<T: Block>(block: &T) -> Result<types::Beta, Box<dyn Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pea_core::util;
     #[test]
     fn test_hash() {
         assert_eq!(

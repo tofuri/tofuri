@@ -1,8 +1,8 @@
-use pea_core::util;
 use secp256k1::{
     ecdsa::{RecoverableSignature, RecoveryId},
     Message, PublicKey, SecretKey, SECP256K1,
 };
+use sha2::{Digest, Sha256};
 use std::error::Error;
 #[cfg(feature = "vrf")]
 use vrf::{
@@ -44,7 +44,15 @@ impl Key {
         self.public_key().serialize()
     }
     pub fn address_bytes(&self) -> AddressBytes {
-        util::address(&self.public_key_bytes())
+        Key::address(&self.public_key_bytes())
+    }
+    pub fn address(public_key_bytes: &PublicKeyBytes) -> AddressBytes {
+        let mut hasher = Sha256::new();
+        hasher.update(public_key_bytes);
+        let hash = hasher.finalize();
+        let mut address = [0; 20];
+        address.copy_from_slice(&hash[..20]);
+        address
     }
     pub fn sign(&self, hash: &Hash) -> Result<SignatureBytes, Box<dyn Error>> {
         let message = Message::from_slice(hash)?;

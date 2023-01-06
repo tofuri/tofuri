@@ -27,14 +27,6 @@ pub fn random(beta: &types::Beta, n: usize, m: usize) -> usize {
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
 }
-pub fn address(public_key_bytes: &types::PublicKeyBytes) -> types::AddressBytes {
-    let mut hasher = Sha256::new();
-    hasher.update(public_key_bytes);
-    let hash = hasher.finalize();
-    let mut address = [0; 20];
-    address.copy_from_slice(&hash[..20]);
-    address
-}
 pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>> {
     let file = File::open(path)?;
     let buf = BufReader::new(file);

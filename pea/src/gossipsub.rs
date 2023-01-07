@@ -4,6 +4,7 @@ use libp2p::{gossipsub::GossipsubMessage, Multiaddr};
 use pea_block::BlockB;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
+use std::collections::HashMap;
 use std::error::Error;
 pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn Error>> {
     match message.topic.as_str() {
@@ -34,4 +35,29 @@ pub fn handler(node: &mut Node, message: GossipsubMessage) -> Result<(), Box<dyn
         _ => {}
     };
     Ok(())
+}
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Score {
+    pub new: f32,
+    pub avg: f32,
+}
+#[derive(Debug, Default)]
+pub struct Ratelimit {
+    map: HashMap<Multiaddr, Score>,
+}
+impl Ratelimit {
+    pub fn add(&self, multiaddr: &Multiaddr) -> Score {
+        let score = match self.map.get(multiaddr) {
+            Some(x) => *x,
+            None => Score::default(),
+        };
+        score
+    }
+    pub fn avg(&mut self) {
+        for score in self.map.values_mut() {
+            score.avg += score.new;
+            score.avg /= 2.0;
+            score.new = 0.0;
+        }
+    }
 }

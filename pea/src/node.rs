@@ -1,7 +1,8 @@
 use crate::{
     behaviour::{Behaviour, OutEvent},
     blockchain::Blockchain,
-    gossipsub, heartbeat, http, multiaddr, util,
+    gossipsub::{self, Ratelimit},
+    heartbeat, http, multiaddr, util,
 };
 use colored::*;
 use libp2p::{
@@ -52,6 +53,7 @@ pub struct Node {
     pub p2p_swarm: Swarm<Behaviour>,
     pub p2p_message_data_hashes: Vec<Hash>,
     pub p2p_connections: HashMap<Multiaddr, PeerId>,
+    pub p2p_ratelimit: Ratelimit,
     pub p2p_unknown: HashSet<Multiaddr>,
     pub p2p_known: HashSet<Multiaddr>,
     pub p2p_host: String,
@@ -93,6 +95,7 @@ impl Node {
             tempdb: options.tempdb,
             tempkey: options.tempkey,
             dev: options.dev,
+            p2p_ratelimit: Ratelimit::default(),
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {

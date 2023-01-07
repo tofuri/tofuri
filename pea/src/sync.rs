@@ -7,14 +7,14 @@ lazy_static! {
 pub struct Sync {
     pub index: usize,
     pub bps: f32,
-    pub new: usize,
+    pub new: f32,
     pub completed: bool,
 }
 impl Sync {
     pub fn handler(&mut self) {
-        self.bps += self.new as f32;
-        self.bps /= 2_f32;
-        self.new = 0;
+        self.bps += self.new;
+        self.bps /= 2.0;
+        self.new = 0.0;
         self.completed = !self.downloading();
     }
     pub fn downloading(&self) -> bool {
@@ -26,7 +26,7 @@ impl Default for Sync {
         Self {
             index: 0,
             bps: 0.0,
-            new: 0,
+            new: 0.0,
             completed: false,
         }
     }

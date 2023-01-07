@@ -123,7 +123,7 @@ impl Blockchain {
                 self.pending_transactions.clear();
                 self.pending_stakes.clear();
                 if !forged {
-                    self.sync.new += 1;
+                    self.sync.new += 1.0;
                 }
                 info!("{} {} {}", info_0, main.1.to_string().yellow(), info_1);
                 return;

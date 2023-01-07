@@ -46,11 +46,13 @@ pub struct Ratelimit {
     map: HashMap<Multiaddr, Score>,
 }
 impl Ratelimit {
-    pub fn add(&self, multiaddr: &Multiaddr) -> Score {
-        let score = match self.map.get(multiaddr) {
+    pub fn add(&mut self, multiaddr: Multiaddr) -> Score {
+        let mut score = match self.map.get(&multiaddr) {
             Some(x) => *x,
             None => Score::default(),
         };
+        score.new += 1.0;
+        self.map.insert(multiaddr, score);
         score
     }
     pub fn avg(&mut self) {

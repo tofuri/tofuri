@@ -187,7 +187,13 @@ impl Node {
                     }
                 }
             }
-            SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message { message, .. })) => {
+            SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
+                message, propagation_source, ..
+            })) => {
+                if self.p2p_ratelimit.add(propagation_source) {
+                    self.p2p_swarm.ban_peer_id(propagation_source);
+                    return;
+                }
                 if self.filter(&message.data, false) {
                     return;
                 }

@@ -230,7 +230,7 @@ impl BlockC {
         beta: Option<[u8; 32]>,
         input_public_key: Option<PublicKeyBytes>,
     ) -> Result<BlockA, Box<dyn Error>> {
-        let block_b = self.b(vec![], vec![]);
+        let block_b = self.b(transactions.iter().map(|x| x.b()).collect(), stakes.iter().map(|x| x.b()).collect());
         let beta = match beta {
             Some(x) => x,
             None => block_b.beta()?,

@@ -49,19 +49,19 @@ pub struct Options<'a> {
     pub timeout: u64,
 }
 pub struct Node {
-    pub swarm: Swarm<Behaviour>,
+    pub p2p_swarm: Swarm<Behaviour>,
+    pub p2p_message_data_hashes: Vec<Hash>,
+    pub p2p_connections: HashMap<Multiaddr, PeerId>,
+    pub p2p_unknown: HashSet<Multiaddr>,
+    pub p2p_known: HashSet<Multiaddr>,
+    pub p2p_host: String,
+    pub p2p_ban_offline: usize,
     pub blockchain: Blockchain,
-    pub message_data_hashes: Vec<Hash>,
     pub heartbeats: usize,
     pub lag: f64,
     pub tps: f64,
-    pub unknown: HashSet<Multiaddr>,
-    pub known: HashSet<Multiaddr>,
-    pub connections: HashMap<Multiaddr, PeerId>,
     pub bind_api: String,
-    pub host: String,
     pub mint: bool,
-    pub ban_offline: usize,
     pub max_established: Option<u32>,
     pub tempdb: bool,
     pub tempkey: bool,
@@ -73,22 +73,22 @@ impl Node {
         info!("Address {}", address::encode(&key.address_bytes()).green());
         let db = Node::db(options.tempdb);
         let blockchain = Blockchain::new(db, key, options.trust, options.pending, options.time_delta);
-        let swarm = Node::swarm(options.max_established, options.timeout).await.unwrap();
-        let known = Node::known(&blockchain.db, options.peer);
+        let p2p_swarm = Node::swarm(options.max_established, options.timeout).await.unwrap();
+        let p2p_known = Node::known(&blockchain.db, options.peer);
         Node {
-            swarm,
+            p2p_swarm,
             blockchain,
-            message_data_hashes: vec![],
+            p2p_message_data_hashes: vec![],
             heartbeats: 0,
             lag: 0.0,
             tps: options.tps,
-            unknown: HashSet::new(),
-            known,
-            connections: HashMap::new(),
+            p2p_unknown: HashSet::new(),
+            p2p_known,
+            p2p_connections: HashMap::new(),
             bind_api: options.bind_api,
-            host: options.host,
+            p2p_host: options.host,
             mint: options.mint,
-            ban_offline: options.ban_offline,
+            p2p_ban_offline: options.ban_offline,
             max_established: options.max_established,
             tempdb: options.tempdb,
             tempkey: options.tempkey,
@@ -155,11 +155,11 @@ impl Node {
         let mut hasher = Sha256::new();
         hasher.update(data);
         let hash = hasher.finalize().into();
-        if self.message_data_hashes.contains(&hash) {
+        if self.p2p_message_data_hashes.contains(&hash) {
             return true;
         }
         if save {
-            self.message_data_hashes.push(hash);
+            self.p2p_message_data_hashes.push(hash);
         }
         false
     }
@@ -180,7 +180,7 @@ impl Node {
             SwarmEvent::Behaviour(OutEvent::Mdns(mdns::Event::Discovered(list))) => {
                 for (_, multiaddr) in list {
                     if let Some(multiaddr) = multiaddr::filter_ip_port(&multiaddr) {
-                        self.unknown.insert(multiaddr);
+                        self.p2p_unknown.insert(multiaddr);
                     }
                 }
             }
@@ -206,8 +206,8 @@ impl Node {
             }
         );
         info!("Latest block seen {}", self.last_seen().yellow());
-        let multiaddr: Multiaddr = self.host.parse().unwrap();
-        self.swarm.listen_on(multiaddr.clone()).unwrap();
+        let multiaddr: Multiaddr = self.p2p_host.parse().unwrap();
+        self.p2p_swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());
         let listener = TcpListener::bind(&self.bind_api).await.unwrap();
         info!(
@@ -219,7 +219,7 @@ impl Node {
         loop {
             tokio::select! {
                 instant = interval.tick() => heartbeat::handler(self, instant),
-                event = self.swarm.select_next_some() => self.swarm_event(event),
+                event = self.p2p_swarm.select_next_some() => self.swarm_event(event),
                 res = listener.accept() => match res {
                     Ok((stream, socket_addr)) => {
                         match http::handler(stream, self).await {
@@ -240,14 +240,14 @@ impl Node {
                 multiaddr.to_string().magenta(),
                 num_established.to_string().yellow()
             );
-            node.known.insert(multiaddr.clone());
+            node.p2p_known.insert(multiaddr.clone());
             let _ = db::peer::put(&multiaddr.to_string(), &node.blockchain.db);
             if let Some(previous_peer_id) = node
-                .connections
+                .p2p_connections
                 .insert(multiaddr::filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
             {
                 if previous_peer_id != peer_id {
-                    let _ = node.swarm.disconnect_peer_id(previous_peer_id);
+                    let _ = node.p2p_swarm.disconnect_peer_id(previous_peer_id);
                 }
             }
         };
@@ -270,8 +270,8 @@ impl Node {
                 multiaddr.to_string().magenta(),
                 num_established.to_string().yellow()
             );
-            node.connections.remove(&multiaddr);
-            let _ = node.swarm.dial(multiaddr);
+            node.p2p_connections.remove(&multiaddr);
+            let _ = node.p2p_swarm.dial(multiaddr);
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
             if let Some(multiaddr) = multiaddr::filter_ip_port(&address) {
@@ -285,11 +285,11 @@ impl Node {
         }
     }
     pub fn gossipsub_has_mesh_peers(&mut self, topic: &str) -> bool {
-        self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
+        self.p2p_swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
     }
     pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) {
         self.filter(&data, true);
-        if let Err(err) = self.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
+        if let Err(err) = self.p2p_swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
             error!("{}", err);
         }
     }

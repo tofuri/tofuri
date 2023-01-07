@@ -21,7 +21,7 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
         dial_unknown(node);
     }
     if delay(node, 2) {
-        node.message_data_hashes.clear();
+        node.p2p_message_data_hashes.clear();
     }
     if delay(node, 1) {
         node.blockchain.sync.handler();
@@ -57,13 +57,13 @@ fn pending_blocks(node: &mut Node) {
     }
 }
 fn offline_staker(node: &mut Node, timestamp: u32) {
-    if node.ban_offline == 0 {
+    if node.p2p_ban_offline == 0 {
         return;
     }
     if !node.blockchain.sync.completed {
         return;
     }
-    if node.connections.len() < node.ban_offline {
+    if node.p2p_connections.len() < node.p2p_ban_offline {
         return;
     }
     let dynamic = &node.blockchain.states.dynamic;
@@ -77,17 +77,17 @@ fn offline_staker(node: &mut Node, timestamp: u32) {
     }
 }
 fn dial_known(node: &mut Node) {
-    let vec = node.known.clone().into_iter().collect();
+    let vec = node.p2p_known.clone().into_iter().collect();
     dial(node, vec, true);
 }
 fn dial_unknown(node: &mut Node) {
-    let vec = node.unknown.drain().collect();
+    let vec = node.p2p_unknown.drain().collect();
     dial(node, vec, false);
 }
 fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     for mut multiaddr in vec {
         if node
-            .connections
+            .p2p_connections
             .contains_key(&multiaddr::filter_ip(&multiaddr).expect("multiaddr to include ip"))
         {
             continue;
@@ -100,14 +100,14 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
         if !multiaddr::has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }
-        let _ = node.swarm.dial(multiaddr);
+        let _ = node.p2p_swarm.dial(multiaddr);
     }
 }
 fn share(node: &mut Node) {
     if !node.gossipsub_has_mesh_peers("multiaddr") {
         return;
     }
-    let vec: Vec<&Multiaddr> = node.connections.keys().collect();
+    let vec: Vec<&Multiaddr> = node.p2p_connections.keys().collect();
     node.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
 }
 fn grow(node: &mut Node, timestamp: u32) {
@@ -115,7 +115,7 @@ fn grow(node: &mut Node, timestamp: u32) {
         if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",
-                node.connections.len().to_string().yellow()
+                node.p2p_connections.len().to_string().yellow()
             );
         }
         node.blockchain.sync.completed = false;

@@ -108,21 +108,13 @@ pub struct BlockC {
 }
 impl BlockA {
     pub fn b(&self) -> BlockB {
-        let mut transactions = vec![];
-        let mut stakes = vec![];
-        for transaction in self.transactions.iter() {
-            transactions.push(transaction.b())
-        }
-        for stake in self.stakes.iter() {
-            stakes.push(stake.b());
-        }
         BlockB {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
             signature: self.signature,
             pi: self.pi,
-            transactions,
-            stakes,
+            transactions: self.transactions.iter().map(|x| x.b()).collect(),
+            stakes: self.stakes.iter().map(|x| x.b()).collect(),
         }
     }
     pub fn hash(&self) -> Hash {

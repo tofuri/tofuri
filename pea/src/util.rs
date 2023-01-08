@@ -12,8 +12,8 @@ construct_uint! {
 pub fn u256(hash: &Hash) -> U256 {
     U256::from_big_endian(hash)
 }
-pub fn u256_m(hash: &Hash, m: usize) -> usize {
-    (u256(hash) % m).as_usize()
+pub fn u256_m(hash: &Hash, m: u128) -> u128 {
+    (u256(hash) % m).as_u128()
 }
 pub fn hash_n(hash: &Hash, n: u128) -> Hash {
     let mut hasher = Sha256::new();
@@ -21,8 +21,8 @@ pub fn hash_n(hash: &Hash, n: u128) -> Hash {
     hasher.update(n.to_be_bytes());
     hasher.finalize().into()
 }
-pub fn random(beta: &Beta, n: usize, m: usize) -> usize {
-    u256_m(&hash_n(beta, n as u128), m)
+pub fn random(beta: &Beta, n: u128, m: u128) -> u128 {
+    u256_m(&hash_n(beta, n), m)
 }
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32

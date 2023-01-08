@@ -22,6 +22,7 @@ pub trait State {
     fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32);
     fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
+    fn staker_n(&self, n: isize) -> Option<&AddressBytes>;
 }
 #[derive(Default, Debug, Clone)]
 pub struct Trusted {
@@ -65,23 +66,14 @@ impl Dynamic {
         dynamic.load(db, hashes);
         dynamic
     }
-    pub fn staker_n(&self, timestamp: u32, mut n: isize) -> Option<&AddressBytes> {
-        n += offline(timestamp, self.latest_block.timestamp) as isize;
-        if n < 0 {
-            return None;
-        }
-        let n = n.abs() as usize;
-        let m = self.stakers.len();
-        if m == 0 || n >= m {
-            return None;
-        }
-        self.stakers.get(util::random(&self.latest_block.beta, n, m))
+    pub fn staker_n(&self, n: isize) -> Option<&AddressBytes> {
+        staker_n(self, n)
     }
     pub fn staker(&self, timestamp: u32) -> Option<&AddressBytes> {
-        self.staker_n(timestamp, 0)
+        staker_n(self, offline(timestamp, self.get_latest_block().timestamp) as isize)
     }
     pub fn staker_offline(&self, timestamp: u32) -> Option<&AddressBytes> {
-        self.staker_n(timestamp, -1)
+        staker_n(self, offline(timestamp, self.get_latest_block().timestamp) as isize - 1)
     }
 }
 impl State for Trusted {
@@ -136,6 +128,9 @@ impl State for Trusted {
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
     }
+    fn staker_n(&self, n: isize) -> Option<&AddressBytes> {
+        staker_n(self, n)
+    }
 }
 impl State for Dynamic {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
@@ -188,6 +183,9 @@ impl State for Dynamic {
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
+    }
+    fn staker_n(&self, n: isize) -> Option<&AddressBytes> {
+        staker_n(self, n)
     }
 }
 fn balance<T: State>(state: &T, address: &AddressBytes) -> u128 {
@@ -269,16 +267,15 @@ fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u
         if state.get_stakers().is_empty() {
             break;
         }
-        let m = state.get_stakers().len();
-        let address = state.get_stakers().get(util::random(&state.get_latest_block().beta, n, m)).unwrap().clone();
-        let mut balance_staked = state.balance_staked(&address);
+        let staker = state.staker_n(n as isize).unwrap().clone();
+        let mut balance_staked = state.balance_staked(&staker);
         balance_staked = balance_staked.saturating_sub(COIN * (n + 1) as u128);
         if balance_staked == 0 {
-            state.get_balance_staked_mut().remove(&address);
+            state.get_balance_staked_mut().remove(&staker);
         } else {
-            state.get_balance_staked_mut().insert(address, balance_staked);
+            state.get_balance_staked_mut().insert(staker, balance_staked);
         }
-        update_staker(state, address);
+        update_staker(state, staker);
     }
 }
 pub fn update<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
@@ -302,7 +299,29 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
         previous_timestamp = block_a.timestamp;
     }
 }
-fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
+pub fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
     let diff = timestamp.saturating_sub(previous_timestamp + 1);
     (diff / BLOCK_TIME_MAX as u32) as usize
+}
+fn staker_n<T: State>(state: &T, n: isize) -> Option<&AddressBytes> {
+    if n < 0 {
+        return None;
+    }
+    let n = n.abs() as usize;
+    let mut m = 0;
+    for staker in state.get_stakers().iter() {
+        m += state.balance_staked(staker);
+    }
+    if m == 0 || n >= state.get_stakers().len() {
+        return None;
+    }
+    let random = util::random(&state.get_latest_block().beta, n as u128, m);
+    let mut counter = 0;
+    for (i, staker) in state.get_stakers().iter().enumerate() {
+        counter += state.balance_staked(staker);
+        if random <= counter {
+            return state.get_stakers().get(i);
+        }
+    }
+    None
 }

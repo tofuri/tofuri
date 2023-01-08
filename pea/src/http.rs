@@ -1,4 +1,4 @@
-use crate::{multiaddr, node::Node, util};
+use crate::{multiaddr, node::Node, state, util};
 use chrono::{TimeZone, Utc};
 use lazy_static::lazy_static;
 use libp2p::Multiaddr;
@@ -187,7 +187,8 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
     let mut random_queue = vec![];
     for n in 0..8 {
-        if let Some(address) = dynamic.staker_n(util::timestamp(), n) {
+        let n = state::offline(util::timestamp(), node.blockchain.states.dynamic.latest_block.timestamp) as isize - n;
+        if let Some(address) = dynamic.staker_n(n) {
             random_queue.push(address::encode(address));
         }
     }

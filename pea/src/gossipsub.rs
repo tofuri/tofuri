@@ -10,7 +10,7 @@ use std::error::Error;
 use std::net::IpAddr;
 pub fn handler(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn Error>> {
     let (multiaddr, _) = node.p2p_connections.iter().find(|x| x.1 == &propagation_source).unwrap();
-    let addr = multiaddr::addr(multiaddr).expect("multiaddr with ip");
+    let addr = multiaddr::addr(multiaddr).expect("multiaddr to include ip");
     match message.topic.as_str() {
         "block" => {
             ratelimit(node, addr, propagation_source, Topic::Block)?;
@@ -47,7 +47,6 @@ pub fn handler(node: &mut Node, message: GossipsubMessage, propagation_source: P
 }
 pub fn ratelimit(node: &mut Node, addr: IpAddr, propagation_source: PeerId, topic: Topic) -> Result<(), Box<dyn Error>> {
     if node.p2p_ratelimit.add(addr, topic) {
-        node.p2p_swarm.ban_peer_id(propagation_source);
         let _ = node.p2p_swarm.disconnect_peer_id(propagation_source);
         return Err("ratelimited".into());
     }
@@ -71,14 +70,20 @@ impl Ratelimit {
             None => ([0; 5], None),
         }
     }
+    pub fn is_ratelimited(&self, b: &Option<u32>) -> bool {
+        if let Some(timestamp) = b {
+            if timestamp + RATELIMIT_DURATION > util::timestamp() {
+                return true;
+            }
+        }
+        false
+    }
     pub fn add(&mut self, addr: IpAddr, topic: Topic) -> bool {
         let mut value = self.get(&addr);
         let a = &mut value.0;
         let b = &mut value.1;
-        if let Some(timestamp) = b {
-            if *timestamp + RATELIMIT_DURATION > util::timestamp() {
-                return true;
-            }
+        if self.is_ratelimited(b) {
+            return true;
         }
         let ratelimited = match topic {
             Topic::Block => {

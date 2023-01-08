@@ -93,6 +93,10 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
         {
             continue;
         }
+        let addr = multiaddr::addr(&multiaddr).expect("multiaddr to include ip");
+        if node.p2p_ratelimit.is_ratelimited(&node.p2p_ratelimit.get(&addr).1) {
+            continue;
+        }
         debug!(
             "Dialing {} peer {}",
             if known { "known".green() } else { "unknown".red() },

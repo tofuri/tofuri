@@ -14,7 +14,7 @@ use libp2p::{
     swarm::{ConnectionHandlerUpgrErr, ConnectionLimits, SwarmBuilder, SwarmEvent},
     tcp, Multiaddr, PeerId, Swarm, Transport,
 };
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use pea_address::address;
 use pea_core::*;
 use pea_db as db;
@@ -246,6 +246,11 @@ impl Node {
                 multiaddr.to_string().magenta(),
                 num_established.to_string().yellow()
             );
+            let addr = multiaddr::addr(&multiaddr).expect("multiaddr to include ip");
+            if node.p2p_ratelimit.is_ratelimited(&node.p2p_ratelimit.get(&addr).1) {
+                warn!("Ratelimited {}", multiaddr.to_string().magenta());
+                let _ = node.p2p_swarm.disconnect_peer_id(peer_id);
+            }
             node.p2p_known.insert(multiaddr.clone());
             let _ = db::peer::put(&multiaddr.to_string(), &node.blockchain.db);
             if let Some(previous_peer_id) = node

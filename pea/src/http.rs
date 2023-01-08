@@ -63,9 +63,9 @@ fn get(node: &mut Node, args: Vec<&str>) -> Result<String, Box<dyn Error>> {
                 },
                 None => c400(),
             },
-            "balance_staked" => match args.get(1) {
+            "staked" => match args.get(1) {
                 Some(b) => match address::decode(b) {
-                    Ok(c) => get_balance_staked(node, c),
+                    Ok(c) => get_staked(node, c),
                     Err(_) => c400(),
                 },
                 None => c400(),
@@ -227,8 +227,8 @@ fn get_balance(node: &mut Node, address_bytes: AddressBytes) -> Result<String, B
     let balance = node.blockchain.states.dynamic.balance(&address_bytes);
     Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
 }
-fn get_balance_staked(node: &mut Node, address_bytes: AddressBytes) -> Result<String, Box<dyn Error>> {
-    let balance = node.blockchain.states.dynamic.balance_staked(&address_bytes);
+fn get_staked(node: &mut Node, address_bytes: AddressBytes) -> Result<String, Box<dyn Error>> {
+    let balance = node.blockchain.states.dynamic.staked(&address_bytes);
     Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
 }
 fn get_height(node: &mut Node) -> Result<String, Box<dyn Error>> {

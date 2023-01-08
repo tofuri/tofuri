@@ -110,8 +110,8 @@ impl Wallet {
     async fn balance(&self) {
         let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
         match get::balance(&self.api, &address).await {
-            Ok(balance) => match get::balance_staked(&self.api, &address).await {
-                Ok(balance_staked) => println!("Account balance: {}, locked: {}", balance.yellow(), balance_staked.yellow()),
+            Ok(balance) => match get::staked(&self.api, &address).await {
+                Ok(staked) => println!("Account balance: {}, staked: {}", balance.yellow(), staked.yellow()),
                 Err(err) => println!("{}", err.to_string().red()),
             },
             Err(err) => println!("{}", err.to_string().red()),
@@ -162,8 +162,8 @@ impl Wallet {
         let search = search();
         if address::decode(&search).is_ok() {
             match get::balance(&self.api, &search).await {
-                Ok(balance) => match get::balance_staked(&self.api, &search).await {
-                    Ok(balance_staked) => println!("Address found\nAccount balance: {}, locked: {}", balance.yellow(), balance_staked.yellow()),
+                Ok(balance) => match get::staked(&self.api, &search).await {
+                    Ok(staked) => println!("Address found\nAccount balance: {}, staked: {}", balance.yellow(), staked.yellow()),
                     Err(err) => println!("{}", err.to_string().red()),
                 },
                 Err(err) => println!("{}", err.to_string().red()),

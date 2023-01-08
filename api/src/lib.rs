@@ -128,10 +128,8 @@ pub mod get {
     pub async fn balance(api: &str, address: &str) -> Result<Amount, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, &format!("/balance/{}", address), None).await?)?)
     }
-    pub async fn balance_staked(api: &str, address: &str) -> Result<Amount, Box<dyn Error>> {
-        Ok(serde_json::from_str(
-            &request(api, Method::GET, &format!("/balance_staked/{}", address), None).await?,
-        )?)
+    pub async fn staked(api: &str, address: &str) -> Result<Amount, Box<dyn Error>> {
+        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/staked/{}", address), None).await?)?)
     }
     pub async fn hash(api: &str, height: &usize) -> Result<Hash, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, &format!("/hash/{}", height), None).await?)?)

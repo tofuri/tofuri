@@ -2,7 +2,7 @@ use crate::util;
 use crate::{multiaddr, node::Node};
 use libp2p::{gossipsub::GossipsubMessage, Multiaddr, PeerId};
 use pea_block::BlockB;
-use pea_core::RATELIMIT;
+use pea_core::*;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use std::collections::HashMap;
@@ -62,47 +62,54 @@ pub enum Topic {
 }
 #[derive(Debug, Default)]
 pub struct Ratelimit {
-    map: HashMap<IpAddr, [usize; 5]>,
+    map: HashMap<IpAddr, ([usize; 5], Option<u32>)>,
 }
 impl Ratelimit {
-    pub fn get(&self, ip: &IpAddr) -> [usize; 5] {
+    pub fn get(&self, ip: &IpAddr) -> ([usize; 5], Option<u32>) {
         match self.map.get(ip) {
             Some(x) => *x,
-            None => [0; 5],
+            None => ([0; 5], None),
         }
     }
     pub fn add(&mut self, ip: IpAddr, topic: Topic) -> bool {
         let mut value = self.get(&ip);
-        match topic {
+        let a = &mut value.0;
+        let ratelimited = match topic {
             Topic::Block => {
-                value[0] += 1;
-                value[0] > RATELIMIT
+                a[0] += 1;
+                a[0] > RATELIMIT
             }
             Topic::Blocks => {
-                value[1] += 1;
-                value[1] > RATELIMIT
+                a[1] += 1;
+                a[1] > RATELIMIT
             }
             Topic::Transaction => {
-                value[2] += 1;
-                value[2] > RATELIMIT
+                a[2] += 1;
+                a[2] > RATELIMIT
             }
             Topic::Stake => {
-                value[3] += 1;
-                value[3] > RATELIMIT
+                a[3] += 1;
+                a[3] > RATELIMIT
             }
             Topic::Multiaddr => {
-                value[4] += 1;
-                value[4] > RATELIMIT
+                a[4] += 1;
+                a[4] > RATELIMIT
             }
+        };
+        if ratelimited {
+            value.1 = Some(util::timestamp());
         }
+        self.map.insert(ip, value);
+        ratelimited
     }
     pub fn reset(&mut self) {
         for value in self.map.values_mut() {
-            value[0] = value[0].saturating_sub(RATELIMIT);
-            value[1] = value[1].saturating_sub(RATELIMIT);
-            value[2] = value[2].saturating_sub(RATELIMIT);
-            value[3] = value[3].saturating_sub(RATELIMIT);
-            value[4] = value[4].saturating_sub(RATELIMIT);
+            let a = &mut value.0;
+            a[0] = a[0].saturating_sub(RATELIMIT);
+            a[1] = a[1].saturating_sub(RATELIMIT);
+            a[2] = a[2].saturating_sub(RATELIMIT);
+            a[3] = a[3].saturating_sub(RATELIMIT);
+            a[4] = a[4].saturating_sub(RATELIMIT);
         }
     }
 }

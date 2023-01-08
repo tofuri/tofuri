@@ -1,5 +1,5 @@
-use std::net::IpAddr;
 use libp2p::{multiaddr::Protocol, Multiaddr};
+use std::net::IpAddr;
 pub fn filter_ip(multiaddr: &Multiaddr) -> Option<Multiaddr> {
     let components = multiaddr.iter().collect::<Vec<_>>();
     let mut multiaddr: Multiaddr = "".parse().unwrap();

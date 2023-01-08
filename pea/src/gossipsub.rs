@@ -18,8 +18,8 @@ pub fn handler(node: &mut Node, message: GossipsubMessage, propagation_source: P
             node.blockchain.pending_blocks_push(block_b, util::timestamp())?;
         }
         "blocks" => {
-            ratelimit(node, addr, propagation_source, Topic::Blocks)?;
             for block_b in bincode::deserialize::<Vec<BlockB>>(&message.data)? {
+                ratelimit(node, addr, propagation_source, Topic::Block)?;
                 node.blockchain.pending_blocks_push(block_b, util::timestamp())?;
             }
         }
@@ -54,7 +54,6 @@ pub fn ratelimit(node: &mut Node, addr: IpAddr, propagation_source: PeerId, topi
 }
 pub enum Topic {
     Block,
-    Blocks,
     Transaction,
     Stake,
     Multiaddr,
@@ -90,21 +89,17 @@ impl Ratelimit {
                 a[0] += 1;
                 a[0] > RATELIMIT_TOPIC_BLOCK
             }
-            Topic::Blocks => {
-                a[1] += 1;
-                a[1] > RATELIMIT_TOPIC_BLOCKS
-            }
             Topic::Transaction => {
-                a[2] += 1;
-                a[2] > RATELIMIT_TOPIC_TRANSACTION
+                a[1] += 1;
+                a[1] > RATELIMIT_TOPIC_TRANSACTION
             }
             Topic::Stake => {
-                a[3] += 1;
-                a[3] > RATELIMIT_TOPIC_STAKE
+                a[2] += 1;
+                a[2] > RATELIMIT_TOPIC_STAKE
             }
             Topic::Multiaddr => {
-                a[4] += 1;
-                a[4] > RATELIMIT_TOPIC_MULTIADDR
+                a[3] += 1;
+                a[3] > RATELIMIT_TOPIC_MULTIADDR
             }
         };
         if ratelimited {
@@ -117,10 +112,9 @@ impl Ratelimit {
         for value in self.map.values_mut() {
             let a = &mut value.0;
             a[0] = a[0].saturating_sub(RATELIMIT_TOPIC_BLOCK);
-            a[1] = a[1].saturating_sub(RATELIMIT_TOPIC_BLOCKS);
-            a[2] = a[2].saturating_sub(RATELIMIT_TOPIC_TRANSACTION);
-            a[3] = a[3].saturating_sub(RATELIMIT_TOPIC_STAKE);
-            a[4] = a[4].saturating_sub(RATELIMIT_TOPIC_MULTIADDR);
+            a[1] = a[1].saturating_sub(RATELIMIT_TOPIC_TRANSACTION);
+            a[2] = a[2].saturating_sub(RATELIMIT_TOPIC_STAKE);
+            a[3] = a[3].saturating_sub(RATELIMIT_TOPIC_MULTIADDR);
         }
     }
 }

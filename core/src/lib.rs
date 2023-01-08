@@ -26,6 +26,7 @@ pub const AMOUNT_BYTES: usize = 4;
 pub const GENESIS_BETA: Beta = [0; 32];
 pub const RECOVERY_ID: i32 = 0;
 pub const RATELIMIT_TOPIC_BLOCK: usize = 100;
+pub const RATELIMIT_TOPIC_BLOCKS: usize = 100;
 pub const RATELIMIT_TOPIC_TRANSACTION: usize = 100;
 pub const RATELIMIT_TOPIC_STAKE: usize = 100;
 pub const RATELIMIT_TOPIC_MULTIADDR: usize = 100;

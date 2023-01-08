@@ -26,3 +26,4 @@ pub const AMOUNT_BYTES: usize = 4;
 pub const GENESIS_BETA: Beta = [0; 32];
 pub const RECOVERY_ID: i32 = 0;
 pub const RATELIMIT: usize = 10;
+pub const RATELIMIT_DURATION: u32 = 60 * 60;

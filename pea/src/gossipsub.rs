@@ -74,6 +74,12 @@ impl Ratelimit {
     pub fn add(&mut self, ip: IpAddr, topic: Topic) -> bool {
         let mut value = self.get(&ip);
         let a = &mut value.0;
+        let b = &mut value.1;
+        if let Some(timestamp) = b {
+            if *timestamp + RATELIMIT_DURATION > util::timestamp() {
+                return true;
+            }
+        }
         let ratelimited = match topic {
             Topic::Block => {
                 a[0] += 1;
@@ -97,7 +103,7 @@ impl Ratelimit {
             }
         };
         if ratelimited {
-            value.1 = Some(util::timestamp());
+            *b = Some(util::timestamp());
         }
         self.map.insert(ip, value);
         ratelimited

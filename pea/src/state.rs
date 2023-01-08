@@ -216,14 +216,13 @@ fn update_balances<T: State>(state: &mut T, block: &BlockA) {
         }
         state.get_balance_mut().insert(transaction.output_address, balance_output);
     }
-    let stake_amount = util::stake_amount(state.get_stakers().len());
     for stake in block.stakes.iter() {
         let address = stake.input_address;
         let mut balance = state.balance(&address);
         let mut balance_staked = state.balance_staked(&address);
         if stake.deposit {
-            balance -= stake_amount + stake.fee;
-            balance_staked += stake_amount;
+            balance -= stake.amount + stake.fee;
+            balance_staked += stake.amount;
         } else {
             balance += balance_staked - stake.fee;
             balance_staked = 0;
@@ -242,13 +241,11 @@ fn update_balances<T: State>(state: &mut T, block: &BlockA) {
 }
 fn update_staker<T: State>(state: &mut T, address: AddressBytes) {
     let balance_staked = state.balance_staked(&address);
-    let any = state.get_stakers().iter().any(|x| x == &address);
-    if !any && balance_staked >= COIN {
+    let index = state.get_stakers().iter().position(|x| x == &address);
+    if index.is_none() && balance_staked >= COIN {
         state.get_stakers_mut().push_back(address);
-    } else if any && balance_staked < COIN {
-        state.get_balance_staked_mut().remove(&address);
-        let index = state.get_stakers().iter().position(|x| x == &address).unwrap();
-        state.get_stakers_mut().remove(index).unwrap();
+    } else if index.is_some() && balance_staked < COIN {
+        state.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }
 fn update_stakers<T: State>(state: &mut T, block: &BlockA) {

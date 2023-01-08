@@ -83,7 +83,7 @@ impl Blockchain {
                 return None;
             }
         } else {
-            self.pending_stakes = vec![StakeA::sign(true, 0, timestamp, &self.key).unwrap()];
+            self.pending_stakes = vec![StakeA::sign(true, COIN, 0, timestamp, &self.key).unwrap()];
         }
         let mut transactions = vec![];
         let mut stakes = vec![];
@@ -235,6 +235,9 @@ impl Blockchain {
                 return Err("block mint stakes".into());
             }
             let stake_a = block_a.stakes.first().unwrap();
+            if stake_a.amount != COIN {
+                return Err("stake mint amount not coin".into());
+            }
             if stake_a.fee != 0 {
                 return Err("stake mint fee not zero".into());
             }
@@ -280,8 +283,14 @@ impl Blockchain {
         Ok(())
     }
     fn validate_stake(&self, stake_a: &StakeA, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        if stake_a.amount == 0 {
+            return Err("stake amount zero".into());
+        }
         if stake_a.fee == 0 {
             return Err("stake fee zero".into());
+        }
+        if stake_a.amount != pea_int::floor(stake_a.amount) {
+            return Err("stake amount floor".into());
         }
         if stake_a.fee != pea_int::floor(stake_a.fee) {
             return Err("stake fee floor".into());

@@ -145,12 +145,13 @@ impl Wallet {
     }
     async fn stake(&self) {
         let deposit = deposit();
+        let amount = amount();
         let fee = fee();
         let send = send();
         if !send {
             return;
         }
-        let stake_a = StakeA::sign(deposit, fee, util::timestamp(), self.key.as_ref().unwrap()).unwrap();
+        let stake_a = StakeA::sign(deposit, amount, fee, util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
         match post::stake(&self.api, &stake_a.b()).await {
             Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),

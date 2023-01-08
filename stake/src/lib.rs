@@ -47,6 +47,7 @@ impl Stake for StakeB {
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StakeA {
+    pub amount: u128,
     pub fee: u128,
     pub deposit: bool,
     pub timestamp: u32,
@@ -57,6 +58,7 @@ pub struct StakeA {
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StakeB {
+    pub amount: AmountBytes,
     pub fee: AmountBytes,
     pub deposit: bool,
     pub timestamp: u32,
@@ -66,6 +68,7 @@ pub struct StakeB {
 impl StakeA {
     pub fn b(&self) -> StakeB {
         StakeB {
+            amount: pea_int::to_be_bytes(self.amount),
             fee: pea_int::to_be_bytes(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
@@ -75,8 +78,9 @@ impl StakeA {
     pub fn hash(&self) -> Hash {
         hash(self)
     }
-    pub fn sign(deposit: bool, fee: u128, timestamp: u32, key: &Key) -> Result<StakeA, Box<dyn Error>> {
+    pub fn sign(deposit: bool, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<StakeA, Box<dyn Error>> {
         let mut stake_a = StakeA {
+            amount: pea_int::floor(amount),
             fee: pea_int::floor(fee),
             deposit,
             timestamp,
@@ -97,6 +101,7 @@ impl StakeB {
             None => self.input_address()?,
         };
         Ok(StakeA {
+            amount: pea_int::from_be_slice(&self.amount),
             fee: pea_int::from_be_slice(&self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
@@ -130,6 +135,7 @@ fn hash_input<T: Stake>(stake: &T) -> [u8; 9] {
 impl Default for StakeA {
     fn default() -> Self {
         StakeA {
+            amount: 0,
             fee: 0,
             deposit: false,
             timestamp: 0,
@@ -142,6 +148,7 @@ impl Default for StakeA {
 impl Default for StakeB {
     fn default() -> Self {
         StakeB {
+            amount: [0; AMOUNT_BYTES],
             fee: [0; AMOUNT_BYTES],
             deposit: false,
             timestamp: 0,

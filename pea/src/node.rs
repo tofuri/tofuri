@@ -1,9 +1,9 @@
 use crate::{
     behaviour::{Behaviour, OutEvent},
     blockchain::Blockchain,
-    gossipsub, heartbeat, http, multiaddr,
-    ratelimit::Ratelimit,
-    util,
+    gossipsub,
+    gossipsub::Ratelimit,
+    heartbeat, http, multiaddr, util,
 };
 use colored::*;
 use libp2p::{
@@ -191,14 +191,10 @@ impl Node {
             SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
                 message, propagation_source, ..
             })) => {
-                if self.p2p_ratelimit.add(propagation_source) {
-                    self.p2p_swarm.ban_peer_id(propagation_source);
-                    return;
-                }
                 if self.filter(&message.data, false) {
                     return;
                 }
-                if let Err(err) = gossipsub::handler(self, message) {
+                if let Err(err) = gossipsub::handler(self, message, propagation_source) {
                     debug!("{}", err)
                 }
             }

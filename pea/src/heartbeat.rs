@@ -25,7 +25,7 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     }
     if delay(node, 1) {
         node.blockchain.sync.handler();
-        node.p2p_ratelimit.update();
+        node.p2p_ratelimit.reset();
     }
     pending_blocks(node);
     offline_staker(node, timestamp);

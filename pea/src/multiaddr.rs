@@ -1,3 +1,4 @@
+use std::net::IpAddr;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 pub fn filter_ip(multiaddr: &Multiaddr) -> Option<Multiaddr> {
     let components = multiaddr.iter().collect::<Vec<_>>();
@@ -31,6 +32,13 @@ pub fn filter_ip_port(multiaddr: &Multiaddr) -> Option<Multiaddr> {
 pub fn has_port(multiaddr: &Multiaddr) -> bool {
     let components = multiaddr.iter().collect::<Vec<_>>();
     matches!(components.get(1), Some(Protocol::Tcp(_)))
+}
+pub fn ip(multiaddr: &Multiaddr) -> Option<IpAddr> {
+    match multiaddr.iter().collect::<Vec<_>>().first() {
+        Some(Protocol::Ip4(ip)) => Some(IpAddr::V4(*ip)),
+        Some(Protocol::Ip6(ip)) => Some(IpAddr::V6(*ip)),
+        _ => None,
+    }
 }
 #[cfg(test)]
 mod tests {

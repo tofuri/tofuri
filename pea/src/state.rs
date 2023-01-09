@@ -191,9 +191,9 @@ fn update_stakers<T: State>(state: &mut T, address: AddressBytes) {
     }
 }
 fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
-    let vec_stakers = stakers_offline(state, timestamp, previous_timestamp);
-    for index in 0..vec_stakers.len() {
-        let staker = vec_stakers[index];
+    let stakers = stakers_offline(state, timestamp, previous_timestamp);
+    for index in 0..stakers.len() {
+        let staker = stakers[index];
         let mut staked = state.get_staked(&staker);
         let penalty = COIN * (index + 1) as u128;
         staked = staked.saturating_sub(penalty);

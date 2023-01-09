@@ -1,4 +1,4 @@
-use crate::{multiaddr, node::Node, state, util};
+use crate::{multiaddr, node::Node, util};
 use chrono::{TimeZone, Utc};
 use libp2p::Multiaddr;
 use log::error;
@@ -180,15 +180,8 @@ fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
 }
 fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
-    let mut random_queue = vec![];
-    for n in 0..8 {
-        let n = state::offline(util::timestamp(), node.blockchain.states.dynamic.latest_block.timestamp) as isize - n;
-        if let Some(staker) = dynamic.staker_n(n) {
-            random_queue.push(address::encode(&staker));
-        }
-    }
     Ok(json(serde_json::to_string(&api::Dynamic {
-        random_queue,
+        random_queue: dynamic.stakers_n(8).iter().map(address::encode).collect(),
         hashes: dynamic.hashes.len(),
         latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
         stakers: dynamic.stakers.iter().take(16).map(address::encode).collect(),

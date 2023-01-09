@@ -68,13 +68,13 @@ fn offline_staker(node: &mut Node, timestamp: u32) {
         return;
     }
     let dynamic = &node.blockchain.states.dynamic;
-    if let Some(address) = dynamic.staker_offline(timestamp) {
-        if let Some(hash) = node.blockchain.offline.insert(address.clone(), dynamic.latest_block.hash) {
+    for staker in dynamic.stakers_offline(timestamp, dynamic.latest_block.timestamp) {
+        if let Some(hash) = node.blockchain.offline.insert(staker, dynamic.latest_block.hash) {
             if hash == dynamic.latest_block.hash {
                 return;
             }
         }
-        warn!("Banned offline staker {}", address::encode(&address).green());
+        warn!("Banned offline staker {}", address::encode(&staker).green());
     }
 }
 fn dial_known(node: &mut Node) {
@@ -116,7 +116,7 @@ fn share(node: &mut Node) {
     node.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
 }
 fn grow(node: &mut Node, timestamp: u32) {
-    if !node.blockchain.sync.downloading() && !node.mint && node.blockchain.states.dynamic.staker(timestamp).is_none() {
+    if !node.blockchain.sync.downloading() && !node.mint && node.blockchain.states.dynamic.next_staker(timestamp).is_none() {
         if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",

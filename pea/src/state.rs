@@ -290,11 +290,10 @@ pub fn next_staker<T: State>(state: &T, timestamp: u32) -> Option<AddressBytes> 
     stakers_n(state, offline(timestamp, state.get_latest_block().timestamp)).last().copied()
 }
 fn stakers_offline<T: State>(state: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
-    let offline = offline(timestamp, previous_timestamp);
-    if offline == 0 {
-        return vec![];
+    match offline(timestamp, previous_timestamp) {
+        0 => vec![],
+        n => stakers_n(state, n - 1),
     }
-    stakers_n(state, offline - 1)
 }
 fn stakers_n<T: State>(state: &T, n: usize) -> Vec<AddressBytes> {
     let mut modulo = 0;

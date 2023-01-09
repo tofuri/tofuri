@@ -187,6 +187,15 @@ fn staked_insert<T: State>(state: &mut T, address: AddressBytes, staked: u128) {
         x => state.get_staked_mut().insert(address, x),
     };
 }
+fn update_staker<T: State>(state: &mut T, address: AddressBytes) {
+    let staked = state.staked(&address);
+    let index = state.get_stakers().iter().position(|x| x == &address);
+    if index.is_none() && staked >= COIN {
+        state.get_stakers_mut().push_back(address);
+    } else if index.is_some() && staked < COIN {
+        state.get_stakers_mut().remove(index.unwrap()).unwrap();
+    }
+}
 fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
     for n in 0..offline(timestamp, previous_timestamp) {
         let staker = state.staker_n(n as isize);
@@ -242,15 +251,6 @@ fn update_2<T: State>(state: &mut T, block: &BlockA) {
         }
         balance_insert(state, stake.input_address, balance);
         staked_insert(state, stake.input_address, staked);
-    }
-}
-fn update_staker<T: State>(state: &mut T, address: AddressBytes) {
-    let staked = state.staked(&address);
-    let index = state.get_stakers().iter().position(|x| x == &address);
-    if index.is_none() && staked >= COIN {
-        state.get_stakers_mut().push_back(address);
-    } else if index.is_some() && staked < COIN {
-        state.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }
 fn update_3<T: State>(state: &mut T, block: &BlockA) {

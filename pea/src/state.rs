@@ -25,19 +25,19 @@ pub trait State {
 }
 #[derive(Default, Debug, Clone)]
 pub struct Trusted {
+    pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
     balance: HashMap<AddressBytes, u128>,
     staked: HashMap<AddressBytes, u128>,
-    pub latest_block: BlockA,
 }
 #[derive(Default, Debug, Clone)]
 pub struct Dynamic {
+    pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
     balance: HashMap<AddressBytes, u128>,
     staked: HashMap<AddressBytes, u128>,
-    pub latest_block: BlockA,
 }
 impl Trusted {
     pub fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {

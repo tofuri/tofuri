@@ -1,6 +1,5 @@
 use crate::{multiaddr, node::Node, state, util};
 use chrono::{TimeZone, Utc};
-use lazy_static::lazy_static;
 use libp2p::Multiaddr;
 use log::error;
 use pea_address::address;
@@ -15,15 +14,11 @@ use tokio::{
     net::TcpStream,
     time::timeout,
 };
-lazy_static! {
-    static ref TRANSACTION_SERIALIZED: usize = serde_json::to_string(&TransactionB::default()).unwrap().len();
-    static ref STAKE_SERIALIZED: usize = serde_json::to_string(&StakeB::default()).unwrap().len();
-}
 fn parse_body(buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
     let str = std::str::from_utf8(buffer)?;
     let vec = str.split("\n\n").collect::<Vec<&str>>();
     let body = vec.get(1).ok_or("empty body")?;
-    Ok(body.to_string())
+    Ok(body.trim_end_matches(char::from(0)).to_string())
 }
 fn parse_request_line(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
     Ok(buffer.lines().next().ok_or("empty request line")??)
@@ -317,7 +312,7 @@ fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
     Ok(text(string))
 }
 fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
-    let transaction_b: TransactionB = bincode::deserialize(&hex::decode(body.get(0..*TRANSACTION_SERIALIZED).ok_or("POST TRANSACTION")?)?)?;
+    let transaction_b: TransactionB = serde_json::from_str(&body)?;
     let data = bincode::serialize(&transaction_b).unwrap();
     let status = match node.blockchain.pending_transactions_push(transaction_b, util::timestamp()) {
         Ok(()) => {
@@ -334,7 +329,7 @@ fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Err
     Ok(json(serde_json::to_string(&status)?))
 }
 fn post_stake(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
-    let stake_b: StakeB = bincode::deserialize(&hex::decode(body.get(0..*STAKE_SERIALIZED).ok_or("POST STAKE")?)?)?;
+    let stake_b: StakeB = serde_json::from_str(&body)?;
     let data = bincode::serialize(&stake_b).unwrap();
     let status = match node.blockchain.pending_stakes_push(stake_b, util::timestamp()) {
         Ok(()) => {

@@ -18,7 +18,7 @@ pub trait State {
     fn get_map_staked_mut(&mut self) -> &mut Map;
     fn get_latest_block(&self) -> &BlockA;
     fn get_latest_block_mut(&mut self) -> &mut BlockA;
-    fn is_trusted(&self) -> bool;
+    fn is_trusted() -> bool;
     fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
 }
@@ -102,7 +102,7 @@ impl State for Trusted {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
-    fn is_trusted(&self) -> bool {
+    fn is_trusted() -> bool {
         true
     }
     fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
@@ -140,7 +140,7 @@ impl State for Dynamic {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
-    fn is_trusted(&self) -> bool {
+    fn is_trusted() -> bool {
         false
     }
     fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
@@ -192,7 +192,7 @@ fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, lo
         staked = staked.saturating_sub(penalty);
         insert_staked(state, staker, staked);
         update_stakers(state, staker);
-        if !loading && !state.is_trusted() {
+        if !loading && !T::is_trusted() {
             warn!(
                 "{} {} {}{}",
                 "Slashed".red(),

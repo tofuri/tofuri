@@ -25,7 +25,10 @@ pub fn random(beta: &Beta, n: u128, modulo: u128) -> u128 {
     u256_modulo(&hash_n(beta, n), modulo)
 }
 pub fn penalty(index: usize) -> u128 {
-    COIN * index as u128
+    if index == 0 {
+        return 0;
+    }
+    COIN * 2u128.pow(index as u32 - 1)
 }
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32

@@ -271,10 +271,10 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
         previous_timestamp = block_a.timestamp;
     }
 }
-fn random_stakers_index(vec_stakers: &Vec<(AddressBytes, u128)>, beta: &Beta, n: u128, modulo: u128) -> usize {
+fn random_stakers_index(vec: &Vec<(AddressBytes, u128)>, beta: &Beta, n: u128, modulo: u128) -> usize {
     let random = util::random(beta, n, modulo);
     let mut counter = 0;
-    for (index, (_, staked)) in vec_stakers.iter().enumerate() {
+    for (index, (_, staked)) in vec.iter().enumerate() {
         counter += staked;
         if random <= counter {
             return index;
@@ -298,13 +298,13 @@ fn stakers_offline<T: State>(state: &T, timestamp: u32, previous_timestamp: u32)
 }
 fn stakers_n<T: State>(state: &T, n: usize) -> Vec<AddressBytes> {
     let mut modulo = 0;
-    let mut stakers: Vec<(AddressBytes, u128)> = vec![];
+    let mut vec: Vec<(AddressBytes, u128)> = vec![];
     for staker in state.get_stakers().iter() {
         let staked = state.get_staked(staker);
         modulo += staked;
-        stakers.push((staker.clone(), staked));
+        vec.push((staker.clone(), staked));
     }
-    stakers.sort_by(|a, b| b.1.cmp(&a.1));
+    vec.sort_by(|a, b| b.1.cmp(&a.1));
     let mut random_queue = vec![];
     for index in 0..(n + 1) {
         let penalty = COIN * index as u128;
@@ -312,9 +312,9 @@ fn stakers_n<T: State>(state: &T, n: usize) -> Vec<AddressBytes> {
         if modulo == 0 {
             break;
         }
-        let index = random_stakers_index(&stakers, &state.get_latest_block().beta, index as u128, modulo);
-        stakers[index] = (stakers[index].0, stakers[index].1.saturating_sub(penalty));
-        random_queue.push(stakers[index].0);
+        let index = random_stakers_index(&vec, &state.get_latest_block().beta, index as u128, modulo);
+        vec[index] = (vec[index].0, vec[index].1.saturating_sub(penalty));
+        random_queue.push(vec[index].0);
     }
     random_queue
 }

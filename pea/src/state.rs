@@ -195,7 +195,7 @@ fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, lo
     for index in 0..stakers.len() {
         let staker = stakers[index];
         let mut staked = state.get_staked(&staker);
-        let penalty = COIN * (index + 1) as u128;
+        let penalty = util::penalty(index + 1);
         staked = staked.saturating_sub(penalty);
         insert_staked(state, staker, staked);
         update_stakers(state, staker);
@@ -307,7 +307,7 @@ fn stakers_n<T: State>(state: &T, n: usize) -> Vec<AddressBytes> {
     vec.sort_by(|a, b| b.1.cmp(&a.1));
     let mut random_queue = vec![];
     for index in 0..(n + 1) {
-        let penalty = COIN * index as u128;
+        let penalty = util::penalty(index);
         modulo = modulo.saturating_sub(penalty);
         if modulo == 0 {
             break;

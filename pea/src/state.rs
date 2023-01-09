@@ -257,34 +257,18 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
         previous_timestamp = block_a.timestamp;
     }
 }
-fn random_stakers_index(vec: &Vec<(AddressBytes, u128)>, beta: &Beta, n: u128, modulo: u128) -> usize {
-    let random = util::random(beta, n, modulo);
-    let mut counter = 0;
-    for (index, (_, staked)) in vec.iter().enumerate() {
-        counter += staked;
-        if random <= counter {
-            return index;
-        }
-    }
-    unreachable!()
-}
-fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
-    let diff = timestamp.saturating_sub(previous_timestamp + 1);
-    (diff / BLOCK_TIME_MAX as u32) as usize
-}
-pub fn next_staker<T: State>(state: &T, timestamp: u32) -> Option<AddressBytes> {
-    match stakers_n(state, offline(timestamp, state.get_latest_block().timestamp)) {
-        (_, true) => None,
-        (x, _) => x.last().copied(),
-    }
-}
-fn stakers_offline<T: State>(state: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
-    match offline(timestamp, previous_timestamp) {
-        0 => vec![],
-        n => stakers_n(state, n - 1).0,
-    }
-}
 fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
+    fn random_stakers_index(vec: &Vec<(AddressBytes, u128)>, beta: &Beta, n: u128, modulo: u128) -> usize {
+        let random = util::random(beta, n, modulo);
+        let mut counter = 0;
+        for (index, (_, staked)) in vec.iter().enumerate() {
+            counter += staked;
+            if random <= counter {
+                return index;
+            }
+        }
+        unreachable!()
+    }
     let mut modulo = 0;
     let mut vec: Vec<(AddressBytes, u128)> = vec![];
     for staker in state.get_stakers().iter() {
@@ -305,4 +289,20 @@ fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
         random_queue.push(vec[index].0);
     }
     (random_queue, false)
+}
+fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
+    let diff = timestamp.saturating_sub(previous_timestamp + 1);
+    (diff / BLOCK_TIME_MAX as u32) as usize
+}
+pub fn next_staker<T: State>(state: &T, timestamp: u32) -> Option<AddressBytes> {
+    match stakers_n(state, offline(timestamp, state.get_latest_block().timestamp)) {
+        (_, true) => None,
+        (x, _) => x.last().copied(),
+    }
+}
+fn stakers_offline<T: State>(state: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
+    match offline(timestamp, previous_timestamp) {
+        0 => vec![],
+        n => stakers_n(state, n - 1).0,
+    }
 }

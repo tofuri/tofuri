@@ -302,13 +302,9 @@ impl Blockchain {
             return Err("stake timestamp ancient".into());
         }
         let balance = self.states.dynamic.balance(&stake_a.input_address);
-        let staked = self.states.dynamic.staked(&stake_a.input_address);
         if stake_a.deposit {
             if util::stake_amount(self.states.dynamic.stakers.len()) + stake_a.fee > balance {
                 return Err("stake deposit too expensive".into());
-            }
-            if staked != 0 {
-                return Err("already staking".into());
             }
         } else if stake_a.fee > balance {
             return Err("stake withdraw fee too expensive".into());

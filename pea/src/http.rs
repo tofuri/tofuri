@@ -183,8 +183,8 @@ fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let mut random_queue = vec![];
     for n in 0..8 {
         let n = state::offline(util::timestamp(), node.blockchain.states.dynamic.latest_block.timestamp) as isize - n;
-        if let Some(address) = dynamic.staker_n(n) {
-            random_queue.push(address::encode(address));
+        if let Some(staker) = dynamic.staker_n(n) {
+            random_queue.push(address::encode(&staker));
         }
     }
     Ok(json(serde_json::to_string(&api::Dynamic {

@@ -78,8 +78,8 @@ impl Blockchain {
         block_b
     }
     pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockA> {
-        if let Some(address) = self.states.dynamic.staker(timestamp) {
-            if address != &self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+        if let Some(staker) = self.states.dynamic.staker(timestamp) {
+            if staker != self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
                 return None;
             }
         } else {
@@ -231,8 +231,8 @@ impl Blockchain {
         if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return Err("block timestamp early".into());
         }
-        if let Some(a) = dynamic.staker(block_a.timestamp) {
-            if a != &input_address {
+        if let Some(staker) = dynamic.staker(block_a.timestamp) {
+            if staker != input_address {
                 return Err("block staker address".into());
             }
         } else {

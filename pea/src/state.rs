@@ -290,31 +290,31 @@ pub fn next_staker<T: State>(state: &T, timestamp: u32) -> Option<AddressBytes> 
     stakers_n(state, offline(timestamp, state.get_latest_block().timestamp)).last().copied()
 }
 fn stakers_offline<T: State>(state: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
-    let offline = offline(timestamp, previous_timestamp) as isize - 1;
-    if offline < 0 {
+    let offline = offline(timestamp, previous_timestamp);
+    if offline == 0 {
         return vec![];
     }
-    stakers_n(state, offline as usize)
+    stakers_n(state, offline - 1)
 }
 fn stakers_n<T: State>(state: &T, n: usize) -> Vec<AddressBytes> {
     let mut modulo = 0;
-    let mut vec_stakers: Vec<(AddressBytes, u128)> = vec![];
+    let mut stakers: Vec<(AddressBytes, u128)> = vec![];
     for staker in state.get_stakers().iter() {
         let staked = state.get_staked(staker);
         modulo += staked;
-        vec_stakers.push((staker.clone(), staked));
+        stakers.push((staker.clone(), staked));
     }
-    vec_stakers.sort_by(|a, b| b.1.cmp(&a.1));
-    let mut vec_stakers_offline = vec![];
+    stakers.sort_by(|a, b| b.1.cmp(&a.1));
+    let mut random_queue = vec![];
     for index in 0..(n + 1) {
         let penalty = COIN * index as u128;
         modulo = modulo.saturating_sub(penalty);
         if modulo == 0 {
             break;
         }
-        let index = random_stakers_index(&vec_stakers, &state.get_latest_block().beta, index as u128, modulo);
-        vec_stakers[index] = (vec_stakers[index].0, vec_stakers[index].1.saturating_sub(penalty));
-        vec_stakers_offline.push(vec_stakers[index].0);
+        let index = random_stakers_index(&stakers, &state.get_latest_block().beta, index as u128, modulo);
+        stakers[index] = (stakers[index].0, stakers[index].1.saturating_sub(penalty));
+        random_queue.push(stakers[index].0);
     }
-    vec_stakers_offline
+    random_queue
 }

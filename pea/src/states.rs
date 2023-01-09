@@ -61,7 +61,6 @@ impl States {
                     Ok(block_b) => block_b.timestamp,
                     Err(_) => 0,
                 },
-                false,
             );
         }
         self.dynamic = Dynamic::from(db, hashes_1, &self.trusted);

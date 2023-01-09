@@ -44,8 +44,8 @@ pub struct Dynamic {
     pub latest_block: BlockA,
 }
 impl Trusted {
-    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
-        update(self, db, block, previous_timestamp, loading)
+    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
+        update(self, db, block, previous_timestamp, false)
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)

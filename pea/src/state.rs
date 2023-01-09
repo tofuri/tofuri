@@ -18,8 +18,6 @@ pub trait State {
     fn get_map_staked_mut(&mut self) -> &mut Map;
     fn get_latest_block(&self) -> &BlockA;
     fn get_latest_block_mut(&mut self) -> &mut BlockA;
-    fn get_balance(&self, address: &AddressBytes) -> u128;
-    fn get_staked(&self, address: &AddressBytes) -> u128;
     fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
 }
@@ -103,12 +101,6 @@ impl State for Trusted {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
-    fn get_balance(&self, address: &AddressBytes) -> u128 {
-        get_balance(self, address)
-    }
-    fn get_staked(&self, address: &AddressBytes) -> u128 {
-        get_staked(self, address)
-    }
     fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
         append_block(self, db, block, previous_timestamp, loading)
     }
@@ -144,12 +136,6 @@ impl State for Dynamic {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
-    fn get_balance(&self, address: &AddressBytes) -> u128 {
-        get_balance(self, address)
-    }
-    fn get_staked(&self, address: &AddressBytes) -> u128 {
-        get_staked(self, address)
-    }
     fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
         append_block(self, db, block, previous_timestamp, loading)
     }
@@ -182,7 +168,7 @@ fn insert_staked<T: State>(state: &mut T, address: AddressBytes, staked: u128) {
     };
 }
 fn update_stakers<T: State>(state: &mut T, address: AddressBytes) {
-    let staked = state.get_staked(&address);
+    let staked = get_staked(state, &address);
     let index = state.get_stakers().iter().position(|x| x == &address);
     if index.is_none() && staked >= COIN {
         state.get_stakers_mut().push_back(address);
@@ -194,7 +180,7 @@ fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, lo
     let stakers = stakers_offline(state, timestamp, previous_timestamp);
     for index in 0..stakers.len() {
         let staker = stakers[index];
-        let mut staked = state.get_staked(&staker);
+        let mut staked = get_staked(state, &staker);
         let penalty = util::penalty(index + 1);
         staked = staked.saturating_sub(penalty);
         insert_staked(state, staker, staked);
@@ -212,7 +198,7 @@ fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, lo
 }
 fn update_1<T: State>(state: &mut T, block: &BlockA) {
     let input_address = block.input_address();
-    let mut balance = state.get_balance(&input_address);
+    let mut balance = get_balance(state, &input_address);
     balance += block.reward();
     if let Some(stake) = block.stakes.first() {
         if stake.fee == 0 {
@@ -223,16 +209,16 @@ fn update_1<T: State>(state: &mut T, block: &BlockA) {
 }
 fn update_2<T: State>(state: &mut T, block: &BlockA) {
     for transaction in block.transactions.iter() {
-        let mut balance_input = state.get_balance(&transaction.input_address);
-        let mut balance_output = state.get_balance(&transaction.output_address);
+        let mut balance_input = get_balance(state, &transaction.input_address);
+        let mut balance_output = get_balance(state, &transaction.output_address);
         balance_input -= transaction.amount + transaction.fee;
         balance_output += transaction.amount;
         insert_balance(state, transaction.input_address, balance_input);
         insert_balance(state, transaction.output_address, balance_output);
     }
     for stake in block.stakes.iter() {
-        let mut balance = state.get_balance(&stake.input_address);
-        let mut staked = state.get_staked(&stake.input_address);
+        let mut balance = get_balance(state, &stake.input_address);
+        let mut staked = get_staked(state, &stake.input_address);
         if stake.deposit {
             balance -= stake.amount + stake.fee;
             staked += stake.amount;
@@ -299,7 +285,7 @@ fn stakers_n<T: State>(state: &T, n: usize) -> Vec<AddressBytes> {
     let mut modulo = 0;
     let mut vec: Vec<(AddressBytes, u128)> = vec![];
     for staker in state.get_stakers().iter() {
-        let staked = state.get_staked(staker);
+        let staked = get_staked(state, staker);
         modulo += staked;
         vec.push((staker.clone(), staked));
     }

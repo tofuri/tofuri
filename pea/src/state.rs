@@ -19,10 +19,6 @@ pub trait State {
     fn get_latest_block_mut(&mut self) -> &mut BlockA;
     fn balance(&self, address: &AddressBytes) -> u128;
     fn staked(&self, address: &AddressBytes) -> u128;
-    fn update_balances(&mut self, block: &BlockA);
-    fn update_stakers(&mut self, block: &BlockA);
-    fn update_reward(&mut self, block: &BlockA);
-    fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32, loading: bool);
     fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
     fn staker_n(&self, n: isize) -> Option<AddressBytes>;
@@ -113,18 +109,6 @@ impl State for Trusted {
     fn staked(&self, address: &AddressBytes) -> u128 {
         staked(self, address)
     }
-    fn update_balances(&mut self, block: &BlockA) {
-        update_balances(self, block)
-    }
-    fn update_stakers(&mut self, block: &BlockA) {
-        update_stakers(self, block)
-    }
-    fn update_reward(&mut self, block: &BlockA) {
-        update_reward(self, block)
-    }
-    fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32, loading: bool) {
-        update_penalty(self, timestamp, previous_timestamp, loading)
-    }
     fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
         append_block(self, db, block, previous_timestamp, loading)
     }
@@ -169,18 +153,6 @@ impl State for Dynamic {
     fn staked(&self, address: &AddressBytes) -> u128 {
         staked(self, address)
     }
-    fn update_balances(&mut self, block: &BlockA) {
-        update_balances(self, block)
-    }
-    fn update_stakers(&mut self, block: &BlockA) {
-        update_stakers(self, block)
-    }
-    fn update_reward(&mut self, block: &BlockA) {
-        update_reward(self, block)
-    }
-    fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32, loading: bool) {
-        update_penalty(self, timestamp, previous_timestamp, loading)
-    }
     fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
         append_block(self, db, block, previous_timestamp, loading)
     }
@@ -215,7 +187,41 @@ fn staked_insert<T: State>(state: &mut T, address: AddressBytes, staked: u128) {
         x => state.get_staked_mut().insert(address, x),
     };
 }
-fn update_balances<T: State>(state: &mut T, block: &BlockA) {
+fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
+    for n in 0..offline(timestamp, previous_timestamp) {
+        let staker = state.staker_n(n as isize);
+        if staker.is_none() {
+            break;
+        }
+        let staker = staker.unwrap().clone();
+        let mut staked = state.staked(&staker);
+        let penalty = COIN * (n + 1) as u128;
+        if !loading {
+            warn!(
+                "{} {} {}{}",
+                "Slashed".red(),
+                address::encode(&staker).green(),
+                "-".yellow(),
+                pea_int::to_string(penalty).yellow()
+            );
+        }
+        staked = staked.saturating_sub(penalty);
+        staked_insert(state, staker, staked);
+        update_staker(state, staker);
+    }
+}
+fn update_1<T: State>(state: &mut T, block: &BlockA) {
+    let input_address = block.input_address();
+    let mut balance = state.balance(&input_address);
+    balance += block.reward();
+    if let Some(stake) = block.stakes.first() {
+        if stake.fee == 0 {
+            staked_insert(state, input_address, COIN)
+        }
+    }
+    balance_insert(state, input_address, balance)
+}
+fn update_2<T: State>(state: &mut T, block: &BlockA) {
     for transaction in block.transactions.iter() {
         let mut balance_input = state.balance(&transaction.input_address);
         let mut balance_output = state.balance(&transaction.output_address);
@@ -247,50 +253,16 @@ fn update_staker<T: State>(state: &mut T, address: AddressBytes) {
         state.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }
-fn update_stakers<T: State>(state: &mut T, block: &BlockA) {
+fn update_3<T: State>(state: &mut T, block: &BlockA) {
     for stake in block.stakes.iter() {
         update_staker(state, stake.input_address);
     }
 }
-fn update_reward<T: State>(state: &mut T, block: &BlockA) {
-    let input_address = block.input_address();
-    let mut balance = state.balance(&input_address);
-    balance += block.reward();
-    if let Some(stake) = block.stakes.first() {
-        if stake.fee == 0 {
-            staked_insert(state, input_address, COIN)
-        }
-    }
-    balance_insert(state, input_address, balance)
-}
-fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
-    for n in 0..offline(timestamp, previous_timestamp) {
-        let staker = state.staker_n(n as isize);
-        if staker.is_none() {
-            break;
-        }
-        let staker = staker.unwrap().clone();
-        let mut staked = state.staked(&staker);
-        let penalty = COIN * (n + 1) as u128;
-        if !loading {
-            warn!(
-                "{} {} {}{}",
-                "Slashed".red(),
-                address::encode(&staker).green(),
-                "-".yellow(),
-                pea_int::to_string(penalty).yellow()
-            );
-        }
-        staked = staked.saturating_sub(penalty);
-        staked_insert(state, staker, staked);
-        update_staker(state, staker);
-    }
-}
 pub fn update<T: State>(state: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
-    state.update_penalty(block.timestamp, previous_timestamp, loading);
-    state.update_reward(block);
-    state.update_balances(block);
-    state.update_stakers(block);
+    update_0(state, block.timestamp, previous_timestamp, loading);
+    update_1(state, block);
+    update_2(state, block);
+    update_3(state, block);
 }
 pub fn append_block<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
     state.get_hashes_mut().push(block.hash);

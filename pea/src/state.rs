@@ -1,4 +1,7 @@
 use crate::util;
+use colored::Colorize;
+use log::warn;
+use pea_address::address;
 use pea_block::BlockA;
 use pea_core::*;
 use pea_db as db;
@@ -19,8 +22,8 @@ pub trait State {
     fn update_balances(&mut self, block: &BlockA);
     fn update_stakers(&mut self, block: &BlockA);
     fn update_reward(&mut self, block: &BlockA);
-    fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32);
-    fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32);
+    fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32, loading: bool);
+    fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
     fn staker_n(&self, n: isize) -> Option<&AddressBytes>;
 }
@@ -41,8 +44,8 @@ pub struct Dynamic {
     pub latest_block: BlockA,
 }
 impl Trusted {
-    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
-        update(self, db, block, previous_timestamp)
+    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
+        update(self, db, block, previous_timestamp, loading)
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
@@ -119,11 +122,11 @@ impl State for Trusted {
     fn update_reward(&mut self, block: &BlockA) {
         update_reward(self, block)
     }
-    fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32) {
-        update_penalty(self, timestamp, previous_timestamp)
+    fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32, loading: bool) {
+        update_penalty(self, timestamp, previous_timestamp, loading)
     }
-    fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
-        update(self, db, block, previous_timestamp)
+    fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
+        update(self, db, block, previous_timestamp, loading)
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
@@ -175,11 +178,11 @@ impl State for Dynamic {
     fn update_reward(&mut self, block: &BlockA) {
         update_reward(self, block)
     }
-    fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32) {
-        update_penalty(self, timestamp, previous_timestamp)
+    fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32, loading: bool) {
+        update_penalty(self, timestamp, previous_timestamp, loading)
     }
-    fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
-        update(self, db, block, previous_timestamp)
+    fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
+        update(self, db, block, previous_timestamp, loading)
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
@@ -262,7 +265,7 @@ fn update_reward<T: State>(state: &mut T, block: &BlockA) {
     }
     state.get_balance_mut().insert(input_address, balance);
 }
-fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32) {
+fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
     for n in 0..offline(timestamp, previous_timestamp) {
         let staker = state.staker_n(n as isize);
         if staker.is_none() {
@@ -270,7 +273,17 @@ fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u
         }
         let staker = staker.unwrap().clone();
         let mut staked = state.staked(&staker);
-        staked = staked.saturating_sub(COIN * (n + 1) as u128);
+        let penalty = COIN * (n + 1) as u128;
+        if !loading {
+            warn!(
+                "{} {} {}{}",
+                "Slashed".red(),
+                address::encode(&staker).green(),
+                "-".yellow(),
+                pea_int::to_string(penalty).yellow()
+            );
+        }
+        staked = staked.saturating_sub(penalty);
         if staked == 0 {
             state.get_staked_mut().remove(&staker);
         } else {
@@ -279,10 +292,10 @@ fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u
         update_staker(state, staker);
     }
 }
-pub fn update<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
+pub fn update<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
     let hash = block.hash;
     state.get_hashes_mut().push(hash);
-    state.update_penalty(block.timestamp, previous_timestamp);
+    state.update_penalty(block.timestamp, previous_timestamp, loading);
     state.update_reward(block);
     state.update_balances(block);
     state.update_stakers(block);
@@ -296,7 +309,7 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
     };
     for hash in hashes.iter() {
         let block_a = db::block::get_a(db, hash).unwrap();
-        state.update(db, &block_a, previous_timestamp);
+        state.update(db, &block_a, previous_timestamp, true);
         previous_timestamp = block_a.timestamp;
     }
 }

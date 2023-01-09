@@ -70,7 +70,7 @@ impl Dynamic {
         stakers_offline(self, timestamp, previous_timestamp)
     }
     pub fn stakers_n(&self, n: usize) -> Vec<AddressBytes> {
-        stakers_n(self, n)
+        stakers_n(self, n).0
     }
 }
 impl State for Trusted {
@@ -273,15 +273,18 @@ fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
     (diff / BLOCK_TIME_MAX as u32) as usize
 }
 pub fn next_staker<T: State>(state: &T, timestamp: u32) -> Option<AddressBytes> {
-    stakers_n(state, offline(timestamp, state.get_latest_block().timestamp)).last().copied()
+    match stakers_n(state, offline(timestamp, state.get_latest_block().timestamp)) {
+        (_, true) => None,
+        (x, _) => x.last().copied(),
+    }
 }
 fn stakers_offline<T: State>(state: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
     match offline(timestamp, previous_timestamp) {
         0 => vec![],
-        n => stakers_n(state, n - 1),
+        n => stakers_n(state, n - 1).0,
     }
 }
-fn stakers_n<T: State>(state: &T, n: usize) -> Vec<AddressBytes> {
+fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     let mut modulo = 0;
     let mut vec: Vec<(AddressBytes, u128)> = vec![];
     for staker in state.get_stakers().iter() {
@@ -295,11 +298,11 @@ fn stakers_n<T: State>(state: &T, n: usize) -> Vec<AddressBytes> {
         let penalty = util::penalty(index);
         modulo = modulo.saturating_sub(penalty);
         if modulo == 0 {
-            break;
+            return (random_queue, true);
         }
         let index = random_stakers_index(&vec, &state.get_latest_block().beta, index as u128, modulo);
         vec[index] = (vec[index].0, vec[index].1.saturating_sub(penalty));
         random_queue.push(vec[index].0);
     }
-    random_queue
+    (random_queue, false)
 }

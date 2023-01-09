@@ -203,41 +203,39 @@ fn staked<T: State>(state: &T, address: &AddressBytes) -> u128 {
         None => 0,
     }
 }
+fn balance_insert<T: State>(state: &mut T, address: AddressBytes, balance: u128) {
+    match balance {
+        0 => state.get_balance_mut().remove(&address),
+        x => state.get_balance_mut().insert(address, x),
+    };
+}
+fn staked_insert<T: State>(state: &mut T, address: AddressBytes, staked: u128) {
+    match staked {
+        0 => state.get_staked_mut().remove(&address),
+        x => state.get_staked_mut().insert(address, x),
+    };
+}
 fn update_balances<T: State>(state: &mut T, block: &BlockA) {
     for transaction in block.transactions.iter() {
-        let input_address = transaction.input_address;
-        let mut balance_input = state.balance(&input_address);
+        let mut balance_input = state.balance(&transaction.input_address);
         let mut balance_output = state.balance(&transaction.output_address);
         balance_input -= transaction.amount + transaction.fee;
         balance_output += transaction.amount;
-        if balance_input == 0 {
-            state.get_balance_mut().remove(&input_address);
-        } else {
-            state.get_balance_mut().insert(input_address, balance_input);
-        }
-        state.get_balance_mut().insert(transaction.output_address, balance_output);
+        balance_insert(state, transaction.input_address, balance_input);
+        balance_insert(state, transaction.output_address, balance_output);
     }
     for stake in block.stakes.iter() {
-        let address = stake.input_address;
-        let mut balance = state.balance(&address);
-        let mut staked = state.staked(&address);
+        let mut balance = state.balance(&stake.input_address);
+        let mut staked = state.staked(&stake.input_address);
         if stake.deposit {
             balance -= stake.amount + stake.fee;
             staked += stake.amount;
         } else {
-            balance += staked - stake.fee;
-            staked = 0;
+            balance += stake.amount - stake.fee;
+            staked -= stake.amount;
         }
-        if balance == 0 {
-            state.get_balance_mut().remove(&address);
-        } else {
-            state.get_balance_mut().insert(address, balance);
-        }
-        if staked == 0 {
-            state.get_staked_mut().remove(&address);
-        } else {
-            state.get_staked_mut().insert(address, staked);
-        }
+        balance_insert(state, stake.input_address, balance);
+        staked_insert(state, stake.input_address, staked);
     }
 }
 fn update_staker<T: State>(state: &mut T, address: AddressBytes) {
@@ -260,10 +258,10 @@ fn update_reward<T: State>(state: &mut T, block: &BlockA) {
     balance += block.reward();
     if let Some(stake) = block.stakes.first() {
         if stake.fee == 0 {
-            state.get_staked_mut().insert(input_address, COIN);
+            staked_insert(state, input_address, COIN)
         }
     }
-    state.get_balance_mut().insert(input_address, balance);
+    balance_insert(state, input_address, balance)
 }
 fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
     for n in 0..offline(timestamp, previous_timestamp) {
@@ -284,11 +282,7 @@ fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u
             );
         }
         staked = staked.saturating_sub(penalty);
-        if staked == 0 {
-            state.get_staked_mut().remove(&staker);
-        } else {
-            state.get_staked_mut().insert(staker, staked);
-        }
+        staked_insert(state, staker, staked);
         update_staker(state, staker);
     }
 }

@@ -23,7 +23,7 @@ pub trait State {
     fn update_stakers(&mut self, block: &BlockA);
     fn update_reward(&mut self, block: &BlockA);
     fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32, loading: bool);
-    fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool);
+    fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
     fn staker_n(&self, n: isize) -> Option<AddressBytes>;
 }
@@ -44,8 +44,8 @@ pub struct Dynamic {
     pub latest_block: BlockA,
 }
 impl Trusted {
-    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
-        update(self, db, block, previous_timestamp, false)
+    pub fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
+        append_block(self, db, block, previous_timestamp, false)
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
@@ -125,8 +125,8 @@ impl State for Trusted {
     fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32, loading: bool) {
         update_penalty(self, timestamp, previous_timestamp, loading)
     }
-    fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
-        update(self, db, block, previous_timestamp, loading)
+    fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
+        append_block(self, db, block, previous_timestamp, loading)
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
@@ -181,8 +181,8 @@ impl State for Dynamic {
     fn update_penalty(&mut self, timestamp: u32, previous_timestamp: u32, loading: bool) {
         update_penalty(self, timestamp, previous_timestamp, loading)
     }
-    fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
-        update(self, db, block, previous_timestamp, loading)
+    fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
+        append_block(self, db, block, previous_timestamp, loading)
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
@@ -292,15 +292,16 @@ fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u
         update_staker(state, staker);
     }
 }
-pub fn update<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
-    let hash = block.hash;
-    state.get_hashes_mut().push(hash);
+pub fn update<T: State>(state: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
     state.update_penalty(block.timestamp, previous_timestamp, loading);
     state.update_reward(block);
     state.update_balances(block);
     state.update_stakers(block);
-    // set latest_block after update_penalty()
-    *state.get_latest_block_mut() = db::block::get_a(db, &hash).unwrap();
+}
+pub fn append_block<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
+    state.get_hashes_mut().push(block.hash);
+    update(state, block, previous_timestamp, loading);
+    *state.get_latest_block_mut() = db::block::get_a(db, &block.hash).unwrap();
 }
 pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
     let mut previous_timestamp = match hashes.first() {
@@ -309,7 +310,7 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
     };
     for hash in hashes.iter() {
         let block_a = db::block::get_a(db, hash).unwrap();
-        state.update(db, &block_a, previous_timestamp, true);
+        state.append_block(db, &block_a, previous_timestamp, true);
         previous_timestamp = block_a.timestamp;
     }
 }

@@ -54,7 +54,7 @@ impl States {
         let hashes_0 = &self.dynamic.hashes;
         if hashes_0.len() == trust_fork_after_blocks {
             let block_a = db::block::get_a(db, hashes_0.first().unwrap()).unwrap();
-            self.trusted.update(
+            self.trusted.append_block(
                 db,
                 &block_a,
                 match db::block::get_b(db, &block_a.previous_hash) {

@@ -257,17 +257,18 @@ fn update_reward<T: State>(state: &mut T, block: &BlockA) {
     balance += block.reward();
     if let Some(stake) = block.stakes.first() {
         if stake.fee == 0 {
-            balance += util::stake_amount(0);
+            state.get_staked_mut().insert(input_address, COIN);
         }
     }
     state.get_balance_mut().insert(input_address, balance);
 }
 fn update_penalty<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32) {
     for n in 0..offline(timestamp, previous_timestamp) {
-        if state.get_stakers().is_empty() {
+        let staker = state.staker_n(n as isize);
+        if staker.is_none() {
             break;
         }
-        let staker = state.staker_n(n as isize).unwrap().clone();
+        let staker = staker.unwrap().clone();
         let mut staked = state.staked(&staker);
         staked = staked.saturating_sub(COIN * (n + 1) as u128);
         if staked == 0 {
@@ -312,7 +313,7 @@ fn staker_n<T: State>(state: &T, n: isize) -> Option<&AddressBytes> {
     for staker in state.get_stakers().iter() {
         m += state.staked(staker);
     }
-    if m == 0 || n >= state.get_stakers().len() {
+    if m == 0 {
         return None;
     }
     let random = util::random(&state.get_latest_block().beta, n as u128, m);

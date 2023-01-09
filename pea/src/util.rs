@@ -63,6 +63,3 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
     }
     string
 }
-pub fn stake_amount(stakers: usize) -> u128 {
-    COIN * (stakers + 1) as u128
-}

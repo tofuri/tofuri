@@ -1,4 +1,4 @@
-use crate::{state::Dynamic, states::States, sync::Sync, util};
+use crate::{state::Dynamic, states::States, sync::Sync};
 use colored::*;
 use log::{debug, info, warn};
 use pea_block::{BlockA, BlockB};
@@ -83,7 +83,7 @@ impl Blockchain {
                 return None;
             }
         } else {
-            self.pending_stakes = vec![StakeA::sign(true, COIN, 0, timestamp, &self.key).unwrap()];
+            self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, &self.key).unwrap()];
         }
         let mut transactions = vec![];
         let mut stakes = vec![];
@@ -235,8 +235,8 @@ impl Blockchain {
                 return Err("block mint stakes".into());
             }
             let stake_a = block_a.stakes.first().unwrap();
-            if stake_a.amount != COIN {
-                return Err("stake mint amount not coin".into());
+            if stake_a.amount != 0 {
+                return Err("stake mint amount not zero".into());
             }
             if stake_a.fee != 0 {
                 return Err("stake mint fee not zero".into());
@@ -303,7 +303,7 @@ impl Blockchain {
         }
         let balance = self.states.dynamic.balance(&stake_a.input_address);
         if stake_a.deposit {
-            if util::stake_amount(self.states.dynamic.stakers.len()) + stake_a.fee > balance {
+            if stake_a.amount + stake_a.fee > balance {
                 return Err("stake deposit too expensive".into());
             }
         } else if stake_a.fee > balance {

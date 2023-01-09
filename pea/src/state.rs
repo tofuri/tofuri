@@ -258,7 +258,7 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
     }
 }
 fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
-    fn random_stakers_index(vec: &Vec<(AddressBytes, u128)>, beta: &Beta, n: u128, modulo: u128) -> usize {
+    fn random_n(vec: &Vec<(AddressBytes, u128)>, beta: &Beta, n: u128, modulo: u128) -> usize {
         let random = util::random(beta, n, modulo);
         let mut counter = 0;
         for (index, (_, staked)) in vec.iter().enumerate() {
@@ -284,7 +284,7 @@ fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
         if modulo == 0 {
             return (random_queue, true);
         }
-        let index = random_stakers_index(&vec, &state.get_latest_block().beta, index as u128, modulo);
+        let index = random_n(&vec, &state.get_latest_block().beta, index as u128, modulo);
         vec[index] = (vec[index].0, vec[index].1.saturating_sub(penalty));
         random_queue.push(vec[index].0);
     }

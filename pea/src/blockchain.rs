@@ -118,6 +118,14 @@ impl Blockchain {
             .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
         let info_0 = if forged { "Forged".magenta() } else { "Accept".green() };
         let info_1 = hex::encode(block_a.hash);
+        let info_2 = match block_a.transactions.len() {
+            0 => "0".red(),
+            x => x.to_string().green(),
+        };
+        let info_3 = match block_a.stakes.len() {
+            0 => "0".red(),
+            x => x.to_string().green(),
+        };
         if let Some(main) = self.tree.main() {
             if block_a.hash == main.0 {
                 self.pending_transactions.clear();
@@ -125,11 +133,11 @@ impl Blockchain {
                 if !forged {
                     self.sync.new += 1.0;
                 }
-                info!("{} {} {}", info_0, main.1.to_string().yellow(), info_1);
+                info!("{} {} {} {} {}", info_0, main.1.to_string().yellow(), info_1, info_2, info_3);
                 return;
             }
         }
-        info!("{} {}", info_0, info_1);
+        info!("{} {} {} {}", info_0, info_1, info_2, info_3);
     }
     pub fn pending_blocks_push(&mut self, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.pending_blocks.len() < self.pending_blocks_limit {

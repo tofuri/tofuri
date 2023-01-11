@@ -1,4 +1,8 @@
+use lazy_static::lazy_static;
+use pea_block::BlockB;
 use pea_core::*;
+use pea_stake::StakeB;
+use pea_transaction::TransactionB;
 use sha2::{Digest, Sha256};
 use std::{
     error::Error,
@@ -6,6 +10,11 @@ use std::{
     io::{BufRead, BufReader},
     path::Path,
 };
+lazy_static! {
+    pub static ref BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
+    pub static ref TRANSACTION_SIZE: usize = bincode::serialize(&TransactionB::default()).unwrap().len();
+    pub static ref STAKE_SIZE: usize = bincode::serialize(&StakeB::default()).unwrap().len();
+}
 construct_uint! {
     pub struct U256(4);
 }

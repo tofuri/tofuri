@@ -3,7 +3,7 @@ use crate::{
     blockchain::Blockchain,
     gossipsub,
     gossipsub::Ratelimit,
-    heartbeat, http, multiaddr, util,
+    heartbeat, http, multiaddr, request_response, util,
 };
 use colored::*;
 use libp2p::{
@@ -11,6 +11,7 @@ use libp2p::{
     futures::StreamExt,
     gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic, TopicHash},
     identity, mdns, mplex, noise,
+    request_response::{RequestResponseEvent, RequestResponseMessage},
     swarm::{ConnectionHandlerUpgrErr, ConnectionLimits, SwarmBuilder, SwarmEvent},
     tcp, Multiaddr, PeerId, Swarm, Transport,
 };
@@ -23,14 +24,15 @@ use rocksdb::{DBWithThreadMode, SingleThreaded};
 use sha2::{Digest, Sha256};
 use std::{
     collections::{HashMap, HashSet},
-    error::Error,
+    io::Error,
     num::NonZeroU32,
     time::Duration,
 };
 use tempdir::TempDir;
 use tokio::net::TcpListener;
 use void::Void;
-type HandlerErr = EitherError<EitherError<EitherError<Void, std::io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<std::io::Error>>;
+type HandlerErr =
+    EitherError<EitherError<EitherError<EitherError<Void, Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<Error>>, ConnectionHandlerUpgrErr<Error>>;
 pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,
@@ -113,7 +115,7 @@ impl Node {
             false => pea_wallet::util::load(wallet, passphrase).unwrap().3,
         }
     }
-    async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Box<dyn Error>> {
+    async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Box<dyn std::error::Error>> {
         let local_key = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(local_key.public());
         info!("Peer id {}", local_peer_id.to_string().cyan());
@@ -170,6 +172,9 @@ impl Node {
     fn swarm_event(&mut self, event: SwarmEvent<OutEvent, HandlerErr>) {
         debug!("{:?}", event);
         match event {
+            SwarmEvent::Dialing(_) => {}
+            SwarmEvent::IncomingConnectionError { .. } => {}
+            SwarmEvent::IncomingConnection { .. } => {}
             SwarmEvent::ConnectionEstablished {
                 peer_id,
                 endpoint,
@@ -198,6 +203,21 @@ impl Node {
                     debug!("{}", err)
                 }
             }
+            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
+                RequestResponseMessage::Request { request, channel, .. } => {
+                    if let Err(err) = request_response::request_handler(self, peer, request, channel) {
+                        debug!("{}", err)
+                    }
+                }
+                RequestResponseMessage::Response { response, .. } => {
+                    if let Err(err) = request_response::response_handler(self, peer, response) {
+                        debug!("{}", err)
+                    }
+                }
+            },
+            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::InboundFailure { .. })) => {}
+            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::OutboundFailure { .. })) => {}
+            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::ResponseSent { .. })) => {}
             _ => {}
         }
     }

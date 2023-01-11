@@ -1,4 +1,9 @@
-use crate::{state::Dynamic, states::States, sync::Sync};
+use crate::{
+    state::Dynamic,
+    states::States,
+    sync::Sync,
+    util::{BLOCK_SIZE, STAKE_SIZE, TRANSACTION_SIZE},
+};
 use colored::*;
 use log::{debug, info, warn};
 use pea_block::{BlockA, BlockB};
@@ -85,19 +90,27 @@ impl Blockchain {
         } else {
             self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, &self.key).unwrap()];
         }
-        let mut transactions = vec![];
-        let mut stakes = vec![];
-        for transaction_a in self.pending_transactions.clone() {
-            if transactions.len() >= BLOCK_TRANSACTIONS_LIMIT {
-                break;
+        let mut transactions = self.pending_transactions.clone();
+        let mut stakes = self.pending_stakes.clone();
+        transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
+        stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
+        while *BLOCK_SIZE + *TRANSACTION_SIZE * transactions.len() + *STAKE_SIZE * stakes.len() > BLOCK_SIZE_LIMIT {
+            match (transactions.last(), stakes.last()) {
+                (Some(_), None) => {
+                    stakes.pop();
+                }
+                (None, Some(_)) => {
+                    transactions.pop();
+                }
+                (Some(transaction), Some(stake)) => {
+                    if transaction.fee < stake.fee {
+                        transactions.pop();
+                    } else {
+                        stakes.pop();
+                    }
+                }
+                _ => unreachable!(),
             }
-            transactions.push(transaction_a);
-        }
-        for stake_a in self.pending_stakes.clone() {
-            if stakes.len() >= BLOCK_STAKES_LIMIT {
-                break;
-            }
-            stakes.push(stake_a);
         }
         let block_a = if let Some(main) = self.tree.main() {
             BlockA::sign(main.0, timestamp, transactions, stakes, &self.key, &self.states.dynamic.latest_block.beta)

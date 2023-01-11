@@ -35,6 +35,7 @@ futures = "0.3"
 void = "1.0"
 chrono = "0.4"
 tokio = { version = "1.24", features = ["full"] }
-libp2p = { version = "0.50", features = ["autonat","noise","macros","identify","mplex","mdns","ping","gossipsub","tcp","tokio"] }
+libp2p = { version = "0.50", features = ["request-response","autonat","noise","macros","identify","mplex","mdns","ping","gossipsub","tcp","tokio"] }
 sha2 = "0.10"
 uint = "0.9"
+async-trait = "0.1"

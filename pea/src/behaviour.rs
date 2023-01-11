@@ -82,7 +82,7 @@ pub struct FileResponse(Vec<u8>);
 pub struct FileExchangeProtocol();
 impl ProtocolName for FileExchangeProtocol {
     fn protocol_name(&self) -> &[u8] {
-        "/file-exchange/1".as_bytes()
+        PROTOCOL_NAME.as_bytes()
     }
 }
 #[async_trait]

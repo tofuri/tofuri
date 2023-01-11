@@ -11,6 +11,41 @@ use libp2p::{
 use pea_core::*;
 use std::error::Error;
 use tokio::io;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileRequest(Vec<u8>);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileResponse(Vec<u8>);
+#[derive(Debug, Clone)]
+pub struct FileExchangeProtocol();
+impl ProtocolName for FileExchangeProtocol {
+    fn protocol_name(&self) -> &[u8] {
+        PROTOCOL_NAME.as_bytes()
+    }
+}
+#[derive(Clone)]
+pub struct FileExchangeCodec();
+#[async_trait]
+impl RequestResponseCodec for FileExchangeCodec {
+    type Protocol = FileExchangeProtocol;
+    type Request = FileRequest;
+    type Response = FileResponse;
+    async fn read_request<T: AsyncRead + Unpin + Send>(&mut self, _: &FileExchangeProtocol, io: &mut T) -> io::Result<Self::Request> {
+        Ok(FileRequest(read_length_prefixed(io, 32).await?))
+    }
+    async fn read_response<T: AsyncRead + Unpin + Send>(&mut self, _: &FileExchangeProtocol, io: &mut T) -> io::Result<Self::Response> {
+        Ok(FileResponse(read_length_prefixed(io, BLOCK_SIZE_LIMIT * SYNC_BLOCKS_PER_TICK).await?))
+    }
+    async fn write_request<T: AsyncWrite + Unpin + Send>(&mut self, _: &FileExchangeProtocol, io: &mut T, FileRequest(vec): FileRequest) -> io::Result<()> {
+        write_length_prefixed(io, vec).await?;
+        io.close().await?;
+        Ok(())
+    }
+    async fn write_response<T: AsyncWrite + Unpin + Send>(&mut self, _: &FileExchangeProtocol, io: &mut T, FileResponse(vec): FileResponse) -> io::Result<()> {
+        write_length_prefixed(io, vec).await?;
+        io.close().await?;
+        Ok(())
+    }
+}
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "OutEvent")]
 pub struct Behaviour {
@@ -70,60 +105,5 @@ impl From<autonat::Event> for OutEvent {
 impl From<RequestResponseEvent<FileRequest, FileResponse>> for OutEvent {
     fn from(v: RequestResponseEvent<FileRequest, FileResponse>) -> Self {
         Self::RequestResponse(v)
-    }
-}
-#[derive(Clone)]
-pub struct FileExchangeCodec();
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FileRequest(String);
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FileResponse(Vec<u8>);
-#[derive(Debug, Clone)]
-pub struct FileExchangeProtocol();
-impl ProtocolName for FileExchangeProtocol {
-    fn protocol_name(&self) -> &[u8] {
-        PROTOCOL_NAME.as_bytes()
-    }
-}
-#[async_trait]
-impl RequestResponseCodec for FileExchangeCodec {
-    type Protocol = FileExchangeProtocol;
-    type Request = FileRequest;
-    type Response = FileResponse;
-    async fn read_request<T>(&mut self, _: &FileExchangeProtocol, io: &mut T) -> io::Result<Self::Request>
-    where
-        T: AsyncRead + Unpin + Send,
-    {
-        let vec = read_length_prefixed(io, 32).await?;
-        if vec.is_empty() {
-            return Err(io::ErrorKind::UnexpectedEof.into());
-        }
-        Ok(FileRequest(String::from_utf8(vec).unwrap()))
-    }
-    async fn read_response<T>(&mut self, _: &FileExchangeProtocol, io: &mut T) -> io::Result<Self::Response>
-    where
-        T: AsyncRead + Unpin + Send,
-    {
-        let vec = read_length_prefixed(io, BLOCK_SIZE_LIMIT * SYNC_BLOCKS_PER_TICK).await?; // update transfer maximum
-        if vec.is_empty() {
-            return Err(io::ErrorKind::UnexpectedEof.into());
-        }
-        Ok(FileResponse(vec))
-    }
-    async fn write_request<T>(&mut self, _: &FileExchangeProtocol, io: &mut T, FileRequest(data): FileRequest) -> io::Result<()>
-    where
-        T: AsyncWrite + Unpin + Send,
-    {
-        write_length_prefixed(io, data).await?;
-        io.close().await?;
-        Ok(())
-    }
-    async fn write_response<T>(&mut self, _: &FileExchangeProtocol, io: &mut T, FileResponse(data): FileResponse) -> io::Result<()>
-    where
-        T: AsyncWrite + Unpin + Send,
-    {
-        write_length_prefixed(io, data).await?;
-        io.close().await?;
-        Ok(())
     }
 }

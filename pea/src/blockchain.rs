@@ -2,7 +2,7 @@ use crate::{
     state::Dynamic,
     states::States,
     sync::Sync,
-    util::{BLOCK_SIZE, STAKE_SIZE, TRANSACTION_SIZE},
+    util::{EMPTY_BLOCK_SIZE, STAKE_SIZE, TRANSACTION_SIZE},
 };
 use colored::*;
 use log::{debug, info, warn};
@@ -94,7 +94,7 @@ impl Blockchain {
         let mut stakes = self.pending_stakes.clone();
         transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
         stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
-        while *BLOCK_SIZE + *TRANSACTION_SIZE * transactions.len() + *STAKE_SIZE * stakes.len() > BLOCK_SIZE_LIMIT {
+        while *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * transactions.len() + *STAKE_SIZE * stakes.len() > BLOCK_SIZE_LIMIT {
             match (transactions.last(), stakes.last()) {
                 (Some(_), None) => {
                     stakes.pop();
@@ -176,7 +176,7 @@ impl Blockchain {
         info!("Transaction {}", hex::encode(&transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
-        while self.pending_transactions.len() > PENDING_TRANSACTIONS_LIMIT {
+        while *TRANSACTION_SIZE * self.pending_transactions.len() > BLOCK_SIZE_LIMIT - *EMPTY_BLOCK_SIZE {
             self.pending_transactions.remove(self.pending_transactions.len() - 1);
         }
         Ok(())
@@ -196,7 +196,7 @@ impl Blockchain {
         info!("Stake {}", hex::encode(&stake_a.hash).green());
         self.pending_stakes.push(stake_a);
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
-        while self.pending_stakes.len() > PENDING_STAKES_LIMIT {
+        while *STAKE_SIZE * self.pending_stakes.len() > BLOCK_SIZE_LIMIT - *EMPTY_BLOCK_SIZE {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
         Ok(())

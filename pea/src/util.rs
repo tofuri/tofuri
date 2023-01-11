@@ -11,7 +11,7 @@ use std::{
     path::Path,
 };
 lazy_static! {
-    pub static ref BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
+    pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
     pub static ref TRANSACTION_SIZE: usize = bincode::serialize(&TransactionB::default()).unwrap().len();
     pub static ref STAKE_SIZE: usize = bincode::serialize(&StakeB::default()).unwrap().len();
 }

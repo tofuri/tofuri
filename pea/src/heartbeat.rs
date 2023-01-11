@@ -1,4 +1,8 @@
-use crate::{behaviour::FileRequest, multiaddr, node::Node, util};
+use crate::{
+    node::Node,
+    p2p::{multiaddr, FileRequest},
+    util,
+};
 use colored::*;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use log::{debug, info, warn};

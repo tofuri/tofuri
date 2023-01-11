@@ -1,4 +1,4 @@
-use crate::{multiaddr, node::Node, util};
+use crate::{node::Node, p2p::multiaddr, util};
 use chrono::{TimeZone, Utc};
 use libp2p::Multiaddr;
 use log::error;

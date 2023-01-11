@@ -1,9 +1,9 @@
 use crate::{
-    behaviour::{Behaviour, OutEvent},
     blockchain::Blockchain,
-    gossipsub,
-    gossipsub::Ratelimit,
-    heartbeat, http, multiaddr, request_response, util,
+    heartbeat, http,
+    p2p::{gossipsub, multiaddr, request_response, Ratelimit},
+    p2p::{Behaviour, OutEvent},
+    util,
 };
 use colored::*;
 use libp2p::{

@@ -1,11 +1,8 @@
-pub mod behaviour;
 pub mod blockchain;
-pub mod gossipsub;
 pub mod heartbeat;
 pub mod http;
-pub mod multiaddr;
 pub mod node;
-pub mod request_response;
+pub mod p2p;
 pub mod state;
 pub mod states;
 pub mod sync;

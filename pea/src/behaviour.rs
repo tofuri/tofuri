@@ -94,7 +94,7 @@ impl RequestResponseCodec for FileExchangeCodec {
     where
         T: AsyncRead + Unpin + Send,
     {
-        let vec = read_length_prefixed(io, 1_000_000).await?;
+        let vec = read_length_prefixed(io, 32).await?;
         if vec.is_empty() {
             return Err(io::ErrorKind::UnexpectedEof.into());
         }
@@ -104,7 +104,7 @@ impl RequestResponseCodec for FileExchangeCodec {
     where
         T: AsyncRead + Unpin + Send,
     {
-        let vec = read_length_prefixed(io, 500_000_000).await?; // update transfer maximum
+        let vec = read_length_prefixed(io, BLOCK_SIZE_LIMIT * SYNC_BLOCKS_PER_TICK).await?; // update transfer maximum
         if vec.is_empty() {
             return Err(io::ErrorKind::UnexpectedEof.into());
         }

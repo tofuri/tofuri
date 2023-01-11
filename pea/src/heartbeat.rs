@@ -1,6 +1,6 @@
-use crate::{multiaddr, node::Node, util};
+use crate::{behaviour::FileRequest, multiaddr, node::Node, util};
 use colored::*;
-use libp2p::{multiaddr::Protocol, Multiaddr};
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use log::{debug, info, warn};
 use pea_address::address;
 use pea_block::BlockA;
@@ -19,6 +19,11 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     }
     if delay(node, 5) {
         dial_unknown(node);
+        let peer_ids = node.p2p_swarm.connected_peers().cloned().collect::<Vec<PeerId>>();
+        let behaviour = node.p2p_swarm.behaviour_mut();
+        for peer_id in peer_ids {
+            behaviour.request_response.send_request(&peer_id, FileRequest(vec![0, 1, 2, 3, 4, 5]));
+        }
     }
     if delay(node, 2) {
         node.p2p_message_data_hashes.clear();

@@ -12,9 +12,9 @@ use pea_core::*;
 use std::error::Error;
 use tokio::io;
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FileRequest(Vec<u8>);
+pub struct FileRequest(pub Vec<u8>);
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FileResponse(Vec<u8>);
+pub struct FileResponse(pub Vec<u8>);
 #[derive(Debug, Clone)]
 pub struct FileExchangeProtocol();
 impl ProtocolName for FileExchangeProtocol {

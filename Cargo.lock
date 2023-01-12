@@ -1850,7 +1850,6 @@ dependencies = [
  "libp2p-metrics",
  "libp2p-mplex",
  "libp2p-noise",
- "libp2p-ping",
  "libp2p-quic",
  "libp2p-request-response",
  "libp2p-swarm",
@@ -2009,7 +2008,6 @@ dependencies = [
  "libp2p-core",
  "libp2p-gossipsub",
  "libp2p-identify",
- "libp2p-ping",
  "libp2p-swarm",
  "prometheus-client",
 ]
@@ -2053,22 +2051,6 @@ dependencies = [
  "thiserror",
  "x25519-dalek 1.1.1",
  "zeroize",
-]
-
-[[package]]
-name = "libp2p-ping"
-version = "0.41.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "929fcace45a112536e22b3dcfd4db538723ef9c3cb79f672b98be2cc8e25f37f"
-dependencies = [
- "futures",
- "futures-timer",
- "instant",
- "libp2p-core",
- "libp2p-swarm",
- "log",
- "rand 0.8.5",
- "void",
 ]
 
 [[package]]

@@ -1,7 +1,7 @@
 use crate::{
     blockchain::Blockchain,
     heartbeat, http,
-    p2p::{gossipsub, multiaddr, request_response, Ratelimit},
+    p2p::{self, Ratelimit},
     p2p::{Behaviour, OutEvent},
     util,
 };
@@ -146,12 +146,12 @@ impl Node {
     }
     fn known(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> HashSet<Multiaddr> {
         let mut known = HashSet::new();
-        if let Some(multiaddr) = multiaddr::filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
+        if let Some(multiaddr) = p2p::multiaddr_filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
             known.insert(multiaddr);
         }
         let peers = db::peer::get_all(db);
         for peer in peers {
-            if let Some(multiaddr) = multiaddr::filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
+            if let Some(multiaddr) = p2p::multiaddr_filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
                 known.insert(multiaddr);
             }
         }
@@ -188,7 +188,7 @@ impl Node {
             }
             SwarmEvent::Behaviour(OutEvent::Mdns(mdns::Event::Discovered(list))) => {
                 for (_, multiaddr) in list {
-                    if let Some(multiaddr) = multiaddr::filter_ip_port(&multiaddr) {
+                    if let Some(multiaddr) = p2p::multiaddr_filter_ip_port(&multiaddr) {
                         self.p2p_unknown.insert(multiaddr);
                     }
                 }
@@ -199,18 +199,18 @@ impl Node {
                 if self.filter(&message.data, false) {
                     return;
                 }
-                if let Err(err) = gossipsub::handler(self, message, propagation_source) {
+                if let Err(err) = p2p::gossipsub_handler(self, message, propagation_source) {
                     debug!("{}", err)
                 }
             }
             SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
                 RequestResponseMessage::Request { request, channel, .. } => {
-                    if let Err(err) = request_response::request_handler(self, peer, request, channel) {
+                    if let Err(err) = p2p::request_handler(self, peer, request, channel) {
                         debug!("{}", err)
                     }
                 }
                 RequestResponseMessage::Response { response, .. } => {
-                    if let Err(err) = request_response::response_handler(self, peer, response) {
+                    if let Err(err) = p2p::response_handler(self, peer, response) {
                         debug!("{}", err)
                     }
                 }
@@ -266,7 +266,7 @@ impl Node {
                 multiaddr.to_string().magenta(),
                 num_established.to_string().yellow()
             );
-            let addr = multiaddr::addr(&multiaddr).expect("multiaddr to include ip");
+            let addr = p2p::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
             if node.p2p_ratelimit.is_ratelimited(&node.p2p_ratelimit.get(&addr).1) {
                 warn!("Ratelimited {}", multiaddr.to_string().magenta());
                 let _ = node.p2p_swarm.disconnect_peer_id(peer_id);
@@ -275,7 +275,7 @@ impl Node {
             let _ = db::peer::put(&multiaddr.to_string(), &node.blockchain.db);
             if let Some(previous_peer_id) = node
                 .p2p_connections
-                .insert(multiaddr::filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
+                .insert(p2p::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
             {
                 if previous_peer_id != peer_id {
                     let _ = node.p2p_swarm.disconnect_peer_id(previous_peer_id);
@@ -283,12 +283,12 @@ impl Node {
             }
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = multiaddr::filter_ip_port(&address) {
+            if let Some(multiaddr) = p2p::multiaddr_filter_ip_port(&address) {
                 save(multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = multiaddr::filter_ip(&send_back_addr) {
+            if let Some(multiaddr) = p2p::multiaddr_filter_ip(&send_back_addr) {
                 save(multiaddr);
             }
         }
@@ -305,12 +305,12 @@ impl Node {
             let _ = node.p2p_swarm.dial(multiaddr);
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = multiaddr::filter_ip_port(&address) {
+            if let Some(multiaddr) = p2p::multiaddr_filter_ip_port(&address) {
                 save(multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = multiaddr::filter_ip(&send_back_addr) {
+            if let Some(multiaddr) = p2p::multiaddr_filter_ip(&send_back_addr) {
                 save(multiaddr);
             }
         }

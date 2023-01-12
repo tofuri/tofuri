@@ -1,11 +1,13 @@
-use crate::{node::Node, util};
+use crate::{node::Node, p2p, util};
 use async_trait::async_trait;
 use futures::prelude::*;
 use libp2p::{
     autonat,
     core::upgrade::{read_length_prefixed, write_length_prefixed, ProtocolName},
     gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, MessageAuthenticity},
-    identify, identity, mdns, ping,
+    identify, identity, mdns,
+    multiaddr::Protocol,
+    ping,
     request_response::{ProtocolSupport, RequestResponse, RequestResponseCodec, RequestResponseEvent, ResponseChannel},
     swarm::NetworkBehaviour,
     Multiaddr, PeerId,
@@ -18,6 +20,35 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::net::IpAddr;
 use tokio::io;
+#[derive(Debug)]
+pub enum OutEvent {
+    Gossipsub(GossipsubEvent),
+    Mdns(mdns::Event),
+    Ping(ping::Event),
+    Identify(identify::Event),
+    Autonat(autonat::Event),
+    RequestResponse(RequestResponseEvent<FileRequest, FileResponse>),
+}
+pub enum Topic {
+    Block,
+    Transaction,
+    Stake,
+    Multiaddr,
+    Blocks,
+}
+#[derive(Debug, Default)]
+pub struct Ratelimit {
+    map: HashMap<IpAddr, ([usize; 5], Option<u32>)>,
+}
+#[derive(NetworkBehaviour)]
+#[behaviour(out_event = "OutEvent")]
+pub struct Behaviour {
+    pub mdns: mdns::tokio::Behaviour,
+    pub identify: identify::Behaviour,
+    pub gossipsub: Gossipsub,
+    pub autonat: autonat::Behaviour,
+    pub request_response: RequestResponse<FileExchangeCodec>,
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileRequest(pub Vec<u8>);
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,15 +84,6 @@ impl RequestResponseCodec for FileExchangeCodec {
         Ok(())
     }
 }
-#[derive(NetworkBehaviour)]
-#[behaviour(out_event = "OutEvent")]
-pub struct Behaviour {
-    pub mdns: mdns::tokio::Behaviour,
-    pub identify: identify::Behaviour,
-    pub gossipsub: Gossipsub,
-    pub autonat: autonat::Behaviour,
-    pub request_response: RequestResponse<FileExchangeCodec>,
-}
 impl Behaviour {
     pub async fn new(local_key: identity::Keypair) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
@@ -79,15 +101,6 @@ impl Behaviour {
             ),
         })
     }
-}
-#[derive(Debug)]
-pub enum OutEvent {
-    Gossipsub(GossipsubEvent),
-    Mdns(mdns::Event),
-    Ping(ping::Event),
-    Identify(identify::Event),
-    Autonat(autonat::Event),
-    RequestResponse(RequestResponseEvent<FileRequest, FileResponse>),
 }
 impl From<mdns::Event> for OutEvent {
     fn from(v: mdns::Event) -> Self {
@@ -113,156 +126,6 @@ impl From<RequestResponseEvent<FileRequest, FileResponse>> for OutEvent {
     fn from(v: RequestResponseEvent<FileRequest, FileResponse>) -> Self {
         Self::RequestResponse(v)
     }
-}
-pub mod request_response {
-    use super::*;
-    pub fn request_handler(node: &mut Node, peer_id: PeerId, request: FileRequest, channel: ResponseChannel<FileResponse>) -> Result<(), Box<dyn Error>> {
-        println!("{:?}", request);
-        Ok(())
-    }
-    pub fn response_handler(node: &mut Node, peer_id: PeerId, response: FileResponse) -> Result<(), Box<dyn Error>> {
-        Ok(())
-    }
-}
-pub mod multiaddr {
-    use super::*;
-    use libp2p::multiaddr::Protocol;
-    pub fn filter_ip(multiaddr: &Multiaddr) -> Option<Multiaddr> {
-        let components = multiaddr.iter().collect::<Vec<_>>();
-        let mut multiaddr: Multiaddr = "".parse().unwrap();
-        match components.get(0) {
-            Some(Protocol::Ip4(ip)) => multiaddr.push(Protocol::Ip4(*ip)),
-            Some(Protocol::Ip6(ip)) => multiaddr.push(Protocol::Ip6(*ip)),
-            _ => return None,
-        };
-        Some(multiaddr)
-    }
-    pub fn filter_ip_port(multiaddr: &Multiaddr) -> Option<Multiaddr> {
-        let components = multiaddr.iter().collect::<Vec<_>>();
-        let mut multiaddr: Multiaddr = "".parse().unwrap();
-        match components.get(0) {
-            Some(Protocol::Ip4(ip)) => multiaddr.push(Protocol::Ip4(*ip)),
-            Some(Protocol::Ip6(ip)) => multiaddr.push(Protocol::Ip6(*ip)),
-            _ => return None,
-        };
-        match components.get(1) {
-            Some(Protocol::Tcp(port)) => {
-                if port == &9333_u16 {
-                    return Some(multiaddr);
-                }
-                multiaddr.push(Protocol::Tcp(*port))
-            }
-            _ => return Some(multiaddr),
-        };
-        Some(multiaddr)
-    }
-    pub fn has_port(multiaddr: &Multiaddr) -> bool {
-        let components = multiaddr.iter().collect::<Vec<_>>();
-        matches!(components.get(1), Some(Protocol::Tcp(_)))
-    }
-    pub fn addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
-        match multiaddr.iter().collect::<Vec<_>>().first() {
-            Some(Protocol::Ip4(ip)) => Some(IpAddr::V4(*ip)),
-            Some(Protocol::Ip6(ip)) => Some(IpAddr::V6(*ip)),
-            _ => None,
-        }
-    }
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-        #[test]
-        fn test_filter_ip() {
-            assert_eq!(filter_ip(&"".parse::<Multiaddr>().unwrap()), None);
-            assert_eq!(filter_ip(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
-            assert_eq!(
-                filter_ip(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
-                "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
-            );
-        }
-        #[test]
-        fn test_filter_ip_port() {
-            assert_eq!(filter_ip_port(&"".parse::<Multiaddr>().unwrap()), None);
-            assert_eq!(filter_ip_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
-            assert_eq!(
-                filter_ip_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()).unwrap(),
-                "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
-            );
-            assert_eq!(
-                filter_ip_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
-                "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
-            );
-            assert_eq!(
-                filter_ip_port(&"/ip4/0.0.0.0/tcp/9334".parse::<Multiaddr>().unwrap()).unwrap(),
-                "/ip4/0.0.0.0/tcp/9334".parse::<Multiaddr>().unwrap()
-            );
-        }
-        #[test]
-        fn test_has_port() {
-            assert_eq!(has_port(&"".parse::<Multiaddr>().unwrap()), false);
-            assert_eq!(has_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()), false);
-            assert_eq!(has_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), false);
-            assert_eq!(has_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()), true);
-        }
-    }
-}
-pub mod gossipsub {
-    use super::*;
-    pub fn handler(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn Error>> {
-        let (multiaddr, _) = node.p2p_connections.iter().find(|x| x.1 == &propagation_source).unwrap();
-        let addr = multiaddr::addr(multiaddr).expect("multiaddr to include ip");
-        match message.topic.as_str() {
-            "block" => {
-                ratelimit(node, addr, propagation_source, Topic::Block)?;
-                let block_b: BlockB = bincode::deserialize(&message.data)?;
-                node.blockchain.pending_blocks_push(block_b, util::timestamp())?;
-            }
-            "blocks" => {
-                ratelimit(node, addr, propagation_source, Topic::Blocks)?;
-                for block_b in bincode::deserialize::<Vec<BlockB>>(&message.data)? {
-                    ratelimit(node, addr, propagation_source, Topic::Block)?;
-                    node.blockchain.pending_blocks_push(block_b, util::timestamp())?;
-                }
-            }
-            "transaction" => {
-                ratelimit(node, addr, propagation_source, Topic::Transaction)?;
-                let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
-                node.blockchain.pending_transactions_push(transaction_b, util::timestamp())?;
-            }
-            "stake" => {
-                ratelimit(node, addr, propagation_source, Topic::Stake)?;
-                let stake_b: StakeB = bincode::deserialize(&message.data)?;
-                node.blockchain.pending_stakes_push(stake_b, util::timestamp())?;
-            }
-            "multiaddr" => {
-                ratelimit(node, addr, propagation_source, Topic::Multiaddr)?;
-                for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
-                    if let Some(multiaddr) = multiaddr::filter_ip_port(&multiaddr) {
-                        node.p2p_unknown.insert(multiaddr);
-                    }
-                }
-            }
-            _ => {}
-        };
-        Ok(())
-    }
-}
-pub fn ratelimit(node: &mut Node, addr: IpAddr, propagation_source: PeerId, topic: Topic) -> Result<(), Box<dyn Error>> {
-    if node.p2p_ratelimit.add(addr, topic) {
-        let _ = node.p2p_swarm.disconnect_peer_id(propagation_source);
-        return Err("ratelimited".into());
-    }
-    Ok(())
-}
-pub enum Topic {
-    Block,
-    Transaction,
-    Stake,
-    Multiaddr,
-    Blocks,
-}
-#[derive(Debug, Default)]
-pub struct Ratelimit {
-    map: HashMap<IpAddr, ([usize; 5], Option<u32>)>,
 }
 impl Ratelimit {
     pub fn get(&self, addr: &IpAddr) -> ([usize; 5], Option<u32>) {
@@ -323,5 +186,134 @@ impl Ratelimit {
             a[3] = a[3].saturating_sub(RATELIMIT_TOPIC_STAKE);
             a[4] = a[4].saturating_sub(RATELIMIT_TOPIC_MULTIADDR);
         }
+    }
+}
+pub fn request_handler(node: &mut Node, peer_id: PeerId, request: FileRequest, channel: ResponseChannel<FileResponse>) -> Result<(), Box<dyn Error>> {
+    println!("{:?}", request);
+    Ok(())
+}
+pub fn response_handler(node: &mut Node, peer_id: PeerId, response: FileResponse) -> Result<(), Box<dyn Error>> {
+    Ok(())
+}
+pub fn multiaddr_filter_ip(multiaddr: &Multiaddr) -> Option<Multiaddr> {
+    let components = multiaddr.iter().collect::<Vec<_>>();
+    let mut multiaddr: Multiaddr = "".parse().unwrap();
+    match components.get(0) {
+        Some(Protocol::Ip4(ip)) => multiaddr.push(Protocol::Ip4(*ip)),
+        Some(Protocol::Ip6(ip)) => multiaddr.push(Protocol::Ip6(*ip)),
+        _ => return None,
+    };
+    Some(multiaddr)
+}
+pub fn multiaddr_filter_ip_port(multiaddr: &Multiaddr) -> Option<Multiaddr> {
+    let components = multiaddr.iter().collect::<Vec<_>>();
+    let mut multiaddr: Multiaddr = "".parse().unwrap();
+    match components.get(0) {
+        Some(Protocol::Ip4(ip)) => multiaddr.push(Protocol::Ip4(*ip)),
+        Some(Protocol::Ip6(ip)) => multiaddr.push(Protocol::Ip6(*ip)),
+        _ => return None,
+    };
+    match components.get(1) {
+        Some(Protocol::Tcp(port)) => {
+            if port == &9333_u16 {
+                return Some(multiaddr);
+            }
+            multiaddr.push(Protocol::Tcp(*port))
+        }
+        _ => return Some(multiaddr),
+    };
+    Some(multiaddr)
+}
+pub fn multiaddr_has_port(multiaddr: &Multiaddr) -> bool {
+    let components = multiaddr.iter().collect::<Vec<_>>();
+    matches!(components.get(1), Some(Protocol::Tcp(_)))
+}
+pub fn multiaddr_addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
+    match multiaddr.iter().collect::<Vec<_>>().first() {
+        Some(Protocol::Ip4(ip)) => Some(IpAddr::V4(*ip)),
+        Some(Protocol::Ip6(ip)) => Some(IpAddr::V6(*ip)),
+        _ => None,
+    }
+}
+pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn Error>> {
+    let (multiaddr, _) = node.p2p_connections.iter().find(|x| x.1 == &propagation_source).unwrap();
+    let addr = p2p::multiaddr_addr(multiaddr).expect("multiaddr to include ip");
+    match message.topic.as_str() {
+        "block" => {
+            ratelimit(node, addr, propagation_source, Topic::Block)?;
+            let block_b: BlockB = bincode::deserialize(&message.data)?;
+            node.blockchain.pending_blocks_push(block_b, util::timestamp())?;
+        }
+        "blocks" => {
+            ratelimit(node, addr, propagation_source, Topic::Blocks)?;
+            for block_b in bincode::deserialize::<Vec<BlockB>>(&message.data)? {
+                ratelimit(node, addr, propagation_source, Topic::Block)?;
+                node.blockchain.pending_blocks_push(block_b, util::timestamp())?;
+            }
+        }
+        "transaction" => {
+            ratelimit(node, addr, propagation_source, Topic::Transaction)?;
+            let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
+            node.blockchain.pending_transactions_push(transaction_b, util::timestamp())?;
+        }
+        "stake" => {
+            ratelimit(node, addr, propagation_source, Topic::Stake)?;
+            let stake_b: StakeB = bincode::deserialize(&message.data)?;
+            node.blockchain.pending_stakes_push(stake_b, util::timestamp())?;
+        }
+        "multiaddr" => {
+            ratelimit(node, addr, propagation_source, Topic::Multiaddr)?;
+            for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
+                if let Some(multiaddr) = p2p::multiaddr_filter_ip_port(&multiaddr) {
+                    node.p2p_unknown.insert(multiaddr);
+                }
+            }
+        }
+        _ => {}
+    };
+    Ok(())
+}
+pub fn ratelimit(node: &mut Node, addr: IpAddr, propagation_source: PeerId, topic: Topic) -> Result<(), Box<dyn Error>> {
+    if node.p2p_ratelimit.add(addr, topic) {
+        let _ = node.p2p_swarm.disconnect_peer_id(propagation_source);
+        return Err("ratelimited".into());
+    }
+    Ok(())
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_filter_ip() {
+        assert_eq!(multiaddr_filter_ip(&"".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(multiaddr_filter_ip(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(
+            multiaddr_filter_ip(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
+            "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
+        );
+    }
+    #[test]
+    fn test_filter_ip_port() {
+        assert_eq!(multiaddr_filter_ip_port(&"".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(multiaddr_filter_ip_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(
+            multiaddr_filter_ip_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()).unwrap(),
+            "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
+        );
+        assert_eq!(
+            multiaddr_filter_ip_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
+            "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
+        );
+        assert_eq!(
+            multiaddr_filter_ip_port(&"/ip4/0.0.0.0/tcp/9334".parse::<Multiaddr>().unwrap()).unwrap(),
+            "/ip4/0.0.0.0/tcp/9334".parse::<Multiaddr>().unwrap()
+        );
+    }
+    #[test]
+    fn test_has_port() {
+        assert_eq!(multiaddr_has_port(&"".parse::<Multiaddr>().unwrap()), false);
+        assert_eq!(multiaddr_has_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()), false);
+        assert_eq!(multiaddr_has_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), false);
+        assert_eq!(multiaddr_has_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()), true);
     }
 }

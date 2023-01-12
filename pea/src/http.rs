@@ -1,4 +1,4 @@
-use crate::{node::Node, p2p::multiaddr, util};
+use crate::{node::Node, p2p, util};
 use chrono::{TimeZone, Utc};
 use libp2p::Multiaddr;
 use log::error;
@@ -299,7 +299,7 @@ fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {
 }
 fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
     let multiaddr = format!("/{}", slice.join("/")).parse::<Multiaddr>()?;
-    let multiaddr = multiaddr::filter_ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
+    let multiaddr = p2p::multiaddr_filter_ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
     let string = multiaddr.to_string();
     node.p2p_unknown.insert(multiaddr);
     Ok(text(string))

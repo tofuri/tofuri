@@ -1,6 +1,6 @@
 use crate::{
     node::Node,
-    p2p::{multiaddr, FileRequest},
+    p2p::{self, FileRequest},
     util,
 };
 use colored::*;
@@ -98,11 +98,11 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     for mut multiaddr in vec {
         if node
             .p2p_connections
-            .contains_key(&multiaddr::filter_ip(&multiaddr).expect("multiaddr to include ip"))
+            .contains_key(&p2p::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"))
         {
             continue;
         }
-        let addr = multiaddr::addr(&multiaddr).expect("multiaddr to include ip");
+        let addr = p2p::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
         if node.p2p_ratelimit.is_ratelimited(&node.p2p_ratelimit.get(&addr).1) {
             continue;
         }
@@ -111,7 +111,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
             if known { "known".green() } else { "unknown".red() },
             multiaddr.to_string().magenta()
         );
-        if !multiaddr::has_port(&multiaddr) {
+        if !p2p::multiaddr_has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }
         let _ = node.p2p_swarm.dial(multiaddr);

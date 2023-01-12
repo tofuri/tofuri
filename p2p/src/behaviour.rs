@@ -11,7 +11,6 @@ use libp2p::gossipsub::MessageAuthenticity;
 use libp2p::identify;
 use libp2p::identity;
 use libp2p::mdns;
-use libp2p::ping;
 use libp2p::request_response::ProtocolSupport;
 use libp2p::request_response::RequestResponse;
 use libp2p::request_response::RequestResponseCodec;
@@ -51,7 +50,6 @@ impl Behaviour {
 pub enum OutEvent {
     Gossipsub(GossipsubEvent),
     Mdns(mdns::Event),
-    Ping(ping::Event),
     Identify(identify::Event),
     Autonat(autonat::Event),
     RequestResponse(RequestResponseEvent<FileRequest, FileResponse>),

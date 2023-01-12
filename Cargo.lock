@@ -2786,6 +2786,7 @@ dependencies = [
  "pea-int",
  "pea-key",
  "pea-logger",
+ "pea-p2p",
  "pea-stake",
  "pea-transaction",
  "pea-tree",
@@ -2880,6 +2881,17 @@ dependencies = [
  "colored",
  "env_logger",
  "log",
+]
+
+[[package]]
+name = "pea-p2p"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+ "libp2p",
+ "pea-core",
+ "tokio",
 ]
 
 [[package]]

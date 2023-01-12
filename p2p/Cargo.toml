@@ -1,0 +1,11 @@
+[package]
+name = "pea-p2p"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pea-core = { version = "0.6", path = "../core" }
+libp2p = { version = "0.50", features = ["request-response","autonat","noise","macros","identify","mplex","mdns","ping","gossipsub","tcp","tokio"] }
+tokio = { version = "1.24", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"

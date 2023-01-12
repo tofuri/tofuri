@@ -1,6 +1,4 @@
 use crate::node::Node;
-use crate::p2p::FileRequest;
-use crate::p2p::{self};
 use crate::util;
 use colored::*;
 use libp2p::multiaddr::Protocol;
@@ -12,6 +10,7 @@ use log::warn;
 use pea_address::address;
 use pea_block::BlockA;
 use pea_core::*;
+use pea_p2p::behaviour::FileRequest;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
     (node.heartbeats as f64 % (node.tps * seconds as f64)) as usize == 0
@@ -101,11 +100,11 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     for mut multiaddr in vec {
         if node
             .p2p_connections
-            .contains_key(&p2p::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"))
+            .contains_key(&pea_p2p::multiaddr::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"))
         {
             continue;
         }
-        let addr = p2p::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
+        let addr = pea_p2p::multiaddr::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
         if node.p2p_ratelimit.is_ratelimited(&node.p2p_ratelimit.get(&addr).1) {
             continue;
         }
@@ -114,7 +113,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
             if known { "known".green() } else { "unknown".red() },
             multiaddr.to_string().magenta()
         );
-        if !p2p::multiaddr_has_port(&multiaddr) {
+        if !pea_p2p::multiaddr::multiaddr_has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }
         let _ = node.p2p_swarm.dial(multiaddr);

@@ -2,6 +2,9 @@
 name = "pea-p2p"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "エンドウ"
+repository = "https://github.com/peacash/peacash"
 
 [dependencies]
 pea-core = { version = "0.6", path = "../core" }

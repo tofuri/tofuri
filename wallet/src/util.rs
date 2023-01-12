@@ -1,19 +1,22 @@
-use argon2::{Algorithm, Argon2, ParamsBuilder, Version};
-use chacha20poly1305::{
-    aead::{Aead, KeyInit},
-    ChaCha20Poly1305,
-};
+use argon2::Algorithm;
+use argon2::Argon2;
+use argon2::ParamsBuilder;
+use argon2::Version;
+use chacha20poly1305::aead::Aead;
+use chacha20poly1305::aead::KeyInit;
+use chacha20poly1305::ChaCha20Poly1305;
 use colored::*;
-use crossterm::{event, terminal};
+use crossterm::event;
+use crossterm::terminal;
 use pea_core::*;
 use pea_key::Key;
-use std::{
-    error::Error,
-    fs::{create_dir_all, read_dir, File},
-    io::prelude::*,
-    path::Path,
-    process,
-};
+use std::error::Error;
+use std::fs::create_dir_all;
+use std::fs::read_dir;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
+use std::process;
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
 }

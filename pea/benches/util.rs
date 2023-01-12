@@ -2,7 +2,8 @@
 extern crate test;
 use pea::util;
 use pea_core::*;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use sha2::Sha256;
 use test::Bencher;
 #[bench]
 fn hash(b: &mut Bencher) {

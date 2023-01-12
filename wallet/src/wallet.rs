@@ -1,11 +1,20 @@
-use crate::{
-    inquire::{address, amount, deposit, fee, search, send},
-    util::{self, Ciphertext, Nonce, Salt},
-};
+use crate::inquire::address;
+use crate::inquire::amount;
+use crate::inquire::deposit;
+use crate::inquire::fee;
+use crate::inquire::search;
+use crate::inquire::send;
+use crate::util::Ciphertext;
+use crate::util::Nonce;
+use crate::util::Salt;
+use crate::util::{self};
 use colored::*;
-use inquire::{Confirm, Select};
-use pea_address::{address, secret};
-use pea_api::{get, post};
+use inquire::Confirm;
+use inquire::Select;
+use pea_address::address;
+use pea_address::secret;
+use pea_api::get;
+use pea_api::post;
 use pea_key::Key;
 use pea_stake::StakeA;
 use pea_transaction::TransactionA;

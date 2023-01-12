@@ -1,5 +1,6 @@
 use pea_core::*;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use sha2::Sha256;
 use std::error::Error;
 pub fn checksum(bytes: &[u8]) -> [u8; 4] {
     let mut hasher = Sha256::new();

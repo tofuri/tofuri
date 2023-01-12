@@ -1,11 +1,14 @@
-use crate::{
-    node::Node,
-    p2p::{self, FileRequest},
-    util,
-};
+use crate::node::Node;
+use crate::p2p::FileRequest;
+use crate::p2p::{self};
+use crate::util;
 use colored::*;
-use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
-use log::{debug, info, warn};
+use libp2p::multiaddr::Protocol;
+use libp2p::Multiaddr;
+use libp2p::PeerId;
+use log::debug;
+use log::info;
+use log::warn;
 use pea_address::address;
 use pea_block::BlockA;
 use pea_core::*;

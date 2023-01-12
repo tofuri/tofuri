@@ -1,8 +1,10 @@
 use pea_core::*;
 use pea_key::Key;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use serde_big_array::BigArray;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use sha2::Sha256;
 use std::error::Error;
 pub trait Transaction {
     fn get_output_address(&self) -> &AddressBytes;

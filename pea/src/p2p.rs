@@ -1,17 +1,30 @@
-use crate::{node::Node, p2p, util};
+use crate::node::Node;
+use crate::p2p;
+use crate::util;
 use async_trait::async_trait;
 use futures::prelude::*;
-use libp2p::{
-    autonat,
-    core::upgrade::{read_length_prefixed, write_length_prefixed, ProtocolName},
-    gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, MessageAuthenticity},
-    identify, identity, mdns,
-    multiaddr::Protocol,
-    ping,
-    request_response::{ProtocolSupport, RequestResponse, RequestResponseCodec, RequestResponseEvent, ResponseChannel},
-    swarm::NetworkBehaviour,
-    Multiaddr, PeerId,
-};
+use libp2p::autonat;
+use libp2p::core::upgrade::read_length_prefixed;
+use libp2p::core::upgrade::write_length_prefixed;
+use libp2p::core::upgrade::ProtocolName;
+use libp2p::gossipsub::Gossipsub;
+use libp2p::gossipsub::GossipsubConfigBuilder;
+use libp2p::gossipsub::GossipsubEvent;
+use libp2p::gossipsub::GossipsubMessage;
+use libp2p::gossipsub::MessageAuthenticity;
+use libp2p::identify;
+use libp2p::identity;
+use libp2p::mdns;
+use libp2p::multiaddr::Protocol;
+use libp2p::ping;
+use libp2p::request_response::ProtocolSupport;
+use libp2p::request_response::RequestResponse;
+use libp2p::request_response::RequestResponseCodec;
+use libp2p::request_response::RequestResponseEvent;
+use libp2p::request_response::ResponseChannel;
+use libp2p::swarm::NetworkBehaviour;
+use libp2p::Multiaddr;
+use libp2p::PeerId;
 use pea_block::BlockB;
 use pea_core::*;
 use pea_stake::StakeB;

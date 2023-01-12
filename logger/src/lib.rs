@@ -1,6 +1,7 @@
 use chrono::Local;
 use colored::*;
-use env_logger::{Builder, Env};
+use env_logger::Builder;
+use env_logger::Env;
 use log::Level;
 use std::io::Write;
 pub fn init(log_path: bool) {

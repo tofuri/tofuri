@@ -1,33 +1,52 @@
-use crate::{
-    blockchain::Blockchain,
-    heartbeat, http,
-    p2p::{self, Ratelimit},
-    p2p::{Behaviour, OutEvent},
-    util,
-};
+use crate::blockchain::Blockchain;
+use crate::heartbeat;
+use crate::http;
+use crate::p2p::Behaviour;
+use crate::p2p::OutEvent;
+use crate::p2p::Ratelimit;
+use crate::p2p::{self};
+use crate::util;
 use colored::*;
-use libp2p::{
-    core::{connection::ConnectedPoint, either::EitherError, upgrade},
-    futures::StreamExt,
-    gossipsub::{error::GossipsubHandlerError, GossipsubEvent, IdentTopic, TopicHash},
-    identity, mdns, mplex, noise,
-    request_response::{RequestResponseEvent, RequestResponseMessage},
-    swarm::{ConnectionHandlerUpgrErr, ConnectionLimits, SwarmBuilder, SwarmEvent},
-    tcp, Multiaddr, PeerId, Swarm, Transport,
-};
-use log::{debug, error, info, warn};
+use libp2p::core::connection::ConnectedPoint;
+use libp2p::core::either::EitherError;
+use libp2p::core::upgrade;
+use libp2p::futures::StreamExt;
+use libp2p::gossipsub::error::GossipsubHandlerError;
+use libp2p::gossipsub::GossipsubEvent;
+use libp2p::gossipsub::IdentTopic;
+use libp2p::gossipsub::TopicHash;
+use libp2p::identity;
+use libp2p::mdns;
+use libp2p::mplex;
+use libp2p::noise;
+use libp2p::request_response::RequestResponseEvent;
+use libp2p::request_response::RequestResponseMessage;
+use libp2p::swarm::ConnectionHandlerUpgrErr;
+use libp2p::swarm::ConnectionLimits;
+use libp2p::swarm::SwarmBuilder;
+use libp2p::swarm::SwarmEvent;
+use libp2p::tcp;
+use libp2p::Multiaddr;
+use libp2p::PeerId;
+use libp2p::Swarm;
+use libp2p::Transport;
+use log::debug;
+use log::error;
+use log::info;
+use log::warn;
 use pea_address::address;
 use pea_core::*;
 use pea_db as db;
 use pea_key::Key;
-use rocksdb::{DBWithThreadMode, SingleThreaded};
-use sha2::{Digest, Sha256};
-use std::{
-    collections::{HashMap, HashSet},
-    io::Error,
-    num::NonZeroU32,
-    time::Duration,
-};
+use rocksdb::DBWithThreadMode;
+use rocksdb::SingleThreaded;
+use sha2::Digest;
+use sha2::Sha256;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::io::Error;
+use std::num::NonZeroU32;
+use std::time::Duration;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
 use void::Void;

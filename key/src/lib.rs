@@ -1,15 +1,19 @@
 use pea_core::*;
-use secp256k1::{
-    ecdsa::{RecoverableSignature, RecoveryId},
-    Message, PublicKey, SecretKey, SECP256K1,
-};
-use sha2::{Digest, Sha256};
+use secp256k1::ecdsa::RecoverableSignature;
+use secp256k1::ecdsa::RecoveryId;
+use secp256k1::Message;
+use secp256k1::PublicKey;
+use secp256k1::SecretKey;
+use secp256k1::SECP256K1;
+use sha2::Digest;
+use sha2::Sha256;
 use std::error::Error;
 #[cfg(feature = "vrf")]
-use vrf::{
-    openssl::{CipherSuite, ECVRF},
-    VRF,
-};
+use vrf::openssl::CipherSuite;
+#[cfg(feature = "vrf")]
+use vrf::openssl::ECVRF;
+#[cfg(feature = "vrf")]
+use vrf::VRF;
 #[derive(Debug)]
 pub struct Key {
     pub secret_key: SecretKey,

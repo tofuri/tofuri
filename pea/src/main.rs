@@ -1,7 +1,9 @@
 use clap::Parser;
 use colored::*;
-use log::{info, warn};
-use pea::node::{Node, Options};
+use log::info;
+use log::warn;
+use pea::node::Node;
+use pea::node::Options;
 use pea_logger as logger;
 const TEMP_DB: bool = false;
 const TEMP_KEY: bool = false;

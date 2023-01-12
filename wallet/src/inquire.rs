@@ -1,10 +1,19 @@
-use crate::util::{encrypt, filenames, save};
+use crate::util::encrypt;
+use crate::util::filenames;
+use crate::util::save;
 use colored::*;
-use inquire::{validator::Validation, Confirm, CustomType, Password, PasswordDisplayMode, Select};
+use inquire::validator::Validation;
+use inquire::Confirm;
+use inquire::CustomType;
+use inquire::Password;
+use inquire::PasswordDisplayMode;
+use inquire::Select;
 use pea_address::address;
 use pea_core::*;
 use pea_key::Key;
-use std::{error::Error, path::PathBuf, process};
+use std::error::Error;
+use std::path::PathBuf;
+use std::process;
 const GENERATE: &str = "Generate new wallet";
 const IMPORT: &str = "Import wallet";
 pub fn wallet_select() -> Result<String, Box<dyn Error>> {

@@ -5,8 +5,10 @@ use pea_address::address;
 use pea_block::BlockA;
 use pea_core::*;
 use pea_db as db;
-use rocksdb::{DBWithThreadMode, SingleThreaded};
-use std::collections::{HashMap, VecDeque};
+use rocksdb::DBWithThreadMode;
+use rocksdb::SingleThreaded;
+use std::collections::HashMap;
+use std::collections::VecDeque;
 pub type Map = HashMap<AddressBytes, u128>;
 pub trait State {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;

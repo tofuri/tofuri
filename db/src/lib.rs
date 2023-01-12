@@ -1,4 +1,9 @@
-use rocksdb::{ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Options, SingleThreaded, DB};
+use rocksdb::ColumnFamily;
+use rocksdb::ColumnFamilyDescriptor;
+use rocksdb::DBWithThreadMode;
+use rocksdb::Options;
+use rocksdb::SingleThreaded;
+use rocksdb::DB;
 fn descriptors() -> Vec<ColumnFamilyDescriptor> {
     let options = Options::default();
     vec![
@@ -43,9 +48,15 @@ pub fn betas(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("betas").unwrap()
 }
 pub mod block {
-    use super::{beta, input_public_key, stake, transaction};
-    use pea_block::{BlockA, BlockB, BlockC};
-    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use super::beta;
+    use super::input_public_key;
+    use super::stake;
+    use super::transaction;
+    use pea_block::BlockA;
+    use pea_block::BlockB;
+    use pea_block::BlockC;
+    use rocksdb::DBWithThreadMode;
+    use rocksdb::SingleThreaded;
     use std::error::Error;
     pub fn put(block_a: &BlockA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         for transaction_a in block_a.transactions.iter() {
@@ -106,8 +117,10 @@ pub mod block {
 }
 pub mod transaction {
     use super::input_address;
-    use pea_transaction::{TransactionA, TransactionB};
-    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use pea_transaction::TransactionA;
+    use pea_transaction::TransactionB;
+    use rocksdb::DBWithThreadMode;
+    use rocksdb::SingleThreaded;
     use std::error::Error;
     pub fn put(transaction_a: &TransactionA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::transactions(db), transaction_a.hash, bincode::serialize(&transaction_a.b())?)?;
@@ -135,8 +148,10 @@ pub mod transaction {
 }
 pub mod stake {
     use super::input_address;
-    use pea_stake::{StakeA, StakeB};
-    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use pea_stake::StakeA;
+    use pea_stake::StakeB;
+    use rocksdb::DBWithThreadMode;
+    use rocksdb::SingleThreaded;
     use std::error::Error;
     pub fn put(stake_a: &StakeA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::stakes(db), stake_a.hash, bincode::serialize(&stake_a.b())?)?;
@@ -166,7 +181,9 @@ pub mod tree {
     use pea_block::BlockC;
     use pea_core::*;
     use pea_tree::Tree;
-    use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
+    use rocksdb::DBWithThreadMode;
+    use rocksdb::IteratorMode;
+    use rocksdb::SingleThreaded;
     use std::collections::HashMap;
     pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) {
         tree.clear();
@@ -224,7 +241,9 @@ pub mod tree {
     }
 }
 pub mod peer {
-    use rocksdb::{DBWithThreadMode, IteratorMode, SingleThreaded};
+    use rocksdb::DBWithThreadMode;
+    use rocksdb::IteratorMode;
+    use rocksdb::SingleThreaded;
     use std::error::Error;
     pub fn put(peer: &str, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::peers(db), peer, &[])?;
@@ -241,7 +260,8 @@ pub mod peer {
 }
 pub mod input_address {
     use pea_core::*;
-    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use rocksdb::DBWithThreadMode;
+    use rocksdb::SingleThreaded;
     use std::error::Error;
     pub fn put(hash: &[u8], input_address: &AddressBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::input_addresses(db), hash, input_address)?;
@@ -254,7 +274,8 @@ pub mod input_address {
 }
 pub mod input_public_key {
     use pea_core::*;
-    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use rocksdb::DBWithThreadMode;
+    use rocksdb::SingleThreaded;
     use std::error::Error;
     pub fn put(hash: &[u8], input_public_key: &PublicKeyBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::input_public_keys(db), hash, input_public_key)?;
@@ -267,7 +288,8 @@ pub mod input_public_key {
 }
 pub mod beta {
     use pea_core::*;
-    use rocksdb::{DBWithThreadMode, SingleThreaded};
+    use rocksdb::DBWithThreadMode;
+    use rocksdb::SingleThreaded;
     use std::error::Error;
     pub fn put(block_hash: &[u8], beta: &Beta, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::betas(db), block_hash, beta)?;

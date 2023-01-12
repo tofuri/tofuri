@@ -1,11 +1,16 @@
-use merkle_cbt::{merkle_tree::Merge, CBMT as ExCBMT};
+use merkle_cbt::merkle_tree::Merge;
+use merkle_cbt::CBMT as ExCBMT;
 use pea_core::*;
 use pea_key::Key;
-use pea_stake::{StakeA, StakeB};
-use pea_transaction::{TransactionA, TransactionB};
-use serde::{Deserialize, Serialize};
+use pea_stake::StakeA;
+use pea_stake::StakeB;
+use pea_transaction::TransactionA;
+use pea_transaction::TransactionB;
+use serde::Deserialize;
+use serde::Serialize;
 use serde_big_array::BigArray;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use sha2::Sha256;
 use std::error::Error;
 pub trait Block {
     fn get_previous_hash(&self) -> &Hash;

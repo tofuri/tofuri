@@ -1,21 +1,28 @@
-use crate::{
-    state::Dynamic,
-    states::States,
-    sync::Sync,
-    util::{EMPTY_BLOCK_SIZE, STAKE_SIZE, TRANSACTION_SIZE},
-};
+use crate::state::Dynamic;
+use crate::states::States;
+use crate::sync::Sync;
+use crate::util::EMPTY_BLOCK_SIZE;
+use crate::util::STAKE_SIZE;
+use crate::util::TRANSACTION_SIZE;
 use colored::*;
-use log::{debug, info, warn};
-use pea_block::{BlockA, BlockB};
+use log::debug;
+use log::info;
+use log::warn;
+use pea_block::BlockA;
+use pea_block::BlockB;
 use pea_core::*;
 use pea_db as db;
 use pea_key::Key;
-use pea_stake::{StakeA, StakeB};
-use pea_transaction::{TransactionA, TransactionB};
+use pea_stake::StakeA;
+use pea_stake::StakeB;
+use pea_transaction::TransactionA;
+use pea_transaction::TransactionB;
 use pea_tree::Tree;
-use rocksdb::{DBWithThreadMode, SingleThreaded};
+use rocksdb::DBWithThreadMode;
+use rocksdb::SingleThreaded;
 use std::collections::HashMap;
-use std::{error::Error, time::Instant};
+use std::error::Error;
+use std::time::Instant;
 #[derive(Debug)]
 pub struct Blockchain {
     pub db: DBWithThreadMode<SingleThreaded>,

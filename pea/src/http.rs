@@ -1,5 +1,8 @@
-use crate::{node::Node, p2p, util};
-use chrono::{TimeZone, Utc};
+use crate::node::Node;
+use crate::p2p;
+use crate::util;
+use chrono::TimeZone;
+use chrono::Utc;
 use libp2p::Multiaddr;
 use log::error;
 use pea_address::address;
@@ -8,12 +11,13 @@ use pea_core::*;
 use pea_db as db;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
-use std::{error::Error, io::BufRead, time::Duration};
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpStream,
-    time::timeout,
-};
+use std::error::Error;
+use std::io::BufRead;
+use std::time::Duration;
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
+use tokio::net::TcpStream;
+use tokio::time::timeout;
 fn parse_body(buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
     let str = std::str::from_utf8(buffer)?;
     let vec = str.split("\n\n").collect::<Vec<&str>>();

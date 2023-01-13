@@ -58,7 +58,6 @@ impl Blockchain {
     pub fn load(&mut self) {
         let start = Instant::now();
         db::tree::reload(&mut self.tree, &self.db);
-        self.sync.index = self.height().saturating_sub(self.trust_fork_after_blocks + SYNC_BLOCKS_PER_TICK);
         info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(self.trust_fork_after_blocks);
@@ -73,21 +72,22 @@ impl Blockchain {
             0
         }
     }
-    pub fn sync_block(&mut self) -> BlockB {
+    pub fn sync_block(&mut self, height: usize) -> Option<BlockB> {
         let hashes_trusted = &self.states.trusted.hashes;
         let hashes_dynamic = &self.states.dynamic.hashes;
-        if self.sync.index >= hashes_trusted.len() + hashes_dynamic.len() {
-            self.sync.index = 0;
+        if height >= hashes_trusted.len() + hashes_dynamic.len() {
+            return None;
         }
-        let hash = if self.sync.index < hashes_trusted.len() {
-            hashes_trusted[self.sync.index]
+        let hash = if height < hashes_trusted.len() {
+            hashes_trusted[height]
         } else {
-            hashes_dynamic[self.sync.index - hashes_trusted.len()]
+            hashes_dynamic[height - hashes_trusted.len()]
         };
-        debug!("{} {} {}", "Sync".cyan(), self.sync.index.to_string().yellow(), hex::encode(hash));
-        let block_b = db::block::get_b(&self.db, &hash).unwrap();
-        self.sync.index += 1;
-        block_b
+        debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
+        match db::block::get_b(&self.db, &hash) {
+            Ok(block_b) => Some(block_b),
+            Err(_) => None,
+        }
     }
     pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockA> {
         if let Some(staker) = self.states.dynamic.next_staker(timestamp) {

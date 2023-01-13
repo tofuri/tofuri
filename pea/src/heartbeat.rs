@@ -9,7 +9,6 @@ use log::info;
 use log::warn;
 use pea_address::address;
 use pea_block::BlockA;
-use pea_core::*;
 use pea_p2p::behaviour::FileRequest;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
@@ -25,11 +24,6 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     }
     if delay(node, 5) {
         dial_unknown(node);
-        let peer_ids = node.p2p_swarm.connected_peers().cloned().collect::<Vec<PeerId>>();
-        let behaviour = node.p2p_swarm.behaviour_mut();
-        for peer_id in peer_ids {
-            behaviour.request_response.send_request(&peer_id, FileRequest(vec![0, 1, 2, 3, 4, 5]));
-        }
     }
     if delay(node, 2) {
         node.p2p_message_data_hashes.clear();
@@ -41,7 +35,7 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     pending_blocks(node);
     offline_staker(node, timestamp);
     grow(node, timestamp);
-    sync(node);
+    sync_request(node);
     node.heartbeats += 1;
     lag(node, instant.elapsed());
 }
@@ -146,19 +140,15 @@ fn grow(node: &mut Node, timestamp: u32) {
         node.gossipsub_publish("block", bincode::serialize(&block).unwrap());
     }
 }
-fn sync(node: &mut Node) {
-    if node.blockchain.states.dynamic.hashes.is_empty() {
-        return;
+fn sync_request(node: &mut Node) {
+    let peer_ids = node.p2p_swarm.connected_peers().cloned().collect::<Vec<PeerId>>();
+    let behaviour = node.p2p_swarm.behaviour_mut();
+    let height = node.blockchain.height();
+    let file_request = FileRequest(bincode::serialize(&height).unwrap());
+    println!("{:?}", file_request);
+    for peer_id in peer_ids {
+        behaviour.request_response.send_request(&peer_id, file_request.clone());
     }
-    if !node.gossipsub_has_mesh_peers("blocks") {
-        node.blockchain.sync.index = 0;
-        return;
-    }
-    let mut vec = vec![];
-    for _ in 0..SYNC_BLOCKS_PER_TICK {
-        vec.push(node.blockchain.sync_block());
-    }
-    node.gossipsub_publish("blocks", bincode::serialize(&vec).unwrap())
 }
 fn lag(node: &mut Node, duration: Duration) {
     node.lag = duration.as_micros() as f64 / 1_000_f64;

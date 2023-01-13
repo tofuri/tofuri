@@ -147,7 +147,6 @@ impl Node {
         let mut behaviour = Behaviour::new(local_key).await?;
         for ident_topic in [
             IdentTopic::new("block"),
-            IdentTopic::new("blocks"),
             IdentTopic::new("stake"),
             IdentTopic::new("transaction"),
             IdentTopic::new("multiaddr"),

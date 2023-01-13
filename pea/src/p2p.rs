@@ -23,13 +23,13 @@ pub enum Endpoint {
 }
 #[derive(Debug, Default)]
 pub struct Ratelimit {
-    map: HashMap<IpAddr, ([usize; 5], Option<u32>)>,
+    map: HashMap<IpAddr, ([usize; 6], Option<u32>)>,
 }
 impl Ratelimit {
-    pub fn get(&self, addr: &IpAddr) -> ([usize; 5], Option<u32>) {
+    pub fn get(&self, addr: &IpAddr) -> ([usize; 6], Option<u32>) {
         match self.map.get(addr) {
             Some(x) => *x,
-            None => ([0; 5], None),
+            None => ([0; 6], None),
         }
     }
     pub fn is_ratelimited(&self, b: &Option<u32>) -> bool {
@@ -131,7 +131,20 @@ pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation
 }
 pub fn request_handler(node: &mut Node, peer_id: PeerId, request: FileRequest, channel: ResponseChannel<FileResponse>) -> Result<(), Box<dyn Error>> {
     Ratelimit::ratelimit(node, peer_id, Endpoint::SyncRequest)?;
-    println!("{:?}", request);
+    let height: usize = bincode::deserialize(&request.0)?;
+    println!("{:?}", height);
+    let mut vec = vec![];
+    for i in 0..SYNC_BLOCKS_PER_TICK {
+        vec.push(node.blockchain.sync_block(height + i));
+    }
+    if let Err(_) = node
+        .p2p_swarm
+        .behaviour_mut()
+        .request_response
+        .send_response(channel, FileResponse(bincode::serialize(&vec).unwrap()))
+    {
+        return Err("p2p request handler connection closed".into());
+    };
     Ok(())
 }
 pub fn response_handler(node: &mut Node, peer_id: PeerId, response: FileResponse) -> Result<(), Box<dyn Error>> {

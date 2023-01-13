@@ -5,7 +5,6 @@ lazy_static! {
 }
 #[derive(Debug)]
 pub struct Sync {
-    pub index: usize,
     pub bps: f32,
     pub new: f32,
     pub completed: bool,
@@ -24,7 +23,6 @@ impl Sync {
 impl Default for Sync {
     fn default() -> Self {
         Self {
-            index: 0,
             bps: 0.0,
             new: 0.0,
             completed: false,

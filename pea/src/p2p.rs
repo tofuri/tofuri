@@ -102,7 +102,6 @@ impl Ratelimit {
     }
 }
 pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn Error>> {
-    println!("{:?}", message);
     match message.topic.as_str() {
         "block" => {
             Ratelimit::ratelimit(node, propagation_source, Endpoint::Block)?;

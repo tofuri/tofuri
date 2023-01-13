@@ -61,11 +61,7 @@ impl Blockchain {
         info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
     }
     pub fn height(&self) -> usize {
-        if let Some(main) = self.tree.main() {
-            main.1
-        } else {
-            0
-        }
+        self.states.trusted.hashes.len() + self.states.dynamic.hashes.len()
     }
     pub fn sync_block(&mut self, height: usize) -> Option<BlockB> {
         let hashes_trusted = &self.states.trusted.hashes;

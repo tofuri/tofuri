@@ -3,12 +3,12 @@ use crate::util;
 use colored::*;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
-use libp2p::PeerId;
 use log::debug;
 use log::info;
 use log::warn;
 use pea_address::address;
 use pea_p2p::behaviour::FileRequest;
+use rand::prelude::*;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
     (node.heartbeats as f64 % (node.tps * seconds as f64)) as usize == 0
@@ -28,10 +28,10 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
         node.p2p_message_data_hashes.clear();
     }
     if delay(node, 1) {
-        sync_request(node);
         node.blockchain.sync.handler();
         node.p2p_ratelimit.reset();
     }
+    sync_request(node);
     offline_staker(node, timestamp);
     grow(node, timestamp);
     node.heartbeats += 1;
@@ -116,12 +116,11 @@ fn grow(node: &mut Node, timestamp: u32) {
     }
 }
 fn sync_request(node: &mut Node) {
-    let peer_ids = node.p2p_swarm.connected_peers().cloned().collect::<Vec<PeerId>>();
-    let behaviour = node.p2p_swarm.behaviour_mut();
-    let height = node.blockchain.states.trusted.hashes.len() + node.blockchain.states.dynamic.hashes.len();
-    let file_request = FileRequest(bincode::serialize(&height).unwrap());
-    for peer_id in peer_ids {
-        behaviour.request_response.send_request(&peer_id, file_request.clone());
+    if let Some(peer_id) = node.p2p_swarm.connected_peers().choose(&mut thread_rng()).cloned() {
+        node.p2p_swarm
+            .behaviour_mut()
+            .request_response
+            .send_request(&peer_id, FileRequest(bincode::serialize(&(node.blockchain.height())).unwrap()));
     }
 }
 fn lag(node: &mut Node, duration: Duration) {

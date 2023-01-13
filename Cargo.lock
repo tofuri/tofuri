@@ -2771,6 +2771,7 @@ dependencies = [
  "pea-transaction",
  "pea-tree",
  "pea-wallet",
+ "rand 0.8.5",
  "rocksdb",
  "serde",
  "serde_json",

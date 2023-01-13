@@ -217,13 +217,13 @@ impl Node {
                     return;
                 }
                 if let Err(err) = p2p::gossipsub_handler(self, message, propagation_source) {
-                    debug!("{}", err)
+                    error!("{}", err)
                 }
             }
             SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
                 RequestResponseMessage::Request { request, channel, .. } => {
                     if let Err(err) = p2p::request_handler(self, peer, request, channel) {
-                        debug!("{}", err)
+                        error!("{}", err)
                     }
                 }
                 RequestResponseMessage::Response { response, .. } => {

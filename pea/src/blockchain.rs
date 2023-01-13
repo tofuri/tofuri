@@ -29,8 +29,8 @@ pub struct Blockchain {
     pub key: Key,
     pub tree: Tree,
     pub states: States,
-    pub pending_transactions: Vec<TransactionA>,
-    pub pending_stakes: Vec<StakeA>,
+    pending_transactions: Vec<TransactionA>,
+    pending_stakes: Vec<StakeA>,
     pub pending_blocks: Vec<BlockA>,
     pub sync: Sync,
     pub trust_fork_after_blocks: usize,
@@ -128,6 +128,7 @@ impl Blockchain {
     }
     pub fn accept_block(&mut self, block_a: &BlockA, forged: bool) {
         db::block::put(&block_a, &self.db).unwrap();
+        println!("{:x?}", block_a);
         if self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap() {
             warn!("{} {}", "Forked".red(), hex::encode(block_a.hash));
         }
@@ -159,7 +160,10 @@ impl Blockchain {
     }
     pub fn pending_blocks_push(&mut self, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         let block_a = block_b.a()?;
-        self.validate_block_0(&block_a, timestamp)?;
+        self.validate_block(&block_a, timestamp)?;
+        if self.pending_blocks.iter().any(|x| x.hash == block_a.hash) {
+            return Err("block pending".into());
+        }
         self.pending_blocks.push(block_a);
         Ok(())
     }
@@ -203,7 +207,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_block_0(&self, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn validate_block(&self, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.tree.get(&block_a.hash).is_some() {
             return Err("block hash in tree".into());
         }
@@ -213,29 +217,6 @@ impl Blockchain {
         if block_a.previous_hash != [0; 32] && self.tree.get(&block_a.previous_hash).is_none() {
             return Err("block previous_hash not in tree".into());
         }
-        let dynamic = self.states.dynamic_fork(self, &block_a.previous_hash)?;
-        let previous_beta = match Key::vrf_proof_to_hash(&dynamic.latest_block.pi) {
-            Some(x) => x,
-            None => GENESIS_BETA,
-        };
-        Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
-        for stake_a in block_a.stakes.iter() {
-            self.validate_stake(stake_a, dynamic.latest_block.timestamp, timestamp)?;
-        }
-        for transaction_a in block_a.transactions.iter() {
-            self.validate_transaction(transaction_a, dynamic.latest_block.timestamp, timestamp)?;
-        }
-        let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<AddressBytes>>();
-        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
-            return Err("block includes multiple transactions from same input address".into());
-        }
-        let input_addresses = block_a.stakes.iter().map(|x| x.input_address).collect::<Vec<AddressBytes>>();
-        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
-            return Err("block includes multiple stakes from same input address".into());
-        }
-        Ok(())
-    }
-    pub fn validate_block_1(&self, block_a: &BlockA) -> Result<(), Box<dyn Error>> {
         let input_address = block_a.input_address();
         let dynamic = self.states.dynamic_fork(self, &block_a.previous_hash)?;
         if let Some(hash) = self.offline.get(&input_address) {
@@ -246,6 +227,11 @@ impl Blockchain {
         if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return Err("block timestamp early".into());
         }
+        let previous_beta = match Key::vrf_proof_to_hash(&dynamic.latest_block.pi) {
+            Some(x) => x,
+            None => GENESIS_BETA,
+        };
+        Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
         if let Some(staker) = dynamic.next_staker(block_a.timestamp) {
             if staker != input_address {
                 return Err("block staker address".into());
@@ -271,6 +257,20 @@ impl Blockchain {
                 return Err("stake mint timestamp".into());
             }
             return Ok(());
+        }
+        for stake_a in block_a.stakes.iter() {
+            self.validate_stake(stake_a, dynamic.latest_block.timestamp, timestamp)?;
+        }
+        for transaction_a in block_a.transactions.iter() {
+            self.validate_transaction(transaction_a, dynamic.latest_block.timestamp, timestamp)?;
+        }
+        let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<AddressBytes>>();
+        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
+            return Err("block includes multiple transactions from same input address".into());
+        }
+        let input_addresses = block_a.stakes.iter().map(|x| x.input_address).collect::<Vec<AddressBytes>>();
+        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
+            return Err("block includes multiple stakes from same input address".into());
         }
         Ok(())
     }

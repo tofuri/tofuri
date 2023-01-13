@@ -4,6 +4,7 @@ use libp2p::gossipsub::GossipsubMessage;
 use libp2p::request_response::ResponseChannel;
 use libp2p::Multiaddr;
 use libp2p::PeerId;
+use log::error;
 use pea_block::BlockB;
 use pea_core::*;
 use pea_p2p::behaviour::FileRequest;
@@ -153,8 +154,9 @@ pub fn response_handler(node: &mut Node, peer_id: PeerId, response: FileResponse
     Ratelimit::ratelimit(node, peer_id, Endpoint::SyncResponse)?;
     let timestamp = util::timestamp();
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
-        println!("{:?}", block_b);
-        node.blockchain.pending_blocks_push(block_b, timestamp)?;
+        if let Err(err) = node.blockchain.pending_blocks_push(block_b, timestamp) {
+            error!("{}", err);
+        }
     }
     Ok(())
 }

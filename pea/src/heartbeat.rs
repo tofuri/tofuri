@@ -24,6 +24,7 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     }
     if delay(node, 5) {
         dial_unknown(node);
+        sync_request(node);
     }
     if delay(node, 2) {
         node.p2p_message_data_hashes.clear();
@@ -32,14 +33,13 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
         node.blockchain.sync.handler();
         node.p2p_ratelimit.reset();
     }
-    pending_blocks(node);
+    pending_blocks(node, timestamp);
     offline_staker(node, timestamp);
     grow(node, timestamp);
-    sync_request(node);
     node.heartbeats += 1;
     lag(node, instant.elapsed());
 }
-fn pending_blocks(node: &mut Node) {
+fn pending_blocks(node: &mut Node, timestamp: u32) {
     let drain = node.blockchain.pending_blocks.drain(..);
     let mut vec: Vec<BlockA> = vec![];
     for block in drain {
@@ -49,10 +49,10 @@ fn pending_blocks(node: &mut Node) {
         vec.push(block);
     }
     loop {
-        if let Some(block) = vec.iter().find(|&block_a| match node.blockchain.validate_block_1(&block_a) {
+        if let Some(block) = vec.iter().find(|&block_a| match node.blockchain.validate_block(&block_a, timestamp) {
             Ok(()) => true,
             Err(err) => {
-                debug!("{}", err);
+                log::error!("{}", err);
                 false
             }
         }) {

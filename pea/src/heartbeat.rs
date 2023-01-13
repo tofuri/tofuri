@@ -108,11 +108,11 @@ fn grow(node: &mut Node, timestamp: u32) {
     if !node.blockchain.sync.completed {
         return;
     }
-    if let Some(block) = node.blockchain.forge_block(timestamp) {
+    if let Some(block_a) = node.blockchain.forge_block(timestamp) {
         if !node.gossipsub_has_mesh_peers("block") {
             return;
         }
-        node.gossipsub_publish("block", bincode::serialize(&block).unwrap());
+        node.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap());
     }
 }
 fn sync_request(node: &mut Node) {

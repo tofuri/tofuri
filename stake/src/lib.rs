@@ -47,13 +47,12 @@ impl Stake for StakeB {
         hash_input(self)
     }
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct StakeA {
     pub amount: u128,
     pub fee: u128,
     pub deposit: bool,
     pub timestamp: u32,
-    #[serde(with = "BigArray")]
     pub signature: SignatureBytes,
     pub input_address: AddressBytes,
     pub hash: Hash,

@@ -105,14 +105,9 @@ pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation
     println!("{:?}", message);
     match message.topic.as_str() {
         "block" => {
-            println!("1");
             Ratelimit::ratelimit(node, propagation_source, Endpoint::Block)?;
-            println!("2");
-            println!("{}", message.data.len());
             let block_b: BlockB = bincode::deserialize(&message.data)?;
-            println!("3");
             node.blockchain.append_block(block_b, util::timestamp())?;
-            println!("4");
         }
         "transaction" => {
             Ratelimit::ratelimit(node, propagation_source, Endpoint::Transaction)?;

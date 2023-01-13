@@ -5,6 +5,7 @@ use crate::util::EMPTY_BLOCK_SIZE;
 use crate::util::STAKE_SIZE;
 use crate::util::TRANSACTION_SIZE;
 use colored::*;
+use log::debug;
 use log::info;
 use log::warn;
 use pea_block::BlockA;
@@ -74,7 +75,7 @@ impl Blockchain {
         } else {
             hashes_dynamic[height - hashes_trusted.len()]
         };
-        info!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
+        debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
         match db::block::get_b(&self.db, &hash) {
             Ok(block_b) => Some(block_b),
             Err(_) => None,

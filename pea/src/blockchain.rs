@@ -5,7 +5,6 @@ use crate::util::EMPTY_BLOCK_SIZE;
 use crate::util::STAKE_SIZE;
 use crate::util::TRANSACTION_SIZE;
 use colored::*;
-use log::debug;
 use log::info;
 use log::warn;
 use pea_block::BlockA;
@@ -31,7 +30,6 @@ pub struct Blockchain {
     pub states: States,
     pending_transactions: Vec<TransactionA>,
     pending_stakes: Vec<StakeA>,
-    pub pending_blocks: Vec<BlockA>,
     pub sync: Sync,
     pub trust_fork_after_blocks: usize,
     pub time_delta: u32,
@@ -46,7 +44,6 @@ impl Blockchain {
             states: States::default(),
             pending_transactions: vec![],
             pending_stakes: vec![],
-            pending_blocks: vec![],
             sync: Sync::default(),
             trust_fork_after_blocks,
             time_delta,
@@ -81,7 +78,7 @@ impl Blockchain {
         } else {
             hashes_dynamic[height - hashes_trusted.len()]
         };
-        debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
+        info!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
         match db::block::get_b(&self.db, &hash) {
             Ok(block_b) => Some(block_b),
             Err(_) => None,
@@ -123,12 +120,17 @@ impl Blockchain {
             BlockA::sign([0; 32], timestamp, transactions, stakes, &self.key, &GENESIS_BETA)
         }
         .unwrap();
-        self.accept_block(&block_a, true);
+        self.save_block(&block_a, true);
         Some(block_a)
     }
-    pub fn accept_block(&mut self, block_a: &BlockA, forged: bool) {
+    pub fn append_block(&mut self, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        let block_a = block_b.a()?;
+        self.validate_block(&block_a, timestamp)?;
+        self.save_block(&block_a, false);
+        Ok(())
+    }
+    pub fn save_block(&mut self, block_a: &BlockA, forged: bool) {
         db::block::put(&block_a, &self.db).unwrap();
-        println!("{:x?}", block_a);
         if self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap() {
             warn!("{} {}", "Forked".red(), hex::encode(block_a.hash));
         }
@@ -157,15 +159,6 @@ impl Blockchain {
             }
         }
         info!("{} {} {} {}", info_0, info_1, info_2, info_3);
-    }
-    pub fn pending_blocks_push(&mut self, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        let block_a = block_b.a()?;
-        self.validate_block(&block_a, timestamp)?;
-        if self.pending_blocks.iter().any(|x| x.hash == block_a.hash) {
-            return Err("block pending".into());
-        }
-        self.pending_blocks.push(block_a);
-        Ok(())
     }
     pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         let transaction_a = transaction_b.a(None)?;

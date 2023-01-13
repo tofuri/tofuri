@@ -4,7 +4,6 @@ use libp2p::gossipsub::GossipsubMessage;
 use libp2p::request_response::ResponseChannel;
 use libp2p::Multiaddr;
 use libp2p::PeerId;
-use log::error;
 use pea_block::BlockB;
 use pea_core::*;
 use pea_p2p::behaviour::FileRequest;
@@ -106,7 +105,7 @@ pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation
         "block" => {
             Ratelimit::ratelimit(node, propagation_source, Endpoint::Block)?;
             let block_b: BlockB = bincode::deserialize(&message.data)?;
-            node.blockchain.pending_blocks_push(block_b, util::timestamp())?;
+            node.blockchain.append_block(block_b, util::timestamp())?;
         }
         "transaction" => {
             Ratelimit::ratelimit(node, propagation_source, Endpoint::Transaction)?;
@@ -154,8 +153,8 @@ pub fn response_handler(node: &mut Node, peer_id: PeerId, response: FileResponse
     Ratelimit::ratelimit(node, peer_id, Endpoint::SyncResponse)?;
     let timestamp = util::timestamp();
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
-        if let Err(err) = node.blockchain.pending_blocks_push(block_b, timestamp) {
-            error!("{}", err);
+        if let Err(err) = node.blockchain.append_block(block_b, timestamp) {
+            log::error!("{}", err);
         }
     }
     Ok(())

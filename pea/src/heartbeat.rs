@@ -8,7 +8,6 @@ use log::debug;
 use log::info;
 use log::warn;
 use pea_address::address;
-use pea_block::BlockA;
 use pea_p2p::behaviour::FileRequest;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
@@ -24,43 +23,19 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     }
     if delay(node, 5) {
         dial_unknown(node);
-        sync_request(node);
     }
     if delay(node, 2) {
         node.p2p_message_data_hashes.clear();
     }
     if delay(node, 1) {
+        sync_request(node);
         node.blockchain.sync.handler();
         node.p2p_ratelimit.reset();
     }
-    pending_blocks(node, timestamp);
     offline_staker(node, timestamp);
     grow(node, timestamp);
     node.heartbeats += 1;
     lag(node, instant.elapsed());
-}
-fn pending_blocks(node: &mut Node, timestamp: u32) {
-    let drain = node.blockchain.pending_blocks.drain(..);
-    let mut vec: Vec<BlockA> = vec![];
-    for block in drain {
-        if vec.iter().any(|a| a.hash == block.hash) {
-            continue;
-        }
-        vec.push(block);
-    }
-    loop {
-        if let Some(block) = vec.iter().find(|&block_a| match node.blockchain.validate_block(&block_a, timestamp) {
-            Ok(()) => true,
-            Err(err) => {
-                log::error!("{}", err);
-                false
-            }
-        }) {
-            node.blockchain.accept_block(&block, false);
-        } else {
-            break;
-        }
-    }
 }
 fn offline_staker(node: &mut Node, timestamp: u32) {
     if node.p2p_ban_offline == 0 {
@@ -143,9 +118,8 @@ fn grow(node: &mut Node, timestamp: u32) {
 fn sync_request(node: &mut Node) {
     let peer_ids = node.p2p_swarm.connected_peers().cloned().collect::<Vec<PeerId>>();
     let behaviour = node.p2p_swarm.behaviour_mut();
-    let height = node.blockchain.height();
+    let height = node.blockchain.states.trusted.hashes.len() + node.blockchain.states.dynamic.hashes.len();
     let file_request = FileRequest(bincode::serialize(&height).unwrap());
-    println!("{:?}", file_request);
     for peer_id in peer_ids {
         behaviour.request_response.send_request(&peer_id, file_request.clone());
     }

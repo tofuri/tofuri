@@ -135,7 +135,10 @@ pub fn request_handler(node: &mut Node, peer_id: PeerId, request: FileRequest, c
     println!("{:?}", height);
     let mut vec = vec![];
     for i in 0..SYNC_BLOCKS_PER_TICK {
-        vec.push(node.blockchain.sync_block(height + i));
+        match node.blockchain.sync_block(height + i) {
+            Some(block_b) => vec.push(block_b),
+            None => break,
+        }
     }
     if let Err(_) = node
         .p2p_swarm

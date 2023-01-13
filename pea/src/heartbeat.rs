@@ -7,7 +7,7 @@ use log::debug;
 use log::info;
 use log::warn;
 use pea_address::address;
-use pea_p2p::behaviour::FileRequest;
+use pea_p2p::behaviour::SyncRequest;
 use rand::prelude::*;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
@@ -120,7 +120,7 @@ fn sync_request(node: &mut Node) {
         node.p2p_swarm
             .behaviour_mut()
             .request_response
-            .send_request(&peer_id, FileRequest(bincode::serialize(&(node.blockchain.height())).unwrap()));
+            .send_request(&peer_id, SyncRequest(bincode::serialize(&(node.blockchain.height())).unwrap()));
     }
 }
 fn lag(node: &mut Node, duration: Duration) {

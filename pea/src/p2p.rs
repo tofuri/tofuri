@@ -7,8 +7,8 @@ use libp2p::PeerId;
 use log::debug;
 use pea_block::BlockB;
 use pea_core::*;
-use pea_p2p::behaviour::FileRequest;
-use pea_p2p::behaviour::FileResponse;
+use pea_p2p::behaviour::SyncRequest;
+use pea_p2p::behaviour::SyncResponse;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use std::collections::HashMap;
@@ -130,7 +130,7 @@ pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation
     };
     Ok(())
 }
-pub fn request_handler(node: &mut Node, peer_id: PeerId, request: FileRequest, channel: ResponseChannel<FileResponse>) -> Result<(), Box<dyn Error>> {
+pub fn request_handler(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
     Ratelimit::ratelimit(node, peer_id, Endpoint::SyncRequest)?;
     let height: usize = bincode::deserialize(&request.0)?;
     let mut vec = vec![];
@@ -144,13 +144,13 @@ pub fn request_handler(node: &mut Node, peer_id: PeerId, request: FileRequest, c
         .p2p_swarm
         .behaviour_mut()
         .request_response
-        .send_response(channel, FileResponse(bincode::serialize(&vec).unwrap()))
+        .send_response(channel, SyncResponse(bincode::serialize(&vec).unwrap()))
     {
         return Err("p2p request handler connection closed".into());
     };
     Ok(())
 }
-pub fn response_handler(node: &mut Node, peer_id: PeerId, response: FileResponse) -> Result<(), Box<dyn Error>> {
+pub fn response_handler(node: &mut Node, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
     Ratelimit::ratelimit(node, peer_id, Endpoint::SyncResponse)?;
     let timestamp = util::timestamp();
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {

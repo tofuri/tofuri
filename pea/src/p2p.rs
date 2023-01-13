@@ -132,7 +132,6 @@ pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation
 pub fn request_handler(node: &mut Node, peer_id: PeerId, request: FileRequest, channel: ResponseChannel<FileResponse>) -> Result<(), Box<dyn Error>> {
     Ratelimit::ratelimit(node, peer_id, Endpoint::SyncRequest)?;
     let height: usize = bincode::deserialize(&request.0)?;
-    println!("{:?}", height);
     let mut vec = vec![];
     for i in 0..SYNC_BLOCKS_PER_TICK {
         match node.blockchain.sync_block(height + i) {
@@ -154,6 +153,7 @@ pub fn response_handler(node: &mut Node, peer_id: PeerId, response: FileResponse
     Ratelimit::ratelimit(node, peer_id, Endpoint::SyncResponse)?;
     let timestamp = util::timestamp();
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
+        println!("{:?}", block_b);
         node.blockchain.pending_blocks_push(block_b, timestamp)?;
     }
     Ok(())

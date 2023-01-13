@@ -42,7 +42,6 @@ pub struct Options {
     pub tempdb: bool,
     pub tempkey: bool,
     pub trust: usize,
-    pub pending: usize,
     pub ban_offline: usize,
     pub time_delta: u32,
     pub max_established: Option<u32>,

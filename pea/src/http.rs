@@ -202,7 +202,6 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
     Ok(json(serde_json::to_string(&api::Options {
         mint: node.mint,
         trust: node.blockchain.trust_fork_after_blocks,
-        pending: node.blockchain.pending_blocks_limit,
         ban_offline: node.p2p_ban_offline,
         time_delta: node.blockchain.time_delta,
         max_established: node.max_established,

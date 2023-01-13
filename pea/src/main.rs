@@ -34,9 +34,6 @@ pub struct Args {
     /// Trust fork after blocks
     #[clap(long, value_parser, default_value = "2")]
     pub trust: usize,
-    /// Pending blocks limit
-    #[clap(long, value_parser, default_value = "256")]
-    pub pending: usize,
     /// Mesh peers required to ban stakers that failed to show up
     #[clap(long, value_parser, default_value = "10")]
     pub ban_offline: usize,
@@ -101,7 +98,6 @@ async fn main() {
     info!("{} {}", "--mint".cyan(), args.mint.to_string().magenta());
     info!("{} {}", "--time-api".cyan(), args.time_api.to_string().magenta());
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
-    info!("{} {}", "--pending".cyan(), args.pending.to_string().magenta());
     info!("{} {}", "--ban-offline".cyan(), args.ban_offline.to_string().magenta());
     info!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());
     info!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
@@ -121,7 +117,6 @@ async fn main() {
         mint: args.mint,
         time_api: args.time_api,
         trust: args.trust,
-        pending: args.pending,
         ban_offline: args.ban_offline,
         time_delta: args.time_delta,
         max_established: args.max_established,

@@ -58,7 +58,6 @@ pub struct Options<'a> {
     pub mint: bool,
     pub time_api: bool,
     pub trust: usize,
-    pub pending: usize,
     pub ban_offline: usize,
     pub time_delta: u32,
     pub max_established: Option<u32>,
@@ -96,7 +95,7 @@ impl Node {
         let key = Node::key(options.tempkey, options.wallet, options.passphrase);
         info!("Address {}", address::encode(&key.address_bytes()).green());
         let db = Node::db(options.tempdb);
-        let blockchain = Blockchain::new(db, key, options.trust, options.pending, options.time_delta);
+        let blockchain = Blockchain::new(db, key, options.trust, options.time_delta);
         let p2p_swarm = Node::swarm(options.max_established, options.timeout).await.unwrap();
         let p2p_known = Node::known(&blockchain.db, options.peer);
         Node {
@@ -229,7 +228,7 @@ impl Node {
                 }
                 RequestResponseMessage::Response { response, .. } => {
                     if let Err(err) = p2p::response_handler(self, peer, response) {
-                        debug!("{}", err)
+                        error!("{}", err)
                     }
                 }
             },

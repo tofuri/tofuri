@@ -34,12 +34,11 @@ pub struct Blockchain {
     pub pending_blocks: Vec<BlockA>,
     pub sync: Sync,
     pub trust_fork_after_blocks: usize,
-    pub pending_blocks_limit: usize,
     pub time_delta: u32,
     pub offline: HashMap<AddressBytes, Hash>,
 }
 impl Blockchain {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize, pending_blocks_limit: usize, time_delta: u32) -> Self {
+    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize, time_delta: u32) -> Self {
         Self {
             db,
             key,
@@ -50,7 +49,6 @@ impl Blockchain {
             pending_blocks: vec![],
             sync: Sync::default(),
             trust_fork_after_blocks,
-            pending_blocks_limit,
             time_delta,
             offline: HashMap::new(),
         }
@@ -160,9 +158,6 @@ impl Blockchain {
         info!("{} {} {} {}", info_0, info_1, info_2, info_3);
     }
     pub fn pending_blocks_push(&mut self, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if self.pending_blocks.len() < self.pending_blocks_limit {
-            return Err("pending blocks limit reached".into());
-        }
         let block_a = block_b.a()?;
         self.validate_block_0(&block_a, timestamp)?;
         self.pending_blocks.push(block_a);

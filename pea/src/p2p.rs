@@ -13,12 +13,13 @@ use pea_transaction::TransactionB;
 use std::collections::HashMap;
 use std::error::Error;
 use std::net::IpAddr;
-pub enum Topic {
+pub enum Endpoint {
     Block,
     Transaction,
     Stake,
     Multiaddr,
-    Blocks,
+    SyncRequest,
+    SyncResponse,
 }
 #[derive(Debug, Default)]
 pub struct Ratelimit {
@@ -39,33 +40,37 @@ impl Ratelimit {
         }
         false
     }
-    pub fn add(&mut self, addr: IpAddr, topic: Topic) -> bool {
+    pub fn add(&mut self, addr: IpAddr, endpoint: Endpoint) -> bool {
         let mut value = self.get(&addr);
         let a = &mut value.0;
         let b = &mut value.1;
         if self.is_ratelimited(b) {
             return true;
         }
-        let ratelimited = match topic {
-            Topic::Block => {
+        let ratelimited = match endpoint {
+            Endpoint::Block => {
                 a[0] += 1;
-                a[0] > RATELIMIT_TOPIC_BLOCK
+                a[0] > RATELIMIT_BLOCK
             }
-            Topic::Blocks => {
+            Endpoint::Transaction => {
                 a[1] += 1;
-                a[1] > RATELIMIT_TOPIC_BLOCKS
+                a[1] > RATELIMIT_TRANSACTION
             }
-            Topic::Transaction => {
+            Endpoint::Stake => {
                 a[2] += 1;
-                a[2] > RATELIMIT_TOPIC_TRANSACTION
+                a[2] > RATELIMIT_STAKE
             }
-            Topic::Stake => {
+            Endpoint::Multiaddr => {
                 a[3] += 1;
-                a[3] > RATELIMIT_TOPIC_STAKE
+                a[3] > RATELIMIT_MULTIADDR
             }
-            Topic::Multiaddr => {
+            Endpoint::SyncRequest => {
                 a[4] += 1;
-                a[4] > RATELIMIT_TOPIC_MULTIADDR
+                a[4] > RATELIMIT_SYNC_REQUEST
+            }
+            Endpoint::SyncResponse => {
+                a[5] += 1;
+                a[5] > RATELIMIT_SYNC_RESPONSE
             }
         };
         if ratelimited {
@@ -77,56 +82,43 @@ impl Ratelimit {
     pub fn reset(&mut self) {
         for value in self.map.values_mut() {
             let a = &mut value.0;
-            a[0] = a[0].saturating_sub(RATELIMIT_TOPIC_BLOCK);
-            a[1] = a[1].saturating_sub(RATELIMIT_TOPIC_BLOCKS);
-            a[2] = a[2].saturating_sub(RATELIMIT_TOPIC_TRANSACTION);
-            a[3] = a[3].saturating_sub(RATELIMIT_TOPIC_STAKE);
-            a[4] = a[4].saturating_sub(RATELIMIT_TOPIC_MULTIADDR);
+            a[0] = a[0].saturating_sub(RATELIMIT_BLOCK);
+            a[1] = a[1].saturating_sub(RATELIMIT_TRANSACTION);
+            a[2] = a[2].saturating_sub(RATELIMIT_STAKE);
+            a[3] = a[3].saturating_sub(RATELIMIT_MULTIADDR);
+            a[4] = a[4].saturating_sub(RATELIMIT_SYNC_REQUEST);
+            a[5] = a[5].saturating_sub(RATELIMIT_SYNC_RESPONSE);
         }
     }
-}
-pub fn ratelimit(node: &mut Node, addr: IpAddr, propagation_source: PeerId, topic: Topic) -> Result<(), Box<dyn Error>> {
-    if node.p2p_ratelimit.add(addr, topic) {
-        let _ = node.p2p_swarm.disconnect_peer_id(propagation_source);
-        return Err("ratelimited".into());
+    pub fn ratelimit(node: &mut Node, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Box<dyn Error>> {
+        let (multiaddr, _) = node.p2p_connections.iter().find(|x| x.1 == &peer_id).unwrap();
+        let addr = pea_p2p::multiaddr::multiaddr_addr(multiaddr).expect("multiaddr to include ip");
+        if node.p2p_ratelimit.add(addr, endpoint) {
+            let _ = node.p2p_swarm.disconnect_peer_id(peer_id);
+            return Err("ratelimited".into());
+        }
+        Ok(())
     }
-    Ok(())
-}
-pub fn request_handler(node: &mut Node, peer_id: PeerId, request: FileRequest, channel: ResponseChannel<FileResponse>) -> Result<(), Box<dyn Error>> {
-    println!("{:?}", request);
-    Ok(())
-}
-pub fn response_handler(node: &mut Node, peer_id: PeerId, response: FileResponse) -> Result<(), Box<dyn Error>> {
-    Ok(())
 }
 pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn Error>> {
-    let (multiaddr, _) = node.p2p_connections.iter().find(|x| x.1 == &propagation_source).unwrap();
-    let addr = pea_p2p::multiaddr::multiaddr_addr(multiaddr).expect("multiaddr to include ip");
     match message.topic.as_str() {
         "block" => {
-            ratelimit(node, addr, propagation_source, Topic::Block)?;
+            Ratelimit::ratelimit(node, propagation_source, Endpoint::Block)?;
             let block_b: BlockB = bincode::deserialize(&message.data)?;
             node.blockchain.pending_blocks_push(block_b, util::timestamp())?;
         }
-        "blocks" => {
-            ratelimit(node, addr, propagation_source, Topic::Blocks)?;
-            for block_b in bincode::deserialize::<Vec<BlockB>>(&message.data)? {
-                ratelimit(node, addr, propagation_source, Topic::Block)?;
-                node.blockchain.pending_blocks_push(block_b, util::timestamp())?;
-            }
-        }
         "transaction" => {
-            ratelimit(node, addr, propagation_source, Topic::Transaction)?;
+            Ratelimit::ratelimit(node, propagation_source, Endpoint::Transaction)?;
             let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
             node.blockchain.pending_transactions_push(transaction_b, util::timestamp())?;
         }
         "stake" => {
-            ratelimit(node, addr, propagation_source, Topic::Stake)?;
+            Ratelimit::ratelimit(node, propagation_source, Endpoint::Stake)?;
             let stake_b: StakeB = bincode::deserialize(&message.data)?;
             node.blockchain.pending_stakes_push(stake_b, util::timestamp())?;
         }
         "multiaddr" => {
-            ratelimit(node, addr, propagation_source, Topic::Multiaddr)?;
+            Ratelimit::ratelimit(node, propagation_source, Endpoint::Multiaddr)?;
             for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
                 if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr) {
                     node.p2p_unknown.insert(multiaddr);
@@ -135,5 +127,18 @@ pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation
         }
         _ => {}
     };
+    Ok(())
+}
+pub fn request_handler(node: &mut Node, peer_id: PeerId, request: FileRequest, channel: ResponseChannel<FileResponse>) -> Result<(), Box<dyn Error>> {
+    Ratelimit::ratelimit(node, peer_id, Endpoint::SyncRequest)?;
+    println!("{:?}", request);
+    Ok(())
+}
+pub fn response_handler(node: &mut Node, peer_id: PeerId, response: FileResponse) -> Result<(), Box<dyn Error>> {
+    Ratelimit::ratelimit(node, peer_id, Endpoint::SyncResponse)?;
+    let timestamp = util::timestamp();
+    for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
+        node.blockchain.pending_blocks_push(block_b, timestamp)?;
+    }
     Ok(())
 }

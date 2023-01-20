@@ -316,8 +316,7 @@ fn merkle_root(hashes: &[Hash]) -> MerkleRoot {
             hasher.finalize().into()
         }
     }
-    type CBMT = ExCBMT<[u8; 32], Hasher>;
-    CBMT::build_merkle_root(hashes)
+    <ExCBMT<[u8; 32], Hasher>>::build_merkle_root(hashes)
 }
 fn beta<T: Block>(block: &T) -> Result<Beta, Box<dyn Error>> {
     Key::vrf_proof_to_hash(block.get_pi()).ok_or("invalid beta".into())

@@ -104,10 +104,7 @@ impl TransactionA {
 }
 impl TransactionB {
     pub fn a(&self, input_address: Option<AddressBytes>) -> Result<TransactionA, Box<dyn Error>> {
-        let input_address = match input_address {
-            Some(x) => x,
-            None => self.input_address()?,
-        };
+        let input_address = input_address.unwrap_or(self.input_address()?);
         Ok(TransactionA {
             output_address: self.output_address,
             amount: pea_int::from_be_slice(&self.amount),

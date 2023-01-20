@@ -225,14 +225,8 @@ impl BlockC {
         input_public_key: Option<PublicKeyBytes>,
     ) -> Result<BlockA, Box<dyn Error>> {
         let block_b = self.b(transactions.iter().map(|x| x.b()).collect(), stakes.iter().map(|x| x.b()).collect());
-        let beta = match beta {
-            Some(x) => x,
-            None => block_b.beta()?,
-        };
-        let input_public_key = match input_public_key {
-            Some(x) => x,
-            None => block_b.input_public_key()?,
-        };
+        let beta = beta.unwrap_or(block_b.beta()?);
+        let input_public_key = input_public_key.unwrap_or(block_b.input_public_key()?);
         let mut block_a = BlockA {
             hash: [0; 32],
             previous_hash: self.previous_hash,

@@ -28,10 +28,7 @@ pub struct Ratelimit {
 }
 impl Ratelimit {
     pub fn get(&self, addr: &IpAddr) -> ([usize; 6], Option<u32>) {
-        match self.map.get(addr) {
-            Some(x) => *x,
-            None => ([0; 6], None),
-        }
+        *self.map.get(addr).unwrap_or(&([0; 6], None))
     }
     pub fn is_ratelimited(&self, b: &Option<u32>) -> bool {
         if let Some(timestamp) = b {

@@ -78,14 +78,8 @@ pub mod block {
         for hash in block_c.stake_hashes.iter() {
             stakes.push(stake::get_a(db, hash)?);
         }
-        let beta = match beta::get(db, hash) {
-            Ok(x) => Some(x),
-            Err(_) => None,
-        };
-        let input_public_key = match input_public_key::get(db, hash) {
-            Ok(x) => Some(x),
-            Err(_) => None,
-        };
+        let beta = beta::get(db, hash).ok();
+        let input_public_key = input_public_key::get(db, hash).ok();
         let block_a = block_c.a(transactions, stakes, beta, input_public_key)?;
         if beta.is_none() {
             beta::put(hash, &block_a.beta, db)?;
@@ -127,10 +121,7 @@ pub mod transaction {
         Ok(())
     }
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionA, Box<dyn Error>> {
-        let input_address = match input_address::get(db, hash) {
-            Ok(x) => Some(x),
-            Err(_) => None,
-        };
+        let input_address = input_address::get(db, hash).ok();
         let transaction_a = get_b(db, hash)?.a(input_address)?;
         if input_address.is_none() {
             input_address::put(hash, &transaction_a.input_address, db)?;
@@ -158,10 +149,7 @@ pub mod stake {
         Ok(())
     }
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeA, Box<dyn Error>> {
-        let input_address = match input_address::get(db, hash) {
-            Ok(x) => Some(x),
-            Err(_) => None,
-        };
+        let input_address = input_address::get(db, hash).ok();
         let stake_a = get_b(db, hash)?.a(input_address)?;
         if input_address.is_none() {
             input_address::put(hash, &stake_a.input_address, db)?;

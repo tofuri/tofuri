@@ -217,10 +217,7 @@ impl Blockchain {
         if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
             return Err("block timestamp early".into());
         }
-        let previous_beta = match Key::vrf_proof_to_hash(&dynamic.latest_block.pi) {
-            Some(x) => x,
-            None => GENESIS_BETA,
-        };
+        let previous_beta = Key::vrf_proof_to_hash(&dynamic.latest_block.pi).unwrap_or(GENESIS_BETA);
         Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
         if let Some(staker) = dynamic.next_staker(block_a.timestamp) {
             if staker != input_address {

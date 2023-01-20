@@ -187,18 +187,17 @@ fn update_stakers<T: State>(state: &mut T, address: AddressBytes) {
 }
 fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
     let stakers = stakers_offline(state, timestamp, previous_timestamp);
-    for index in 0..stakers.len() {
-        let staker = stakers[index];
-        let mut staked = get_staked(state, &staker);
+    for (index, staker) in stakers.iter().enumerate() {
+        let mut staked = get_staked(state, staker);
         let penalty = util::penalty(index + 1);
         staked = staked.saturating_sub(penalty);
-        insert_staked(state, staker, staked);
-        update_stakers(state, staker);
+        insert_staked(state, *staker, staked);
+        update_stakers(state, *staker);
         if !loading && !T::is_trusted() {
             warn!(
                 "{} {} {}{}",
                 "Slashed".red(),
-                address::encode(&staker).green(),
+                address::encode(staker).green(),
                 "-".yellow(),
                 pea_int::to_string(penalty).yellow()
             );

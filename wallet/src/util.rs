@@ -46,7 +46,7 @@ pub fn encrypt(key: &Key) -> Result<(Salt, Nonce, Ciphertext), Box<dyn Error>> {
         .unwrap()
         .try_into()
         .unwrap();
-    Ok((salt, nonce.into(), ciphertext))
+    Ok((salt, nonce, ciphertext))
 }
 pub fn decrypt(salt: &Salt, nonce: &Nonce, ciphertext: &Ciphertext, passphrase: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     let passphrase = match passphrase {

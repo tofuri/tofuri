@@ -31,9 +31,9 @@ pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, S
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buffer)).await??;
     let request_line = parse_request_line(&buffer)?;
     let vec: Vec<&str> = request_line.split(' ').collect();
-    let method = vec.get(0).ok_or("method")?;
+    let method = vec.first().ok_or("method")?;
     let path = vec.get(1).ok_or("path")?;
-    let args: Vec<&str> = path.split("/").filter(|&x| x != "").collect();
+    let args: Vec<&str> = path.split('/').filter(|&x| !x.is_empty()).collect();
     write(
         &mut stream,
         match *method {
@@ -47,7 +47,7 @@ pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, S
     Ok((bytes, request_line))
 }
 fn get(node: &mut Node, args: Vec<&str>) -> Result<String, Box<dyn Error>> {
-    match args.get(0) {
+    match args.first() {
         Some(a) => match *a {
             "info" => get_info(node),
             "sync" => get_sync(node),
@@ -117,7 +117,7 @@ fn get(node: &mut Node, args: Vec<&str>) -> Result<String, Box<dyn Error>> {
     }
 }
 fn post(node: &mut Node, args: Vec<&str>, body: String) -> Result<String, Box<dyn Error>> {
-    match args.get(0) {
+    match args.first() {
         Some(a) => match *a {
             "transaction" => post_transaction(node, body),
             "stake" => post_stake(node, body),
@@ -137,8 +137,7 @@ HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 Content-Type: application/json
 
-{}",
-        string
+{string}"
     )
 }
 fn text(string: String) -> String {
@@ -147,8 +146,7 @@ fn text(string: String) -> String {
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 
-{}",
-        string
+{string}"
     )
 }
 fn get_index() -> Result<String, Box<dyn Error>> {
@@ -166,7 +164,7 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
     Ok(json(serde_json::to_string(&api::Info {
         time: Utc.timestamp_nanos(chrono::offset::Utc::now().timestamp_micros() * 1_000).to_rfc2822(),
         address: address::encode(&node.blockchain.key.address_bytes()),
-        uptime: format!("{}", node.uptime()),
+        uptime: node.uptime(),
         heartbeats: node.heartbeats,
         tree_size: node.blockchain.tree.size(),
         lag: node.lag,

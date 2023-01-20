@@ -69,7 +69,7 @@ impl Key {
     pub fn vrf_prove(&self, alpha: &[u8]) -> Option<Pi> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
         let pi = vrf.prove(&self.secret_key_bytes(), alpha);
-        if let Err(_) = pi {
+        if pi.is_err() {
             return None;
         }
         Some(pi.unwrap().try_into().unwrap())
@@ -78,7 +78,7 @@ impl Key {
     pub fn vrf_proof_to_hash(pi: &[u8]) -> Option<Beta> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
         let beta = vrf.proof_to_hash(pi);
-        if let Err(_) = beta {
+        if beta.is_err() {
             return None;
         }
         Some(beta.unwrap().try_into().unwrap())
@@ -87,7 +87,7 @@ impl Key {
     pub fn vrf_verify(y: &[u8], pi: &[u8], alpha: &[u8]) -> Option<Beta> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
         let beta = vrf.verify(y, pi, alpha);
-        if let Err(_) = beta {
+        if beta.is_err() {
             return None;
         }
         Some(beta.unwrap().try_into().unwrap())

@@ -9,6 +9,6 @@ fn main() {
     tree.insert([0x66; 32], [0x00; 32], 1);
     tree.insert([0x77; 32], [0x55; 32], 0);
     tree.sort_branches();
-    println!("{:x?}", tree);
+    println!("{tree:x?}");
     println!("{:x?}", tree.main());
 }

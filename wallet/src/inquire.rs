@@ -180,7 +180,7 @@ pub fn address() -> String {
 }
 pub fn amount() -> u128 {
     (CustomType::<f64>::new("Amount:")
-        .with_formatter(&|i| format!("{:.18} pea", i))
+        .with_formatter(&|i| format!("{i:.18} pea"))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount to send using a decimal point as a separator")
         .with_parser(&|x| match x.parse::<f64>() {

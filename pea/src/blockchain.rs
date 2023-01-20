@@ -80,7 +80,7 @@ impl Blockchain {
     }
     pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockA> {
         if let Some(staker) = self.states.dynamic.next_staker(timestamp) {
-            if staker != self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+            if staker != self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN {
                 return None;
             }
         } else {
@@ -124,7 +124,7 @@ impl Blockchain {
         Ok(())
     }
     pub fn save_block(&mut self, block_a: &BlockA, forged: bool) {
-        db::block::put(&block_a, &self.db).unwrap();
+        db::block::put(block_a, &self.db).unwrap();
         if self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap() {
             warn!("{} {}", "Forked".red(), hex::encode(block_a.hash));
         }
@@ -166,7 +166,7 @@ impl Blockchain {
             }
             self.pending_transactions.remove(index);
         }
-        info!("Transaction {}", hex::encode(&transaction_a.hash).green());
+        info!("Transaction {}", hex::encode(transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
         while *TRANSACTION_SIZE * self.pending_transactions.len() > BLOCK_SIZE_LIMIT - *EMPTY_BLOCK_SIZE {
@@ -186,7 +186,7 @@ impl Blockchain {
             }
             self.pending_stakes.remove(index);
         }
-        info!("Stake {}", hex::encode(&stake_a.hash).green());
+        info!("Stake {}", hex::encode(stake_a.hash).green());
         self.pending_stakes.push(stake_a);
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
         while *STAKE_SIZE * self.pending_stakes.len() > BLOCK_SIZE_LIMIT - *EMPTY_BLOCK_SIZE {
@@ -211,7 +211,7 @@ impl Blockchain {
                 return Err("block staker banned".into());
             }
         }
-        if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN as u32 {
+        if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN {
             return Err("block timestamp early".into());
         }
         let previous_beta = Key::vrf_proof_to_hash(&dynamic.latest_block.pi).unwrap_or(GENESIS_BETA);

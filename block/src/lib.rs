@@ -213,7 +213,7 @@ impl BlockB {
         self.stakes.iter().map(|x| x.hash()).collect()
     }
     fn input_public_key(&self) -> Result<PublicKeyBytes, Box<dyn Error>> {
-        Ok(Key::recover(&self.hash(), &self.signature)?)
+        Key::recover(&self.hash(), &self.signature)
     }
 }
 impl BlockC {
@@ -293,7 +293,7 @@ impl Default for BlockC {
 }
 fn hash<T: Block>(block: &T) -> Hash {
     let mut hasher = Sha256::new();
-    hasher.update(&block.hash_input());
+    hasher.update(block.hash_input());
     hasher.finalize().into()
 }
 fn hash_input<T: Block>(block: &T) -> [u8; 181] {

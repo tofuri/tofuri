@@ -65,7 +65,7 @@ pub mod block {
         for stake_a in block_a.stakes.iter() {
             stake::put(stake_a, db)?;
         }
-        db.put_cf(super::blocks(db), &block_a.hash, bincode::serialize(&block_a.b().c())?)?;
+        db.put_cf(super::blocks(db), block_a.hash, bincode::serialize(&block_a.b().c())?)?;
         Ok(())
     }
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Box<dyn Error>> {
@@ -234,7 +234,7 @@ pub mod peer {
     use rocksdb::SingleThreaded;
     use std::error::Error;
     pub fn put(peer: &str, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::peers(db), peer, &[])?;
+        db.put_cf(super::peers(db), peer, [])?;
         Ok(())
     }
     pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Vec<String> {

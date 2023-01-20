@@ -125,5 +125,5 @@ fn sync_request(node: &mut Node) {
 }
 fn lag(node: &mut Node, duration: Duration) {
     node.lag = duration.as_micros() as f64 / 1_000_f64;
-    debug!("{} {} {}", "Heartbeat".cyan(), node.heartbeats, format!("{:?}", duration).yellow());
+    debug!("{} {} {}", "Heartbeat".cyan(), node.heartbeats, format!("{duration:?}").yellow());
 }

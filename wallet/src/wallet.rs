@@ -180,21 +180,21 @@ impl Wallet {
             return;
         } else if search.len() == 64 {
             if let Ok(block) = get::block(&self.api, &search).await {
-                println!("Block found\n{:?}", block);
+                println!("Block found\n{block:?}");
                 return;
             };
             if let Ok(transaction) = get::transaction(&self.api, &search).await {
-                println!("Transaction found\n{:?}", transaction);
+                println!("Transaction found\n{transaction:?}");
                 return;
             };
             if let Ok(stake) = get::stake(&self.api, &search).await {
-                println!("Stake found\n{:?}", stake);
+                println!("Stake found\n{stake:?}");
                 return;
             };
         } else if search.parse::<usize>().is_ok() {
             if let Ok(hash) = get::hash(&self.api, &search.parse::<usize>().unwrap()).await {
                 if let Ok(block) = get::block(&self.api, &hash).await {
-                    println!("Block found{:?}", block);
+                    println!("Block found{block:?}");
                     return;
                 };
                 return;
@@ -223,9 +223,9 @@ impl Wallet {
     fn data(&self) {
         println!(
             "{}{}{}",
-            hex::encode(&self.salt).red(),
-            hex::encode(&self.nonce).red(),
-            hex::encode(&self.ciphertext).red()
+            hex::encode(self.salt).red(),
+            hex::encode(self.nonce).red(),
+            hex::encode(self.ciphertext).red()
         );
     }
 }

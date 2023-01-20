@@ -104,7 +104,7 @@ async fn request(addr: &str, method: Method, path: &str, body: Option<&str>) -> 
     }
     let mut buffer = String::new();
     stream.read_to_string(&mut buffer).await?;
-    Ok(parse_body(buffer)?)
+    parse_body(buffer)
 }
 fn parse_body(buffer: String) -> Result<String, Box<dyn Error>> {
     let vec = buffer.split("\n\n").collect::<Vec<&str>>();
@@ -115,7 +115,7 @@ pub mod get {
     use super::*;
     use std::error::Error;
     pub async fn index(api: &str) -> Result<Index, Box<dyn Error>> {
-        Ok(request(api, Method::GET, "/", None).await?)
+        request(api, Method::GET, "/", None).await
     }
     pub async fn info(api: &str) -> Result<Info, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/info", None).await?)?)
@@ -127,13 +127,13 @@ pub mod get {
         Ok(serde_json::from_str(&request(api, Method::GET, "/height", None).await?)?)
     }
     pub async fn balance(api: &str, address: &str) -> Result<Amount, Box<dyn Error>> {
-        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/balance/{}", address), None).await?)?)
+        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/balance/{address}"), None).await?)?)
     }
     pub async fn staked(api: &str, address: &str) -> Result<Amount, Box<dyn Error>> {
-        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/staked/{}", address), None).await?)?)
+        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/staked/{address}"), None).await?)?)
     }
     pub async fn hash(api: &str, height: &usize) -> Result<Hash, Box<dyn Error>> {
-        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/hash/{}", height), None).await?)?)
+        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/hash/{height}"), None).await?)?)
     }
     pub async fn dynamic(api: &str) -> Result<Dynamic, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/dynamic", None).await?)?)
@@ -145,18 +145,16 @@ pub mod get {
         Ok(serde_json::from_str(&request(api, Method::GET, "/options", None).await?)?)
     }
     pub async fn block(api: &str, hash: &str) -> Result<Block, Box<dyn Error>> {
-        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/block/{}", hash), None).await?)?)
+        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/block/{hash}"), None).await?)?)
     }
     pub async fn latest_block(api: &str) -> Result<Block, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::GET, "/block/latest", None).await?)?)
     }
     pub async fn transaction(api: &str, hash: &str) -> Result<Transaction, Box<dyn Error>> {
-        Ok(serde_json::from_str(
-            &request(api, Method::GET, &format!("/transaction/{}", hash), None).await?,
-        )?)
+        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/transaction/{hash}"), None).await?)?)
     }
     pub async fn stake(api: &str, hash: &str) -> Result<Stake, Box<dyn Error>> {
-        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/stake/{}", hash), None).await?)?)
+        Ok(serde_json::from_str(&request(api, Method::GET, &format!("/stake/{hash}"), None).await?)?)
     }
 }
 pub mod post {

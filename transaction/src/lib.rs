@@ -122,12 +122,12 @@ impl TransactionB {
         Ok(Key::address(&self.input_public_key()?))
     }
     fn input_public_key(&self) -> Result<PublicKeyBytes, Box<dyn Error>> {
-        Ok(Key::recover(&self.hash(), &self.signature)?)
+        Key::recover(&self.hash(), &self.signature)
     }
 }
 fn hash<T: Transaction>(transaction: &T) -> Hash {
     let mut hasher = Sha256::new();
-    hasher.update(&transaction.hash_input());
+    hasher.update(transaction.hash_input());
     hasher.finalize().into()
 }
 fn hash_input<T: Transaction>(transaction: &T) -> [u8; 32] {

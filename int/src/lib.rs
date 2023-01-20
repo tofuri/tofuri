@@ -52,13 +52,13 @@ pub fn to_string(uint: u128) -> String {
         s.push_str(&string);
         string = s;
     }
-    if string == "" {
+    if string.is_empty() {
         string.push('0');
     }
     string
 }
 pub fn from_str(str: &str) -> Result<u128, Box<dyn Error>> {
-    let (mut string, diff) = match str.split_once(".") {
+    let (mut string, diff) = match str.split_once('.') {
         Some((a, b)) => {
             let mut string = a.to_string();
             string.push_str(b);

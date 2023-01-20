@@ -137,11 +137,12 @@ pub fn request_handler(node: &mut Node, peer_id: PeerId, request: SyncRequest, c
             None => break,
         }
     }
-    if let Err(_) = node
+    if node
         .p2p_swarm
         .behaviour_mut()
         .request_response
         .send_response(channel, SyncResponse(bincode::serialize(&vec).unwrap()))
+        .is_err()
     {
         return Err("p2p request handler connection closed".into());
     };

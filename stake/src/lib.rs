@@ -115,12 +115,12 @@ impl StakeB {
         Ok(Key::address(&self.input_public_key()?))
     }
     fn input_public_key(&self) -> Result<PublicKeyBytes, Box<dyn Error>> {
-        Ok(Key::recover(&self.hash(), &self.signature)?)
+        Key::recover(&self.hash(), &self.signature)
     }
 }
 fn hash<T: Stake>(stake: &T) -> Hash {
     let mut hasher = Sha256::new();
-    hasher.update(&stake.hash_input());
+    hasher.update(stake.hash_input());
     hasher.finalize().into()
 }
 fn hash_input<T: Stake>(stake: &T) -> [u8; 9] {

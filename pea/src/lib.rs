@@ -7,5 +7,3 @@ pub mod state;
 pub mod states;
 pub mod sync;
 pub mod util;
-#[macro_use]
-extern crate uint;

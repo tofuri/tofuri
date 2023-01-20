@@ -76,10 +76,7 @@ impl Blockchain {
             hashes_dynamic[height - hashes_trusted.len()]
         };
         debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
-        match db::block::get_b(&self.db, &hash) {
-            Ok(block_b) => Some(block_b),
-            Err(_) => None,
-        }
+        db::block::get_b(&self.db, &hash).ok()
     }
     pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockA> {
         if let Some(staker) = self.states.dynamic.next_staker(timestamp) {

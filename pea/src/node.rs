@@ -261,6 +261,7 @@ impl Node {
         let mut interval = tokio::time::interval(Duration::from_micros(util::micros_per_tick(self.tps)));
         loop {
             tokio::select! {
+                biased;
                 instant = interval.tick() => heartbeat::handler(self, instant),
                 event = self.p2p_swarm.select_next_some() => self.swarm_event(event),
                 res = listener.accept() => match res {

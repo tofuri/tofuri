@@ -1,6 +1,6 @@
-use crate::util::encrypt;
-use crate::util::filenames;
-use crate::util::save;
+use crate::wallet::encrypt;
+use crate::wallet::filenames;
+use crate::wallet::save;
 use colored::*;
 use inquire::validator::Validation;
 use inquire::Confirm;

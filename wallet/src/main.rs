@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
-use pea_wallet::util::clear;
-use pea_wallet::util::press_any_key_to_continue;
+use pea_wallet::wallet::clear;
+use pea_wallet::wallet::press_any_key_to_continue;
 use pea_wallet::wallet::Options;
 use pea_wallet::wallet::Wallet;
 use std::error::Error;

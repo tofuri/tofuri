@@ -27,6 +27,7 @@ use pea_db as db;
 use pea_key::Key;
 use pea_p2p::behaviour::OutEvent;
 use pea_p2p::P2p;
+use pea_wallet::wallet;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use serde::Deserialize;
@@ -101,7 +102,7 @@ impl Node<'_> {
     fn key(tempkey: bool, wallet: &str, passphrase: &str) -> Key {
         match tempkey {
             true => Key::generate(),
-            false => pea_wallet::util::load(wallet, passphrase).unwrap().3,
+            false => wallet::load(wallet, passphrase).unwrap().3,
         }
     }
     fn known(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> HashSet<Multiaddr> {

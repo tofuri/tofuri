@@ -2942,6 +2942,7 @@ dependencies = [
  "pea-key",
  "pea-stake",
  "pea-transaction",
+ "pea-util",
  "rand 0.8.5",
  "tokio",
  "zxcvbn",

@@ -93,7 +93,7 @@ impl Node<'_> {
             connections: HashMap::new(),
             ratelimit: Ratelimit::default(),
             unknown: HashSet::new(),
-            known: Node::known(&blockchain.db, &options.peer),
+            known: Node::known(&blockchain.db, options.peer),
             ban_offline: options.ban_offline,
         };
         Node {

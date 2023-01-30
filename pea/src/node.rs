@@ -30,7 +30,7 @@ use pea_key::Key;
 use pea_p2p::behaviour::OutEvent;
 use pea_p2p::behaviour::SyncRequest;
 use pea_p2p::behaviour::SyncResponse;
-use pea_p2p::multiaddr::multiaddr_filter_ip_port;
+use pea_p2p::multiaddr;
 use pea_p2p::ratelimit::Endpoint;
 use pea_p2p::P2p;
 use pea_stake::StakeB;
@@ -91,12 +91,12 @@ impl Node<'_> {
         };
         let db = db::open(path);
         let mut known = HashSet::new();
-        if let Some(multiaddr) = multiaddr_filter_ip_port(&options.peer.parse::<Multiaddr>().unwrap()) {
+        if let Some(multiaddr) = multiaddr::ip_port(&options.peer.parse::<Multiaddr>().unwrap()) {
             known.insert(multiaddr);
         }
         let peers = db::peer::get_all(&db);
         for peer in peers {
-            if let Some(multiaddr) = multiaddr_filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
+            if let Some(multiaddr) = multiaddr::ip_port(&peer.parse::<Multiaddr>().unwrap()) {
                 known.insert(multiaddr);
             }
         }
@@ -213,7 +213,7 @@ impl Node<'_> {
             }
             SwarmEvent::Behaviour(OutEvent::Mdns(mdns::Event::Discovered(list))) => {
                 for (_, multiaddr) in list {
-                    if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr) {
+                    if let Some(multiaddr) = multiaddr::ip_port(&multiaddr) {
                         self.p2p.unknown.insert(multiaddr);
                     }
                 }
@@ -251,7 +251,7 @@ impl Node<'_> {
                 multiaddr.to_string().magenta(),
                 num_established.to_string().yellow()
             );
-            let addr = pea_p2p::multiaddr::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
+            let addr = multiaddr::addr(&multiaddr).expect("multiaddr to include ip");
             if self.p2p.ratelimit.is_ratelimited(&self.p2p.ratelimit.get(&addr).1) {
                 warn!("Ratelimited {}", multiaddr.to_string().magenta());
                 let _ = self.p2p.swarm.disconnect_peer_id(peer_id);
@@ -261,7 +261,7 @@ impl Node<'_> {
             if let Some(previous_peer_id) = self
                 .p2p
                 .connections
-                .insert(pea_p2p::multiaddr::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
+                .insert(multiaddr::ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
             {
                 if previous_peer_id != peer_id {
                     let _ = self.p2p.swarm.disconnect_peer_id(previous_peer_id);
@@ -269,12 +269,12 @@ impl Node<'_> {
             }
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&address) {
+            if let Some(multiaddr) = multiaddr::ip_port(&address) {
                 save(multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip(&send_back_addr) {
+            if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
                 save(multiaddr);
             }
         }
@@ -291,12 +291,12 @@ impl Node<'_> {
             let _ = self.p2p.swarm.dial(multiaddr);
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&address) {
+            if let Some(multiaddr) = multiaddr::ip_port(&address) {
                 save(multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip(&send_back_addr) {
+            if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
                 save(multiaddr);
             }
         }
@@ -333,7 +333,7 @@ impl Node<'_> {
                     return Err("filter multiaddr".into());
                 }
                 for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
-                    if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr) {
+                    if let Some(multiaddr) = multiaddr::ip_port(&multiaddr) {
                         self.p2p.unknown.insert(multiaddr);
                     }
                 }

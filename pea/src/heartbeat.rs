@@ -7,6 +7,7 @@ use log::info;
 use log::warn;
 use pea_address::address;
 use pea_p2p::behaviour::SyncRequest;
+use pea_p2p::multiaddr;
 use rand::prelude::*;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
@@ -64,14 +65,10 @@ fn dial_unknown(node: &mut Node) {
 }
 fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     for mut multiaddr in vec {
-        if node
-            .p2p
-            .connections
-            .contains_key(&pea_p2p::multiaddr::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"))
-        {
+        if node.p2p.connections.contains_key(&multiaddr::ip(&multiaddr).expect("multiaddr to include ip")) {
             continue;
         }
-        let addr = pea_p2p::multiaddr::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
+        let addr = multiaddr::addr(&multiaddr).expect("multiaddr to include ip");
         if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
             continue;
         }
@@ -80,7 +77,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
             if known { "known".green() } else { "unknown".red() },
             multiaddr.to_string().magenta()
         );
-        if !pea_p2p::multiaddr::multiaddr_has_port(&multiaddr) {
+        if !multiaddr::has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }
         let _ = node.p2p.swarm.dial(multiaddr);

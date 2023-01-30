@@ -1,7 +1,7 @@
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
 use std::net::IpAddr;
-pub fn multiaddr_filter_ip(multiaddr: &Multiaddr) -> Option<Multiaddr> {
+pub fn ip(multiaddr: &Multiaddr) -> Option<Multiaddr> {
     let components = multiaddr.iter().collect::<Vec<_>>();
     let mut multiaddr: Multiaddr = "".parse().unwrap();
     match components.get(0) {
@@ -11,7 +11,7 @@ pub fn multiaddr_filter_ip(multiaddr: &Multiaddr) -> Option<Multiaddr> {
     };
     Some(multiaddr)
 }
-pub fn multiaddr_filter_ip_port(multiaddr: &Multiaddr) -> Option<Multiaddr> {
+pub fn ip_port(multiaddr: &Multiaddr) -> Option<Multiaddr> {
     let components = multiaddr.iter().collect::<Vec<_>>();
     let mut multiaddr: Multiaddr = "".parse().unwrap();
     match components.get(0) {
@@ -30,11 +30,11 @@ pub fn multiaddr_filter_ip_port(multiaddr: &Multiaddr) -> Option<Multiaddr> {
     };
     Some(multiaddr)
 }
-pub fn multiaddr_has_port(multiaddr: &Multiaddr) -> bool {
+pub fn has_port(multiaddr: &Multiaddr) -> bool {
     let components = multiaddr.iter().collect::<Vec<_>>();
     matches!(components.get(1), Some(Protocol::Tcp(_)))
 }
-pub fn multiaddr_addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
+pub fn addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
     match multiaddr.iter().collect::<Vec<_>>().first() {
         Some(Protocol::Ip4(ip)) => Some(IpAddr::V4(*ip)),
         Some(Protocol::Ip6(ip)) => Some(IpAddr::V6(*ip)),
@@ -46,35 +46,35 @@ mod tests {
     use super::*;
     #[test]
     fn test_filter_ip() {
-        assert_eq!(multiaddr_filter_ip(&"".parse::<Multiaddr>().unwrap()), None);
-        assert_eq!(multiaddr_filter_ip(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(ip(&"".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(ip(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
         assert_eq!(
-            multiaddr_filter_ip(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
+            ip(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
             "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
         );
     }
     #[test]
     fn test_filter_ip_port() {
-        assert_eq!(multiaddr_filter_ip_port(&"".parse::<Multiaddr>().unwrap()), None);
-        assert_eq!(multiaddr_filter_ip_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(ip_port(&"".parse::<Multiaddr>().unwrap()), None);
+        assert_eq!(ip_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
         assert_eq!(
-            multiaddr_filter_ip_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()).unwrap(),
+            ip_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()).unwrap(),
             "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
         );
         assert_eq!(
-            multiaddr_filter_ip_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
+            ip_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()).unwrap(),
             "/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()
         );
         assert_eq!(
-            multiaddr_filter_ip_port(&"/ip4/0.0.0.0/tcp/9334".parse::<Multiaddr>().unwrap()).unwrap(),
+            ip_port(&"/ip4/0.0.0.0/tcp/9334".parse::<Multiaddr>().unwrap()).unwrap(),
             "/ip4/0.0.0.0/tcp/9334".parse::<Multiaddr>().unwrap()
         );
     }
     #[test]
     fn test_has_port() {
-        assert_eq!(multiaddr_has_port(&"".parse::<Multiaddr>().unwrap()), false);
-        assert_eq!(multiaddr_has_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()), false);
-        assert_eq!(multiaddr_has_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), false);
-        assert_eq!(multiaddr_has_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()), true);
+        assert_eq!(has_port(&"".parse::<Multiaddr>().unwrap()), false);
+        assert_eq!(has_port(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()), false);
+        assert_eq!(has_port(&"/tcp/9333".parse::<Multiaddr>().unwrap()), false);
+        assert_eq!(has_port(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()), true);
     }
 }

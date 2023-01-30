@@ -7,6 +7,7 @@ use pea_address::address;
 use pea_api as api;
 use pea_core::*;
 use pea_db as db;
+use pea_p2p::multiaddr;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use std::error::Error;
@@ -286,7 +287,7 @@ fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {
 }
 fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
     let multiaddr = format!("/{}", slice.join("/")).parse::<Multiaddr>()?;
-    let multiaddr = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
+    let multiaddr = multiaddr::ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
     let string = multiaddr.to_string();
     node.p2p.unknown.insert(multiaddr);
     Ok(text(string))

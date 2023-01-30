@@ -1,5 +1,4 @@
 use crate::node::Node;
-use crate::util;
 use libp2p::gossipsub::GossipsubMessage;
 use libp2p::request_response::ResponseChannel;
 use libp2p::Multiaddr;
@@ -13,23 +12,24 @@ use pea_p2p::ratelimit::Endpoint;
 use pea_p2p::ratelimit::Ratelimit;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
+use pea_util;
 use std::error::Error;
 pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn Error>> {
     match message.topic.as_str() {
         "block" => {
             Ratelimit::ratelimit(&mut node.p2p, propagation_source, Endpoint::Block)?;
             let block_b: BlockB = bincode::deserialize(&message.data)?;
-            node.blockchain.append_block(block_b, util::timestamp())?;
+            node.blockchain.append_block(block_b, pea_util::timestamp())?;
         }
         "transaction" => {
             Ratelimit::ratelimit(&mut node.p2p, propagation_source, Endpoint::Transaction)?;
             let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
-            node.blockchain.pending_transactions_push(transaction_b, util::timestamp())?;
+            node.blockchain.pending_transactions_push(transaction_b, pea_util::timestamp())?;
         }
         "stake" => {
             Ratelimit::ratelimit(&mut node.p2p, propagation_source, Endpoint::Stake)?;
             let stake_b: StakeB = bincode::deserialize(&message.data)?;
-            node.blockchain.pending_stakes_push(stake_b, util::timestamp())?;
+            node.blockchain.pending_stakes_push(stake_b, pea_util::timestamp())?;
         }
         "multiaddr" => {
             Ratelimit::ratelimit(&mut node.p2p, propagation_source, Endpoint::Multiaddr)?;
@@ -67,7 +67,7 @@ pub fn request_handler(node: &mut Node, peer_id: PeerId, request: SyncRequest, c
 }
 pub fn response_handler(node: &mut Node, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
     Ratelimit::ratelimit(&mut node.p2p, peer_id, Endpoint::SyncResponse)?;
-    let timestamp = util::timestamp();
+    let timestamp = pea_util::timestamp();
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
         if let Err(err) = node.blockchain.append_block(block_b, timestamp) {
             debug!("response_handler {}", err);

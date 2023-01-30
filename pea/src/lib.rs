@@ -6,4 +6,3 @@ pub mod p2p;
 pub mod state;
 pub mod states;
 pub mod sync;
-pub mod util;

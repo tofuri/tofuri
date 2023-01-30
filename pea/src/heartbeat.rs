@@ -1,5 +1,4 @@
 use crate::node::Node;
-use crate::util;
 use colored::*;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
@@ -14,7 +13,7 @@ fn delay(node: &mut Node, seconds: usize) -> bool {
     (node.heartbeats as f64 % (node.options.tps * seconds as f64)) as usize == 0
 }
 pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
-    let timestamp = util::timestamp();
+    let timestamp = pea_util::timestamp();
     if delay(node, 60) {
         dial_known(node);
     }

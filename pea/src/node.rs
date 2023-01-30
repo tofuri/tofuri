@@ -2,7 +2,6 @@ use crate::blockchain::Blockchain;
 use crate::heartbeat;
 use crate::http;
 use crate::p2p;
-use crate::util;
 use colored::*;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::core::either::EitherError;
@@ -202,7 +201,7 @@ impl Node<'_> {
             "http://".cyan(),
             listener.local_addr().unwrap().to_string().magenta()
         );
-        let mut interval = tokio::time::interval(Duration::from_micros(util::micros_per_tick(self.options.tps)));
+        let mut interval = tokio::time::interval(Duration::from_micros(pea_util::micros_per_tick(self.options.tps)));
         loop {
             tokio::select! {
                 biased;
@@ -292,9 +291,9 @@ impl Node<'_> {
             return "never".to_string();
         }
         let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let diff = util::timestamp().saturating_sub(timestamp);
+        let diff = pea_util::timestamp().saturating_sub(timestamp);
         let now = "just now";
-        let mut string = util::duration_to_string(diff, now);
+        let mut string = pea_util::duration_to_string(diff, now);
         if string != now {
             string.push_str(" ago");
         }
@@ -309,10 +308,10 @@ impl Node<'_> {
             return "waiting to start".to_string();
         }
         let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let mut diff = util::timestamp().saturating_sub(timestamp) as f32;
+        let mut diff = pea_util::timestamp().saturating_sub(timestamp) as f32;
         diff /= BLOCK_TIME_MIN as f32;
         diff /= self.blockchain.sync.bps;
-        let mut string = util::duration_to_string(diff as u32, completed);
+        let mut string = pea_util::duration_to_string(diff as u32, completed);
         if string != completed {
             string.push_str(" remaining");
         }
@@ -320,6 +319,6 @@ impl Node<'_> {
     }
     pub fn uptime(&self) -> String {
         let seconds = (self.heartbeats as f64 / self.options.tps) as u32;
-        util::duration_to_string(seconds, "0")
+        pea_util::duration_to_string(seconds, "0")
     }
 }

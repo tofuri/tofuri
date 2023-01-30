@@ -1,5 +1,4 @@
 use crate::node::Node;
-use crate::util;
 use chrono::TimeZone;
 use chrono::Utc;
 use libp2p::Multiaddr;
@@ -295,7 +294,7 @@ fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
 fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
     let transaction_b: TransactionB = serde_json::from_str(&body)?;
     let data = bincode::serialize(&transaction_b).unwrap();
-    let status = match node.blockchain.pending_transactions_push(transaction_b, util::timestamp()) {
+    let status = match node.blockchain.pending_transactions_push(transaction_b, pea_util::timestamp()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("transaction") {
                 node.gossipsub_publish("transaction", data);
@@ -312,7 +311,7 @@ fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Err
 fn post_stake(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
     let stake_b: StakeB = serde_json::from_str(&body)?;
     let data = bincode::serialize(&stake_b).unwrap();
-    let status = match node.blockchain.pending_stakes_push(stake_b, util::timestamp()) {
+    let status = match node.blockchain.pending_stakes_push(stake_b, pea_util::timestamp()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("stake") {
                 node.gossipsub_publish("stake", data);

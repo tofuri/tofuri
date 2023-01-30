@@ -1,4 +1,3 @@
-use crate::util;
 use colored::Colorize;
 use log::warn;
 use pea_address::address;
@@ -189,7 +188,7 @@ fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, lo
     let stakers = stakers_offline(state, timestamp, previous_timestamp);
     for (index, staker) in stakers.iter().enumerate() {
         let mut staked = get_staked(state, staker);
-        let penalty = util::penalty(index + 1);
+        let penalty = pea_util::penalty(index + 1);
         staked = staked.saturating_sub(penalty);
         insert_staked(state, *staker, staked);
         update_stakers(state, *staker);
@@ -267,7 +266,7 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
 }
 fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     fn random_n(slice: &[(AddressBytes, u128)], beta: &Beta, n: u128, modulo: u128) -> usize {
-        let random = util::random(beta, n, modulo);
+        let random = pea_util::random(beta, n, modulo);
         let mut counter = 0;
         for (index, (_, staked)) in slice.iter().enumerate() {
             counter += staked;
@@ -287,7 +286,7 @@ fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     vec.sort_by(|a, b| b.1.cmp(&a.1));
     let mut random_queue = vec![];
     for index in 0..(n + 1) {
-        let penalty = util::penalty(index);
+        let penalty = pea_util::penalty(index);
         modulo = modulo.saturating_sub(penalty);
         if modulo == 0 {
             return (random_queue, true);

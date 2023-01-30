@@ -21,6 +21,7 @@ pea-key = { version = "0.6", path = "../key" }
 pea-stake = { version = "0.7", path = "../stake" }
 pea-transaction = { version = "0.8", path = "../transaction" }
 pea-tree = { version = "0.4", path = "../tree" }
+pea-util = { version = "0.1", path = "../util" }
 pea-wallet = { version = "0.6", path = "../wallet" }
 rocksdb = "0.19"
 colored = "2.0"

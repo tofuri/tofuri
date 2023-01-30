@@ -30,6 +30,7 @@ use pea_key::Key;
 use pea_p2p::behaviour::OutEvent;
 use pea_p2p::behaviour::SyncRequest;
 use pea_p2p::behaviour::SyncResponse;
+use pea_p2p::multiaddr::multiaddr_filter_ip_port;
 use pea_p2p::ratelimit::Endpoint;
 use pea_p2p::P2p;
 use pea_stake::StakeB;
@@ -92,12 +93,12 @@ impl Node<'_> {
         };
         let db = db::open(path);
         let mut known = HashSet::new();
-        if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&options.peer.parse::<Multiaddr>().unwrap()) {
+        if let Some(multiaddr) = multiaddr_filter_ip_port(&options.peer.parse::<Multiaddr>().unwrap()) {
             known.insert(multiaddr);
         }
         let peers = db::peer::get_all(&db);
         for peer in peers {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
+            if let Some(multiaddr) = multiaddr_filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
                 known.insert(multiaddr);
             }
         }

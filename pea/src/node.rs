@@ -316,7 +316,7 @@ impl Node<'_> {
         }
         false
     }
-    pub fn swarm_event_gossipsub_message_handler(&mut self, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
+    fn swarm_event_gossipsub_message_handler(&mut self, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
         match message.topic.as_str() {
             "block" => {
                 self.p2p.ratelimit(propagation_source, Endpoint::Block)?;
@@ -345,7 +345,7 @@ impl Node<'_> {
         };
         Ok(())
     }
-    pub fn swarm_event_request_handler(&mut self, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
+    fn swarm_event_request_handler(&mut self, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
         self.p2p.ratelimit(peer_id, Endpoint::SyncRequest)?;
         let height: usize = bincode::deserialize(&request.0)?;
         let mut vec = vec![];
@@ -367,7 +367,7 @@ impl Node<'_> {
         };
         Ok(())
     }
-    pub fn swarm_event_response_handler(&mut self, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
+    fn swarm_event_response_handler(&mut self, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
         self.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
         let timestamp = pea_util::timestamp();
         for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {

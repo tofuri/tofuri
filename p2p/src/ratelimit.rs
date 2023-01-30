@@ -1,9 +1,5 @@
-use crate::multiaddr;
-use crate::P2p;
-use libp2p::PeerId;
 use pea_core::*;
 use std::collections::HashMap;
-use std::error::Error;
 use std::net::IpAddr;
 pub enum Endpoint {
     Block,
@@ -78,14 +74,5 @@ impl Ratelimit {
             a[4] = a[4].saturating_sub(RATELIMIT_SYNC_REQUEST);
             a[5] = a[5].saturating_sub(RATELIMIT_SYNC_RESPONSE);
         }
-    }
-    pub fn ratelimit(p2p: &mut P2p, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Box<dyn Error>> {
-        let (multiaddr, _) = p2p.connections.iter().find(|x| x.1 == &peer_id).unwrap();
-        let addr = multiaddr::multiaddr_addr(multiaddr).expect("multiaddr to include ip");
-        if p2p.ratelimit.add(addr, endpoint) {
-            let _ = p2p.swarm.disconnect_peer_id(peer_id);
-            return Err("ratelimited".into());
-        }
-        Ok(())
     }
 }

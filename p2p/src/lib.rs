@@ -15,6 +15,7 @@ use libp2p::PeerId;
 use libp2p::Swarm;
 use libp2p::Transport;
 use pea_core::*;
+use ratelimit::Endpoint;
 use ratelimit::Ratelimit;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -40,6 +41,15 @@ impl P2p {
             known,
             ban_offline,
         })
+    }
+    pub fn ratelimit(&mut self, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Box<dyn Error>> {
+        let (multiaddr, _) = self.connections.iter().find(|x| x.1 == &peer_id).unwrap();
+        let addr = multiaddr::multiaddr_addr(multiaddr).expect("multiaddr to include ip");
+        if self.ratelimit.add(addr, endpoint) {
+            let _ = self.swarm.disconnect_peer_id(peer_id);
+            return Err("ratelimited".into());
+        }
+        Ok(())
     }
 }
 async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Box<dyn Error>> {

@@ -34,7 +34,7 @@ pub fn has_port(multiaddr: &Multiaddr) -> bool {
     let components = multiaddr.iter().collect::<Vec<_>>();
     matches!(components.get(1), Some(Protocol::Tcp(_)))
 }
-pub fn addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
+pub fn ip_addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
     match multiaddr.iter().collect::<Vec<_>>().first() {
         Some(Protocol::Ip4(ip)) => Some(IpAddr::V4(*ip)),
         Some(Protocol::Ip6(ip)) => Some(IpAddr::V6(*ip)),

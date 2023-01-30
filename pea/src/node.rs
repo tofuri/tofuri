@@ -251,7 +251,7 @@ impl Node<'_> {
                 multiaddr.to_string().magenta(),
                 num_established.to_string().yellow()
             );
-            let addr = multiaddr::addr(&multiaddr).expect("multiaddr to include ip");
+            let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
             if self.p2p.ratelimit.is_ratelimited(&self.p2p.ratelimit.get(&addr).1) {
                 warn!("Ratelimited {}", multiaddr.to_string().magenta());
                 let _ = self.p2p.swarm.disconnect_peer_id(peer_id);

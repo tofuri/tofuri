@@ -68,7 +68,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
         if node.p2p.connections.contains_key(&multiaddr::ip(&multiaddr).expect("multiaddr to include ip")) {
             continue;
         }
-        let addr = multiaddr::addr(&multiaddr).expect("multiaddr to include ip");
+        let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
         if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
             continue;
         }

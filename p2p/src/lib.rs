@@ -46,7 +46,7 @@ impl P2p {
     }
     pub fn ratelimit(&mut self, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Box<dyn Error>> {
         let (multiaddr, _) = self.connections.iter().find(|x| x.1 == &peer_id).unwrap();
-        let addr = multiaddr::addr(multiaddr).expect("multiaddr to include ip");
+        let addr = multiaddr::ip_addr(multiaddr).expect("multiaddr to include ip");
         if self.ratelimit.add(addr, endpoint) {
             let _ = self.swarm.disconnect_peer_id(peer_id);
             return Err("ratelimited".into());

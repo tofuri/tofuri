@@ -1,34 +1,23 @@
 use crate::blockchain::Blockchain;
 use crate::heartbeat;
 use crate::http;
-use crate::p2p::P2p;
-use crate::p2p::Ratelimit;
-use crate::p2p::{self};
+use crate::p2p;
 use crate::util;
 use colored::*;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::core::either::EitherError;
-use libp2p::core::upgrade;
 use libp2p::futures::StreamExt;
 use libp2p::gossipsub::error::GossipsubHandlerError;
 use libp2p::gossipsub::GossipsubEvent;
 use libp2p::gossipsub::IdentTopic;
 use libp2p::gossipsub::TopicHash;
-use libp2p::identity;
 use libp2p::mdns;
-use libp2p::mplex;
-use libp2p::noise;
 use libp2p::request_response::RequestResponseEvent;
 use libp2p::request_response::RequestResponseMessage;
 use libp2p::swarm::ConnectionHandlerUpgrErr;
-use libp2p::swarm::ConnectionLimits;
-use libp2p::swarm::SwarmBuilder;
 use libp2p::swarm::SwarmEvent;
-use libp2p::tcp;
 use libp2p::Multiaddr;
 use libp2p::PeerId;
-use libp2p::Swarm;
-use libp2p::Transport;
 use log::debug;
 use log::error;
 use log::info;
@@ -37,15 +26,14 @@ use pea_address::address;
 use pea_core::*;
 use pea_db as db;
 use pea_key::Key;
-use pea_p2p::behaviour::Behaviour;
 use pea_p2p::behaviour::OutEvent;
+use pea_p2p::P2p;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use serde::Deserialize;
 use serde::Serialize;
 use sha2::Digest;
 use sha2::Sha256;
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io::Error;
 use std::num::NonZeroU32;
@@ -87,15 +75,14 @@ impl Node<'_> {
         info!("Address {}", address::encode(&key.address_bytes()).green());
         let db = Node::db(options.tempdb);
         let blockchain = Blockchain::new(db, key, options.trust, options.time_delta);
-        let p2p = P2p {
-            swarm: Node::swarm(options.max_established, options.timeout).await.unwrap(),
-            message_data_hashes: vec![],
-            connections: HashMap::new(),
-            ratelimit: Ratelimit::default(),
-            unknown: HashSet::new(),
-            known: Node::known(&blockchain.db, options.peer),
-            ban_offline: options.ban_offline,
-        };
+        let p2p = P2p::new(
+            options.max_established,
+            options.timeout,
+            Node::known(&blockchain.db, options.peer),
+            options.ban_offline,
+        )
+        .await
+        .unwrap();
         Node {
             p2p,
             blockchain,
@@ -117,34 +104,6 @@ impl Node<'_> {
             true => Key::generate(),
             false => pea_wallet::util::load(wallet, passphrase).unwrap().3,
         }
-    }
-    async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Box<dyn std::error::Error>> {
-        let local_key = identity::Keypair::generate_ed25519();
-        let local_peer_id = PeerId::from(local_key.public());
-        info!("Peer id {}", local_peer_id.to_string().cyan());
-        let transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true))
-            .upgrade(upgrade::Version::V1)
-            .authenticate(noise::NoiseAuthenticated::xx(&local_key).expect("Signing libp2p-noise static DH keypair failed."))
-            .multiplex(mplex::MplexConfig::new())
-            .timeout(Duration::from_millis(timeout))
-            .boxed();
-        let mut behaviour = Behaviour::new(local_key).await?;
-        for ident_topic in [
-            IdentTopic::new("block"),
-            IdentTopic::new("stake"),
-            IdentTopic::new("transaction"),
-            IdentTopic::new("multiaddr"),
-        ]
-        .iter()
-        {
-            behaviour.gossipsub.subscribe(ident_topic)?;
-        }
-        let mut limits = ConnectionLimits::default();
-        limits = limits.with_max_established_per_peer(Some(1));
-        limits = limits.with_max_established(max_established);
-        Ok(SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id)
-            .connection_limits(limits)
-            .build())
     }
     fn known(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> HashSet<Multiaddr> {
         let mut known = HashSet::new();

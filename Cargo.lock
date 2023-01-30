@@ -2872,6 +2872,7 @@ dependencies = [
  "futures",
  "libp2p",
  "pea-core",
+ "pea-util",
  "tokio",
 ]
 
@@ -2904,6 +2905,21 @@ dependencies = [
 [[package]]
 name = "pea-tree"
 version = "0.4.0"
+
+[[package]]
+name = "pea-util"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "chrono",
+ "lazy_static",
+ "pea-block",
+ "pea-core",
+ "pea-stake",
+ "pea-transaction",
+ "sha2 0.10.6",
+ "uint",
+]
 
 [[package]]
 name = "pea-wallet"

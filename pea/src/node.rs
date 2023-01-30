@@ -36,8 +36,6 @@ use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use pea_util;
 use pea_wallet::wallet;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
 use serde::Deserialize;
 use serde::Serialize;
 use sha2::Digest;
@@ -82,18 +80,29 @@ pub struct Node<'a> {
 }
 impl Node<'_> {
     pub async fn new(options: Options<'_>) -> Node<'_> {
-        let key = Node::key(options.tempkey, options.wallet, options.passphrase);
+        let key = match options.tempkey {
+            true => Key::generate(),
+            false => wallet::load(options.wallet, options.passphrase).unwrap().3,
+        };
         info!("Address {}", address::encode(&key.address_bytes()).green());
-        let db = Node::db(options.tempdb);
+        let tempdir = TempDir::new("peacash-db").unwrap();
+        let path: &str = match options.tempdb {
+            true => tempdir.path().to_str().unwrap(),
+            false => "./peacash-db",
+        };
+        let db = db::open(path);
+        let mut known = HashSet::new();
+        if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&options.peer.parse::<Multiaddr>().unwrap()) {
+            known.insert(multiaddr);
+        }
+        let peers = db::peer::get_all(&db);
+        for peer in peers {
+            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
+                known.insert(multiaddr);
+            }
+        }
+        let p2p = P2p::new(options.max_established, options.timeout, known, options.ban_offline).await.unwrap();
         let blockchain = Blockchain::new(db, key, options.trust, options.time_delta);
-        let p2p = P2p::new(
-            options.max_established,
-            options.timeout,
-            Node::known(&blockchain.db, options.peer),
-            options.ban_offline,
-        )
-        .await
-        .unwrap();
         Node {
             p2p,
             blockchain,
@@ -101,33 +110,6 @@ impl Node<'_> {
             lag: 0.0,
             options,
         }
-    }
-    fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {
-        let tempdir = TempDir::new("peacash-db").unwrap();
-        let path: &str = match tempdb {
-            true => tempdir.path().to_str().unwrap(),
-            false => "./peacash-db",
-        };
-        db::open(path)
-    }
-    fn key(tempkey: bool, wallet: &str, passphrase: &str) -> Key {
-        match tempkey {
-            true => Key::generate(),
-            false => wallet::load(wallet, passphrase).unwrap().3,
-        }
-    }
-    fn known(db: &DBWithThreadMode<SingleThreaded>, peer: &str) -> HashSet<Multiaddr> {
-        let mut known = HashSet::new();
-        if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
-            known.insert(multiaddr);
-        }
-        let peers = db::peer::get_all(db);
-        for peer in peers {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&peer.parse::<Multiaddr>().unwrap()) {
-                known.insert(multiaddr);
-            }
-        }
-        known
     }
     pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
         let mut hasher = Sha256::new();

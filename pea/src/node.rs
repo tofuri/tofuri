@@ -231,7 +231,7 @@ impl Node<'_> {
             }
         }
     }
-    fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
+    fn connection_established(&mut self, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
         let mut save = |multiaddr: Multiaddr| {
             info!(
                 "Connection {} {} {}",
@@ -240,19 +240,19 @@ impl Node<'_> {
                 num_established.to_string().yellow()
             );
             let addr = pea_p2p::multiaddr::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
-            if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
+            if self.p2p.ratelimit.is_ratelimited(&self.p2p.ratelimit.get(&addr).1) {
                 warn!("Ratelimited {}", multiaddr.to_string().magenta());
-                let _ = node.p2p.swarm.disconnect_peer_id(peer_id);
+                let _ = self.p2p.swarm.disconnect_peer_id(peer_id);
             }
-            node.p2p.known.insert(multiaddr.clone());
-            let _ = db::peer::put(&multiaddr.to_string(), &node.blockchain.db);
-            if let Some(previous_peer_id) = node
+            self.p2p.known.insert(multiaddr.clone());
+            let _ = db::peer::put(&multiaddr.to_string(), &self.blockchain.db);
+            if let Some(previous_peer_id) = self
                 .p2p
                 .connections
                 .insert(pea_p2p::multiaddr::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
             {
                 if previous_peer_id != peer_id {
-                    let _ = node.p2p.swarm.disconnect_peer_id(previous_peer_id);
+                    let _ = self.p2p.swarm.disconnect_peer_id(previous_peer_id);
                 }
             }
         };
@@ -267,7 +267,7 @@ impl Node<'_> {
             }
         }
     }
-    fn connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_established: u32) {
+    fn connection_closed(&mut self, endpoint: ConnectedPoint, num_established: u32) {
         let mut save = |multiaddr: Multiaddr| {
             info!(
                 "Connection {} {} {}",
@@ -275,8 +275,8 @@ impl Node<'_> {
                 multiaddr.to_string().magenta(),
                 num_established.to_string().yellow()
             );
-            node.p2p.connections.remove(&multiaddr);
-            let _ = node.p2p.swarm.dial(multiaddr);
+            self.p2p.connections.remove(&multiaddr);
+            let _ = self.p2p.swarm.dial(multiaddr);
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
             if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&address) {

@@ -125,7 +125,7 @@ async fn main() {
         passphrase: &args.passphrase,
         peer: &args.peer,
         bind_api: args.bind_api,
-        host: args.host,
+        host: &args.host,
         dev: args.dev,
         timeout: args.timeout,
     })

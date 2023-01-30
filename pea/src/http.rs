@@ -26,7 +26,7 @@ fn parse_body(buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
 fn parse_request_line(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
     Ok(buffer.lines().next().ok_or("empty request line")??)
 }
-pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, String), Box<dyn Error>> {
+pub async fn handler(mut stream: TcpStream, node: &mut Node<'_>) -> Result<(usize, String), Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buffer)).await??;
     let request_line = parse_request_line(&buffer)?;
@@ -197,19 +197,7 @@ fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     })?))
 }
 fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    Ok(json(serde_json::to_string(&api::Options {
-        mint: node.mint,
-        trust: node.blockchain.trust_fork_after_blocks,
-        ban_offline: node.p2p.ban_offline,
-        time_delta: node.blockchain.time_delta,
-        max_established: node.max_established,
-        tps: node.tps,
-        bind_api: node.bind_api.clone(),
-        host: node.p2p.host.clone(),
-        tempdb: node.tempdb,
-        tempkey: node.tempkey,
-        dev: node.dev,
-    })?))
+    Ok(json(serde_json::to_string(&node.options)?))
 }
 fn get_balance(node: &mut Node, address_bytes: AddressBytes) -> Result<String, Box<dyn Error>> {
     let balance = node.blockchain.states.dynamic.balance(&address_bytes);

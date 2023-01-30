@@ -24,7 +24,6 @@ pub struct P2p {
     pub ratelimit: Ratelimit,
     pub unknown: HashSet<Multiaddr>,
     pub known: HashSet<Multiaddr>,
-    pub host: String,
     pub ban_offline: usize,
 }
 pub enum Endpoint {

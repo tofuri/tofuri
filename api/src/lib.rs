@@ -37,20 +37,6 @@ pub struct Trusted {
     pub stakers: Vec<String>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Options {
-    pub mint: bool,
-    pub tempdb: bool,
-    pub tempkey: bool,
-    pub trust: usize,
-    pub ban_offline: usize,
-    pub time_delta: u32,
-    pub max_established: Option<u32>,
-    pub tps: f64,
-    pub bind_api: String,
-    pub host: String,
-    pub dev: bool,
-}
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
     pub hash: String,
     pub previous_hash: String,
@@ -140,9 +126,6 @@ pub mod get {
     }
     pub async fn trusted(api: &str) -> Result<Trusted, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::Get, "/trusted", None).await?)?)
-    }
-    pub async fn options(api: &str) -> Result<Options, Box<dyn Error>> {
-        Ok(serde_json::from_str(&request(api, Method::Get, "/options", None).await?)?)
     }
     pub async fn block(api: &str, hash: &str) -> Result<Block, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::Get, &format!("/block/{hash}"), None).await?)?)

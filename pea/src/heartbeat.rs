@@ -11,7 +11,7 @@ use pea_p2p::behaviour::SyncRequest;
 use rand::prelude::*;
 use std::time::Duration;
 fn delay(node: &mut Node, seconds: usize) -> bool {
-    (node.heartbeats as f64 % (node.tps * seconds as f64)) as usize == 0
+    (node.heartbeats as f64 % (node.options.tps * seconds as f64)) as usize == 0
 }
 pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     let timestamp = util::timestamp();
@@ -97,7 +97,7 @@ fn share(node: &mut Node) {
     node.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
 }
 fn grow(node: &mut Node, timestamp: u32) {
-    if !node.blockchain.sync.downloading() && !node.mint && node.blockchain.states.dynamic.next_staker(timestamp).is_none() {
+    if !node.blockchain.sync.downloading() && !node.options.mint && node.blockchain.states.dynamic.next_staker(timestamp).is_none() {
         if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",

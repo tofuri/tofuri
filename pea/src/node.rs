@@ -41,6 +41,8 @@ use pea_p2p::behaviour::Behaviour;
 use pea_p2p::behaviour::OutEvent;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
+use serde::Deserialize;
+use serde::Serialize;
 use sha2::Digest;
 use sha2::Sha256;
 use std::collections::HashMap;
@@ -53,6 +55,7 @@ use tokio::net::TcpListener;
 use void::Void;
 type HandlerErr =
     EitherError<EitherError<EitherError<EitherError<Void, Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<Error>>, ConnectionHandlerUpgrErr<Error>>;
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,
@@ -67,25 +70,19 @@ pub struct Options<'a> {
     pub passphrase: &'a str,
     pub peer: &'a str,
     pub bind_api: String,
-    pub host: String,
+    pub host: &'a str,
     pub dev: bool,
     pub timeout: u64,
 }
-pub struct Node {
+pub struct Node<'a> {
+    pub options: Options<'a>,
     pub p2p: P2p,
     pub blockchain: Blockchain,
     pub heartbeats: usize,
     pub lag: f64,
-    pub tps: f64,
-    pub bind_api: String,
-    pub mint: bool,
-    pub max_established: Option<u32>,
-    pub tempdb: bool,
-    pub tempkey: bool,
-    pub dev: bool,
 }
-impl Node {
-    pub async fn new(options: Options<'_>) -> Node {
+impl Node<'_> {
+    pub async fn new(options: Options<'_>) -> Node<'_> {
         let key = Node::key(options.tempkey, options.wallet, options.passphrase);
         info!("Address {}", address::encode(&key.address_bytes()).green());
         let db = Node::db(options.tempdb);
@@ -96,8 +93,7 @@ impl Node {
             connections: HashMap::new(),
             ratelimit: Ratelimit::default(),
             unknown: HashSet::new(),
-            known: Node::known(&blockchain.db, options.peer),
-            host: options.host,
+            known: Node::known(&blockchain.db, &options.peer),
             ban_offline: options.ban_offline,
         };
         Node {
@@ -105,13 +101,7 @@ impl Node {
             blockchain,
             heartbeats: 0,
             lag: 0.0,
-            tps: options.tps,
-            bind_api: options.bind_api,
-            mint: options.mint,
-            max_established: options.max_established,
-            tempdb: options.tempdb,
-            tempkey: options.tempkey,
-            dev: options.dev,
+            options,
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {
@@ -244,16 +234,16 @@ impl Node {
             }
         );
         info!("Latest block seen {}", self.last_seen().yellow());
-        let multiaddr: Multiaddr = self.p2p.host.parse().unwrap();
+        let multiaddr: Multiaddr = self.options.host.parse().unwrap();
         self.p2p.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());
-        let listener = TcpListener::bind(&self.bind_api).await.unwrap();
+        let listener = TcpListener::bind(&self.options.bind_api).await.unwrap();
         info!(
             "API is listening on {}{}",
             "http://".cyan(),
             listener.local_addr().unwrap().to_string().magenta()
         );
-        let mut interval = tokio::time::interval(Duration::from_micros(util::micros_per_tick(self.tps)));
+        let mut interval = tokio::time::interval(Duration::from_micros(util::micros_per_tick(self.options.tps)));
         loop {
             tokio::select! {
                 biased;
@@ -370,7 +360,7 @@ impl Node {
         string
     }
     pub fn uptime(&self) -> String {
-        let seconds = (self.heartbeats as f64 / self.tps) as u32;
+        let seconds = (self.heartbeats as f64 / self.options.tps) as u32;
         util::duration_to_string(seconds, "0")
     }
 }

@@ -5,11 +5,6 @@ use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use sha2::Digest;
 use sha2::Sha256;
-use std::error::Error;
-use std::fs::File;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::path::Path;
 use uint::construct_uint;
 lazy_static! {
     pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
@@ -42,11 +37,6 @@ pub fn penalty(index: usize) -> u128 {
 }
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
-}
-pub fn read_lines(path: impl AsRef<Path>) -> Result<Vec<String>, Box<dyn Error>> {
-    let file = File::open(path)?;
-    let buf = BufReader::new(file);
-    Ok(buf.lines().map(|l| l.expect("Could not parse line")).collect())
 }
 pub fn micros_per_tick(tps: f64) -> u64 {
     let secs = 1_f64 / tps;

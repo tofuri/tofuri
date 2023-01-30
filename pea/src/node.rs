@@ -112,70 +112,6 @@ impl Node<'_> {
             options,
         }
     }
-    pub fn filter(&mut self, data: &[u8], save: bool) -> bool {
-        let mut hasher = Sha256::new();
-        hasher.update(data);
-        let hash = hasher.finalize().into();
-        if self.p2p.message_data_hashes.contains(&hash) {
-            return true;
-        }
-        if save {
-            self.p2p.message_data_hashes.push(hash);
-        }
-        false
-    }
-    fn swarm_event(&mut self, event: SwarmEvent<OutEvent, HandlerErr>) {
-        debug!("{:?}", event);
-        match event {
-            SwarmEvent::Dialing(_) => {}
-            SwarmEvent::IncomingConnectionError { .. } => {}
-            SwarmEvent::IncomingConnection { .. } => {}
-            SwarmEvent::ConnectionEstablished {
-                peer_id,
-                endpoint,
-                num_established,
-                ..
-            } => {
-                Self::connection_established(self, peer_id, endpoint, num_established);
-            }
-            SwarmEvent::ConnectionClosed { endpoint, num_established, .. } => {
-                Self::connection_closed(self, endpoint, num_established);
-            }
-            SwarmEvent::Behaviour(OutEvent::Mdns(mdns::Event::Discovered(list))) => {
-                for (_, multiaddr) in list {
-                    if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr) {
-                        self.p2p.unknown.insert(multiaddr);
-                    }
-                }
-            }
-            SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
-                message, propagation_source, ..
-            })) => {
-                if self.filter(&message.data, false) {
-                    return;
-                }
-                if let Err(err) = self.gossipsub_handler(message, propagation_source) {
-                    error!("GossipsubEvent::Message {}", err)
-                }
-            }
-            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
-                RequestResponseMessage::Request { request, channel, .. } => {
-                    if let Err(err) = self.request_handler(peer, request, channel) {
-                        error!("RequestResponseMessage::Request {}", err)
-                    }
-                }
-                RequestResponseMessage::Response { response, .. } => {
-                    if let Err(err) = self.response_handler(peer, response) {
-                        error!("RequestResponseMessage::Response {}", err)
-                    }
-                }
-            },
-            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::InboundFailure { .. })) => {}
-            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::OutboundFailure { .. })) => {}
-            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::ResponseSent { .. })) => {}
-            _ => {}
-        }
-    }
     pub async fn start(&mut self) {
         self.blockchain.load();
         info!(
@@ -214,69 +150,11 @@ impl Node<'_> {
             }
         }
     }
-    fn connection_established(&mut self, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
-        let mut save = |multiaddr: Multiaddr| {
-            info!(
-                "Connection {} {} {}",
-                "established".green(),
-                multiaddr.to_string().magenta(),
-                num_established.to_string().yellow()
-            );
-            let addr = pea_p2p::multiaddr::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
-            if self.p2p.ratelimit.is_ratelimited(&self.p2p.ratelimit.get(&addr).1) {
-                warn!("Ratelimited {}", multiaddr.to_string().magenta());
-                let _ = self.p2p.swarm.disconnect_peer_id(peer_id);
-            }
-            self.p2p.known.insert(multiaddr.clone());
-            let _ = db::peer::put(&multiaddr.to_string(), &self.blockchain.db);
-            if let Some(previous_peer_id) = self
-                .p2p
-                .connections
-                .insert(pea_p2p::multiaddr::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
-            {
-                if previous_peer_id != peer_id {
-                    let _ = self.p2p.swarm.disconnect_peer_id(previous_peer_id);
-                }
-            }
-        };
-        if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&address) {
-                save(multiaddr);
-            }
-        }
-        if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip(&send_back_addr) {
-                save(multiaddr);
-            }
-        }
-    }
-    fn connection_closed(&mut self, endpoint: ConnectedPoint, num_established: u32) {
-        let mut save = |multiaddr: Multiaddr| {
-            info!(
-                "Connection {} {} {}",
-                "closed".red(),
-                multiaddr.to_string().magenta(),
-                num_established.to_string().yellow()
-            );
-            self.p2p.connections.remove(&multiaddr);
-            let _ = self.p2p.swarm.dial(multiaddr);
-        };
-        if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&address) {
-                save(multiaddr);
-            }
-        }
-        if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip(&send_back_addr) {
-                save(multiaddr);
-            }
-        }
-    }
     pub fn gossipsub_has_mesh_peers(&mut self, topic: &str) -> bool {
         self.p2p.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
     }
     pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) {
-        self.filter(&data, true);
+        self.swarm_event_gossipsub_message_filter(&data, true);
         if let Err(err) = self.p2p.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
             error!("{}", err);
         }
@@ -316,7 +194,129 @@ impl Node<'_> {
         let seconds = (self.heartbeats as f64 / self.options.tps) as u32;
         pea_util::duration_to_string(seconds, "0")
     }
-    pub fn gossipsub_handler(&mut self, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
+    fn swarm_event(&mut self, event: SwarmEvent<OutEvent, HandlerErr>) {
+        debug!("{:?}", event);
+        match event {
+            SwarmEvent::Dialing(_) => {}
+            SwarmEvent::IncomingConnectionError { .. } => {}
+            SwarmEvent::IncomingConnection { .. } => {}
+            SwarmEvent::ConnectionEstablished {
+                peer_id,
+                endpoint,
+                num_established,
+                ..
+            } => {
+                Self::swarm_event_connection_established(self, peer_id, endpoint, num_established);
+            }
+            SwarmEvent::ConnectionClosed { endpoint, num_established, .. } => {
+                Self::swarm_event_connection_closed(self, endpoint, num_established);
+            }
+            SwarmEvent::Behaviour(OutEvent::Mdns(mdns::Event::Discovered(list))) => {
+                for (_, multiaddr) in list {
+                    if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr) {
+                        self.p2p.unknown.insert(multiaddr);
+                    }
+                }
+            }
+            SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
+                message, propagation_source, ..
+            })) => {
+                if self.swarm_event_gossipsub_message_filter(&message.data, false) {
+                    return;
+                }
+                if let Err(err) = self.swarm_event_gossipsub_message_handler(message, propagation_source) {
+                    error!("GossipsubEvent::Message {}", err)
+                }
+            }
+            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
+                RequestResponseMessage::Request { request, channel, .. } => {
+                    if let Err(err) = self.swarm_event_request_handler(peer, request, channel) {
+                        error!("RequestResponseMessage::Request {}", err)
+                    }
+                }
+                RequestResponseMessage::Response { response, .. } => {
+                    if let Err(err) = self.swarm_event_response_handler(peer, response) {
+                        error!("RequestResponseMessage::Response {}", err)
+                    }
+                }
+            },
+            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::InboundFailure { .. })) => {}
+            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::OutboundFailure { .. })) => {}
+            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::ResponseSent { .. })) => {}
+            _ => {}
+        }
+    }
+    fn swarm_event_connection_established(&mut self, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
+        let mut save = |multiaddr: Multiaddr| {
+            info!(
+                "Connection {} {} {}",
+                "established".green(),
+                multiaddr.to_string().magenta(),
+                num_established.to_string().yellow()
+            );
+            let addr = pea_p2p::multiaddr::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
+            if self.p2p.ratelimit.is_ratelimited(&self.p2p.ratelimit.get(&addr).1) {
+                warn!("Ratelimited {}", multiaddr.to_string().magenta());
+                let _ = self.p2p.swarm.disconnect_peer_id(peer_id);
+            }
+            self.p2p.known.insert(multiaddr.clone());
+            let _ = db::peer::put(&multiaddr.to_string(), &self.blockchain.db);
+            if let Some(previous_peer_id) = self
+                .p2p
+                .connections
+                .insert(pea_p2p::multiaddr::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
+            {
+                if previous_peer_id != peer_id {
+                    let _ = self.p2p.swarm.disconnect_peer_id(previous_peer_id);
+                }
+            }
+        };
+        if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
+            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&address) {
+                save(multiaddr);
+            }
+        }
+        if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
+            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip(&send_back_addr) {
+                save(multiaddr);
+            }
+        }
+    }
+    fn swarm_event_connection_closed(&mut self, endpoint: ConnectedPoint, num_established: u32) {
+        let mut save = |multiaddr: Multiaddr| {
+            info!(
+                "Connection {} {} {}",
+                "closed".red(),
+                multiaddr.to_string().magenta(),
+                num_established.to_string().yellow()
+            );
+            self.p2p.connections.remove(&multiaddr);
+            let _ = self.p2p.swarm.dial(multiaddr);
+        };
+        if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
+            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&address) {
+                save(multiaddr);
+            }
+        }
+        if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
+            if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip(&send_back_addr) {
+                save(multiaddr);
+            }
+        }
+    }
+    fn swarm_event_gossipsub_message_filter(&mut self, data: &[u8], save: bool) -> bool {
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let hash = hasher.finalize().into();
+        if self.p2p.message_data_hashes.contains(&hash) {
+            return true;
+        }
+        if save {
+            self.p2p.message_data_hashes.push(hash);
+        }
+        false
+    }
+    pub fn swarm_event_gossipsub_message_handler(&mut self, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
         match message.topic.as_str() {
             "block" => {
                 self.p2p.ratelimit(propagation_source, Endpoint::Block)?;
@@ -345,7 +345,7 @@ impl Node<'_> {
         };
         Ok(())
     }
-    pub fn request_handler(&mut self, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
+    pub fn swarm_event_request_handler(&mut self, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
         self.p2p.ratelimit(peer_id, Endpoint::SyncRequest)?;
         let height: usize = bincode::deserialize(&request.0)?;
         let mut vec = vec![];
@@ -367,7 +367,7 @@ impl Node<'_> {
         };
         Ok(())
     }
-    pub fn response_handler(&mut self, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
+    pub fn swarm_event_response_handler(&mut self, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
         self.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
         let timestamp = pea_util::timestamp();
         for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {

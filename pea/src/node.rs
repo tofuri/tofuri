@@ -110,7 +110,7 @@ impl Node<'_> {
             options,
         }
     }
-    pub async fn start(&mut self) {
+    pub async fn run(&mut self) {
         self.blockchain.load();
         info!(
             "Blockchain height is {}",

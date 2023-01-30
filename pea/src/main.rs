@@ -130,5 +130,5 @@ async fn main() {
         timeout: args.timeout,
     })
     .await;
-    node.start().await;
+    node.run().await;
 }

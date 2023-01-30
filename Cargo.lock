@@ -2874,6 +2874,7 @@ dependencies = [
  "libp2p",
  "pea-core",
  "pea-util",
+ "sha2 0.10.6",
  "tokio",
 ]
 

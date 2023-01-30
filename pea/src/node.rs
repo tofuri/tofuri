@@ -39,8 +39,6 @@ use pea_util;
 use pea_wallet::wallet;
 use serde::Deserialize;
 use serde::Serialize;
-use sha2::Digest;
-use sha2::Sha256;
 use std::collections::HashSet;
 use std::error::Error;
 use std::io;
@@ -154,7 +152,9 @@ impl Node<'_> {
         self.p2p.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
     }
     pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) {
-        self.swarm_event_gossipsub_message_filter(&data, true);
+        if self.p2p.filter(&data) {
+            error!("gossipsub_publish filter {}", topic);
+        }
         if let Err(err) = self.p2p.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
             error!("{}", err);
         }
@@ -221,21 +221,18 @@ impl Node<'_> {
             SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
                 message, propagation_source, ..
             })) => {
-                if self.swarm_event_gossipsub_message_filter(&message.data, false) {
-                    return;
-                }
-                if let Err(err) = self.swarm_event_gossipsub_message_handler(message, propagation_source) {
+                if let Err(err) = self.swarm_event_gossipsub_message(message, propagation_source) {
                     error!("GossipsubEvent::Message {}", err)
                 }
             }
             SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
                 RequestResponseMessage::Request { request, channel, .. } => {
-                    if let Err(err) = self.swarm_event_request_handler(peer, request, channel) {
+                    if let Err(err) = self.swarm_event_request(peer, request, channel) {
                         error!("RequestResponseMessage::Request {}", err)
                     }
                 }
                 RequestResponseMessage::Response { response, .. } => {
-                    if let Err(err) = self.swarm_event_response_handler(peer, response) {
+                    if let Err(err) = self.swarm_event_response(peer, response) {
                         error!("RequestResponseMessage::Response {}", err)
                     }
                 }
@@ -304,37 +301,37 @@ impl Node<'_> {
             }
         }
     }
-    fn swarm_event_gossipsub_message_filter(&mut self, data: &[u8], save: bool) -> bool {
-        let mut hasher = Sha256::new();
-        hasher.update(data);
-        let hash = hasher.finalize().into();
-        if self.p2p.message_data_hashes.contains(&hash) {
-            return true;
-        }
-        if save {
-            self.p2p.message_data_hashes.push(hash);
-        }
-        false
-    }
-    fn swarm_event_gossipsub_message_handler(&mut self, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
+    fn swarm_event_gossipsub_message(&mut self, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
         match message.topic.as_str() {
             "block" => {
                 self.p2p.ratelimit(propagation_source, Endpoint::Block)?;
+                if self.p2p.filter(&message.data) {
+                    return Err("filter block".into());
+                }
                 let block_b: BlockB = bincode::deserialize(&message.data)?;
                 self.blockchain.append_block(block_b, pea_util::timestamp())?;
             }
             "transaction" => {
                 self.p2p.ratelimit(propagation_source, Endpoint::Transaction)?;
+                if self.p2p.filter(&message.data) {
+                    return Err("filter transaction".into());
+                }
                 let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
                 self.blockchain.pending_transactions_push(transaction_b, pea_util::timestamp())?;
             }
             "stake" => {
                 self.p2p.ratelimit(propagation_source, Endpoint::Stake)?;
+                if self.p2p.filter(&message.data) {
+                    return Err("filter stake".into());
+                }
                 let stake_b: StakeB = bincode::deserialize(&message.data)?;
                 self.blockchain.pending_stakes_push(stake_b, pea_util::timestamp())?;
             }
             "multiaddr" => {
                 self.p2p.ratelimit(propagation_source, Endpoint::Multiaddr)?;
+                if self.p2p.filter(&message.data) {
+                    return Err("filter multiaddr".into());
+                }
                 for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
                     if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr) {
                         self.p2p.unknown.insert(multiaddr);
@@ -345,7 +342,7 @@ impl Node<'_> {
         };
         Ok(())
     }
-    fn swarm_event_request_handler(&mut self, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
+    fn swarm_event_request(&mut self, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
         self.p2p.ratelimit(peer_id, Endpoint::SyncRequest)?;
         let height: usize = bincode::deserialize(&request.0)?;
         let mut vec = vec![];
@@ -367,7 +364,7 @@ impl Node<'_> {
         };
         Ok(())
     }
-    fn swarm_event_response_handler(&mut self, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
+    fn swarm_event_response(&mut self, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
         self.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
         let timestamp = pea_util::timestamp();
         for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {

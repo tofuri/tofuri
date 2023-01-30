@@ -17,13 +17,15 @@ use libp2p::Transport;
 use pea_core::*;
 use ratelimit::Endpoint;
 use ratelimit::Ratelimit;
+use sha2::Digest;
+use sha2::Sha256;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
 use std::time::Duration;
 pub struct P2p {
     pub swarm: Swarm<Behaviour>,
-    pub message_data_hashes: Vec<Hash>,
+    pub filter: HashSet<Hash>,
     pub connections: HashMap<Multiaddr, PeerId>,
     pub ratelimit: Ratelimit,
     pub unknown: HashSet<Multiaddr>,
@@ -34,7 +36,7 @@ impl P2p {
     pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<Multiaddr>, ban_offline: usize) -> Result<P2p, Box<dyn Error>> {
         Ok(P2p {
             swarm: swarm(max_established, timeout).await?,
-            message_data_hashes: vec![],
+            filter: HashSet::new(),
             connections: HashMap::new(),
             ratelimit: Ratelimit::default(),
             unknown: HashSet::new(),
@@ -50,6 +52,11 @@ impl P2p {
             return Err("ratelimited".into());
         }
         Ok(())
+    }
+    pub fn filter(&mut self, data: &[u8]) -> bool {
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        !self.filter.insert(hasher.finalize().into())
     }
 }
 async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Box<dyn Error>> {

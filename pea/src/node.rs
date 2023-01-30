@@ -1,18 +1,19 @@
 use crate::blockchain::Blockchain;
 use crate::heartbeat;
 use crate::http;
-use crate::p2p;
 use colored::*;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::core::either::EitherError;
 use libp2p::futures::StreamExt;
 use libp2p::gossipsub::error::GossipsubHandlerError;
 use libp2p::gossipsub::GossipsubEvent;
+use libp2p::gossipsub::GossipsubMessage;
 use libp2p::gossipsub::IdentTopic;
 use libp2p::gossipsub::TopicHash;
 use libp2p::mdns;
 use libp2p::request_response::RequestResponseEvent;
 use libp2p::request_response::RequestResponseMessage;
+use libp2p::request_response::ResponseChannel;
 use libp2p::swarm::ConnectionHandlerUpgrErr;
 use libp2p::swarm::SwarmEvent;
 use libp2p::Multiaddr;
@@ -22,11 +23,18 @@ use log::error;
 use log::info;
 use log::warn;
 use pea_address::address;
+use pea_block::BlockB;
 use pea_core::*;
 use pea_db as db;
 use pea_key::Key;
 use pea_p2p::behaviour::OutEvent;
+use pea_p2p::behaviour::SyncRequest;
+use pea_p2p::behaviour::SyncResponse;
+use pea_p2p::ratelimit::Endpoint;
 use pea_p2p::P2p;
+use pea_stake::StakeB;
+use pea_transaction::TransactionB;
+use pea_util;
 use pea_wallet::wallet;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
@@ -35,14 +43,17 @@ use serde::Serialize;
 use sha2::Digest;
 use sha2::Sha256;
 use std::collections::HashSet;
-use std::io::Error;
+use std::error::Error;
+use std::io;
 use std::num::NonZeroU32;
 use std::time::Duration;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
 use void::Void;
-type HandlerErr =
-    EitherError<EitherError<EitherError<EitherError<Void, Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<Error>>, ConnectionHandlerUpgrErr<Error>>;
+type HandlerErr = EitherError<
+    EitherError<EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<io::Error>>,
+    ConnectionHandlerUpgrErr<io::Error>,
+>;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Options<'a> {
     pub tempdb: bool,
@@ -160,18 +171,18 @@ impl Node<'_> {
                 if self.filter(&message.data, false) {
                     return;
                 }
-                if let Err(err) = p2p::gossipsub_handler(self, message, propagation_source) {
+                if let Err(err) = self.gossipsub_handler(message, propagation_source) {
                     error!("GossipsubEvent::Message {}", err)
                 }
             }
             SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
                 RequestResponseMessage::Request { request, channel, .. } => {
-                    if let Err(err) = p2p::request_handler(self, peer, request, channel) {
+                    if let Err(err) = self.request_handler(peer, request, channel) {
                         error!("RequestResponseMessage::Request {}", err)
                     }
                 }
                 RequestResponseMessage::Response { response, .. } => {
-                    if let Err(err) = p2p::response_handler(self, peer, response) {
+                    if let Err(err) = self.response_handler(peer, response) {
                         error!("RequestResponseMessage::Response {}", err)
                     }
                 }
@@ -321,5 +332,66 @@ impl Node<'_> {
     pub fn uptime(&self) -> String {
         let seconds = (self.heartbeats as f64 / self.options.tps) as u32;
         pea_util::duration_to_string(seconds, "0")
+    }
+    pub fn gossipsub_handler(&mut self, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
+        match message.topic.as_str() {
+            "block" => {
+                self.p2p.ratelimit(propagation_source, Endpoint::Block)?;
+                let block_b: BlockB = bincode::deserialize(&message.data)?;
+                self.blockchain.append_block(block_b, pea_util::timestamp())?;
+            }
+            "transaction" => {
+                self.p2p.ratelimit(propagation_source, Endpoint::Transaction)?;
+                let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
+                self.blockchain.pending_transactions_push(transaction_b, pea_util::timestamp())?;
+            }
+            "stake" => {
+                self.p2p.ratelimit(propagation_source, Endpoint::Stake)?;
+                let stake_b: StakeB = bincode::deserialize(&message.data)?;
+                self.blockchain.pending_stakes_push(stake_b, pea_util::timestamp())?;
+            }
+            "multiaddr" => {
+                self.p2p.ratelimit(propagation_source, Endpoint::Multiaddr)?;
+                for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
+                    if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr) {
+                        self.p2p.unknown.insert(multiaddr);
+                    }
+                }
+            }
+            _ => {}
+        };
+        Ok(())
+    }
+    pub fn request_handler(&mut self, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
+        self.p2p.ratelimit(peer_id, Endpoint::SyncRequest)?;
+        let height: usize = bincode::deserialize(&request.0)?;
+        let mut vec = vec![];
+        for i in 0..SYNC_BLOCKS_PER_TICK {
+            match self.blockchain.sync_block(height + i) {
+                Some(block_b) => vec.push(block_b),
+                None => break,
+            }
+        }
+        if self
+            .p2p
+            .swarm
+            .behaviour_mut()
+            .request_response
+            .send_response(channel, SyncResponse(bincode::serialize(&vec).unwrap()))
+            .is_err()
+        {
+            return Err("p2p request handler connection closed".into());
+        };
+        Ok(())
+    }
+    pub fn response_handler(&mut self, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
+        self.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
+        let timestamp = pea_util::timestamp();
+        for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
+            if let Err(err) = self.blockchain.append_block(block_b, timestamp) {
+                debug!("response_handler {}", err);
+            }
+        }
+        Ok(())
     }
 }

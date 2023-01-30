@@ -25,11 +25,11 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
         dial_unknown(node);
     }
     if delay(node, 2) {
-        node.p2p_message_data_hashes.clear();
+        node.p2p.message_data_hashes.clear();
     }
     if delay(node, 1) {
         node.blockchain.sync.handler();
-        node.p2p_ratelimit.reset();
+        node.p2p.ratelimit.reset();
     }
     sync_request(node);
     offline_staker(node, timestamp);
@@ -38,13 +38,13 @@ pub fn handler(node: &mut Node, instant: tokio::time::Instant) {
     lag(node, instant.elapsed());
 }
 fn offline_staker(node: &mut Node, timestamp: u32) {
-    if node.p2p_ban_offline == 0 {
+    if node.p2p.ban_offline == 0 {
         return;
     }
     if !node.blockchain.sync.completed {
         return;
     }
-    if node.p2p_connections.len() < node.p2p_ban_offline {
+    if node.p2p.connections.len() < node.p2p.ban_offline {
         return;
     }
     let dynamic = &node.blockchain.states.dynamic;
@@ -58,23 +58,24 @@ fn offline_staker(node: &mut Node, timestamp: u32) {
     }
 }
 fn dial_known(node: &mut Node) {
-    let vec = node.p2p_known.clone().into_iter().collect();
+    let vec = node.p2p.known.clone().into_iter().collect();
     dial(node, vec, true);
 }
 fn dial_unknown(node: &mut Node) {
-    let vec = node.p2p_unknown.drain().collect();
+    let vec = node.p2p.unknown.drain().collect();
     dial(node, vec, false);
 }
 fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     for mut multiaddr in vec {
         if node
-            .p2p_connections
+            .p2p
+            .connections
             .contains_key(&pea_p2p::multiaddr::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"))
         {
             continue;
         }
         let addr = pea_p2p::multiaddr::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
-        if node.p2p_ratelimit.is_ratelimited(&node.p2p_ratelimit.get(&addr).1) {
+        if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
             continue;
         }
         debug!(
@@ -85,14 +86,14 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
         if !pea_p2p::multiaddr::multiaddr_has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }
-        let _ = node.p2p_swarm.dial(multiaddr);
+        let _ = node.p2p.swarm.dial(multiaddr);
     }
 }
 fn share(node: &mut Node) {
     if !node.gossipsub_has_mesh_peers("multiaddr") {
         return;
     }
-    let vec: Vec<&Multiaddr> = node.p2p_connections.keys().collect();
+    let vec: Vec<&Multiaddr> = node.p2p.connections.keys().collect();
     node.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
 }
 fn grow(node: &mut Node, timestamp: u32) {
@@ -100,7 +101,7 @@ fn grow(node: &mut Node, timestamp: u32) {
         if delay(node, 60) {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",
-                node.p2p_connections.len().to_string().yellow()
+                node.p2p.connections.len().to_string().yellow()
             );
         }
         node.blockchain.sync.completed = false;
@@ -116,8 +117,9 @@ fn grow(node: &mut Node, timestamp: u32) {
     }
 }
 fn sync_request(node: &mut Node) {
-    if let Some(peer_id) = node.p2p_swarm.connected_peers().choose(&mut thread_rng()).cloned() {
-        node.p2p_swarm
+    if let Some(peer_id) = node.p2p.swarm.connected_peers().choose(&mut thread_rng()).cloned() {
+        node.p2p
+            .swarm
             .behaviour_mut()
             .request_response
             .send_request(&peer_id, SyncRequest(bincode::serialize(&(node.blockchain.height())).unwrap()));

@@ -4,16 +4,29 @@ use libp2p::gossipsub::GossipsubMessage;
 use libp2p::request_response::ResponseChannel;
 use libp2p::Multiaddr;
 use libp2p::PeerId;
+use libp2p::Swarm;
 use log::debug;
 use pea_block::BlockB;
 use pea_core::*;
+use pea_p2p::behaviour::Behaviour;
 use pea_p2p::behaviour::SyncRequest;
 use pea_p2p::behaviour::SyncResponse;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::error::Error;
 use std::net::IpAddr;
+pub struct P2p {
+    pub swarm: Swarm<Behaviour>,
+    pub message_data_hashes: Vec<Hash>,
+    pub connections: HashMap<Multiaddr, PeerId>,
+    pub ratelimit: Ratelimit,
+    pub unknown: HashSet<Multiaddr>,
+    pub known: HashSet<Multiaddr>,
+    pub host: String,
+    pub ban_offline: usize,
+}
 pub enum Endpoint {
     Block,
     Transaction,
@@ -89,10 +102,10 @@ impl Ratelimit {
         }
     }
     pub fn ratelimit(node: &mut Node, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Box<dyn Error>> {
-        let (multiaddr, _) = node.p2p_connections.iter().find(|x| x.1 == &peer_id).unwrap();
+        let (multiaddr, _) = node.p2p.connections.iter().find(|x| x.1 == &peer_id).unwrap();
         let addr = pea_p2p::multiaddr::multiaddr_addr(multiaddr).expect("multiaddr to include ip");
-        if node.p2p_ratelimit.add(addr, endpoint) {
-            let _ = node.p2p_swarm.disconnect_peer_id(peer_id);
+        if node.p2p.ratelimit.add(addr, endpoint) {
+            let _ = node.p2p.swarm.disconnect_peer_id(peer_id);
             return Err("ratelimited".into());
         }
         Ok(())
@@ -119,7 +132,7 @@ pub fn gossipsub_handler(node: &mut Node, message: GossipsubMessage, propagation
             Ratelimit::ratelimit(node, propagation_source, Endpoint::Multiaddr)?;
             for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
                 if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr) {
-                    node.p2p_unknown.insert(multiaddr);
+                    node.p2p.unknown.insert(multiaddr);
                 }
             }
         }
@@ -138,7 +151,8 @@ pub fn request_handler(node: &mut Node, peer_id: PeerId, request: SyncRequest, c
         }
     }
     if node
-        .p2p_swarm
+        .p2p
+        .swarm
         .behaviour_mut()
         .request_response
         .send_response(channel, SyncResponse(bincode::serialize(&vec).unwrap()))

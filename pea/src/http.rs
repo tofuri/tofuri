@@ -200,12 +200,12 @@ fn get_options(node: &mut Node) -> Result<String, Box<dyn Error>> {
     Ok(json(serde_json::to_string(&api::Options {
         mint: node.mint,
         trust: node.blockchain.trust_fork_after_blocks,
-        ban_offline: node.p2p_ban_offline,
+        ban_offline: node.p2p.ban_offline,
         time_delta: node.blockchain.time_delta,
         max_established: node.max_established,
         tps: node.tps,
         bind_api: node.bind_api.clone(),
-        host: node.p2p_host.clone(),
+        host: node.p2p.host.clone(),
         tempdb: node.tempdb,
         tempkey: node.tempkey,
         dev: node.dev,
@@ -294,14 +294,14 @@ fn get_stake_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn E
     })?))
 }
 fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    let peers: Vec<&Multiaddr> = node.p2p_connections.keys().collect();
+    let peers: Vec<&Multiaddr> = node.p2p.connections.keys().collect();
     Ok(json(serde_json::to_string(&peers)?))
 }
 fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
     let multiaddr = format!("/{}", slice.join("/")).parse::<Multiaddr>()?;
     let multiaddr = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
     let string = multiaddr.to_string();
-    node.p2p_unknown.insert(multiaddr);
+    node.p2p.unknown.insert(multiaddr);
     Ok(text(string))
 }
 fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {

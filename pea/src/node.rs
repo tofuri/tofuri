@@ -1,6 +1,7 @@
 use crate::blockchain::Blockchain;
 use crate::heartbeat;
 use crate::http;
+use crate::p2p::P2p;
 use crate::p2p::Ratelimit;
 use crate::p2p::{self};
 use crate::util;
@@ -71,14 +72,7 @@ pub struct Options<'a> {
     pub timeout: u64,
 }
 pub struct Node {
-    pub p2p_swarm: Swarm<Behaviour>,
-    pub p2p_message_data_hashes: Vec<Hash>,
-    pub p2p_connections: HashMap<Multiaddr, PeerId>,
-    pub p2p_ratelimit: Ratelimit,
-    pub p2p_unknown: HashSet<Multiaddr>,
-    pub p2p_known: HashSet<Multiaddr>,
-    pub p2p_host: String,
-    pub p2p_ban_offline: usize,
+    pub p2p: P2p,
     pub blockchain: Blockchain,
     pub heartbeats: usize,
     pub lag: f64,
@@ -96,27 +90,28 @@ impl Node {
         info!("Address {}", address::encode(&key.address_bytes()).green());
         let db = Node::db(options.tempdb);
         let blockchain = Blockchain::new(db, key, options.trust, options.time_delta);
-        let p2p_swarm = Node::swarm(options.max_established, options.timeout).await.unwrap();
-        let p2p_known = Node::known(&blockchain.db, options.peer);
+        let p2p = P2p {
+            swarm: Node::swarm(options.max_established, options.timeout).await.unwrap(),
+            message_data_hashes: vec![],
+            connections: HashMap::new(),
+            ratelimit: Ratelimit::default(),
+            unknown: HashSet::new(),
+            known: Node::known(&blockchain.db, options.peer),
+            host: options.host,
+            ban_offline: options.ban_offline,
+        };
         Node {
-            p2p_swarm,
+            p2p,
             blockchain,
-            p2p_message_data_hashes: vec![],
             heartbeats: 0,
             lag: 0.0,
             tps: options.tps,
-            p2p_unknown: HashSet::new(),
-            p2p_known,
-            p2p_connections: HashMap::new(),
             bind_api: options.bind_api,
-            p2p_host: options.host,
             mint: options.mint,
-            p2p_ban_offline: options.ban_offline,
             max_established: options.max_established,
             tempdb: options.tempdb,
             tempkey: options.tempkey,
             dev: options.dev,
-            p2p_ratelimit: Ratelimit::default(),
         }
     }
     fn db(tempdb: bool) -> DBWithThreadMode<SingleThreaded> {
@@ -178,11 +173,11 @@ impl Node {
         let mut hasher = Sha256::new();
         hasher.update(data);
         let hash = hasher.finalize().into();
-        if self.p2p_message_data_hashes.contains(&hash) {
+        if self.p2p.message_data_hashes.contains(&hash) {
             return true;
         }
         if save {
-            self.p2p_message_data_hashes.push(hash);
+            self.p2p.message_data_hashes.push(hash);
         }
         false
     }
@@ -206,7 +201,7 @@ impl Node {
             SwarmEvent::Behaviour(OutEvent::Mdns(mdns::Event::Discovered(list))) => {
                 for (_, multiaddr) in list {
                     if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&multiaddr) {
-                        self.p2p_unknown.insert(multiaddr);
+                        self.p2p.unknown.insert(multiaddr);
                     }
                 }
             }
@@ -249,8 +244,8 @@ impl Node {
             }
         );
         info!("Latest block seen {}", self.last_seen().yellow());
-        let multiaddr: Multiaddr = self.p2p_host.parse().unwrap();
-        self.p2p_swarm.listen_on(multiaddr.clone()).unwrap();
+        let multiaddr: Multiaddr = self.p2p.host.parse().unwrap();
+        self.p2p.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());
         let listener = TcpListener::bind(&self.bind_api).await.unwrap();
         info!(
@@ -263,7 +258,7 @@ impl Node {
             tokio::select! {
                 biased;
                 instant = interval.tick() => heartbeat::handler(self, instant),
-                event = self.p2p_swarm.select_next_some() => self.swarm_event(event),
+                event = self.p2p.swarm.select_next_some() => self.swarm_event(event),
                 res = listener.accept() => match res {
                     Ok((stream, socket_addr)) => {
                         match http::handler(stream, self).await {
@@ -285,18 +280,19 @@ impl Node {
                 num_established.to_string().yellow()
             );
             let addr = pea_p2p::multiaddr::multiaddr_addr(&multiaddr).expect("multiaddr to include ip");
-            if node.p2p_ratelimit.is_ratelimited(&node.p2p_ratelimit.get(&addr).1) {
+            if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
                 warn!("Ratelimited {}", multiaddr.to_string().magenta());
-                let _ = node.p2p_swarm.disconnect_peer_id(peer_id);
+                let _ = node.p2p.swarm.disconnect_peer_id(peer_id);
             }
-            node.p2p_known.insert(multiaddr.clone());
+            node.p2p.known.insert(multiaddr.clone());
             let _ = db::peer::put(&multiaddr.to_string(), &node.blockchain.db);
             if let Some(previous_peer_id) = node
-                .p2p_connections
+                .p2p
+                .connections
                 .insert(pea_p2p::multiaddr::multiaddr_filter_ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
             {
                 if previous_peer_id != peer_id {
-                    let _ = node.p2p_swarm.disconnect_peer_id(previous_peer_id);
+                    let _ = node.p2p.swarm.disconnect_peer_id(previous_peer_id);
                 }
             }
         };
@@ -319,8 +315,8 @@ impl Node {
                 multiaddr.to_string().magenta(),
                 num_established.to_string().yellow()
             );
-            node.p2p_connections.remove(&multiaddr);
-            let _ = node.p2p_swarm.dial(multiaddr);
+            node.p2p.connections.remove(&multiaddr);
+            let _ = node.p2p.swarm.dial(multiaddr);
         };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
             if let Some(multiaddr) = pea_p2p::multiaddr::multiaddr_filter_ip_port(&address) {
@@ -334,11 +330,11 @@ impl Node {
         }
     }
     pub fn gossipsub_has_mesh_peers(&mut self, topic: &str) -> bool {
-        self.p2p_swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
+        self.p2p.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
     }
     pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) {
         self.filter(&data, true);
-        if let Err(err) = self.p2p_swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
+        if let Err(err) = self.p2p.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
             error!("{}", err);
         }
     }

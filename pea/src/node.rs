@@ -55,7 +55,7 @@ use tokio::net::TcpListener;
 use void::Void;
 type HandlerErr =
     EitherError<EitherError<EitherError<EitherError<Void, Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<Error>>, ConnectionHandlerUpgrErr<Error>>;
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Options<'a> {
     pub tempdb: bool,
     pub tempkey: bool,
@@ -69,7 +69,7 @@ pub struct Options<'a> {
     pub wallet: &'a str,
     pub passphrase: &'a str,
     pub peer: &'a str,
-    pub bind_api: String,
+    pub bind_api: &'a str,
     pub host: &'a str,
     pub dev: bool,
     pub timeout: u64,
@@ -237,7 +237,7 @@ impl Node<'_> {
         let multiaddr: Multiaddr = self.options.host.parse().unwrap();
         self.p2p.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());
-        let listener = TcpListener::bind(&self.options.bind_api).await.unwrap();
+        let listener = TcpListener::bind(self.options.bind_api).await.unwrap();
         info!(
             "API is listening on {}{}",
             "http://".cyan(),

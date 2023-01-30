@@ -124,7 +124,7 @@ async fn main() {
         wallet: &args.wallet,
         passphrase: &args.passphrase,
         peer: &args.peer,
-        bind_api: args.bind_api,
+        bind_api: &args.bind_api,
         host: &args.host,
         dev: args.dev,
         timeout: args.timeout,

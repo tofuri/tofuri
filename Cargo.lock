@@ -2902,7 +2902,7 @@ dependencies = [
 
 [[package]]
 name = "pea-stake"
-version = "0.7.4"
+version = "0.7.5"
 dependencies = [
  "pea-address",
  "pea-core",

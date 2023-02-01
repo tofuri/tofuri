@@ -2761,6 +2761,7 @@ dependencies = [
  "pea-address",
  "pea-api",
  "pea-block",
+ "pea-blockchain",
  "pea-core",
  "pea-db",
  "pea-int",
@@ -2779,7 +2780,6 @@ dependencies = [
  "sha2 0.10.6",
  "tempdir",
  "tokio",
- "uint",
  "void",
 ]
 
@@ -2816,6 +2816,28 @@ dependencies = [
  "serde",
  "serde-big-array",
  "sha2 0.10.6",
+]
+
+[[package]]
+name = "pea-blockchain"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "hex",
+ "lazy_static",
+ "log",
+ "pea-address",
+ "pea-block",
+ "pea-core",
+ "pea-db",
+ "pea-int",
+ "pea-key",
+ "pea-logger",
+ "pea-stake",
+ "pea-transaction",
+ "pea-tree",
+ "pea-util",
+ "rocksdb",
 ]
 
 [[package]]

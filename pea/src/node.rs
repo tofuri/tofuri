@@ -1,4 +1,3 @@
-use crate::blockchain::Blockchain;
 use crate::http;
 use colored::*;
 use libp2p::core::connection::ConnectedPoint;
@@ -24,6 +23,7 @@ use log::info;
 use log::warn;
 use pea_address::address;
 use pea_block::BlockB;
+use pea_blockchain::blockchain::Blockchain;
 use pea_core::*;
 use pea_db as db;
 use pea_key::Key;

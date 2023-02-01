@@ -139,7 +139,7 @@ impl Node<'_> {
         loop {
             tokio::select! {
                 biased;
-                instant = interval.tick() => self.heartbeat_handler(instant),
+                instant = interval.tick() => self.heartbeat(instant),
                 event = self.p2p.swarm.select_next_some() => self.swarm_event(event),
                 res = listener.accept() => match res {
                     Ok((stream, socket_addr)) => {
@@ -382,7 +382,7 @@ impl Node<'_> {
     fn heartbeat_delay(&self, seconds: usize) -> bool {
         (self.heartbeats as f64 % (self.options.tps * seconds as f64)) as usize == 0
     }
-    pub fn heartbeat_handler(&mut self, instant: tokio::time::Instant) {
+    fn heartbeat(&mut self, instant: tokio::time::Instant) {
         let timestamp = pea_util::timestamp();
         if self.heartbeat_delay(60) {
             self.heartbeat_dial_known();

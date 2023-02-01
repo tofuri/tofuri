@@ -212,7 +212,7 @@ fn get_height(node: &mut Node) -> Result<String, Box<dyn Error>> {
     Ok(json(serde_json::to_string(&height)?))
 }
 fn get_hash_height(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
-    let block_c = db::block::get_c(&node.blockchain.db, &hash)?;
+    let block_c = db::block::get_c(&node.db, &hash)?;
     let height = node.blockchain.tree.height(&block_c.previous_hash);
     Ok(json(serde_json::to_string(&height)?))
 }
@@ -245,7 +245,7 @@ fn get_height_hash(node: &mut Node, height: usize) -> Result<String, Box<dyn Err
     Ok(json(serde_json::to_string(&hex::encode(hash))?))
 }
 fn get_block_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
-    let block_a = db::block::get_a(&node.blockchain.db, &hash)?;
+    let block_a = db::block::get_a(&node.db, &hash)?;
     Ok(json(serde_json::to_string(&api::Block {
         hash: hex::encode(block_a.hash),
         previous_hash: hex::encode(block_a.previous_hash),
@@ -259,7 +259,7 @@ fn get_block_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn E
     })?))
 }
 fn get_transaction_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
-    let transaction_a = db::transaction::get_a(&node.blockchain.db, &hash)?;
+    let transaction_a = db::transaction::get_a(&node.db, &hash)?;
     Ok(json(serde_json::to_string(&api::Transaction {
         hash: hex::encode(transaction_a.hash),
         input_address: address::encode(&transaction_a.input_address),
@@ -271,7 +271,7 @@ fn get_transaction_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box
     })?))
 }
 fn get_stake_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
-    let stake_a = db::stake::get_a(&node.blockchain.db, &hash)?;
+    let stake_a = db::stake::get_a(&node.db, &hash)?;
     Ok(json(serde_json::to_string(&api::Stake {
         hash: hex::encode(stake_a.hash),
         address: address::encode(&stake_a.input_address),
@@ -295,7 +295,7 @@ fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
 fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
     let transaction_b: TransactionB = serde_json::from_str(&body)?;
     let data = bincode::serialize(&transaction_b).unwrap();
-    let status = match node.blockchain.pending_transactions_push(transaction_b, pea_util::timestamp()) {
+    let status = match node.blockchain.pending_transactions_push(&node.db, transaction_b, pea_util::timestamp()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("transaction") {
                 node.gossipsub_publish("transaction", data);
@@ -312,7 +312,7 @@ fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Err
 fn post_stake(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
     let stake_b: StakeB = serde_json::from_str(&body)?;
     let data = bincode::serialize(&stake_b).unwrap();
-    let status = match node.blockchain.pending_stakes_push(stake_b, pea_util::timestamp()) {
+    let status = match node.blockchain.pending_stakes_push(&node.db, stake_b, pea_util::timestamp()) {
         Ok(()) => {
             if node.gossipsub_has_mesh_peers("stake") {
                 node.gossipsub_publish("stake", data);

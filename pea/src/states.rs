@@ -21,7 +21,7 @@ impl States {
             trusted: Trusted::default(),
         }
     }
-    pub fn dynamic_fork(&self, blockchain: &Blockchain, previous_hash: &Hash) -> Result<Dynamic, Box<dyn Error>> {
+    pub fn dynamic_fork(&self, db: &DBWithThreadMode<SingleThreaded>, blockchain: &Blockchain, previous_hash: &Hash) -> Result<Dynamic, Box<dyn Error>> {
         if previous_hash == &[0; 32] {
             return Ok(Dynamic::default());
         }
@@ -48,7 +48,7 @@ impl States {
             }
             hashes.reverse();
         }
-        Ok(Dynamic::from(&blockchain.db, &hashes, &self.trusted))
+        Ok(Dynamic::from(db, &hashes, &self.trusted))
     }
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[Hash], trust_fork_after_blocks: usize) {
         let start = Instant::now();

@@ -25,7 +25,6 @@ use std::error::Error;
 use std::time::Instant;
 #[derive(Debug)]
 pub struct Blockchain {
-    pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,
     pub tree: Tree,
     pub states: States,
@@ -37,9 +36,8 @@ pub struct Blockchain {
     pub offline: HashMap<AddressBytes, Hash>,
 }
 impl Blockchain {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, trust_fork_after_blocks: usize, time_delta: u32) -> Self {
+    pub fn new(key: Key, trust_fork_after_blocks: usize, time_delta: u32) -> Self {
         Self {
-            db,
             key,
             tree: Tree::default(),
             states: States::default(),
@@ -51,20 +49,20 @@ impl Blockchain {
             offline: HashMap::new(),
         }
     }
-    pub fn load(&mut self) {
+    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
         let start = Instant::now();
-        db::tree::reload(&mut self.tree, &self.db);
+        db::tree::reload(&mut self.tree, db);
         info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(self.trust_fork_after_blocks);
-        self.states.trusted.load(&self.db, &hashes_trusted);
-        self.states.dynamic = Dynamic::from(&self.db, &hashes_dynamic, &self.states.trusted);
+        self.states.trusted.load(db, &hashes_trusted);
+        self.states.dynamic = Dynamic::from(db, &hashes_dynamic, &self.states.trusted);
         info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
     }
     pub fn height(&self) -> usize {
         self.states.trusted.hashes.len() + self.states.dynamic.hashes.len()
     }
-    pub fn sync_block(&mut self, height: usize) -> Option<BlockB> {
+    pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, height: usize) -> Option<BlockB> {
         let hashes_trusted = &self.states.trusted.hashes;
         let hashes_dynamic = &self.states.dynamic.hashes;
         if height >= hashes_trusted.len() + hashes_dynamic.len() {
@@ -76,9 +74,9 @@ impl Blockchain {
             hashes_dynamic[height - hashes_trusted.len()]
         };
         debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
-        db::block::get_b(&self.db, &hash).ok()
+        db::block::get_b(db, &hash).ok()
     }
-    pub fn forge_block(&mut self, timestamp: u32) -> Option<BlockA> {
+    pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, timestamp: u32) -> Option<BlockA> {
         if let Some(staker) = self.states.dynamic.next_staker(timestamp) {
             if staker != self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN {
                 return None;
@@ -114,23 +112,23 @@ impl Blockchain {
             BlockA::sign([0; 32], timestamp, transactions, stakes, &self.key, &GENESIS_BETA)
         }
         .unwrap();
-        self.save_block(&block_a, true);
+        self.save_block(db, &block_a, true);
         Some(block_a)
     }
-    pub fn append_block(&mut self, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         let block_a = block_b.a()?;
-        self.validate_block(&block_a, timestamp)?;
-        self.save_block(&block_a, false);
+        self.validate_block(db, &block_a, timestamp)?;
+        self.save_block(db, &block_a, false);
         Ok(())
     }
-    pub fn save_block(&mut self, block_a: &BlockA, forged: bool) {
-        db::block::put(block_a, &self.db).unwrap();
+    pub fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forged: bool) {
+        db::block::put(block_a, db).unwrap();
         if self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap() {
             warn!("{} {}", "Forked".red(), hex::encode(block_a.hash));
         }
         self.tree.sort_branches();
         self.states
-            .update(&self.db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
+            .update(db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
         let info_0 = if forged { "Forged".magenta() } else { "Accept".green() };
         let info_1 = hex::encode(block_a.hash);
         let info_2 = match block_a.transactions.len() {
@@ -154,9 +152,14 @@ impl Blockchain {
         }
         info!("{} {} {} {}", info_0, info_1, info_2, info_3);
     }
-    pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn pending_transactions_push(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        transaction_b: TransactionB,
+        timestamp: u32,
+    ) -> Result<(), Box<dyn Error>> {
         let transaction_a = transaction_b.a(None)?;
-        self.validate_transaction(&transaction_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
+        self.validate_transaction(db, &transaction_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
             return Err("transaction pending".into());
         }
@@ -174,9 +177,9 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn pending_stakes_push(&mut self, stake_b: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn pending_stakes_push(&mut self, db: &DBWithThreadMode<SingleThreaded>, stake_b: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
         let stake_a = stake_b.a(None)?;
-        self.validate_stake(&stake_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
+        self.validate_stake(db, &stake_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
             return Err("stake pending".into());
         }
@@ -194,7 +197,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_block(&self, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn validate_block(&self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if self.tree.get(&block_a.hash).is_some() {
             return Err("block hash in tree".into());
         }
@@ -205,7 +208,7 @@ impl Blockchain {
             return Err("block previous_hash not in tree".into());
         }
         let input_address = block_a.input_address();
-        let dynamic = self.states.dynamic_fork(self, &block_a.previous_hash)?;
+        let dynamic = self.states.dynamic_fork(db, self, &block_a.previous_hash)?;
         if let Some(hash) = self.offline.get(&input_address) {
             if hash == &block_a.previous_hash {
                 return Err("block staker banned".into());
@@ -243,10 +246,10 @@ impl Blockchain {
             return Ok(());
         }
         for stake_a in block_a.stakes.iter() {
-            self.validate_stake(stake_a, dynamic.latest_block.timestamp, timestamp)?;
+            self.validate_stake(db, stake_a, dynamic.latest_block.timestamp, timestamp)?;
         }
         for transaction_a in block_a.transactions.iter() {
-            self.validate_transaction(transaction_a, dynamic.latest_block.timestamp, timestamp)?;
+            self.validate_transaction(db, transaction_a, dynamic.latest_block.timestamp, timestamp)?;
         }
         let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<AddressBytes>>();
         if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
@@ -258,7 +261,13 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn validate_transaction(&self, transaction_a: &TransactionA, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_transaction(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        transaction_a: &TransactionA,
+        previous_block_timestamp: u32,
+        timestamp: u32,
+    ) -> Result<(), Box<dyn Error>> {
         if transaction_a.amount == 0 {
             return Err("transaction amount zero".into());
         }
@@ -284,12 +293,18 @@ impl Blockchain {
         if transaction_a.amount + transaction_a.fee > balance {
             return Err("transaction too expensive".into());
         }
-        if db::transaction::get_b(&self.db, &transaction_a.hash).is_ok() {
+        if db::transaction::get_b(db, &transaction_a.hash).is_ok() {
             return Err("transaction in chain".into());
         }
         Ok(())
     }
-    fn validate_stake(&self, stake_a: &StakeA, previous_block_timestamp: u32, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_stake(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        stake_a: &StakeA,
+        previous_block_timestamp: u32,
+        timestamp: u32,
+    ) -> Result<(), Box<dyn Error>> {
         if stake_a.amount == 0 {
             return Err("stake amount zero".into());
         }
@@ -316,7 +331,7 @@ impl Blockchain {
         } else if stake_a.fee > balance {
             return Err("stake withdraw fee too expensive".into());
         }
-        if db::stake::get_b(&self.db, &stake_a.hash).is_ok() {
+        if db::stake::get_b(db, &stake_a.hash).is_ok() {
             return Err("stake in chain".into());
         }
         Ok(())

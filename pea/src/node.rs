@@ -37,6 +37,8 @@ use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use pea_util;
 use pea_wallet::wallet;
+use rocksdb::DBWithThreadMode;
+use rocksdb::SingleThreaded;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
@@ -71,6 +73,7 @@ pub struct Options<'a> {
     pub timeout: u64,
 }
 pub struct Node<'a> {
+    pub db: DBWithThreadMode<SingleThreaded>,
     pub options: Options<'a>,
     pub p2p: P2p,
     pub blockchain: Blockchain,
@@ -101,17 +104,18 @@ impl Node<'_> {
             }
         }
         let p2p = P2p::new(options.max_established, options.timeout, known, options.ban_offline).await.unwrap();
-        let blockchain = Blockchain::new(db, key, options.trust, options.time_delta);
+        let blockchain = Blockchain::new(key, options.trust, options.time_delta);
         Node {
             p2p,
             blockchain,
+            db,
             heartbeats: 0,
             lag: 0.0,
             options,
         }
     }
     pub async fn run(&mut self) {
-        self.blockchain.load();
+        self.blockchain.load(&self.db);
         info!(
             "Blockchain height is {}",
             if let Some(main) = self.blockchain.tree.main() {
@@ -257,7 +261,7 @@ impl Node<'_> {
                 let _ = self.p2p.swarm.disconnect_peer_id(peer_id);
             }
             self.p2p.known.insert(multiaddr.clone());
-            let _ = db::peer::put(&multiaddr.to_string(), &self.blockchain.db);
+            let _ = db::peer::put(&multiaddr.to_string(), &self.db);
             if let Some(previous_peer_id) = self
                 .p2p
                 .connections
@@ -309,7 +313,7 @@ impl Node<'_> {
                     return Err("filter block".into());
                 }
                 let block_b: BlockB = bincode::deserialize(&message.data)?;
-                self.blockchain.append_block(block_b, pea_util::timestamp())?;
+                self.blockchain.append_block(&self.db, block_b, pea_util::timestamp())?;
             }
             "transaction" => {
                 self.p2p.ratelimit(propagation_source, Endpoint::Transaction)?;
@@ -317,7 +321,7 @@ impl Node<'_> {
                     return Err("filter transaction".into());
                 }
                 let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
-                self.blockchain.pending_transactions_push(transaction_b, pea_util::timestamp())?;
+                self.blockchain.pending_transactions_push(&self.db, transaction_b, pea_util::timestamp())?;
             }
             "stake" => {
                 self.p2p.ratelimit(propagation_source, Endpoint::Stake)?;
@@ -325,7 +329,7 @@ impl Node<'_> {
                     return Err("filter stake".into());
                 }
                 let stake_b: StakeB = bincode::deserialize(&message.data)?;
-                self.blockchain.pending_stakes_push(stake_b, pea_util::timestamp())?;
+                self.blockchain.pending_stakes_push(&self.db, stake_b, pea_util::timestamp())?;
             }
             "multiaddr" => {
                 self.p2p.ratelimit(propagation_source, Endpoint::Multiaddr)?;
@@ -347,7 +351,7 @@ impl Node<'_> {
         let height: usize = bincode::deserialize(&request.0)?;
         let mut vec = vec![];
         for i in 0..SYNC_BLOCKS_PER_TICK {
-            match self.blockchain.sync_block(height + i) {
+            match self.blockchain.sync_block(&self.db, height + i) {
                 Some(block_b) => vec.push(block_b),
                 None => break,
             }
@@ -368,7 +372,7 @@ impl Node<'_> {
         self.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
         let timestamp = pea_util::timestamp();
         for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
-            if let Err(err) = self.blockchain.append_block(block_b, timestamp) {
+            if let Err(err) = self.blockchain.append_block(&self.db, block_b, timestamp) {
                 debug!("response_handler {}", err);
             }
         }

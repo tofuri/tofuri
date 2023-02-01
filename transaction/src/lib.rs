@@ -54,7 +54,7 @@ impl Transaction for TransactionB {
         hash_input(self)
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TransactionA {
     pub input_address: AddressBytes,
     pub output_address: AddressBytes,
@@ -62,6 +62,7 @@ pub struct TransactionA {
     pub fee: u128,
     pub timestamp: u32,
     pub hash: Hash,
+    #[serde(with = "BigArray")]
     pub signature: SignatureBytes,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]

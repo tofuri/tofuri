@@ -1,10 +1,10 @@
-use crate::blockchain::Blockchain;
 use crate::state::Dynamic;
 use crate::state::Trusted;
 use colored::*;
 use log::debug;
 use pea_core::*;
 use pea_db as db;
+use pea_tree::Tree;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::error::Error;
@@ -21,19 +21,25 @@ impl States {
             trusted: Trusted::default(),
         }
     }
-    pub fn dynamic_fork(&self, db: &DBWithThreadMode<SingleThreaded>, blockchain: &Blockchain, previous_hash: &Hash) -> Result<Dynamic, Box<dyn Error>> {
+    pub fn dynamic_fork(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        tree: &Tree,
+        trust_fork_after_blocks: usize,
+        previous_hash: &Hash,
+    ) -> Result<Dynamic, Box<dyn Error>> {
         if previous_hash == &[0; 32] {
             return Ok(Dynamic::default());
         }
         let mut hashes = vec![];
-        if let Some(first) = blockchain.states.dynamic.hashes.first() {
+        if let Some(first) = self.dynamic.hashes.first() {
             let mut hash = *previous_hash;
-            for _ in 0..blockchain.trust_fork_after_blocks {
+            for _ in 0..trust_fork_after_blocks {
                 hashes.push(hash);
                 if first == &hash {
                     break;
                 }
-                match blockchain.tree.get(&hash) {
+                match tree.get(&hash) {
                     Some(previous_hash) => hash = *previous_hash,
                     None => break,
                 };

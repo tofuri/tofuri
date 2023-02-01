@@ -208,7 +208,7 @@ impl Blockchain {
             return Err("block previous_hash not in tree".into());
         }
         let input_address = block_a.input_address();
-        let dynamic = self.states.dynamic_fork(db, self, &block_a.previous_hash)?;
+        let dynamic = self.states.dynamic_fork(db, &self.tree, self.trust_fork_after_blocks, &block_a.previous_hash)?;
         if let Some(hash) = self.offline.get(&input_address) {
             if hash == &block_a.previous_hash {
                 return Err("block staker banned".into());

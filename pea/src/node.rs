@@ -1,5 +1,4 @@
 use crate::blockchain::Blockchain;
-use crate::heartbeat;
 use crate::http;
 use colored::*;
 use libp2p::core::connection::ConnectedPoint;
@@ -11,6 +10,7 @@ use libp2p::gossipsub::GossipsubMessage;
 use libp2p::gossipsub::IdentTopic;
 use libp2p::gossipsub::TopicHash;
 use libp2p::mdns;
+use libp2p::multiaddr::Protocol;
 use libp2p::request_response::RequestResponseEvent;
 use libp2p::request_response::RequestResponseMessage;
 use libp2p::request_response::ResponseChannel;
@@ -37,6 +37,7 @@ use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use pea_util;
 use pea_wallet::wallet;
+use rand::prelude::*;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use serde::Deserialize;
@@ -138,7 +139,7 @@ impl Node<'_> {
         loop {
             tokio::select! {
                 biased;
-                instant = interval.tick() => heartbeat::handler(self, instant),
+                instant = interval.tick() => self.heartbeat_handler(instant),
                 event = self.p2p.swarm.select_next_some() => self.swarm_event(event),
                 res = listener.accept() => match res {
                     Ok((stream, socket_addr)) => {
@@ -377,5 +378,118 @@ impl Node<'_> {
             }
         }
         Ok(())
+    }
+    fn heartbeat_delay(&self, seconds: usize) -> bool {
+        (self.heartbeats as f64 % (self.options.tps * seconds as f64)) as usize == 0
+    }
+    pub fn heartbeat_handler(&mut self, instant: tokio::time::Instant) {
+        let timestamp = pea_util::timestamp();
+        if self.heartbeat_delay(60) {
+            self.heartbeat_dial_known();
+        }
+        if self.heartbeat_delay(10) {
+            self.heartbeat_share();
+        }
+        if self.heartbeat_delay(5) {
+            self.heartbeat_dial_unknown();
+        }
+        if self.heartbeat_delay(1) {
+            self.blockchain.sync.handler();
+            self.p2p.ratelimit.reset();
+            self.p2p.filter.clear();
+        }
+        self.heartbeat_sync_request();
+        self.heartbeat_offline_staker(timestamp);
+        self.heartbeat_grow(timestamp);
+        self.heartbeats += 1;
+        self.heartbeat_lag(instant.elapsed());
+    }
+    fn heartbeat_offline_staker(&mut self, timestamp: u32) {
+        if self.p2p.ban_offline == 0 {
+            return;
+        }
+        if !self.blockchain.sync.completed {
+            return;
+        }
+        if self.p2p.connections.len() < self.p2p.ban_offline {
+            return;
+        }
+        let dynamic = &self.blockchain.states.dynamic;
+        for staker in dynamic.stakers_offline(timestamp, dynamic.latest_block.timestamp) {
+            if let Some(hash) = self.blockchain.offline.insert(staker, dynamic.latest_block.hash) {
+                if hash == dynamic.latest_block.hash {
+                    return;
+                }
+            }
+            warn!("Banned offline staker {}", address::encode(&staker).green());
+        }
+    }
+    fn heartbeat_dial_known(&mut self) {
+        let vec = self.p2p.known.clone().into_iter().collect();
+        self.heartbeat_dial(vec, true);
+    }
+    fn heartbeat_dial_unknown(&mut self) {
+        let vec = self.p2p.unknown.drain().collect();
+        self.heartbeat_dial(vec, false);
+    }
+    fn heartbeat_dial(&mut self, vec: Vec<Multiaddr>, known: bool) {
+        for mut multiaddr in vec {
+            if self.p2p.connections.contains_key(&multiaddr::ip(&multiaddr).expect("multiaddr to include ip")) {
+                continue;
+            }
+            let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
+            if self.p2p.ratelimit.is_ratelimited(&self.p2p.ratelimit.get(&addr).1) {
+                continue;
+            }
+            debug!(
+                "Dialing {} peer {}",
+                if known { "known".green() } else { "unknown".red() },
+                multiaddr.to_string().magenta()
+            );
+            if !multiaddr::has_port(&multiaddr) {
+                multiaddr.push(Protocol::Tcp(9333));
+            }
+            let _ = self.p2p.swarm.dial(multiaddr);
+        }
+    }
+    fn heartbeat_share(&mut self) {
+        if !self.gossipsub_has_mesh_peers("multiaddr") {
+            return;
+        }
+        let vec: Vec<&Multiaddr> = self.p2p.connections.keys().collect();
+        self.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
+    }
+    fn heartbeat_grow(&mut self, timestamp: u32) {
+        if !self.blockchain.sync.downloading() && !self.options.mint && self.blockchain.states.dynamic.next_staker(timestamp).is_none() {
+            if self.heartbeat_delay(60) {
+                info!(
+                    "Waiting for synchronization to start... Currently connected to {} peers.",
+                    self.p2p.connections.len().to_string().yellow()
+                );
+            }
+            self.blockchain.sync.completed = false;
+        }
+        if !self.blockchain.sync.completed {
+            return;
+        }
+        if let Some(block_a) = self.blockchain.forge_block(&self.db, timestamp) {
+            if !self.gossipsub_has_mesh_peers("block") {
+                return;
+            }
+            self.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap());
+        }
+    }
+    fn heartbeat_sync_request(&mut self) {
+        if let Some(peer_id) = self.p2p.swarm.connected_peers().choose(&mut thread_rng()).cloned() {
+            self.p2p
+                .swarm
+                .behaviour_mut()
+                .request_response
+                .send_request(&peer_id, SyncRequest(bincode::serialize(&(self.blockchain.height())).unwrap()));
+        }
+    }
+    fn heartbeat_lag(&mut self, duration: Duration) {
+        self.lag = duration.as_micros() as f64 / 1_000_f64;
+        debug!("{} {} {}", "Heartbeat".cyan(), self.heartbeats, format!("{duration:?}").yellow());
     }
 }

@@ -75,6 +75,7 @@ pub struct Options<'a> {
 }
 pub struct Node<'a> {
     pub db: DBWithThreadMode<SingleThreaded>,
+    pub key: Key,
     pub options: Options<'a>,
     pub p2p: P2p,
     pub blockchain: Blockchain,
@@ -105,8 +106,9 @@ impl Node<'_> {
             }
         }
         let p2p = P2p::new(options.max_established, options.timeout, known, options.ban_offline).await.unwrap();
-        let blockchain = Blockchain::new(key, options.trust, options.time_delta);
+        let blockchain = Blockchain::new(options.trust, options.time_delta);
         Node {
+            key,
             p2p,
             blockchain,
             db,
@@ -472,7 +474,7 @@ impl Node<'_> {
         if !self.blockchain.sync.completed {
             return;
         }
-        if let Some(block_a) = self.blockchain.forge_block(&self.db, timestamp) {
+        if let Some(block_a) = self.blockchain.forge_block(&self.db, &self.key, timestamp) {
             if !self.gossipsub_has_mesh_peers("block") {
                 return;
             }

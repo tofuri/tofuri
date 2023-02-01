@@ -25,7 +25,6 @@ use std::error::Error;
 use std::time::Instant;
 #[derive(Debug)]
 pub struct Blockchain {
-    pub key: Key,
     pub tree: Tree,
     pub states: States,
     pending_transactions: Vec<TransactionA>,
@@ -36,9 +35,8 @@ pub struct Blockchain {
     pub offline: HashMap<AddressBytes, Hash>,
 }
 impl Blockchain {
-    pub fn new(key: Key, trust_fork_after_blocks: usize, time_delta: u32) -> Self {
+    pub fn new(trust_fork_after_blocks: usize, time_delta: u32) -> Self {
         Self {
-            key,
             tree: Tree::default(),
             states: States::default(),
             pending_transactions: vec![],
@@ -76,13 +74,13 @@ impl Blockchain {
         debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
         db::block::get_b(db, &hash).ok()
     }
-    pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, timestamp: u32) -> Option<BlockA> {
+    pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32) -> Option<BlockA> {
         if let Some(staker) = self.states.dynamic.next_staker(timestamp) {
-            if staker != self.key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN {
+            if staker != key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN {
                 return None;
             }
         } else {
-            self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, &self.key).unwrap()];
+            self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, key).unwrap()];
         }
         let mut transactions = self.pending_transactions.clone();
         let mut stakes = self.pending_stakes.clone();
@@ -107,9 +105,9 @@ impl Blockchain {
             }
         }
         let block_a = if let Some(main) = self.tree.main() {
-            BlockA::sign(main.0, timestamp, transactions, stakes, &self.key, &self.states.dynamic.latest_block.beta)
+            BlockA::sign(main.0, timestamp, transactions, stakes, key, &self.states.dynamic.latest_block.beta)
         } else {
-            BlockA::sign([0; 32], timestamp, transactions, stakes, &self.key, &GENESIS_BETA)
+            BlockA::sign([0; 32], timestamp, transactions, stakes, key, &GENESIS_BETA)
         }
         .unwrap();
         self.save_block(db, &block_a, true);

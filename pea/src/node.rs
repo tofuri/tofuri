@@ -1,39 +1,21 @@
 use crate::http;
+use crate::swarm;
 use clap::Parser;
 use colored::*;
-use libp2p::core::connection::ConnectedPoint;
-use libp2p::core::either::EitherError;
 use libp2p::futures::StreamExt;
-use libp2p::gossipsub::error::GossipsubHandlerError;
-use libp2p::gossipsub::GossipsubEvent;
-use libp2p::gossipsub::GossipsubMessage;
-use libp2p::mdns;
 use libp2p::multiaddr::Protocol;
-use libp2p::request_response::RequestResponseEvent;
-use libp2p::request_response::RequestResponseMessage;
-use libp2p::request_response::ResponseChannel;
-use libp2p::swarm::ConnectionHandlerUpgrErr;
-use libp2p::swarm::SwarmEvent;
 use libp2p::Multiaddr;
-use libp2p::PeerId;
 use log::debug;
 use log::error;
 use log::info;
 use log::warn;
 use pea_address::address;
-use pea_block::BlockB;
 use pea_blockchain::blockchain::Blockchain;
-use pea_core::*;
 use pea_db as db;
 use pea_key::Key;
-use pea_p2p::behaviour::OutEvent;
 use pea_p2p::behaviour::SyncRequest;
-use pea_p2p::behaviour::SyncResponse;
 use pea_p2p::multiaddr;
-use pea_p2p::ratelimit::Endpoint;
 use pea_p2p::P2p;
-use pea_stake::StakeB;
-use pea_transaction::TransactionB;
 use pea_util;
 use pea_wallet::wallet;
 use rand::prelude::*;
@@ -42,17 +24,9 @@ use rocksdb::SingleThreaded;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
-use std::error::Error;
-use std::io;
-use std::num::NonZeroU32;
 use std::time::Duration;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
-use void::Void;
-type HandlerErr = EitherError<
-    EitherError<EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<io::Error>>,
-    ConnectionHandlerUpgrErr<io::Error>,
->;
 pub const TEMP_DB: bool = false;
 pub const TEMP_KEY: bool = false;
 pub const BIND_API: &str = ":::9332";
@@ -185,7 +159,7 @@ impl Node {
             tokio::select! {
                 biased;
                 instant = interval.tick() => self.heartbeat(instant),
-                event = self.p2p.swarm.select_next_some() => self.swarm_event(event),
+                event = self.p2p.swarm.select_next_some() => swarm::event(self, event),
                 res = listener.accept() => match res {
                     Ok((stream, socket_addr)) => {
                         match http::handler(stream, self).await {
@@ -201,186 +175,6 @@ impl Node {
     pub fn uptime(&self) -> String {
         let seconds = (self.heartbeats as f64 / self.args.tps) as u32;
         pea_util::duration_to_string(seconds, "0")
-    }
-    fn swarm_event(&mut self, event: SwarmEvent<OutEvent, HandlerErr>) {
-        debug!("{:?}", event);
-        match event {
-            SwarmEvent::Dialing(_) => {}
-            SwarmEvent::IncomingConnectionError { .. } => {}
-            SwarmEvent::IncomingConnection { .. } => {}
-            SwarmEvent::ConnectionEstablished {
-                peer_id,
-                endpoint,
-                num_established,
-                ..
-            } => {
-                Self::swarm_event_connection_established(self, peer_id, endpoint, num_established);
-            }
-            SwarmEvent::ConnectionClosed { endpoint, num_established, .. } => {
-                Self::swarm_event_connection_closed(self, endpoint, num_established);
-            }
-            SwarmEvent::Behaviour(OutEvent::Mdns(mdns::Event::Discovered(list))) => {
-                for (_, multiaddr) in list {
-                    if let Some(multiaddr) = multiaddr::ip_port(&multiaddr) {
-                        self.p2p.unknown.insert(multiaddr);
-                    }
-                }
-            }
-            SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
-                message, propagation_source, ..
-            })) => {
-                if let Err(err) = self.swarm_event_gossipsub_message(message, propagation_source) {
-                    error!("GossipsubEvent::Message {}", err)
-                }
-            }
-            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
-                RequestResponseMessage::Request { request, channel, .. } => {
-                    if let Err(err) = self.swarm_event_request(peer, request, channel) {
-                        error!("RequestResponseMessage::Request {}", err)
-                    }
-                }
-                RequestResponseMessage::Response { response, .. } => {
-                    if let Err(err) = self.swarm_event_response(peer, response) {
-                        error!("RequestResponseMessage::Response {}", err)
-                    }
-                }
-            },
-            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::InboundFailure { .. })) => {}
-            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::OutboundFailure { .. })) => {}
-            SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::ResponseSent { .. })) => {}
-            _ => {}
-        }
-    }
-    fn swarm_event_connection_established(&mut self, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
-        if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = multiaddr::ip_port(&address) {
-                self.swarm_event_connection_established_save(peer_id, num_established, multiaddr);
-            }
-        }
-        if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
-                self.swarm_event_connection_established_save(peer_id, num_established, multiaddr);
-            }
-        }
-    }
-    fn swarm_event_connection_established_save(&mut self, peer_id: PeerId, num_established: NonZeroU32, multiaddr: Multiaddr) {
-        info!(
-            "Connection {} {} {}",
-            "established".green(),
-            multiaddr.to_string().magenta(),
-            num_established.to_string().yellow()
-        );
-        let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
-        if self.p2p.ratelimit.is_ratelimited(&self.p2p.ratelimit.get(&addr).1) {
-            warn!("Ratelimited {}", multiaddr.to_string().magenta());
-            let _ = self.p2p.swarm.disconnect_peer_id(peer_id);
-        }
-        self.p2p.known.insert(multiaddr.clone());
-        let _ = db::peer::put(&multiaddr.to_string(), &self.db);
-        if let Some(previous_peer_id) = self
-            .p2p
-            .connections
-            .insert(multiaddr::ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
-        {
-            if previous_peer_id != peer_id {
-                let _ = self.p2p.swarm.disconnect_peer_id(previous_peer_id);
-            }
-        }
-    }
-    fn swarm_event_connection_closed(&mut self, endpoint: ConnectedPoint, num_established: u32) {
-        if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-            if let Some(multiaddr) = multiaddr::ip_port(&address) {
-                self.swarm_event_connection_closed_save(num_established, multiaddr);
-            }
-        }
-        if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-            if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
-                self.swarm_event_connection_closed_save(num_established, multiaddr);
-            }
-        }
-    }
-    fn swarm_event_connection_closed_save(&mut self, num_established: u32, multiaddr: Multiaddr) {
-        info!(
-            "Connection {} {} {}",
-            "closed".red(),
-            multiaddr.to_string().magenta(),
-            num_established.to_string().yellow()
-        );
-        self.p2p.connections.remove(&multiaddr);
-        let _ = self.p2p.swarm.dial(multiaddr);
-    }
-    fn swarm_event_gossipsub_message(&mut self, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
-        match message.topic.as_str() {
-            "block" => {
-                self.p2p.ratelimit(propagation_source, Endpoint::Block)?;
-                if self.p2p.filter(&message.data) {
-                    return Err("filter block".into());
-                }
-                let block_b: BlockB = bincode::deserialize(&message.data)?;
-                self.blockchain.append_block(&self.db, block_b, pea_util::timestamp())?;
-            }
-            "transaction" => {
-                self.p2p.ratelimit(propagation_source, Endpoint::Transaction)?;
-                if self.p2p.filter(&message.data) {
-                    return Err("filter transaction".into());
-                }
-                let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
-                self.blockchain.pending_transactions_push(&self.db, transaction_b, pea_util::timestamp())?;
-            }
-            "stake" => {
-                self.p2p.ratelimit(propagation_source, Endpoint::Stake)?;
-                if self.p2p.filter(&message.data) {
-                    return Err("filter stake".into());
-                }
-                let stake_b: StakeB = bincode::deserialize(&message.data)?;
-                self.blockchain.pending_stakes_push(&self.db, stake_b, pea_util::timestamp())?;
-            }
-            "multiaddr" => {
-                self.p2p.ratelimit(propagation_source, Endpoint::Multiaddr)?;
-                if self.p2p.filter(&message.data) {
-                    return Err("filter multiaddr".into());
-                }
-                for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
-                    if let Some(multiaddr) = multiaddr::ip_port(&multiaddr) {
-                        self.p2p.unknown.insert(multiaddr);
-                    }
-                }
-            }
-            _ => {}
-        };
-        Ok(())
-    }
-    fn swarm_event_request(&mut self, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
-        self.p2p.ratelimit(peer_id, Endpoint::SyncRequest)?;
-        let height: usize = bincode::deserialize(&request.0)?;
-        let mut vec = vec![];
-        for i in 0..SYNC_BLOCKS_PER_TICK {
-            match self.blockchain.sync_block(&self.db, height + i) {
-                Some(block_b) => vec.push(block_b),
-                None => break,
-            }
-        }
-        if self
-            .p2p
-            .swarm
-            .behaviour_mut()
-            .request_response
-            .send_response(channel, SyncResponse(bincode::serialize(&vec).unwrap()))
-            .is_err()
-        {
-            return Err("p2p request handler connection closed".into());
-        };
-        Ok(())
-    }
-    fn swarm_event_response(&mut self, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
-        self.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
-        let timestamp = pea_util::timestamp();
-        for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
-            if let Err(err) = self.blockchain.append_block(&self.db, block_b, timestamp) {
-                debug!("response_handler {}", err);
-            }
-        }
-        Ok(())
     }
     fn heartbeat_delay(&self, seconds: usize) -> bool {
         (self.heartbeats as f64 % (self.args.tps * seconds as f64)) as usize == 0

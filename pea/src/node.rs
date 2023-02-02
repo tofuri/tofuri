@@ -5,7 +5,6 @@ use clap::Parser;
 use colored::*;
 use libp2p::futures::StreamExt;
 use libp2p::Multiaddr;
-use log::error;
 use log::info;
 use pea_address::address;
 use pea_blockchain::blockchain::Blockchain;
@@ -156,15 +155,7 @@ impl Node {
                 biased;
                 instant = interval.tick() => interval::tick(self, instant),
                 event = self.p2p.swarm.select_next_some() => swarm::event(self, event),
-                res = listener.accept() => match res {
-                    Ok((stream, socket_addr)) => {
-                        match http::handler(stream, self).await {
-                            Ok((bytes, first)) => info!("{} {} {} {}", "API".cyan(), socket_addr.to_string().magenta(), bytes.to_string().yellow(), first),
-                            Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err)
-                        }
-                    }
-                    Err(err) => error!("{} {}", "API".cyan(), err)
-                }
+                res = listener.accept() => http::accept(self, res).await,
             }
         }
     }

@@ -1,8 +1,10 @@
 use crate::node::Node;
 use chrono::TimeZone;
 use chrono::Utc;
+use colored::*;
 use libp2p::Multiaddr;
 use log::error;
+use log::info;
 use pea_address::address;
 use pea_api as api;
 use pea_core::*;
@@ -11,22 +13,30 @@ use pea_p2p::multiaddr;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use std::error::Error;
+use std::io;
 use std::io::BufRead;
+use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
-fn parse_body(buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let str = std::str::from_utf8(buffer)?;
-    let vec = str.split("\n\n").collect::<Vec<&str>>();
-    let body = vec.get(1).ok_or("empty body")?;
-    Ok(body.trim_end_matches(char::from(0)).to_string())
+pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
+    match res {
+        Ok((stream, socket_addr)) => match request(node, stream).await {
+            Ok((bytes, first)) => info!(
+                "{} {} {} {}",
+                "API".cyan(),
+                socket_addr.to_string().magenta(),
+                bytes.to_string().yellow(),
+                first
+            ),
+            Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err),
+        },
+        Err(err) => error!("{} {}", "API".cyan(), err),
+    }
 }
-fn parse_request_line(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
-    Ok(buffer.lines().next().ok_or("empty request line")??)
-}
-pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, String), Box<dyn Error>> {
+async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, String), Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buffer)).await??;
     let request_line = parse_request_line(&buffer)?;
@@ -45,6 +55,15 @@ pub async fn handler(mut stream: TcpStream, node: &mut Node) -> Result<(usize, S
     .await?;
     stream.flush().await?;
     Ok((bytes, request_line))
+}
+fn parse_body(buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
+    let str = std::str::from_utf8(buffer)?;
+    let vec = str.split("\n\n").collect::<Vec<&str>>();
+    let body = vec.get(1).ok_or("empty body")?;
+    Ok(body.trim_end_matches(char::from(0)).to_string())
+}
+fn parse_request_line(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
+    Ok(buffer.lines().next().ok_or("empty request line")??)
 }
 fn get(node: &mut Node, args: Vec<&str>) -> Result<String, Box<dyn Error>> {
     match args.first() {

@@ -4,6 +4,7 @@ pub mod ratelimit;
 use behaviour::Behaviour;
 use libp2p::core::upgrade;
 use libp2p::gossipsub::IdentTopic;
+use libp2p::gossipsub::TopicHash;
 use libp2p::identity;
 use libp2p::mplex;
 use libp2p::noise;
@@ -57,6 +58,18 @@ impl P2p {
         let mut hasher = Sha256::new();
         hasher.update(data);
         !self.filter.insert(hasher.finalize().into())
+    }
+    pub fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
+        self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
+    }
+    pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+        if self.filter(&data) {
+            return Err(format!("gossipsub_publish filter {}", topic).into());
+        }
+        if let Err(err) = self.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
+            return Err(err.into());
+        }
+        Ok(())
     }
 }
 async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Box<dyn Error>> {

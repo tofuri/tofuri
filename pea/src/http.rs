@@ -171,12 +171,12 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
     })?))
 }
 fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    let last = node.last_seen();
-    let status = node.sync_status();
+    let last_seen = node.blockchain.last_seen();
+    let status = node.blockchain.sync_status();
     Ok(json(serde_json::to_string(&api::Sync {
         status,
+        last_seen,
         height: node.blockchain.height(),
-        last_seen: last,
     })?))
 }
 fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
@@ -297,8 +297,10 @@ fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Err
     let data = bincode::serialize(&transaction_b).unwrap();
     let status = match node.blockchain.pending_transactions_push(&node.db, transaction_b, pea_util::timestamp()) {
         Ok(()) => {
-            if node.gossipsub_has_mesh_peers("transaction") {
-                node.gossipsub_publish("transaction", data);
+            if node.p2p.gossipsub_has_mesh_peers("transaction") {
+                if let Err(err) = node.p2p.gossipsub_publish("transaction", data) {
+                    error!("{}", err);
+                }
             }
             "success".to_string()
         }
@@ -314,8 +316,10 @@ fn post_stake(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
     let data = bincode::serialize(&stake_b).unwrap();
     let status = match node.blockchain.pending_stakes_push(&node.db, stake_b, pea_util::timestamp()) {
         Ok(()) => {
-            if node.gossipsub_has_mesh_peers("stake") {
-                node.gossipsub_publish("stake", data);
+            if node.p2p.gossipsub_has_mesh_peers("stake") {
+                if let Err(err) = node.p2p.gossipsub_publish("stake", data) {
+                    error!("{}", err);
+                }
             }
             "success".to_string()
         }

@@ -14,7 +14,7 @@ use vrf::openssl::CipherSuite;
 use vrf::openssl::ECVRF;
 #[cfg(feature = "vrf")]
 use vrf::VRF;
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Key {
     pub secret_key: SecretKey,
 }

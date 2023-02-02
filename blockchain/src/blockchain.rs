@@ -57,6 +57,37 @@ impl Blockchain {
         self.states.dynamic = Dynamic::from(db, &hashes_dynamic, &self.states.trusted);
         info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
     }
+    pub fn last_seen(&self) -> String {
+        if self.states.dynamic.latest_block.timestamp == 0 {
+            return "never".to_string();
+        }
+        let timestamp = self.states.dynamic.latest_block.timestamp;
+        let diff = pea_util::timestamp().saturating_sub(timestamp);
+        let now = "just now";
+        let mut string = pea_util::duration_to_string(diff, now);
+        if string != now {
+            string.push_str(" ago");
+        }
+        string
+    }
+    pub fn sync_status(&self) -> String {
+        let completed = "completed";
+        if self.sync.completed {
+            return completed.to_string();
+        }
+        if !self.sync.downloading() {
+            return "waiting to start".to_string();
+        }
+        let timestamp = self.states.dynamic.latest_block.timestamp;
+        let mut diff = pea_util::timestamp().saturating_sub(timestamp) as f32;
+        diff /= BLOCK_TIME_MIN as f32;
+        diff /= self.sync.bps;
+        let mut string = pea_util::duration_to_string(diff as u32, completed);
+        if string != completed {
+            string.push_str(" remaining");
+        }
+        string
+    }
     pub fn height(&self) -> usize {
         self.states.trusted.hashes.len() + self.states.dynamic.hashes.len()
     }

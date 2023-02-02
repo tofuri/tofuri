@@ -6,8 +6,6 @@ use libp2p::futures::StreamExt;
 use libp2p::gossipsub::error::GossipsubHandlerError;
 use libp2p::gossipsub::GossipsubEvent;
 use libp2p::gossipsub::GossipsubMessage;
-use libp2p::gossipsub::IdentTopic;
-use libp2p::gossipsub::TopicHash;
 use libp2p::mdns;
 use libp2p::multiaddr::Protocol;
 use libp2p::request_response::RequestResponseEvent;
@@ -127,7 +125,7 @@ impl Node<'_> {
                 "0".red()
             }
         );
-        info!("Latest block seen {}", self.last_seen().yellow());
+        info!("Latest block seen {}", self.blockchain.last_seen().yellow());
         let multiaddr: Multiaddr = self.options.host.parse().unwrap();
         self.p2p.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());
@@ -154,48 +152,6 @@ impl Node<'_> {
                 }
             }
         }
-    }
-    pub fn gossipsub_has_mesh_peers(&mut self, topic: &str) -> bool {
-        self.p2p.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
-    }
-    pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) {
-        if self.p2p.filter(&data) {
-            error!("gossipsub_publish filter {}", topic);
-        }
-        if let Err(err) = self.p2p.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
-            error!("{}", err);
-        }
-    }
-    pub fn last_seen(&self) -> String {
-        if self.blockchain.states.dynamic.latest_block.timestamp == 0 {
-            return "never".to_string();
-        }
-        let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let diff = pea_util::timestamp().saturating_sub(timestamp);
-        let now = "just now";
-        let mut string = pea_util::duration_to_string(diff, now);
-        if string != now {
-            string.push_str(" ago");
-        }
-        string
-    }
-    pub fn sync_status(&self) -> String {
-        let completed = "completed";
-        if self.blockchain.sync.completed {
-            return completed.to_string();
-        }
-        if !self.blockchain.sync.downloading() {
-            return "waiting to start".to_string();
-        }
-        let timestamp = self.blockchain.states.dynamic.latest_block.timestamp;
-        let mut diff = pea_util::timestamp().saturating_sub(timestamp) as f32;
-        diff /= BLOCK_TIME_MIN as f32;
-        diff /= self.blockchain.sync.bps;
-        let mut string = pea_util::duration_to_string(diff as u32, completed);
-        if string != completed {
-            string.push_str(" remaining");
-        }
-        string
     }
     pub fn uptime(&self) -> String {
         let seconds = (self.heartbeats as f64 / self.options.tps) as u32;
@@ -455,11 +411,13 @@ impl Node<'_> {
         }
     }
     fn heartbeat_share(&mut self) {
-        if !self.gossipsub_has_mesh_peers("multiaddr") {
+        if !self.p2p.gossipsub_has_mesh_peers("multiaddr") {
             return;
         }
         let vec: Vec<&Multiaddr> = self.p2p.connections.keys().collect();
-        self.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap());
+        if let Err(err) = self.p2p.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap()) {
+            error!("{}", err);
+        }
     }
     fn heartbeat_grow(&mut self, timestamp: u32) {
         if !self.blockchain.sync.downloading() && !self.options.mint && self.blockchain.states.dynamic.next_staker(timestamp).is_none() {
@@ -475,10 +433,12 @@ impl Node<'_> {
             return;
         }
         if let Some(block_a) = self.blockchain.forge_block(&self.db, &self.key, timestamp) {
-            if !self.gossipsub_has_mesh_peers("block") {
+            if !self.p2p.gossipsub_has_mesh_peers("block") {
                 return;
             }
-            self.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap());
+            if let Err(err) = self.p2p.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap()) {
+                error!("{}", err);
+            }
         }
     }
     fn heartbeat_sync_request(&mut self) {

@@ -183,7 +183,7 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
     Ok(json(serde_json::to_string(&api::Info {
         time: Utc.timestamp_nanos(chrono::offset::Utc::now().timestamp_micros() * 1_000).to_rfc2822(),
         address: address::encode(&node.key.address_bytes()),
-        uptime: node.uptime(),
+        uptime: pea_util::uptime(node.ticks as f64, node.args.tps),
         ticks: node.ticks,
         tree_size: node.blockchain.tree.size(),
         lag: node.lag,

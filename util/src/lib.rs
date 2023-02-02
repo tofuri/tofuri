@@ -69,3 +69,7 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
     }
     string
 }
+pub fn uptime(ticks: f64, tps: f64) -> String {
+    let seconds = (ticks / tps) as u32;
+    duration_to_string(seconds, "0")
+}

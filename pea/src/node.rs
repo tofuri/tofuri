@@ -94,8 +94,4 @@ impl Node {
             }
         }
     }
-    pub fn uptime(&self) -> String {
-        let seconds = (self.ticks as f64 / self.args.tps) as u32;
-        pea_util::duration_to_string(seconds, "0")
-    }
 }

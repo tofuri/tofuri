@@ -1,7 +1,7 @@
 use crate::http;
 use crate::interval;
 use crate::swarm;
-use clap::Parser;
+use crate::Args;
 use colored::*;
 use libp2p::futures::StreamExt;
 use libp2p::Multiaddr;
@@ -16,75 +16,10 @@ use pea_util;
 use pea_wallet::wallet;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
-use serde::Deserialize;
-use serde::Serialize;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
-pub const TEMP_DB: bool = false;
-pub const TEMP_KEY: bool = false;
-pub const BIND_API: &str = ":::9332";
-pub const HOST: &str = "/ip4/0.0.0.0/tcp/9333";
-pub const DEV_TEMP_DB: bool = true;
-pub const DEV_TEMP_KEY: bool = true;
-pub const DEV_BIND_API: &str = ":::9334";
-pub const DEV_HOST: &str = "/ip4/0.0.0.0/tcp/9335";
-#[derive(Parser, Debug, Serialize, Deserialize, Clone)]
-#[clap(version, about, long_about = None)]
-pub struct Args {
-    /// Log path to source file
-    #[clap(short, long, value_parser, default_value_t = false)]
-    pub debug: bool,
-    /// Store blockchain in a temporary database
-    #[clap(long, value_parser, default_value_t = TEMP_DB)]
-    pub tempdb: bool,
-    /// Use temporary random keypair
-    #[clap(long, value_parser, default_value_t = TEMP_KEY)]
-    pub tempkey: bool,
-    /// Generate genesis block
-    #[clap(long, value_parser, default_value_t = false)]
-    pub mint: bool,
-    /// Use time api to adjust time difference
-    #[clap(long, value_parser, default_value_t = false)]
-    pub time_api: bool,
-    /// Trust fork after blocks
-    #[clap(long, value_parser, default_value = "2")]
-    pub trust: usize,
-    /// Mesh peers required to ban stakers that failed to show up
-    #[clap(long, value_parser, default_value = "10")]
-    pub ban_offline: usize,
-    /// Max time delta allowed
-    #[clap(long, value_parser, default_value = "1")]
-    pub time_delta: u32, // ping delay & perception of time
-    /// Swarm connection limits
-    #[clap(long, value_parser)]
-    pub max_established: Option<u32>,
-    /// Ticks per second
-    #[clap(long, value_parser, default_value = "5")]
-    pub tps: f64,
-    /// Wallet filename
-    #[clap(long, value_parser, default_value = "")]
-    pub wallet: String,
-    /// Passphrase to wallet
-    #[clap(long, value_parser, default_value = "")]
-    pub passphrase: String,
-    /// Multiaddr to dial
-    #[clap(short, long, value_parser, default_value = "")]
-    pub peer: String,
-    /// TCP socket address to bind to
-    #[clap(long, value_parser, default_value = BIND_API)]
-    pub bind_api: String,
-    /// Multiaddr to listen on
-    #[clap(short, long, value_parser, default_value = HOST)]
-    pub host: String,
-    /// Development mode
-    #[clap(long, value_parser, default_value_t = false)]
-    pub dev: bool,
-    /// Timeout
-    #[clap(long, value_parser, default_value = "300")]
-    pub timeout: u64,
-}
 pub struct Node {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,

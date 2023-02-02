@@ -252,62 +252,62 @@ impl Node {
         }
     }
     fn swarm_event_connection_established(&mut self, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
-        let mut save = |multiaddr: Multiaddr| {
-            info!(
-                "Connection {} {} {}",
-                "established".green(),
-                multiaddr.to_string().magenta(),
-                num_established.to_string().yellow()
-            );
-            let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
-            if self.p2p.ratelimit.is_ratelimited(&self.p2p.ratelimit.get(&addr).1) {
-                warn!("Ratelimited {}", multiaddr.to_string().magenta());
-                let _ = self.p2p.swarm.disconnect_peer_id(peer_id);
-            }
-            self.p2p.known.insert(multiaddr.clone());
-            let _ = db::peer::put(&multiaddr.to_string(), &self.db);
-            if let Some(previous_peer_id) = self
-                .p2p
-                .connections
-                .insert(multiaddr::ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
-            {
-                if previous_peer_id != peer_id {
-                    let _ = self.p2p.swarm.disconnect_peer_id(previous_peer_id);
-                }
-            }
-        };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
             if let Some(multiaddr) = multiaddr::ip_port(&address) {
-                save(multiaddr);
+                self.swarm_event_connection_established_save(peer_id, num_established, multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
             if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
-                save(multiaddr);
+                self.swarm_event_connection_established_save(peer_id, num_established, multiaddr);
+            }
+        }
+    }
+    fn swarm_event_connection_established_save(&mut self, peer_id: PeerId, num_established: NonZeroU32, multiaddr: Multiaddr) {
+        info!(
+            "Connection {} {} {}",
+            "established".green(),
+            multiaddr.to_string().magenta(),
+            num_established.to_string().yellow()
+        );
+        let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
+        if self.p2p.ratelimit.is_ratelimited(&self.p2p.ratelimit.get(&addr).1) {
+            warn!("Ratelimited {}", multiaddr.to_string().magenta());
+            let _ = self.p2p.swarm.disconnect_peer_id(peer_id);
+        }
+        self.p2p.known.insert(multiaddr.clone());
+        let _ = db::peer::put(&multiaddr.to_string(), &self.db);
+        if let Some(previous_peer_id) = self
+            .p2p
+            .connections
+            .insert(multiaddr::ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
+        {
+            if previous_peer_id != peer_id {
+                let _ = self.p2p.swarm.disconnect_peer_id(previous_peer_id);
             }
         }
     }
     fn swarm_event_connection_closed(&mut self, endpoint: ConnectedPoint, num_established: u32) {
-        let mut save = |multiaddr: Multiaddr| {
-            info!(
-                "Connection {} {} {}",
-                "closed".red(),
-                multiaddr.to_string().magenta(),
-                num_established.to_string().yellow()
-            );
-            self.p2p.connections.remove(&multiaddr);
-            let _ = self.p2p.swarm.dial(multiaddr);
-        };
         if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
             if let Some(multiaddr) = multiaddr::ip_port(&address) {
-                save(multiaddr);
+                self.swarm_event_connection_closed_save(num_established, multiaddr);
             }
         }
         if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
             if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
-                save(multiaddr);
+                self.swarm_event_connection_closed_save(num_established, multiaddr);
             }
         }
+    }
+    fn swarm_event_connection_closed_save(&mut self, num_established: u32, multiaddr: Multiaddr) {
+        info!(
+            "Connection {} {} {}",
+            "closed".red(),
+            multiaddr.to_string().magenta(),
+            num_established.to_string().yellow()
+        );
+        self.p2p.connections.remove(&multiaddr);
+        let _ = self.p2p.swarm.dial(multiaddr);
     }
     fn swarm_event_gossipsub_message(&mut self, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
         match message.topic.as_str() {

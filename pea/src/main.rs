@@ -2,72 +2,17 @@ use clap::Parser;
 use colored::*;
 use log::info;
 use log::warn;
+use pea::node::Args;
 use pea::node::Node;
-use pea::node::Options;
+use pea::node::BIND_API;
+use pea::node::DEV_BIND_API;
+use pea::node::DEV_HOST;
+use pea::node::DEV_TEMP_DB;
+use pea::node::DEV_TEMP_KEY;
+use pea::node::HOST;
+use pea::node::TEMP_DB;
+use pea::node::TEMP_KEY;
 use pea_logger as logger;
-const TEMP_DB: bool = false;
-const TEMP_KEY: bool = false;
-const BIND_API: &str = ":::9332";
-const HOST: &str = "/ip4/0.0.0.0/tcp/9333";
-const DEV_TEMP_DB: bool = true;
-const DEV_TEMP_KEY: bool = true;
-const DEV_BIND_API: &str = ":::9334";
-const DEV_HOST: &str = "/ip4/0.0.0.0/tcp/9335";
-#[derive(Parser, Debug)]
-#[clap(version, about, long_about = None)]
-pub struct Args {
-    /// Log path to source file
-    #[clap(short, long, value_parser, default_value_t = false)]
-    pub debug: bool,
-    /// Store blockchain in a temporary database
-    #[clap(long, value_parser, default_value_t = TEMP_DB)]
-    pub tempdb: bool,
-    /// Use temporary random keypair
-    #[clap(long, value_parser, default_value_t = TEMP_KEY)]
-    pub tempkey: bool,
-    /// Generate genesis block
-    #[clap(long, value_parser, default_value_t = false)]
-    pub mint: bool,
-    /// Use time api to adjust time difference
-    #[clap(long, value_parser, default_value_t = false)]
-    pub time_api: bool,
-    /// Trust fork after blocks
-    #[clap(long, value_parser, default_value = "2")]
-    pub trust: usize,
-    /// Mesh peers required to ban stakers that failed to show up
-    #[clap(long, value_parser, default_value = "10")]
-    pub ban_offline: usize,
-    /// Max time delta allowed
-    #[clap(long, value_parser, default_value = "1")]
-    pub time_delta: u32, // ping delay & perception of time
-    /// Swarm connection limits
-    #[clap(long, value_parser)]
-    pub max_established: Option<u32>,
-    /// Ticks per second
-    #[clap(long, value_parser, default_value = "5")]
-    pub tps: f64,
-    /// Wallet filename
-    #[clap(long, value_parser, default_value = "")]
-    pub wallet: String,
-    /// Passphrase to wallet
-    #[clap(long, value_parser, default_value = "")]
-    pub passphrase: String,
-    /// Multiaddr to dial
-    #[clap(short, long, value_parser, default_value = "")]
-    pub peer: String,
-    /// TCP socket address to bind to
-    #[clap(long, value_parser, default_value = BIND_API)]
-    pub bind_api: String,
-    /// Multiaddr to listen on
-    #[clap(short, long, value_parser, default_value = HOST)]
-    pub host: String,
-    /// Development mode
-    #[clap(long, value_parser, default_value_t = false)]
-    pub dev: bool,
-    /// Timeout
-    #[clap(long, value_parser, default_value = "300")]
-    pub timeout: u64,
-}
 #[tokio::main]
 async fn main() {
     println!(
@@ -111,24 +56,6 @@ async fn main() {
     if args.dev {
         warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
     }
-    let mut node = Node::new(Options {
-        tempdb: args.tempdb,
-        tempkey: args.tempkey,
-        mint: args.mint,
-        time_api: args.time_api,
-        trust: args.trust,
-        ban_offline: args.ban_offline,
-        time_delta: args.time_delta,
-        max_established: args.max_established,
-        tps: args.tps,
-        wallet: &args.wallet,
-        passphrase: &args.passphrase,
-        peer: &args.peer,
-        bind_api: &args.bind_api,
-        host: &args.host,
-        dev: args.dev,
-        timeout: args.timeout,
-    })
-    .await;
+    let mut node = Node::new(args).await;
     node.run().await;
 }

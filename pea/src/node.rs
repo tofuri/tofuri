@@ -1,4 +1,5 @@
 use crate::http;
+use clap::Parser;
 use colored::*;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::core::either::EitherError;
@@ -52,49 +53,93 @@ type HandlerErr = EitherError<
     EitherError<EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<io::Error>>,
     ConnectionHandlerUpgrErr<io::Error>,
 >;
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Options<'a> {
+pub const TEMP_DB: bool = false;
+pub const TEMP_KEY: bool = false;
+pub const BIND_API: &str = ":::9332";
+pub const HOST: &str = "/ip4/0.0.0.0/tcp/9333";
+pub const DEV_TEMP_DB: bool = true;
+pub const DEV_TEMP_KEY: bool = true;
+pub const DEV_BIND_API: &str = ":::9334";
+pub const DEV_HOST: &str = "/ip4/0.0.0.0/tcp/9335";
+#[derive(Parser, Debug, Serialize, Deserialize, Clone)]
+#[clap(version, about, long_about = None)]
+pub struct Args {
+    /// Log path to source file
+    #[clap(short, long, value_parser, default_value_t = false)]
+    pub debug: bool,
+    /// Store blockchain in a temporary database
+    #[clap(long, value_parser, default_value_t = TEMP_DB)]
     pub tempdb: bool,
+    /// Use temporary random keypair
+    #[clap(long, value_parser, default_value_t = TEMP_KEY)]
     pub tempkey: bool,
+    /// Generate genesis block
+    #[clap(long, value_parser, default_value_t = false)]
     pub mint: bool,
+    /// Use time api to adjust time difference
+    #[clap(long, value_parser, default_value_t = false)]
     pub time_api: bool,
+    /// Trust fork after blocks
+    #[clap(long, value_parser, default_value = "2")]
     pub trust: usize,
+    /// Mesh peers required to ban stakers that failed to show up
+    #[clap(long, value_parser, default_value = "10")]
     pub ban_offline: usize,
-    pub time_delta: u32,
+    /// Max time delta allowed
+    #[clap(long, value_parser, default_value = "1")]
+    pub time_delta: u32, // ping delay & perception of time
+    /// Swarm connection limits
+    #[clap(long, value_parser)]
     pub max_established: Option<u32>,
+    /// Ticks per second
+    #[clap(long, value_parser, default_value = "5")]
     pub tps: f64,
-    pub wallet: &'a str,
-    pub passphrase: &'a str,
-    pub peer: &'a str,
-    pub bind_api: &'a str,
-    pub host: &'a str,
+    /// Wallet filename
+    #[clap(long, value_parser, default_value = "")]
+    pub wallet: String,
+    /// Passphrase to wallet
+    #[clap(long, value_parser, default_value = "")]
+    pub passphrase: String,
+    /// Multiaddr to dial
+    #[clap(short, long, value_parser, default_value = "")]
+    pub peer: String,
+    /// TCP socket address to bind to
+    #[clap(long, value_parser, default_value = BIND_API)]
+    pub bind_api: String,
+    /// Multiaddr to listen on
+    #[clap(short, long, value_parser, default_value = HOST)]
+    pub host: String,
+    /// Development mode
+    #[clap(long, value_parser, default_value_t = false)]
     pub dev: bool,
+    /// Timeout
+    #[clap(long, value_parser, default_value = "300")]
     pub timeout: u64,
 }
-pub struct Node<'a> {
+pub struct Node {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,
-    pub options: Options<'a>,
+    pub args: Args,
     pub p2p: P2p,
     pub blockchain: Blockchain,
     pub heartbeats: usize,
     pub lag: f64,
 }
-impl Node<'_> {
-    pub async fn new(options: Options<'_>) -> Node<'_> {
-        let key = match options.tempkey {
+impl Node {
+    pub async fn new(args: Args) -> Node {
+        let key = match args.tempkey {
             true => Key::generate(),
-            false => wallet::load(options.wallet, options.passphrase).unwrap().3,
+            false => wallet::load(&args.wallet, &args.passphrase).unwrap().3,
         };
         info!("Address {}", address::encode(&key.address_bytes()).green());
         let tempdir = TempDir::new("peacash-db").unwrap();
-        let path: &str = match options.tempdb {
+        let path: &str = match args.tempdb {
             true => tempdir.path().to_str().unwrap(),
             false => "./peacash-db",
         };
         let db = db::open(path);
         let mut known = HashSet::new();
-        if let Some(multiaddr) = multiaddr::ip_port(&options.peer.parse::<Multiaddr>().unwrap()) {
+        if let Some(multiaddr) = multiaddr::ip_port(&args.peer.parse::<Multiaddr>().unwrap()) {
             known.insert(multiaddr);
         }
         let peers = db::peer::get_all(&db);
@@ -103,8 +148,8 @@ impl Node<'_> {
                 known.insert(multiaddr);
             }
         }
-        let p2p = P2p::new(options.max_established, options.timeout, known, options.ban_offline).await.unwrap();
-        let blockchain = Blockchain::new(options.trust, options.time_delta);
+        let p2p = P2p::new(args.max_established, args.timeout, known, args.ban_offline).await.unwrap();
+        let blockchain = Blockchain::new(args.trust, args.time_delta);
         Node {
             key,
             p2p,
@@ -112,7 +157,7 @@ impl Node<'_> {
             db,
             heartbeats: 0,
             lag: 0.0,
-            options,
+            args,
         }
     }
     pub async fn run(&mut self) {
@@ -126,16 +171,16 @@ impl Node<'_> {
             }
         );
         info!("Latest block seen {}", self.blockchain.last_seen().yellow());
-        let multiaddr: Multiaddr = self.options.host.parse().unwrap();
+        let multiaddr: Multiaddr = self.args.host.parse().unwrap();
         self.p2p.swarm.listen_on(multiaddr.clone()).unwrap();
         info!("Swarm is listening on {}", multiaddr.to_string().magenta());
-        let listener = TcpListener::bind(self.options.bind_api).await.unwrap();
+        let listener = TcpListener::bind(&self.args.bind_api).await.unwrap();
         info!(
             "API is listening on {}{}",
             "http://".cyan(),
             listener.local_addr().unwrap().to_string().magenta()
         );
-        let mut interval = tokio::time::interval(Duration::from_micros(pea_util::micros_per_tick(self.options.tps)));
+        let mut interval = tokio::time::interval(Duration::from_micros(pea_util::micros_per_tick(self.args.tps)));
         loop {
             tokio::select! {
                 biased;
@@ -154,7 +199,7 @@ impl Node<'_> {
         }
     }
     pub fn uptime(&self) -> String {
-        let seconds = (self.heartbeats as f64 / self.options.tps) as u32;
+        let seconds = (self.heartbeats as f64 / self.args.tps) as u32;
         pea_util::duration_to_string(seconds, "0")
     }
     fn swarm_event(&mut self, event: SwarmEvent<OutEvent, HandlerErr>) {
@@ -338,7 +383,7 @@ impl Node<'_> {
         Ok(())
     }
     fn heartbeat_delay(&self, seconds: usize) -> bool {
-        (self.heartbeats as f64 % (self.options.tps * seconds as f64)) as usize == 0
+        (self.heartbeats as f64 % (self.args.tps * seconds as f64)) as usize == 0
     }
     fn heartbeat(&mut self, instant: tokio::time::Instant) {
         let timestamp = pea_util::timestamp();
@@ -420,7 +465,7 @@ impl Node<'_> {
         }
     }
     fn heartbeat_grow(&mut self, timestamp: u32) {
-        if !self.blockchain.sync.downloading() && !self.options.mint && self.blockchain.states.dynamic.next_staker(timestamp).is_none() {
+        if !self.blockchain.sync.downloading() && !self.args.mint && self.blockchain.states.dynamic.next_staker(timestamp).is_none() {
             if self.heartbeat_delay(60) {
                 info!(
                     "Waiting for synchronization to start... Currently connected to {} peers.",

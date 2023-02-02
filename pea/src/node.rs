@@ -92,7 +92,7 @@ pub struct Node {
     pub args: Args,
     pub p2p: P2p,
     pub blockchain: Blockchain,
-    pub heartbeats: usize,
+    pub ticks: usize,
     pub lag: f64,
 }
 impl Node {
@@ -125,7 +125,7 @@ impl Node {
             p2p,
             blockchain,
             db,
-            heartbeats: 0,
+            ticks: 0,
             lag: 0.0,
             args,
         }
@@ -169,7 +169,7 @@ impl Node {
         }
     }
     pub fn uptime(&self) -> String {
-        let seconds = (self.heartbeats as f64 / self.args.tps) as u32;
+        let seconds = (self.ticks as f64 / self.args.tps) as u32;
         pea_util::duration_to_string(seconds, "0")
     }
 }

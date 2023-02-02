@@ -31,11 +31,11 @@ pub fn tick(node: &mut Node, instant: tokio::time::Instant) {
     sync_request(node);
     offline_staker(node, timestamp);
     grow(node, timestamp);
-    node.heartbeats += 1;
+    node.ticks += 1;
     lag(node, instant.elapsed());
 }
 fn delay(node: &Node, seconds: usize) -> bool {
-    (node.heartbeats as f64 % (node.args.tps * seconds as f64)) as usize == 0
+    (node.ticks as f64 % (node.args.tps * seconds as f64)) as usize == 0
 }
 fn offline_staker(node: &mut Node, timestamp: u32) {
     if node.p2p.ban_offline == 0 {
@@ -127,5 +127,5 @@ fn sync_request(node: &mut Node) {
 }
 fn lag(node: &mut Node, duration: Duration) {
     node.lag = duration.as_micros() as f64 / 1_000_f64;
-    debug!("{} {} {}", "Heartbeat".cyan(), node.heartbeats, format!("{duration:?}").yellow());
+    debug!("{} {} {}", "Tick".cyan(), node.ticks, format!("{duration:?}").yellow());
 }

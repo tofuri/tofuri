@@ -10,7 +10,7 @@ pub struct Info {
     pub time: String,
     pub address: String,
     pub uptime: String,
-    pub heartbeats: usize,
+    pub ticks: usize,
     pub tree_size: usize,
     pub lag: f64,
 }

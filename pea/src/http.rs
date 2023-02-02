@@ -165,7 +165,7 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
         time: Utc.timestamp_nanos(chrono::offset::Utc::now().timestamp_micros() * 1_000).to_rfc2822(),
         address: address::encode(&node.key.address_bytes()),
         uptime: node.uptime(),
-        heartbeats: node.heartbeats,
+        ticks: node.ticks,
         tree_size: node.blockchain.tree.size(),
         lag: node.lag,
     })?))

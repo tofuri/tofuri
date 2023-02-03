@@ -17,7 +17,7 @@ lazy_static! {
     pub static ref GENERATE: String = "Generate".green().to_string();
     pub static ref IMPORT: String = "Import".magenta().to_string();
 }
-pub fn wallet_select() -> Result<String, Box<dyn Error>> {
+pub fn select() -> Result<String, Box<dyn Error>> {
     let mut filenames = filenames()?;
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());
@@ -27,7 +27,7 @@ pub fn wallet_select() -> Result<String, Box<dyn Error>> {
     });
     Ok(filename)
 }
-pub fn wallet_name() -> Result<String, Box<dyn Error>> {
+pub fn name() -> Result<String, Box<dyn Error>> {
     let filenames = filenames()?;
     Ok(Password::new("Name:")
         .with_display_toggle_enabled()
@@ -51,7 +51,7 @@ pub fn wallet_name() -> Result<String, Box<dyn Error>> {
             process::exit(0)
         }))
 }
-pub fn wallet_save() -> bool {
+pub fn save() -> bool {
     match Confirm::new("Save?").prompt() {
         Ok(b) => b,
         Err(err) => {

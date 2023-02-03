@@ -2748,7 +2748,7 @@ checksum = "d01a5bd0424d00070b0098dd17ebca6f961a959dead1dbcbbbc1d1cd8d3deeba"
 
 [[package]]
 name = "pea"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "bincode",
  "chrono",
@@ -2785,7 +2785,7 @@ dependencies = [
 
 [[package]]
 name = "pea-address"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "hex",
  "pea-core",
@@ -2794,7 +2794,7 @@ dependencies = [
 
 [[package]]
 name = "pea-api"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "pea-stake",
  "pea-transaction",
@@ -2805,7 +2805,7 @@ dependencies = [
 
 [[package]]
 name = "pea-block"
-version = "0.6.3"
+version = "0.6.4"
 dependencies = [
  "merkle-cbt",
  "pea-address",
@@ -2820,7 +2820,7 @@ dependencies = [
 
 [[package]]
 name = "pea-blockchain"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "colored",
  "hex",
@@ -2842,11 +2842,11 @@ dependencies = [
 
 [[package]]
 name = "pea-core"
-version = "0.6.1"
+version = "0.6.2"
 
 [[package]]
 name = "pea-db"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "bincode",
  "pea-block",
@@ -2861,14 +2861,14 @@ dependencies = [
 
 [[package]]
 name = "pea-int"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "pea-core",
 ]
 
 [[package]]
 name = "pea-key"
-version = "0.6.3"
+version = "0.6.4"
 dependencies = [
  "pea-core",
  "rand 0.8.5",
@@ -2879,7 +2879,7 @@ dependencies = [
 
 [[package]]
 name = "pea-logger"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "chrono",
  "colored",
@@ -2889,7 +2889,7 @@ dependencies = [
 
 [[package]]
 name = "pea-p2p"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "futures",
@@ -2902,7 +2902,7 @@ dependencies = [
 
 [[package]]
 name = "pea-stake"
-version = "0.7.6"
+version = "0.7.7"
 dependencies = [
  "pea-address",
  "pea-core",
@@ -2915,7 +2915,7 @@ dependencies = [
 
 [[package]]
 name = "pea-transaction"
-version = "0.8.5"
+version = "0.8.6"
 dependencies = [
  "pea-address",
  "pea-core",
@@ -2928,11 +2928,11 @@ dependencies = [
 
 [[package]]
 name = "pea-tree"
-version = "0.4.0"
+version = "0.4.1"
 
 [[package]]
 name = "pea-util"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bincode",
  "chrono",
@@ -2947,7 +2947,7 @@ dependencies = [
 
 [[package]]
 name = "pea-wallet"
-version = "0.6.3"
+version = "0.6.4"
 dependencies = [
  "argon2",
  "chacha20poly1305 0.10.1",

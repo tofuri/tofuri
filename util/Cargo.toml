@@ -1,9 +1,9 @@
 [package]
 name = "pea-util"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-license = "MIT"
-description = "エンドウ"
+license = "GPL-3.0"
+description = "Peacash utilities"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]

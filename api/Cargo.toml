@@ -1,9 +1,9 @@
 [package]
 name = "pea-api"
-version = "0.6.2"
+version = "0.6.3"
 edition = "2021"
-license = "MIT"
-description = "エンドウ"
+license = "GPL-3.0"
+description = "Peacash API"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]

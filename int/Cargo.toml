@@ -1,9 +1,9 @@
 [package]
 name = "pea-int"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
-license = "MIT"
-description = "エンドウ"
+license = "GPL-3.0"
+description = "Peacash integer"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]

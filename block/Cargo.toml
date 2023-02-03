@@ -1,9 +1,9 @@
 [package]
 name = "pea-block"
-version = "0.6.3"
+version = "0.6.4"
 edition = "2021"
-license = "MIT"
-description = "エンドウ"
+license = "GPL-3.0"
+description = "Peacash block"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]

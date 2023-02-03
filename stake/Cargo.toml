@@ -1,9 +1,9 @@
 [package]
 name = "pea-stake"
-version = "0.7.6"
+version = "0.7.7"
 edition = "2021"
-license = "MIT"
-description = "エンドウ"
+license = "GPL-3.0"
+description = "Peacash stake"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]

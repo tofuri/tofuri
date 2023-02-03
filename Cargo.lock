@@ -2748,7 +2748,7 @@ checksum = "d01a5bd0424d00070b0098dd17ebca6f961a959dead1dbcbbbc1d1cd8d3deeba"
 
 [[package]]
 name = "pea"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "bincode",
  "chrono",
@@ -2946,7 +2946,7 @@ dependencies = [
 
 [[package]]
 name = "pea-wallet"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "argon2",
  "chacha20poly1305 0.10.1",

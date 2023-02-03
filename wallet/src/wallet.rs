@@ -1,14 +1,8 @@
-use crate::inquire::address;
-use crate::inquire::amount;
-use crate::inquire::deposit;
-use crate::inquire::fee;
-use crate::inquire::search;
-use crate::inquire::send;
-use crate::inquire::wallet_import;
-use crate::inquire::wallet_name;
-use crate::inquire::wallet_save;
+use crate::inquire;
 use crate::inquire::GENERATE;
 use crate::inquire::IMPORT;
+use ::inquire::Confirm;
+use ::inquire::Select;
 use argon2::Algorithm;
 use argon2::Argon2;
 use argon2::ParamsBuilder;
@@ -19,8 +13,6 @@ use chacha20poly1305::ChaCha20Poly1305;
 use colored::*;
 use crossterm::event;
 use crossterm::terminal;
-use inquire::Confirm;
-use inquire::Select;
 use pea_address::address;
 use pea_address::secret;
 use pea_api::get;
@@ -154,9 +146,9 @@ impl Wallet {
         };
     }
     async fn transaction(&self) {
-        let address = address();
-        let amount = amount();
-        let fee = fee();
+        let address = inquire::address();
+        let amount = inquire::amount();
+        let fee = inquire::fee();
         if !match Confirm::new("Send?").prompt() {
             Ok(b) => b,
             Err(err) => {
@@ -181,10 +173,10 @@ impl Wallet {
         };
     }
     async fn stake(&self) {
-        let deposit = deposit();
-        let amount = amount();
-        let fee = fee();
-        let send = send();
+        let deposit = inquire::deposit();
+        let amount = inquire::amount();
+        let fee = inquire::fee();
+        let send = inquire::send();
         if !send {
             return;
         }
@@ -196,7 +188,7 @@ impl Wallet {
         };
     }
     async fn search(&self) {
-        let search = search();
+        let search = inquire::search();
         if address::decode(&search).is_ok() {
             match get::balance(&self.api, &search).await {
                 Ok(balance) => match get::staked(&self.api, &search).await {
@@ -347,15 +339,15 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
     }
     let mut filename = crate::inquire::wallet_select()?;
     if filename.as_str() == *GENERATE {
-        filename = wallet_name()?;
+        filename = inquire::wallet_name()?;
         let key = Key::generate();
-        if !wallet_save() {
+        if !inquire::wallet_save() {
             return Ok(([0; 32], [0; 12], [0; 48], key));
         }
         save(&filename, &key)?;
     } else if filename.as_str() == *IMPORT {
-        let key = wallet_import()?;
-        if !wallet_save() {
+        let key = inquire::wallet_import()?;
+        if !inquire::wallet_save() {
             return Ok(([0; 32], [0; 12], [0; 48], key));
         }
         save(&filename, &key)?;

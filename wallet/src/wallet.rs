@@ -4,6 +4,11 @@ use crate::inquire::deposit;
 use crate::inquire::fee;
 use crate::inquire::search;
 use crate::inquire::send;
+use crate::inquire::wallet_import;
+use crate::inquire::wallet_name;
+use crate::inquire::wallet_save;
+use crate::inquire::GENERATE;
+use crate::inquire::IMPORT;
 use argon2::Algorithm;
 use argon2::Argon2;
 use argon2::ParamsBuilder;
@@ -339,7 +344,21 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
             }
         };
     }
-    let filename = crate::inquire::wallet_select()?;
+    let mut filename = crate::inquire::wallet_select()?;
+    if filename.as_str() == *GENERATE {
+        filename = wallet_name()?;
+        let key = Key::generate();
+        let (salt, nonce, ciphertext) = encrypt(&key)?;
+        save(salt, nonce, ciphertext, &filename)?;
+    } else if filename.as_str() == *IMPORT {
+        let key = wallet_import()?;
+        if !wallet_save() {
+            return Ok(([0; 32], [0; 12], [0; 48], key));
+        }
+        filename = wallet_name()?;
+        let (salt, nonce, ciphertext) = encrypt(&key)?;
+        save(salt, nonce, ciphertext, &filename)?;
+    };
     let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
     clear();

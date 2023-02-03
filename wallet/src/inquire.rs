@@ -1,6 +1,4 @@
-use crate::wallet::encrypt;
 use crate::wallet::filenames;
-use crate::wallet::save;
 use colored::*;
 use inquire::validator::Validation;
 use inquire::Confirm;
@@ -8,14 +6,17 @@ use inquire::CustomType;
 use inquire::Password;
 use inquire::PasswordDisplayMode;
 use inquire::Select;
+use lazy_static::lazy_static;
 use pea_address::address;
 use pea_core::*;
 use pea_key::Key;
 use std::error::Error;
 use std::path::PathBuf;
 use std::process;
-const GENERATE: &str = "Generate new wallet";
-const IMPORT: &str = "Import wallet";
+lazy_static! {
+    pub static ref GENERATE: String = "Generate".green().to_string();
+    pub static ref IMPORT: String = "Import".magenta().to_string();
+}
 pub fn wallet_select() -> Result<String, Box<dyn Error>> {
     let mut filenames = filenames()?;
     filenames.push(GENERATE.to_string());
@@ -24,19 +25,6 @@ pub fn wallet_select() -> Result<String, Box<dyn Error>> {
         println!("{}", err.to_string().red());
         process::exit(0)
     });
-    if filename.as_str() == GENERATE {
-        let filename = wallet_name()?;
-        let key = Key::generate();
-        let (salt, nonce, ciphertext) = encrypt(&key)?;
-        save(salt, nonce, ciphertext, &filename)?;
-        return Ok(filename);
-    } else if filename.as_str() == IMPORT {
-        let key = wallet_import()?;
-        let filename = wallet_name()?;
-        let (salt, nonce, ciphertext) = encrypt(&key)?;
-        save(salt, nonce, ciphertext, &filename)?;
-        return Ok(filename);
-    };
     Ok(filename)
 }
 pub fn wallet_name() -> Result<String, Box<dyn Error>> {
@@ -62,6 +50,15 @@ pub fn wallet_name() -> Result<String, Box<dyn Error>> {
             println!("{}", err.to_string().red());
             process::exit(0)
         }))
+}
+pub fn wallet_save() -> bool {
+    match Confirm::new("Save?").prompt() {
+        Ok(b) => b,
+        Err(err) => {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        }
+    }
 }
 pub fn passphrase() -> String {
     Password::new("Enter passphrase:")

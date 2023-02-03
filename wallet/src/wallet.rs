@@ -339,11 +339,11 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
     }
     let mut filename = crate::inquire::select()?;
     if filename.as_str() == *GENERATE {
-        filename = inquire::name()?;
         let key = Key::generate();
         if !inquire::save() {
             return Ok(([0; 32], [0; 12], [0; 48], key));
         }
+        filename = inquire::name()?;
         save(&filename, &key)?;
     } else if filename.as_str() == *IMPORT {
         let key = inquire::import()?;

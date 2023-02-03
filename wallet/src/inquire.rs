@@ -120,7 +120,7 @@ pub fn new_passphrase() -> String {
             process::exit(0)
         })
 }
-pub fn wallet_import() -> Result<Key, Box<dyn Error>> {
+pub fn import() -> Result<Key, Box<dyn Error>> {
     let secret = Password::new("Enter secret key:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)

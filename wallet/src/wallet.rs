@@ -346,7 +346,7 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         }
         save(&filename, &key)?;
     } else if filename.as_str() == *IMPORT {
-        let key = inquire::wallet_import()?;
+        let key = inquire::import()?;
         if !inquire::save() {
             return Ok(([0; 32], [0; 12], [0; 48], key));
         }

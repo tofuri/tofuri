@@ -296,7 +296,8 @@ pub fn decrypt(salt: &Salt, nonce: &Nonce, ciphertext: &Ciphertext, passphrase: 
 pub fn default_path() -> &'static Path {
     Path::new("./peacash-wallet")
 }
-pub fn save(salt: Salt, nonce: Nonce, ciphertext: Ciphertext, filename: &str) -> Result<(), Box<dyn Error>> {
+pub fn save(filename: &str, key: &Key) -> Result<(), Box<dyn Error>> {
+    let (salt, nonce, ciphertext) = encrypt(key)?;
     let mut bytes = [0; 92];
     bytes[0..32].copy_from_slice(&salt);
     bytes[32..44].copy_from_slice(&nonce);
@@ -348,16 +349,16 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
     if filename.as_str() == *GENERATE {
         filename = wallet_name()?;
         let key = Key::generate();
-        let (salt, nonce, ciphertext) = encrypt(&key)?;
-        save(salt, nonce, ciphertext, &filename)?;
+        if !wallet_save() {
+            return Ok(([0; 32], [0; 12], [0; 48], key));
+        }
+        save(&filename, &key)?;
     } else if filename.as_str() == *IMPORT {
         let key = wallet_import()?;
         if !wallet_save() {
             return Ok(([0; 32], [0; 12], [0; 48], key));
         }
-        filename = wallet_name()?;
-        let (salt, nonce, ciphertext) = encrypt(&key)?;
-        save(salt, nonce, ciphertext, &filename)?;
+        save(&filename, &key)?;
     };
     let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);

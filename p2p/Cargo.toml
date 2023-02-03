@@ -9,7 +9,7 @@ repository = "https://github.com/peacash/peacash"
 [dependencies]
 pea-core = { version = "0.6", path = "../core" }
 pea-util = { version = "0.1", path = "../util" }
-libp2p = { version = "0.50", features = ["request-response","autonat","macros","identify","mdns","gossipsub","tokio"] }
+libp2p = { version = "0.50", features = ["mplex","noise","tcp","request-response","autonat","macros","identify","mdns","gossipsub","tokio"] }
 tokio = "1.24"
 async-trait = "0.1"
 futures = "0.3"

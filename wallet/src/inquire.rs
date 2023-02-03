@@ -52,7 +52,7 @@ pub fn name() -> Result<String, Box<dyn Error>> {
         }))
 }
 pub fn save() -> bool {
-    match Confirm::new("Save?").prompt() {
+    match Confirm::new("Save to disk?").prompt() {
         Ok(b) => b,
         Err(err) => {
             println!("{}", err.to_string().red());

@@ -82,34 +82,34 @@ impl Dynamic {
         let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
         for transaction_a in transactions {
             let k = transaction_a.input_address;
-            let mut v = if map_balance.contains_key(&k) {
+            let mut balance = if map_balance.contains_key(&k) {
                 *map_balance.get(&k).unwrap()
             } else {
                 self.balance(&k)
             };
-            v = v.checked_sub(transaction_a.amount + transaction_a.fee).ok_or("overflow")?;
-            map_balance.insert(k, v);
+            balance = balance.checked_sub(transaction_a.amount + transaction_a.fee).ok_or("overflow")?;
+            map_balance.insert(k, balance);
         }
         for stake_a in stakes {
             let k = stake_a.input_address;
-            let mut v_balance = if map_balance.contains_key(&k) {
+            let mut balance = if map_balance.contains_key(&k) {
                 *map_balance.get(&k).unwrap()
             } else {
                 self.balance(&k)
             };
-            let mut v_staked = if map_staked.contains_key(&k) {
+            let mut staked = if map_staked.contains_key(&k) {
                 *map_staked.get(&k).unwrap()
             } else {
                 self.staked(&k)
             };
             if stake_a.deposit {
-                v_balance = v_balance.checked_sub(stake_a.amount + stake_a.fee).ok_or("overflow")?;
+                balance = balance.checked_sub(stake_a.amount + stake_a.fee).ok_or("overflow")?;
             } else {
-                v_balance = v_balance.checked_sub(stake_a.fee).ok_or("overflow")?;
-                v_staked = v_staked.checked_sub(stake_a.amount).ok_or("overflow")?;
+                balance = balance.checked_sub(stake_a.fee).ok_or("overflow")?;
+                staked = staked.checked_sub(stake_a.amount).ok_or("overflow")?;
             }
-            map_balance.insert(k, v_balance);
-            map_staked.insert(k, v_staked);
+            map_balance.insert(k, balance);
+            map_staked.insert(k, staked);
         }
         Ok(())
     }

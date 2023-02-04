@@ -195,12 +195,7 @@ impl Blockchain {
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
             return Err("transaction pending".into());
         }
-        let balance = Blockchain::pending_balance_unlocked(
-            &self.states.dynamic,
-            &self.pending_transactions,
-            &self.pending_stakes,
-            &transaction_a.input_address,
-        );
+        let balance = self.balance_available(&self.pending_transactions, &self.pending_stakes, &transaction_a.input_address);
         if transaction_a.amount + transaction_a.fee > balance {
             return Err("transaction too expensive".into());
         }
@@ -225,12 +220,12 @@ impl Blockchain {
             return Err("stake pending".into());
         }
         if stake_a.deposit {
-            let balance = Blockchain::pending_balance_unlocked(&self.states.dynamic, &self.pending_transactions, &self.pending_stakes, &stake_a.input_address);
+            let balance = self.balance_available(&self.pending_transactions, &self.pending_stakes, &stake_a.input_address);
             if stake_a.amount + stake_a.fee > balance {
                 return Err("stake deposit too expensive".into());
             }
         } else {
-            let staked = Blockchain::pending_staked_unlocked(&self.states.dynamic, &self.pending_stakes, &stake_a.input_address);
+            let staked = self.staked_available(&self.pending_stakes, &stake_a.input_address);
             if stake_a.amount + stake_a.fee > staked {
                 return Err("stake withdraw too expensive".into());
             }
@@ -371,41 +366,6 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn pending_balance_unlocked(dynamic: &Dynamic, pending_transactions: &Vec<TransactionA>, pending_stakes: &Vec<StakeA>, address: &AddressBytes) -> u128 {
-        let mut balance = dynamic.balance(address);
-        for transaction_a in pending_transactions {
-            if &transaction_a.input_address == address {
-                balance -= transaction_a.amount + transaction_a.fee;
-            }
-        }
-        for stake_a in pending_stakes {
-            if &stake_a.input_address == address {
-                if stake_a.deposit {
-                    balance -= stake_a.amount + stake_a.fee;
-                } else {
-                    balance -= stake_a.fee;
-                }
-            }
-        }
-        balance
-    }
-    fn pending_staked_unlocked(dynamic: &Dynamic, pending_stakes: &Vec<StakeA>, address: &AddressBytes) -> u128 {
-        let mut staked = dynamic.staked(address);
-        for stake_a in pending_stakes {
-            if &stake_a.input_address == address {
-                if !stake_a.deposit {
-                    staked -= stake_a.amount;
-                }
-            }
-        }
-        staked
-    }
-    pub fn pending_balance() {
-        unimplemented!()
-    }
-    pub fn pending_staked() {
-        unimplemented!()
-    }
     fn check_overflow(dynamic: &Dynamic, pending_transactions: &Vec<TransactionA>, pending_stakes: &Vec<StakeA>) -> Result<(), Box<dyn Error>> {
         let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
         let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
@@ -441,5 +401,46 @@ impl Blockchain {
             map_staked.insert(k, v_staked);
         }
         Ok(())
+    }
+    fn balance_available(&self, pending_transactions: &Vec<TransactionA>, pending_stakes: &Vec<StakeA>, address: &AddressBytes) -> u128 {
+        let mut balance = self.states.dynamic.balance(address);
+        for transaction_a in pending_transactions {
+            if &transaction_a.input_address == address {
+                balance -= transaction_a.amount + transaction_a.fee;
+            }
+        }
+        for stake_a in pending_stakes {
+            if &stake_a.input_address == address {
+                if stake_a.deposit {
+                    balance -= stake_a.amount + stake_a.fee;
+                } else {
+                    balance -= stake_a.fee;
+                }
+            }
+        }
+        balance
+    }
+    fn staked_available(&self, pending_stakes: &Vec<StakeA>, address: &AddressBytes) -> u128 {
+        let mut staked = self.states.dynamic.staked(address);
+        for stake_a in pending_stakes {
+            if &stake_a.input_address == address {
+                if !stake_a.deposit {
+                    staked -= stake_a.amount;
+                }
+            }
+        }
+        staked
+    }
+    pub fn balance() {
+        unimplemented!()
+    }
+    pub fn staked() {
+        unimplemented!()
+    }
+    pub fn pending_balance() {
+        unimplemented!()
+    }
+    pub fn pending_staked() {
+        unimplemented!()
     }
 }

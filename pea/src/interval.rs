@@ -1,4 +1,4 @@
-use crate::node::Node;
+use crate::Node;
 use colored::*;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;

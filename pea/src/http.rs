@@ -1,4 +1,4 @@
-use crate::node::Node;
+use crate::Node;
 use chrono::TimeZone;
 use chrono::Utc;
 use colored::*;

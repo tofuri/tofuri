@@ -1,4 +1,4 @@
-use crate::node::Node;
+use crate::Node;
 use colored::*;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::core::either::EitherError;

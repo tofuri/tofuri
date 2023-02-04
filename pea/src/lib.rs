@@ -1,8 +1,12 @@
 pub mod http;
 pub mod interval;
-pub mod node;
 pub mod swarm;
 use clap::Parser;
+use pea_blockchain::blockchain::Blockchain;
+use pea_key::Key;
+use pea_p2p::P2p;
+use rocksdb::DBWithThreadMode;
+use rocksdb::SingleThreaded;
 use serde::Deserialize;
 use serde::Serialize;
 pub const TEMP_DB: bool = false;
@@ -13,6 +17,15 @@ pub const DEV_TEMP_DB: bool = true;
 pub const DEV_TEMP_KEY: bool = true;
 pub const DEV_BIND_API: &str = ":::9334";
 pub const DEV_HOST: &str = "/ip4/0.0.0.0/tcp/9335";
+pub struct Node {
+    pub db: DBWithThreadMode<SingleThreaded>,
+    pub key: Key,
+    pub args: Args,
+    pub p2p: P2p,
+    pub blockchain: Blockchain,
+    pub ticks: usize,
+    pub lag: f64,
+}
 #[derive(Parser, Debug, Serialize, Deserialize, Clone)]
 #[clap(version, about, long_about = None)]
 pub struct Args {

@@ -314,7 +314,10 @@ fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
 fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
     let transaction_b: TransactionB = serde_json::from_str(&body)?;
     let data = bincode::serialize(&transaction_b).unwrap();
-    let status = match node.blockchain.pending_transactions_push(&node.db, transaction_b, pea_util::timestamp()) {
+    let status = match node
+        .blockchain
+        .pending_transactions_push(&node.db, transaction_b, pea_util::timestamp(), node.args.time_delta)
+    {
         Ok(()) => {
             if node.p2p.gossipsub_has_mesh_peers("transaction") {
                 if let Err(err) = node.p2p.gossipsub_publish("transaction", data) {
@@ -333,7 +336,10 @@ fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Err
 fn post_stake(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
     let stake_b: StakeB = serde_json::from_str(&body)?;
     let data = bincode::serialize(&stake_b).unwrap();
-    let status = match node.blockchain.pending_stakes_push(&node.db, stake_b, pea_util::timestamp()) {
+    let status = match node
+        .blockchain
+        .pending_stakes_push(&node.db, stake_b, pea_util::timestamp(), node.args.time_delta)
+    {
         Ok(()) => {
             if node.p2p.gossipsub_has_mesh_peers("stake") {
                 if let Err(err) = node.p2p.gossipsub_publish("stake", data) {

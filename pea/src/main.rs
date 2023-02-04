@@ -43,7 +43,7 @@ async fn main() {
         }
     }
     let p2p = P2p::new(args.max_established, args.timeout, known, args.ban_offline).await.unwrap();
-    let blockchain = Blockchain::new(args.trust, args.time_delta);
+    let blockchain = Blockchain::new();
     let mut node = Node {
         key,
         p2p,
@@ -53,7 +53,7 @@ async fn main() {
         lag: 0.0,
         args,
     };
-    node.blockchain.load(&node.db);
+    node.blockchain.load(&node.db, node.args.trust);
     info!(
         "Blockchain height is {}",
         if let Some(main) = node.blockchain.tree.main() {

@@ -107,7 +107,7 @@ fn grow(node: &mut Node, timestamp: u32) {
     if !node.blockchain.sync.completed {
         return;
     }
-    if let Some(block_a) = node.blockchain.forge_block(&node.db, &node.key, timestamp) {
+    if let Some(block_a) = node.blockchain.forge_block(&node.db, &node.key, timestamp, node.args.trust) {
         if !node.p2p.gossipsub_has_mesh_peers("block") {
             return;
         }

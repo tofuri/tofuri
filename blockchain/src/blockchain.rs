@@ -30,29 +30,25 @@ pub struct Blockchain {
     pending_transactions: Vec<TransactionA>,
     pending_stakes: Vec<StakeA>,
     pub sync: Sync,
-    pub trust_fork_after_blocks: usize,
-    pub time_delta: u32,
     pub offline: HashMap<AddressBytes, Hash>,
 }
 impl Blockchain {
-    pub fn new(trust_fork_after_blocks: usize, time_delta: u32) -> Self {
+    pub fn new() -> Self {
         Self {
             tree: Tree::default(),
             states: States::default(),
             pending_transactions: vec![],
             pending_stakes: vec![],
             sync: Sync::default(),
-            trust_fork_after_blocks,
-            time_delta,
             offline: HashMap::new(),
         }
     }
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>) {
+    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         let start = Instant::now();
         db::tree::reload(&mut self.tree, db);
         info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
         let start = Instant::now();
-        let (hashes_trusted, hashes_dynamic) = self.tree.hashes(self.trust_fork_after_blocks);
+        let (hashes_trusted, hashes_dynamic) = self.tree.hashes(trust_fork_after_blocks);
         self.states.trusted.load(db, &hashes_trusted);
         self.states.dynamic = Dynamic::from(db, &hashes_dynamic, &self.states.trusted);
         info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
@@ -105,7 +101,7 @@ impl Blockchain {
         debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
         db::block::get_b(db, &hash).ok()
     }
-    pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32) -> Option<BlockA> {
+    pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> Option<BlockA> {
         if let Some(staker) = self.states.dynamic.next_staker(timestamp) {
             if staker != key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN {
                 return None;
@@ -141,23 +137,30 @@ impl Blockchain {
             BlockA::sign([0; 32], timestamp, transactions, stakes, key, &GENESIS_BETA)
         }
         .unwrap();
-        self.save_block(db, &block_a, true);
+        self.save_block(db, &block_a, true, trust_fork_after_blocks);
         Some(block_a)
     }
-    pub fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_b: BlockB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn append_block(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        block_b: BlockB,
+        timestamp: u32,
+        time_delta: u32,
+        trust_fork_after_blocks: usize,
+    ) -> Result<(), Box<dyn Error>> {
         let block_a = block_b.a()?;
-        self.validate_block(db, &block_a, timestamp)?;
-        self.save_block(db, &block_a, false);
+        self.validate_block(db, &block_a, timestamp, time_delta, trust_fork_after_blocks)?;
+        self.save_block(db, &block_a, false, trust_fork_after_blocks);
         Ok(())
     }
-    pub fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forged: bool) {
+    pub fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forged: bool, trust_fork_after_blocks: usize) {
         db::block::put(block_a, db).unwrap();
         if self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap() {
             warn!("{} {}", "Forked".red(), hex::encode(block_a.hash));
         }
         self.tree.sort_branches();
         self.states
-            .update(db, &self.tree.hashes_dynamic(self.trust_fork_after_blocks), self.trust_fork_after_blocks);
+            .update(db, &self.tree.hashes_dynamic(trust_fork_after_blocks), trust_fork_after_blocks);
         let info_0 = if forged { "Forged".magenta() } else { "Accept".green() };
         let info_1 = hex::encode(block_a.hash);
         let info_2 = match block_a.transactions.len() {
@@ -186,18 +189,22 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         transaction_b: TransactionB,
         timestamp: u32,
+        time_delta: u32,
     ) -> Result<(), Box<dyn Error>> {
         let transaction_a = transaction_b.a(None)?;
-        self.validate_transaction(db, &transaction_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
             return Err("transaction pending".into());
         }
-        if let Some(index) = self.pending_transactions.iter().position(|x| x.input_address == transaction_a.input_address) {
-            if transaction_a.fee <= self.pending_transactions[index].fee {
-                return Err("transaction fee too low".into());
-            }
-            self.pending_transactions.remove(index);
+        let balance = Blockchain::pending_balance_unlocked(
+            &self.states.dynamic,
+            &self.pending_transactions,
+            &self.pending_stakes,
+            &transaction_a.input_address,
+        );
+        if transaction_a.amount + transaction_a.fee > balance {
+            return Err("transaction too expensive".into());
         }
+        Blockchain::validate_transaction(&self.states.dynamic, db, &transaction_a, timestamp, time_delta)?;
         info!("Transaction {}", hex::encode(transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -206,18 +213,29 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn pending_stakes_push(&mut self, db: &DBWithThreadMode<SingleThreaded>, stake_b: StakeB, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn pending_stakes_push(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        stake_b: StakeB,
+        timestamp: u32,
+        time_delta: u32,
+    ) -> Result<(), Box<dyn Error>> {
         let stake_a = stake_b.a(None)?;
-        self.validate_stake(db, &stake_a, self.states.dynamic.latest_block.timestamp, timestamp)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
             return Err("stake pending".into());
         }
-        if let Some(index) = self.pending_stakes.iter().position(|x| x.input_address == stake_a.input_address) {
-            if stake_a.fee <= self.pending_stakes[index].fee {
-                return Err("stake fee too low".into());
+        if stake_a.deposit {
+            let balance = Blockchain::pending_balance_unlocked(&self.states.dynamic, &self.pending_transactions, &self.pending_stakes, &stake_a.input_address);
+            if stake_a.amount + stake_a.fee > balance {
+                return Err("stake deposit too expensive".into());
             }
-            self.pending_stakes.remove(index);
+        } else {
+            let staked = Blockchain::pending_staked_unlocked(&self.states.dynamic, &self.pending_stakes, &stake_a.input_address);
+            if stake_a.amount + stake_a.fee > staked {
+                return Err("stake withdraw too expensive".into());
+            }
         }
+        Blockchain::validate_stake(&self.states.dynamic, db, &stake_a, timestamp, time_delta)?;
         info!("Stake {}", hex::encode(stake_a.hash).green());
         self.pending_stakes.push(stake_a);
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -226,18 +244,25 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn validate_block(&self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    pub fn validate_block(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        block_a: &BlockA,
+        timestamp: u32,
+        time_delta: u32,
+        trust_fork_after_blocks: usize,
+    ) -> Result<(), Box<dyn Error>> {
         if self.tree.get(&block_a.hash).is_some() {
             return Err("block hash in tree".into());
         }
-        if block_a.timestamp > timestamp + self.time_delta {
+        if block_a.timestamp > timestamp + time_delta {
             return Err("block timestamp future".into());
         }
         if block_a.previous_hash != [0; 32] && self.tree.get(&block_a.previous_hash).is_none() {
             return Err("block previous_hash not in tree".into());
         }
         let input_address = block_a.input_address();
-        let dynamic = self.states.dynamic_fork(db, &self.tree, self.trust_fork_after_blocks, &block_a.previous_hash)?;
+        let dynamic = self.states.dynamic_fork(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
         if let Some(hash) = self.offline.get(&input_address) {
             if hash == &block_a.previous_hash {
                 return Err("block staker banned".into());
@@ -275,27 +300,20 @@ impl Blockchain {
             return Ok(());
         }
         for stake_a in block_a.stakes.iter() {
-            self.validate_stake(db, stake_a, dynamic.latest_block.timestamp, timestamp)?;
+            Blockchain::validate_stake(&dynamic, db, stake_a, timestamp, time_delta)?;
         }
         for transaction_a in block_a.transactions.iter() {
-            self.validate_transaction(db, transaction_a, dynamic.latest_block.timestamp, timestamp)?;
+            Blockchain::validate_transaction(&dynamic, db, transaction_a, timestamp, time_delta)?;
         }
-        let input_addresses = block_a.transactions.iter().map(|x| x.input_address).collect::<Vec<AddressBytes>>();
-        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
-            return Err("block includes multiple transactions from same input address".into());
-        }
-        let input_addresses = block_a.stakes.iter().map(|x| x.input_address).collect::<Vec<AddressBytes>>();
-        if (1..input_addresses.len()).any(|i| input_addresses[i..].contains(&input_addresses[i - 1])) {
-            return Err("block includes multiple stakes from same input address".into());
-        }
+        Blockchain::check_overflow(&dynamic, &block_a.transactions, &block_a.stakes)?;
         Ok(())
     }
     fn validate_transaction(
-        &self,
+        dynamic: &Dynamic,
         db: &DBWithThreadMode<SingleThreaded>,
         transaction_a: &TransactionA,
-        previous_block_timestamp: u32,
         timestamp: u32,
+        time_delta: u32,
     ) -> Result<(), Box<dyn Error>> {
         if transaction_a.amount == 0 {
             return Err("transaction amount zero".into());
@@ -312,15 +330,11 @@ impl Blockchain {
         if transaction_a.input_address == transaction_a.output_address {
             return Err("transaction input output".into());
         }
-        let balance = self.states.dynamic.balance(&transaction_a.input_address);
-        if transaction_a.timestamp > timestamp + self.time_delta {
+        if transaction_a.timestamp > timestamp + time_delta {
             return Err("transaction timestamp future".into());
         }
-        if transaction_a.timestamp < previous_block_timestamp {
+        if transaction_a.timestamp < dynamic.latest_block.timestamp {
             return Err("transaction timestamp ancient".into());
-        }
-        if transaction_a.amount + transaction_a.fee > balance {
-            return Err("transaction too expensive".into());
         }
         if db::transaction::get_b(db, &transaction_a.hash).is_ok() {
             return Err("transaction in chain".into());
@@ -328,11 +342,11 @@ impl Blockchain {
         Ok(())
     }
     fn validate_stake(
-        &self,
+        dynamic: &Dynamic,
         db: &DBWithThreadMode<SingleThreaded>,
         stake_a: &StakeA,
-        previous_block_timestamp: u32,
         timestamp: u32,
+        time_delta: u32,
     ) -> Result<(), Box<dyn Error>> {
         if stake_a.amount == 0 {
             return Err("stake amount zero".into());
@@ -346,22 +360,85 @@ impl Blockchain {
         if stake_a.fee != pea_int::floor(stake_a.fee) {
             return Err("stake fee floor".into());
         }
-        if stake_a.timestamp > timestamp + self.time_delta {
+        if stake_a.timestamp > timestamp + time_delta {
             return Err("stake timestamp future".into());
         }
-        if stake_a.timestamp < previous_block_timestamp {
+        if stake_a.timestamp < dynamic.latest_block.timestamp {
             return Err("stake timestamp ancient".into());
-        }
-        let balance = self.states.dynamic.balance(&stake_a.input_address);
-        if stake_a.deposit {
-            if stake_a.amount + stake_a.fee > balance {
-                return Err("stake deposit too expensive".into());
-            }
-        } else if stake_a.fee > balance {
-            return Err("stake withdraw fee too expensive".into());
         }
         if db::stake::get_b(db, &stake_a.hash).is_ok() {
             return Err("stake in chain".into());
+        }
+        Ok(())
+    }
+    fn pending_balance_unlocked(dynamic: &Dynamic, pending_transactions: &Vec<TransactionA>, pending_stakes: &Vec<StakeA>, address: &AddressBytes) -> u128 {
+        let mut balance = dynamic.balance(address);
+        for transaction_a in pending_transactions {
+            if &transaction_a.input_address == address {
+                balance -= transaction_a.amount + transaction_a.fee;
+            }
+        }
+        for stake_a in pending_stakes {
+            if &stake_a.input_address == address {
+                if stake_a.deposit {
+                    balance -= stake_a.amount + stake_a.fee;
+                } else {
+                    balance -= stake_a.fee;
+                }
+            }
+        }
+        balance
+    }
+    fn pending_staked_unlocked(dynamic: &Dynamic, pending_stakes: &Vec<StakeA>, address: &AddressBytes) -> u128 {
+        let mut staked = dynamic.staked(address);
+        for stake_a in pending_stakes {
+            if &stake_a.input_address == address {
+                if !stake_a.deposit {
+                    staked -= stake_a.amount;
+                }
+            }
+        }
+        staked
+    }
+    pub fn pending_balance() {
+        unimplemented!()
+    }
+    pub fn pending_staked() {
+        unimplemented!()
+    }
+    fn check_overflow(dynamic: &Dynamic, pending_transactions: &Vec<TransactionA>, pending_stakes: &Vec<StakeA>) -> Result<(), Box<dyn Error>> {
+        let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
+        let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
+        for transaction_a in pending_transactions {
+            let k = transaction_a.input_address;
+            let mut v = if map_balance.contains_key(&k) {
+                *map_balance.get(&k).unwrap()
+            } else {
+                dynamic.balance(&k)
+            };
+            v = v.checked_sub(transaction_a.amount + transaction_a.fee).ok_or("overflow")?;
+            map_balance.insert(k, v);
+        }
+        for stake_a in pending_stakes {
+            let k = stake_a.input_address;
+            let mut v_balance = if map_balance.contains_key(&k) {
+                *map_balance.get(&k).unwrap()
+            } else {
+                dynamic.balance(&k)
+            };
+            let mut v_staked = if map_staked.contains_key(&k) {
+                *map_staked.get(&k).unwrap()
+            } else {
+                dynamic.staked(&k)
+            };
+            if stake_a.deposit {
+                v_balance = v_balance.checked_sub(stake_a.amount + stake_a.fee).ok_or("overflow")?;
+            } else {
+                v_balance = v_balance.checked_sub(stake_a.fee).ok_or("overflow")?;
+                v_staked = v_staked.checked_sub(stake_a.amount).ok_or("overflow")?;
+            }
+            map_balance.insert(k, v_balance);
+            map_staked.insert(k, v_staked);
         }
         Ok(())
     }

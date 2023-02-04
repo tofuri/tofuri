@@ -300,7 +300,7 @@ impl Blockchain {
         for transaction_a in block_a.transactions.iter() {
             Blockchain::validate_transaction(&dynamic, db, transaction_a, timestamp, time_delta)?;
         }
-        Blockchain::check_overflow(&dynamic, &block_a.transactions, &block_a.stakes)?;
+        dynamic.check_overflow(&block_a.transactions, &block_a.stakes)?;
         Ok(())
     }
     fn validate_transaction(
@@ -363,42 +363,6 @@ impl Blockchain {
         }
         if db::stake::get_b(db, &stake_a.hash).is_ok() {
             return Err("stake in chain".into());
-        }
-        Ok(())
-    }
-    fn check_overflow(dynamic: &Dynamic, pending_transactions: &Vec<TransactionA>, pending_stakes: &Vec<StakeA>) -> Result<(), Box<dyn Error>> {
-        let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
-        let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
-        for transaction_a in pending_transactions {
-            let k = transaction_a.input_address;
-            let mut v = if map_balance.contains_key(&k) {
-                *map_balance.get(&k).unwrap()
-            } else {
-                dynamic.balance(&k)
-            };
-            v = v.checked_sub(transaction_a.amount + transaction_a.fee).ok_or("overflow")?;
-            map_balance.insert(k, v);
-        }
-        for stake_a in pending_stakes {
-            let k = stake_a.input_address;
-            let mut v_balance = if map_balance.contains_key(&k) {
-                *map_balance.get(&k).unwrap()
-            } else {
-                dynamic.balance(&k)
-            };
-            let mut v_staked = if map_staked.contains_key(&k) {
-                *map_staked.get(&k).unwrap()
-            } else {
-                dynamic.staked(&k)
-            };
-            if stake_a.deposit {
-                v_balance = v_balance.checked_sub(stake_a.amount + stake_a.fee).ok_or("overflow")?;
-            } else {
-                v_balance = v_balance.checked_sub(stake_a.fee).ok_or("overflow")?;
-                v_staked = v_staked.checked_sub(stake_a.amount).ok_or("overflow")?;
-            }
-            map_balance.insert(k, v_balance);
-            map_staked.insert(k, v_staked);
         }
         Ok(())
     }

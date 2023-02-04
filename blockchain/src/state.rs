@@ -4,10 +4,13 @@ use pea_address::address;
 use pea_block::BlockA;
 use pea_core::*;
 use pea_db as db;
+use pea_stake::StakeA;
+use pea_transaction::TransactionA;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use std::collections::VecDeque;
+use std::error::Error;
 pub type Map = HashMap<AddressBytes, u128>;
 pub trait State {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;
@@ -73,6 +76,42 @@ impl Dynamic {
     }
     pub fn stakers_n(&self, n: usize) -> Vec<AddressBytes> {
         stakers_n(self, n).0
+    }
+    pub fn check_overflow(&self, transactions: &Vec<TransactionA>, stakes: &Vec<StakeA>) -> Result<(), Box<dyn Error>> {
+        let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
+        let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
+        for transaction_a in transactions {
+            let k = transaction_a.input_address;
+            let mut v = if map_balance.contains_key(&k) {
+                *map_balance.get(&k).unwrap()
+            } else {
+                self.balance(&k)
+            };
+            v = v.checked_sub(transaction_a.amount + transaction_a.fee).ok_or("overflow")?;
+            map_balance.insert(k, v);
+        }
+        for stake_a in stakes {
+            let k = stake_a.input_address;
+            let mut v_balance = if map_balance.contains_key(&k) {
+                *map_balance.get(&k).unwrap()
+            } else {
+                self.balance(&k)
+            };
+            let mut v_staked = if map_staked.contains_key(&k) {
+                *map_staked.get(&k).unwrap()
+            } else {
+                self.staked(&k)
+            };
+            if stake_a.deposit {
+                v_balance = v_balance.checked_sub(stake_a.amount + stake_a.fee).ok_or("overflow")?;
+            } else {
+                v_balance = v_balance.checked_sub(stake_a.fee).ok_or("overflow")?;
+                v_staked = v_staked.checked_sub(stake_a.amount).ok_or("overflow")?;
+            }
+            map_balance.insert(k, v_balance);
+            map_staked.insert(k, v_staked);
+        }
+        Ok(())
     }
 }
 impl State for Trusted {

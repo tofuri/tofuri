@@ -1,27 +1,15 @@
-use clap::Parser;
 use colored::*;
 use libp2p::futures::StreamExt;
 use libp2p::Multiaddr;
 use log::info;
-use log::warn;
 use pea::http;
 use pea::interval;
 use pea::swarm;
-use pea::Args;
 use pea::Node;
-use pea::BIND_API;
-use pea::DEV_BIND_API;
-use pea::DEV_HOST;
-use pea::DEV_TEMP_DB;
-use pea::DEV_TEMP_KEY;
-use pea::HOST;
-use pea::TEMP_DB;
-use pea::TEMP_KEY;
 use pea_address::address;
 use pea_blockchain::blockchain::Blockchain;
 use pea_db as db;
 use pea_key::Key;
-use pea_logger as logger;
 use pea_p2p::multiaddr;
 use pea_p2p::P2p;
 use pea_util;
@@ -32,47 +20,7 @@ use tempdir::TempDir;
 use tokio::net::TcpListener;
 #[tokio::main]
 async fn main() {
-    let mut args = Args::parse();
-    logger::init(args.debug);
-    info!(
-        "{} = {{ version = \"{}\" }}",
-        env!("CARGO_PKG_NAME").yellow(),
-        env!("CARGO_PKG_VERSION").magenta()
-    );
-    info!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), env!("GIT_HASH").magenta());
-    if args.dev {
-        if args.tempdb == TEMP_DB {
-            args.tempdb = DEV_TEMP_DB;
-        }
-        if args.tempkey == TEMP_KEY {
-            args.tempkey = DEV_TEMP_KEY;
-        }
-        if args.bind_api == BIND_API {
-            args.bind_api = DEV_BIND_API.to_string();
-        }
-        if args.host == HOST {
-            args.host = DEV_HOST.to_string();
-        }
-    }
-    info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
-    info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
-    info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
-    info!("{} {}", "--mint".cyan(), args.mint.to_string().magenta());
-    info!("{} {}", "--time-api".cyan(), args.time_api.to_string().magenta());
-    info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
-    info!("{} {}", "--ban-offline".cyan(), args.ban_offline.to_string().magenta());
-    info!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());
-    info!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
-    info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
-    info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
-    info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
-    info!("{} {}", "--peer".cyan(), args.peer.magenta());
-    info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
-    info!("{} {}", "--host".cyan(), args.host.magenta());
-    info!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
-    if args.dev {
-        warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
-    }
+    let args = pea::args();
     let key = match args.tempkey {
         true => Key::generate(),
         false => wallet::load(&args.wallet, &args.passphrase).unwrap().3,

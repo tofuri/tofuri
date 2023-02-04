@@ -1,5 +1,4 @@
 use clap::Parser;
-use colored::*;
 use pea_wallet::wallet::clear;
 use pea_wallet::wallet::press_any_key_to_continue;
 use pea_wallet::wallet::Options;
@@ -14,12 +13,6 @@ pub struct Args {
 }
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    println!(
-        "{} = {{ version = \"{}\" }}",
-        env!("CARGO_PKG_NAME").yellow(),
-        env!("CARGO_PKG_VERSION").magenta()
-    );
-    println!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), env!("GIT_HASH").magenta());
     let args = Args::parse();
     let mut wallet = Wallet::new(Options { api: args.api });
     loop {

@@ -24,7 +24,7 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    - run: sudo apt-get install cmake protobuf-compiler
+    - run: sudo apt-get install protobuf-compiler
     - run: cargo test
   fmt:
     runs-on: ubuntu-latest

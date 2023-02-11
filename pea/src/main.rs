@@ -49,9 +49,9 @@ async fn main() {
         p2p,
         blockchain,
         db,
+        args,
         ticks: 0,
         lag: 0.0,
-        args,
     };
     node.blockchain.load(&node.db, node.args.trust);
     info!(

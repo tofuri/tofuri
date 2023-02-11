@@ -158,7 +158,7 @@ pub mod stake {
     }
     #[test]
     fn test_serialize_len() {
-        assert_eq!(73, bincode::serialize(&StakeB::default()).unwrap().len());
+        assert_eq!(77, bincode::serialize(&StakeB::default()).unwrap().len());
     }
 }
 pub mod tree {

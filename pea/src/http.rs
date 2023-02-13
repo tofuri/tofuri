@@ -3,8 +3,9 @@ use colored::*;
 use libp2p::Multiaddr;
 use log::error;
 use log::info;
-use pea_address::address;
 use pea_api as api;
+use pea_api_core::internal::Data;
+use pea_api_core::internal::Request;
 use pea_core::*;
 use pea_db as db;
 use pea_p2p::multiaddr;
@@ -12,7 +13,6 @@ use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use std::error::Error;
 use std::io;
-use std::io::BufRead;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::io::AsyncReadExt;
@@ -37,191 +37,81 @@ pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Er
 async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, String), Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buffer)).await??;
-    let request_line = parse_request_line(&buffer)?;
-    let vec: Vec<&str> = request_line.split(' ').collect();
-    let method = vec.first().ok_or("method")?;
-    let path = vec.get(1).ok_or("path")?;
-    let args: Vec<&str> = path.split('/').filter(|&x| !x.is_empty()).collect();
-    write(
-        &mut stream,
-        match *method {
-            "GET" => get(node, args),
-            "POST" => post(node, args, parse_body(&buffer)?),
-            _ => c405(),
-        }?,
-    )
-    .await?;
+    let request: Request = bincode::deserialize(&buffer)?;
+    stream
+        .write_all(&match request.data {
+            Data::Info => get_info(node),
+            Data::Sync => get_sync(node),
+            Data::Dynamic => get_dynamic(node),
+            Data::Trusted => get_trusted(node),
+            Data::Args => get_args(node),
+            Data::Balance => get_balance(node, &request.vec),
+            Data::Staked => get_staked(node, &request.vec),
+            Data::Height => get_height(node),
+            Data::HeightByHash => get_height_by_hash(node, &request.vec),
+            Data::BlockLatest => get_block_latest(node),
+            Data::HashByHeight => get_hash_by_height(node, &request.vec),
+            Data::BlockByHash => get_block_by_hash(node, &request.vec),
+            Data::TransactionByHash => get_transaction_by_hash(node, &request.vec),
+            Data::StakeByHash => get_stake_by_hash(node, &request.vec),
+            Data::Peers => get_peers(node),
+            Data::Peer => get_peer(node, &request.vec),
+            Data::Transaction => post_transaction(node, &request.vec),
+            Data::Stake => post_stake(node, &request.vec),
+        }?)
+        .await?;
     stream.flush().await?;
-    Ok((bytes, request_line))
+    Ok((bytes, "".to_string()))
 }
-fn parse_body(buffer: &[u8; 1024]) -> Result<String, Box<dyn Error>> {
-    let str = std::str::from_utf8(buffer)?;
-    let vec = str.split("\n\n").collect::<Vec<&str>>();
-    let body = vec.get(1).ok_or("empty body")?;
-    Ok(body.trim_end_matches(char::from(0)).to_string())
-}
-fn parse_request_line(buffer: &[u8]) -> Result<String, Box<dyn Error>> {
-    Ok(buffer.lines().next().ok_or("empty request line")??)
-}
-fn get(node: &mut Node, args: Vec<&str>) -> Result<String, Box<dyn Error>> {
-    match args.first() {
-        Some(a) => match *a {
-            "info" => get_info(node),
-            "sync" => get_sync(node),
-            "dynamic" => get_dynamic(node),
-            "trusted" => get_trusted(node),
-            "args" => get_args(node),
-            "balance" => match args.get(1) {
-                Some(b) => match address::decode(b) {
-                    Ok(c) => get_balance(node, c),
-                    Err(_) => c400(),
-                },
-                None => c400(),
-            },
-            "staked" => match args.get(1) {
-                Some(b) => match address::decode(b) {
-                    Ok(c) => get_staked(node, c),
-                    Err(_) => c400(),
-                },
-                None => c400(),
-            },
-            "height" => match args.get(1) {
-                Some(b) => match hex::decode(b) {
-                    Ok(c) => get_height_by_hash(node, c),
-                    Err(_) => c400(),
-                },
-                None => get_height(node),
-            },
-            "hash" => match args.get(1) {
-                Some(b) => match b.parse::<usize>() {
-                    Ok(c) => get_hash_by_height(node, c),
-                    Err(_) => c400(),
-                },
-                None => get_height(node),
-            },
-            "block" => match args.get(1) {
-                Some(b) => match *b {
-                    "latest" => get_block_latest(node),
-                    c => match hex::decode(c) {
-                        Ok(d) => get_block_by_hash(node, d),
-                        Err(_) => c400(),
-                    },
-                },
-                None => c400(),
-            },
-            "transaction" => match args.get(1) {
-                Some(b) => match hex::decode(b) {
-                    Ok(c) => get_transaction_by_hash(node, c),
-                    Err(_) => c400(),
-                },
-                None => c400(),
-            },
-            "stake" => match args.get(1) {
-                Some(b) => match hex::decode(b) {
-                    Ok(c) => get_stake_by_hash(node, c),
-                    Err(_) => c400(),
-                },
-                None => c400(),
-            },
-            "peer" => match args.get(1..) {
-                Some(b) => get_peer(node, b),
-                None => c400(),
-            },
-            "peers" => get_peers(node),
-            _ => c404(),
-        },
-        None => get_index(),
-    }
-}
-fn post(node: &mut Node, args: Vec<&str>, body: String) -> Result<String, Box<dyn Error>> {
-    match args.first() {
-        Some(a) => match *a {
-            "transaction" => post_transaction(node, body),
-            "stake" => post_stake(node, body),
-            _ => c404(),
-        },
-        None => c400(),
-    }
-}
-async fn write(stream: &mut TcpStream, string: String) -> Result<(), Box<dyn Error>> {
-    stream.write_all(string.as_bytes()).await?;
-    Ok(())
-}
-fn json(string: String) -> String {
-    format!(
-        "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: application/json
-
-{string}"
-    )
-}
-fn text(string: String) -> String {
-    format!(
-        "\
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-
-{string}"
-    )
-}
-fn get_index() -> Result<String, Box<dyn Error>> {
-    Ok(text(format!(
-        "\
-{} = {{ version = \"{}\" }}
-{}/tree/{}",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION"),
-        env!("CARGO_PKG_REPOSITORY"),
-        env!("GIT_HASH"),
-    )))
-}
-fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    Ok(json(serde_json::to_string(&api::Info::from(
+fn get_info(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+    Ok(bincode::serialize(&api::Info::from(
         &node.key,
         node.ticks,
         node.args.tps,
         &node.blockchain,
         node.lag,
-    ))?))
+    ))?)
 }
-fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    Ok(json(serde_json::to_string(&api::Sync::from(&node.blockchain))?))
+fn get_sync(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+    Ok(bincode::serialize(&api::Sync::from(&node.blockchain))?)
 }
-fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
+fn get_dynamic(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
-    Ok(json(serde_json::to_string(&api::Dynamic::from(&dynamic))?))
+    Ok(bincode::serialize(&api::Dynamic::from(&dynamic))?)
 }
-fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
+fn get_trusted(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
-    Ok(json(serde_json::to_string(&api::Trusted::from(&trusted))?))
+    Ok(bincode::serialize(&api::Trusted::from(&trusted))?)
 }
-fn get_args(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    Ok(json(serde_json::to_string(&node.args)?))
+fn get_args(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+    Ok(bincode::serialize(&node.args)?)
 }
-fn get_balance(node: &mut Node, address_bytes: AddressBytes) -> Result<String, Box<dyn Error>> {
+fn get_balance(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     let balance = node.blockchain.states.dynamic.balance(&address_bytes);
-    Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
+    Ok(bincode::serialize(&pea_int::to_string(balance))?)
 }
-fn get_staked(node: &mut Node, address_bytes: AddressBytes) -> Result<String, Box<dyn Error>> {
+fn get_staked(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     let balance = node.blockchain.states.dynamic.staked(&address_bytes);
-    Ok(json(serde_json::to_string(&pea_int::to_string(balance))?))
+    Ok(bincode::serialize(&pea_int::to_string(balance))?)
 }
-fn get_height(node: &mut Node) -> Result<String, Box<dyn Error>> {
+fn get_height(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let height = node.blockchain.height();
-    Ok(json(serde_json::to_string(&height)?))
+    Ok(bincode::serialize(&height)?)
 }
-fn get_height_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
+fn get_height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let block_c = db::block::get_c(&node.db, &hash)?;
     let height = node.blockchain.tree.height(&block_c.previous_hash);
-    Ok(json(serde_json::to_string(&height)?))
+    Ok(bincode::serialize(&height)?)
 }
-fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
+fn get_block_latest(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let block_a = &node.blockchain.states.dynamic.latest_block;
-    Ok(json(serde_json::to_string(&api::Block::from(&block_a))?))
+    Ok(bincode::serialize(&api::Block::from(&block_a))?)
 }
-fn get_hash_by_height(node: &mut Node, height: usize) -> Result<String, Box<dyn Error>> {
+fn get_hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let height: usize = bincode::deserialize(bytes)?;
     let states = &node.blockchain.states;
     let hashes_trusted = &states.trusted.hashes;
     let hashes_dynamic = &states.dynamic.hashes;
@@ -233,33 +123,36 @@ fn get_hash_by_height(node: &mut Node, height: usize) -> Result<String, Box<dyn 
     } else {
         hashes_dynamic[height - hashes_trusted.len()]
     };
-    Ok(json(serde_json::to_string(&hex::encode(hash))?))
+    Ok(bincode::serialize(&hex::encode(hash))?)
 }
-fn get_block_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
+fn get_block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let block_a = db::block::get_a(&node.db, &hash)?;
-    Ok(json(serde_json::to_string(&api::Block::from(&block_a))?))
+    Ok(bincode::serialize(&api::Block::from(&block_a))?)
 }
-fn get_transaction_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
+fn get_transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let transaction_a = db::transaction::get_a(&node.db, &hash)?;
-    Ok(json(serde_json::to_string(&api::Transaction::from(&transaction_a))?))
+    Ok(bincode::serialize(&api::Transaction::from(&transaction_a))?)
 }
-fn get_stake_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
+fn get_stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let stake_a = db::stake::get_a(&node.db, &hash)?;
-    Ok(json(serde_json::to_string(&api::Stake::from(&stake_a))?))
+    Ok(bincode::serialize(&api::Stake::from(&stake_a))?)
 }
-fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {
+fn get_peers(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let peers: Vec<&Multiaddr> = node.p2p.connections.keys().collect();
-    Ok(json(serde_json::to_string(&peers)?))
+    Ok(bincode::serialize(&peers)?)
 }
-fn get_peer(node: &mut Node, slice: &[&str]) -> Result<String, Box<dyn Error>> {
-    let multiaddr = format!("/{}", slice.join("/")).parse::<Multiaddr>()?;
+fn get_peer(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let multiaddr: Multiaddr = bincode::deserialize(bytes)?;
     let multiaddr = multiaddr::ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
     let string = multiaddr.to_string();
     node.p2p.unknown.insert(multiaddr);
-    Ok(text(string))
+    Ok(bincode::serialize(&string)?)
 }
-fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
-    let transaction_b: TransactionB = serde_json::from_str(&body)?;
+fn post_transaction(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let transaction_b: TransactionB = bincode::deserialize(bytes)?;
     let data = bincode::serialize(&transaction_b).unwrap();
     let status = match node
         .blockchain
@@ -278,10 +171,10 @@ fn post_transaction(node: &mut Node, body: String) -> Result<String, Box<dyn Err
             err.to_string()
         }
     };
-    Ok(json(serde_json::to_string(&status)?))
+    Ok(bincode::serialize(&status)?)
 }
-fn post_stake(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
-    let stake_b: StakeB = serde_json::from_str(&body)?;
+fn post_stake(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let stake_b: StakeB = bincode::deserialize(bytes)?;
     let data = bincode::serialize(&stake_b).unwrap();
     let status = match node
         .blockchain
@@ -300,14 +193,5 @@ fn post_stake(node: &mut Node, body: String) -> Result<String, Box<dyn Error>> {
             err.to_string()
         }
     };
-    Ok(json(serde_json::to_string(&status)?))
-}
-fn c400() -> Result<String, Box<dyn Error>> {
-    Ok("HTTP/1.1 400 Bad Request".to_string())
-}
-fn c404() -> Result<String, Box<dyn Error>> {
-    Ok("HTTP/1.1 404 Not Found".to_string())
-}
-fn c405() -> Result<String, Box<dyn Error>> {
-    Ok("HTTP/1.1 405 Method Not Allowed".to_string())
+    Ok(bincode::serialize(&status)?)
 }

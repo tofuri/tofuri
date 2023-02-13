@@ -2758,6 +2758,7 @@ dependencies = [
  "log",
  "pea-address",
  "pea-api",
+ "pea-api-core",
  "pea-block",
  "pea-blockchain",
  "pea-core",

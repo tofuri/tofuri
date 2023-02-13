@@ -2,7 +2,6 @@ use serde::Deserialize;
 use serde::Serialize;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Data {
-    Args,
     Balance,
     Staked,
     Height,

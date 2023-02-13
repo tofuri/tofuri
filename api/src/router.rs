@@ -4,18 +4,17 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use pea_address::address;
-use pea_api_client::request;
-use pea_api_core::internal::Data;
-use pea_block::BlockA;
 pub async fn root() -> &'static str {
     "Hello, World!"
 }
 pub async fn height() -> impl IntoResponse {
-    let height: usize = bincode::deserialize(&request("localhost:9332", Data::Height, None).await.unwrap()).unwrap();
+    let height = pea_api_client::height("localhost:9332").await.unwrap();
     (StatusCode::OK, Json(height))
 }
 pub async fn block_latest() -> impl IntoResponse {
-    let block_a: BlockA = bincode::deserialize(&request("localhost:9332", Data::BlockLatest, None).await.unwrap()).unwrap();
+    let block_a = pea_api_client::block_latest("localhost:9332").await;
+    println!("{:?}", block_a);
+    let block_a = block_a.unwrap();
     (
         StatusCode::OK,
         Json(pea_api_core::external::Block {

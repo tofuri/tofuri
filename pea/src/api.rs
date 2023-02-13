@@ -3,7 +3,6 @@ use colored::*;
 use libp2p::Multiaddr;
 use log::error;
 use log::info;
-use pea_api_core::internal::Data::Args;
 use pea_api_core::internal::Data::Balance;
 use pea_api_core::internal::Data::BlockByHash;
 use pea_api_core::internal::Data::BlockLatest;
@@ -18,10 +17,13 @@ use pea_api_core::internal::Data::Staked;
 use pea_api_core::internal::Data::Transaction;
 use pea_api_core::internal::Data::TransactionByHash;
 use pea_api_core::internal::Request;
+use pea_block::BlockA;
 use pea_core::*;
 use pea_db as db;
 use pea_p2p::multiaddr;
+use pea_stake::StakeA;
 use pea_stake::StakeB;
+use pea_transaction::TransactionA;
 use pea_transaction::TransactionB;
 use std::error::Error;
 use std::io;
@@ -34,71 +36,56 @@ use tokio::time::timeout;
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
     match res {
         Ok((stream, socket_addr)) => match request(node, stream).await {
-            Ok((bytes, first)) => info!(
-                "{} {} {} {}",
-                "API".cyan(),
-                socket_addr.to_string().magenta(),
-                bytes.to_string().yellow(),
-                first
-            ),
+            Ok(bytes) => info!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), bytes.to_string().yellow()),
             Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err),
         },
         Err(err) => error!("{} {}", "API".cyan(), err),
     }
 }
-async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, String), Box<dyn Error>> {
+async fn request(node: &mut Node, mut stream: TcpStream) -> Result<usize, Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buffer)).await??;
     let request: Request = bincode::deserialize(&buffer)?;
     stream
         .write_all(&match request.data {
-            Args => args(node),
-            Balance => balance(node, &request.vec),
-            Staked => staked(node, &request.vec),
-            Height => height(node),
-            HeightByHash => height_by_hash(node, &request.vec),
-            BlockLatest => block_latest(node),
-            HashByHeight => hash_by_height(node, &request.vec),
-            BlockByHash => block_by_hash(node, &request.vec),
-            TransactionByHash => transaction_by_hash(node, &request.vec),
-            StakeByHash => stake_by_hash(node, &request.vec),
-            Peers => peers(node),
-            Peer => peer(node, &request.vec),
-            Transaction => transaction(node, &request.vec),
-            Stake => stake(node, &request.vec),
+            Balance => bincode::serialize(&balance(node, &request.vec)?),
+            Staked => bincode::serialize(&staked(node, &request.vec)?),
+            Height => bincode::serialize(&height(node)?),
+            HeightByHash => bincode::serialize(&height_by_hash(node, &request.vec)?),
+            BlockLatest => bincode::serialize(block_latest(node)?),
+            HashByHeight => bincode::serialize(&hash_by_height(node, &request.vec)?),
+            BlockByHash => bincode::serialize(&block_by_hash(node, &request.vec)?),
+            TransactionByHash => bincode::serialize(&transaction_by_hash(node, &request.vec)?),
+            StakeByHash => bincode::serialize(&stake_by_hash(node, &request.vec)?),
+            Peers => bincode::serialize(&peers(node)?),
+            Peer => bincode::serialize(&peer(node, &request.vec)?),
+            Transaction => bincode::serialize(&transaction(node, &request.vec)?),
+            Stake => bincode::serialize(&stake(node, &request.vec)?),
         }?)
         .await?;
     stream.flush().await?;
-    Ok((bytes, "".to_string()))
+    Ok(bytes)
 }
-fn args(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
-    Ok(bincode::serialize(&node.args)?)
-}
-fn balance(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn balance(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
-    let balance = node.blockchain.states.dynamic.balance(&address_bytes);
-    Ok(bincode::serialize(&pea_int::to_string(balance))?)
+    Ok(node.blockchain.states.dynamic.balance(&address_bytes))
 }
-fn staked(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn staked(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
-    let balance = node.blockchain.states.dynamic.staked(&address_bytes);
-    Ok(bincode::serialize(&pea_int::to_string(balance))?)
+    Ok(node.blockchain.states.dynamic.staked(&address_bytes))
 }
-fn height(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
-    let height = node.blockchain.height();
-    Ok(bincode::serialize(&height)?)
+fn height(node: &mut Node) -> Result<usize, Box<dyn Error>> {
+    Ok(node.blockchain.height())
 }
-fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let block_c = db::block::get_c(&node.db, &hash)?;
-    let height = node.blockchain.tree.height(&block_c.previous_hash);
-    Ok(bincode::serialize(&height)?)
+    Ok(node.blockchain.tree.height(&block_c.previous_hash))
 }
-fn block_latest(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
-    let block_a = &node.blockchain.states.dynamic.latest_block;
-    Ok(bincode::serialize(&block_a)?)
+fn block_latest(node: &mut Node) -> Result<&BlockA, Box<dyn Error>> {
+    Ok(&node.blockchain.states.dynamic.latest_block)
 }
-fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Box<dyn Error>> {
     let height: usize = bincode::deserialize(bytes)?;
     let states = &node.blockchain.states;
     let hashes_trusted = &states.trusted.hashes;
@@ -111,35 +98,30 @@ fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Erro
     } else {
         hashes_dynamic[height - hashes_trusted.len()]
     };
-    Ok(bincode::serialize(&hex::encode(hash))?)
+    Ok(hash)
 }
-fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
-    let block_a = db::block::get_a(&node.db, &hash)?;
-    Ok(bincode::serialize(&block_a)?)
+    Ok(db::block::get_a(&node.db, &hash)?)
 }
-fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<TransactionA, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
-    let transaction_a = db::transaction::get_a(&node.db, &hash)?;
-    Ok(bincode::serialize(&transaction_a)?)
+    Ok(db::transaction::get_a(&node.db, &hash)?)
 }
-fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<StakeA, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
-    let stake_a = db::stake::get_a(&node.db, &hash)?;
-    Ok(bincode::serialize(&stake_a)?)
+    Ok(db::stake::get_a(&node.db, &hash)?)
 }
-fn peers(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
-    let peers: Vec<&Multiaddr> = node.p2p.connections.keys().collect();
-    Ok(bincode::serialize(&peers)?)
+fn peers(node: &mut Node) -> Result<Vec<&Multiaddr>, Box<dyn Error>> {
+    Ok(node.p2p.connections.keys().collect())
 }
-fn peer(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
     let multiaddr: Multiaddr = bincode::deserialize(bytes)?;
     let multiaddr = multiaddr::ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
-    let string = multiaddr.to_string();
     node.p2p.unknown.insert(multiaddr);
-    Ok(bincode::serialize(&string)?)
+    Ok(())
 }
-fn transaction(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     let transaction_b: TransactionB = bincode::deserialize(bytes)?;
     let data = bincode::serialize(&transaction_b).unwrap();
     let status = match node
@@ -159,9 +141,9 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>>
             err.to_string()
         }
     };
-    Ok(bincode::serialize(&status)?)
+    Ok(status)
 }
-fn stake(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     let stake_b: StakeB = bincode::deserialize(bytes)?;
     let data = bincode::serialize(&stake_b).unwrap();
     let status = match node
@@ -181,5 +163,5 @@ fn stake(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
             err.to_string()
         }
     };
-    Ok(bincode::serialize(&status)?)
+    Ok(status)
 }

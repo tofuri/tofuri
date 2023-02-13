@@ -15,8 +15,6 @@ use crossterm::event;
 use crossterm::terminal;
 use pea_address::address;
 use pea_address::secret;
-use pea_api_client::request;
-use pea_api_core::internal::Data;
 use pea_core::*;
 use pea_key::Key;
 use pea_stake::StakeA;
@@ -118,13 +116,12 @@ impl Wallet {
     async fn api(&self) {}
     async fn balance(&self) {
         let address_bytes = self.key.as_ref().unwrap().address_bytes();
-        let vec = Some(bincode::serialize(&address_bytes).unwrap());
-        let balance: u128 = bincode::deserialize(&request(&self.api, Data::Balance, vec.clone()).await.unwrap()).unwrap();
-        let staked: u128 = bincode::deserialize(&request(&self.api, Data::Staked, vec).await.unwrap()).unwrap();
+        let balance = pea_api_client::balance(&self.api, &address_bytes).await.unwrap();
+        let staked = pea_api_client::staked(&self.api, &address_bytes).await.unwrap();
         println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
     }
     async fn height(&self) {
-        let height: usize = bincode::deserialize(&request(&self.api, Data::Height, None).await.unwrap()).unwrap();
+        let height = pea_api_client::height(&self.api).await.unwrap();
         println!("Latest block height is {}.", height.to_string().yellow());
     }
     async fn transaction(&self) {
@@ -165,9 +162,8 @@ impl Wallet {
         let search = inquire::search();
         if address::decode(&search).is_ok() {
             let address_bytes = address::decode(&search).unwrap();
-            let vec = Some(bincode::serialize(&address_bytes).unwrap());
-            let balance: u128 = bincode::deserialize(&request(&self.api, Data::Balance, vec.clone()).await.unwrap()).unwrap();
-            let staked: u128 = bincode::deserialize(&request(&self.api, Data::Staked, vec).await.unwrap()).unwrap();
+            let balance = pea_api_client::balance(&self.api, &address_bytes).await.unwrap();
+            let staked = pea_api_client::staked(&self.api, &address_bytes).await.unwrap();
             println!(
                 "Address found\nAccount balance: {}, staked: {}",
                 balance.to_string().yellow(),

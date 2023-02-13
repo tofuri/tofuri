@@ -1968,7 +1968,7 @@ dependencies = [
  "libp2p-swarm",
  "libp2p-tcp",
  "libp2p-webrtc",
- "multiaddr",
+ "multiaddr 0.16.0",
  "parking_lot 0.12.1",
  "pin-project",
  "smallvec",
@@ -2008,8 +2008,8 @@ dependencies = [
  "futures-timer",
  "instant",
  "log",
- "multiaddr",
- "multihash",
+ "multiaddr 0.16.0",
+ "multihash 0.16.3",
  "multistream-select",
  "once_cell",
  "parking_lot 0.12.1",
@@ -2288,7 +2288,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-noise",
  "log",
- "multihash",
+ "multihash 0.16.3",
  "prost",
  "prost-build",
  "prost-codec",
@@ -2475,7 +2475,25 @@ dependencies = [
  "byteorder",
  "data-encoding",
  "multibase",
- "multihash",
+ "multihash 0.16.3",
+ "percent-encoding",
+ "serde",
+ "static_assertions",
+ "unsigned-varint",
+ "url",
+]
+
+[[package]]
+name = "multiaddr"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b53e0cc5907a5c216ba6584bf74be8ab47d6d6289f72793b2dddbf15dc3bf8c"
+dependencies = [
+ "arrayref",
+ "byteorder",
+ "data-encoding",
+ "multibase",
+ "multihash 0.17.0",
  "percent-encoding",
  "serde",
  "static_assertions",
@@ -2504,6 +2522,17 @@ dependencies = [
  "digest 0.10.6",
  "multihash-derive",
  "sha2 0.10.6",
+ "unsigned-varint",
+]
+
+[[package]]
+name = "multihash"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "835d6ff01d610179fbce3de1694d007e500bf33a7f29689838941d6bf783ae40"
+dependencies = [
+ "core2",
+ "multihash-derive",
  "unsigned-varint",
 ]
 
@@ -2944,7 +2973,12 @@ name = "pea-api-client"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "multiaddr 0.17.0",
  "pea-api-core",
+ "pea-block",
+ "pea-core",
+ "pea-stake",
+ "pea-transaction",
  "tokio",
 ]
 

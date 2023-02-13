@@ -1,3 +1,4 @@
+use crate::util;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -30,23 +31,8 @@ pub async fn height_by_hash(hash: Path<String>) -> impl IntoResponse {
     (StatusCode::OK, Json(height))
 }
 pub async fn block_latest() -> impl IntoResponse {
-    let block_a = pea_api_client::block_latest("localhost:9332").await;
-    println!("{:?}", block_a);
-    let block_a = block_a.unwrap();
-    (
-        StatusCode::OK,
-        Json(pea_api_core::external::Block {
-            hash: hex::encode(block_a.hash),
-            previous_hash: hex::encode(block_a.previous_hash),
-            timestamp: block_a.timestamp,
-            beta: hex::encode(block_a.beta),
-            pi: hex::encode(block_a.pi),
-            forger_address: address::encode(&block_a.input_address()),
-            signature: hex::encode(block_a.signature),
-            transactions: block_a.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
-            stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
-        }),
-    )
+    let block_a = pea_api_client::block_latest("localhost:9332").await.unwrap();
+    (StatusCode::OK, Json(util::external_block(block_a)))
 }
 pub async fn hash_by_height(height: Path<String>) -> impl IntoResponse {
     let height: usize = height.parse().unwrap();
@@ -56,7 +42,7 @@ pub async fn hash_by_height(height: Path<String>) -> impl IntoResponse {
 pub async fn block_by_hash(hash: Path<String>) -> impl IntoResponse {
     let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let block_a = pea_api_client::block_by_hash("localhost:9332", &hash).await.unwrap();
-    (StatusCode::OK, Json(block_a))
+    (StatusCode::OK, Json(util::external_block(block_a)))
 }
 pub async fn transaction_by_hash(hash: Path<String>) -> impl IntoResponse {
     let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
@@ -82,7 +68,7 @@ pub async fn transaction(Json(payload): Json<Value>) -> impl IntoResponse {
     // let status = pea_api_client::transaction("localhost:9332").await.unwrap();
     // (StatusCode::OK, Json(status))
 }
-pub async fn stake() -> impl IntoResponse {
+pub async fn stake(Json(payload): Json<Value>) -> impl IntoResponse {
     (StatusCode::OK, Json(()))
     // let status = pea_api_client::stake("localhost:9332").await.unwrap();
     // (StatusCode::OK, Json(status))

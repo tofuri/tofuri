@@ -41,31 +41,32 @@ pub struct Block {
     pub hash: String,
     pub previous_hash: String,
     pub timestamp: u32,
-    pub address: String,
-    pub signature: String,
-    pub pi: String,
     pub beta: String,
+    pub pi: String,
+    pub forger_address: String,
+    pub signature: String,
     pub transactions: Vec<String>,
     pub stakes: Vec<String>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
-    pub hash: String,
     pub input_address: String,
     pub output_address: String,
     pub amount: Amount,
     pub fee: Amount,
     pub timestamp: u32,
+    pub hash: String,
     pub signature: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Stake {
-    pub hash: String,
-    pub address: String,
+    pub amount: Amount,
     pub fee: Amount,
     pub deposit: bool,
     pub timestamp: u32,
     pub signature: String,
+    pub input_address: String,
+    pub hash: String,
 }
 enum Method {
     Get,

@@ -241,7 +241,7 @@ fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
         hash: hex::encode(block_a.hash),
         previous_hash: hex::encode(block_a.previous_hash),
         timestamp: block_a.timestamp,
-        address: address::encode(&block_a.input_address()),
+        forger_address: address::encode(&block_a.input_address()),
         signature: hex::encode(block_a.signature),
         pi: hex::encode(block_a.pi),
         beta: hex::encode(block_a.beta),
@@ -269,7 +269,7 @@ fn get_block_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn E
         hash: hex::encode(block_a.hash),
         previous_hash: hex::encode(block_a.previous_hash),
         timestamp: block_a.timestamp,
-        address: address::encode(&block_a.input_address()),
+        forger_address: address::encode(&block_a.input_address()),
         signature: hex::encode(block_a.signature),
         pi: hex::encode(block_a.pi),
         beta: hex::encode(block_a.beta),
@@ -293,7 +293,8 @@ fn get_stake_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn E
     let stake_a = db::stake::get_a(&node.db, &hash)?;
     Ok(json(serde_json::to_string(&api::Stake {
         hash: hex::encode(stake_a.hash),
-        address: address::encode(&stake_a.input_address),
+        input_address: address::encode(&stake_a.input_address),
+        amount: pea_int::to_string(stake_a.amount),
         fee: pea_int::to_string(stake_a.fee),
         deposit: stake_a.deposit,
         timestamp: stake_a.timestamp,

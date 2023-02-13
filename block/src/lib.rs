@@ -74,14 +74,17 @@ impl Block for BlockB {
         beta(self)
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockA {
     pub hash: Hash,
     pub previous_hash: Hash,
     pub timestamp: u32,
     pub beta: Beta,
+    #[serde(with = "BigArray")]
     pub pi: Pi,
+    #[serde(with = "BigArray")]
     pub input_public_key: PublicKeyBytes,
+    #[serde(with = "BigArray")]
     pub signature: SignatureBytes,
     pub transactions: Vec<TransactionA>,
     pub stakes: Vec<StakeA>,

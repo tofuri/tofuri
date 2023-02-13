@@ -9,6 +9,8 @@ categories = ["cryptography::cryptocurrencies"]
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]
+pea-api-client = { version = "0.1", path = "../api-client" }
+pea-api-core = { version = "0.1", path = "../api-core" }
 pea-core = { version = "0.6", path = "../core" }
 pea-address = { version = "0.6", path = "../address" }
 pea-int = { version = "0.4", path = "../int" }
@@ -30,3 +32,4 @@ tokio = { version = "1.24", features = ["full"] }
 clap = { version = "3.2", features = ["derive"] }
 rand = "0.8"
 lazy_static = "1.4"
+bincode = "1.3"

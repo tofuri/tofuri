@@ -1,0 +1,12 @@
+[package]
+name = "pea-api-client"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0"
+description = "Peacash API Client"
+repository = "https://github.com/peacash/peacash"
+
+[dependencies]
+pea-api-core = { version = "0.1", path = "../api-core" }
+tokio = "1.24"
+bincode = "1.3"

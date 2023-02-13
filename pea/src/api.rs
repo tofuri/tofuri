@@ -3,25 +3,20 @@ use colored::*;
 use libp2p::Multiaddr;
 use log::error;
 use log::info;
-use pea_api as api;
 use pea_api_core::internal::Data::Args;
 use pea_api_core::internal::Data::Balance;
 use pea_api_core::internal::Data::BlockByHash;
 use pea_api_core::internal::Data::BlockLatest;
-use pea_api_core::internal::Data::Dynamic;
 use pea_api_core::internal::Data::HashByHeight;
 use pea_api_core::internal::Data::Height;
 use pea_api_core::internal::Data::HeightByHash;
-use pea_api_core::internal::Data::Info;
 use pea_api_core::internal::Data::Peer;
 use pea_api_core::internal::Data::Peers;
 use pea_api_core::internal::Data::Stake;
 use pea_api_core::internal::Data::StakeByHash;
 use pea_api_core::internal::Data::Staked;
-use pea_api_core::internal::Data::Sync;
 use pea_api_core::internal::Data::Transaction;
 use pea_api_core::internal::Data::TransactionByHash;
-use pea_api_core::internal::Data::Trusted;
 use pea_api_core::internal::Request;
 use pea_core::*;
 use pea_db as db;
@@ -57,10 +52,6 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Strin
     let request: Request = bincode::deserialize(&buffer)?;
     stream
         .write_all(&match request.data {
-            Info => info(node),
-            Sync => sync(node),
-            Dynamic => dynamic(node),
-            Trusted => trusted(node),
             Args => args(node),
             Balance => balance(node, &request.vec),
             Staked => staked(node, &request.vec),
@@ -79,26 +70,6 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Strin
         .await?;
     stream.flush().await?;
     Ok((bytes, "".to_string()))
-}
-fn info(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
-    Ok(bincode::serialize(&api::Info::from(
-        &node.key,
-        node.ticks,
-        node.args.tps,
-        &node.blockchain,
-        node.lag,
-    ))?)
-}
-fn sync(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
-    Ok(bincode::serialize(&api::Sync::from(&node.blockchain))?)
-}
-fn dynamic(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
-    let dynamic = &node.blockchain.states.dynamic;
-    Ok(bincode::serialize(&api::Dynamic::from(&dynamic))?)
-}
-fn trusted(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
-    let trusted = &node.blockchain.states.trusted;
-    Ok(bincode::serialize(&api::Trusted::from(&trusted))?)
 }
 fn args(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(bincode::serialize(&node.args)?)
@@ -125,7 +96,7 @@ fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Erro
 }
 fn block_latest(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let block_a = &node.blockchain.states.dynamic.latest_block;
-    Ok(bincode::serialize(&api::Block::from(&block_a))?)
+    Ok(bincode::serialize(&block_a)?)
 }
 fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let height: usize = bincode::deserialize(bytes)?;
@@ -145,17 +116,17 @@ fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Erro
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let block_a = db::block::get_a(&node.db, &hash)?;
-    Ok(bincode::serialize(&api::Block::from(&block_a))?)
+    Ok(bincode::serialize(&block_a)?)
 }
 fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let transaction_a = db::transaction::get_a(&node.db, &hash)?;
-    Ok(bincode::serialize(&api::Transaction::from(&transaction_a))?)
+    Ok(bincode::serialize(&transaction_a)?)
 }
 fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let stake_a = db::stake::get_a(&node.db, &hash)?;
-    Ok(bincode::serialize(&api::Stake::from(&stake_a))?)
+    Ok(bincode::serialize(&stake_a)?)
 }
 fn peers(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let peers: Vec<&Multiaddr> = node.p2p.connections.keys().collect();

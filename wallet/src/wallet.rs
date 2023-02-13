@@ -15,8 +15,8 @@ use crossterm::event;
 use crossterm::terminal;
 use pea_address::address;
 use pea_address::secret;
-use pea_api::get;
-use pea_api::post;
+use pea_api_client::request;
+use pea_api_core::internal::Data;
 use pea_core::*;
 use pea_key::Key;
 use pea_stake::StakeA;
@@ -115,35 +115,17 @@ impl Wallet {
         self.ciphertext = ciphertext;
         self.key = Some(key);
     }
-    async fn api(&self) {
-        match get::index(&self.api).await {
-            Ok(info) => println!("{}", info.green()),
-            Err(err) => println!("{}", err.to_string().red()),
-        };
-        match get::sync(&self.api).await {
-            Ok(sync) => {
-                println!("Synchronize {}", sync.status.yellow());
-                println!("Height {}", sync.height.to_string().yellow());
-                println!("Last block seen {}", sync.last_seen.yellow());
-            }
-            Err(err) => println!("{}", err.to_string().red()),
-        };
-    }
+    async fn api(&self) {}
     async fn balance(&self) {
-        let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
-        match get::balance(&self.api, &address).await {
-            Ok(balance) => match get::staked(&self.api, &address).await {
-                Ok(staked) => println!("Account balance: {}, staked: {}", balance.yellow(), staked.yellow()),
-                Err(err) => println!("{}", err.to_string().red()),
-            },
-            Err(err) => println!("{}", err.to_string().red()),
-        };
+        let address_bytes = self.key.as_ref().unwrap().address_bytes();
+        let vec = Some(bincode::serialize(&address_bytes).unwrap());
+        let balance: u128 = bincode::deserialize(&request(&self.api, Data::Balance, vec.clone()).await.unwrap()).unwrap();
+        let staked: u128 = bincode::deserialize(&request(&self.api, Data::Staked, vec).await.unwrap()).unwrap();
+        println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
     }
     async fn height(&self) {
-        match get::height(&self.api).await {
-            Ok(height) => println!("Latest block height is {}.", height.to_string().yellow()),
-            Err(err) => println!("{}", err.to_string().red()),
-        };
+        let height: usize = bincode::deserialize(&request(&self.api, Data::Height, None).await.unwrap()).unwrap();
+        println!("Latest block height is {}.", height.to_string().yellow());
     }
     async fn transaction(&self) {
         let address = inquire::address();
@@ -167,10 +149,6 @@ impl Wallet {
         )
         .unwrap();
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
-        match post::transaction(&self.api, &transaction_a.b()).await {
-            Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
-            Err(err) => println!("{}", err.to_string().red()),
-        };
     }
     async fn stake(&self) {
         let deposit = inquire::deposit();
@@ -182,43 +160,22 @@ impl Wallet {
         }
         let stake_a = StakeA::sign(deposit, amount, fee, pea_util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
-        match post::stake(&self.api, &stake_a.b()).await {
-            Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
-            Err(err) => println!("{}", err.to_string().red()),
-        };
     }
     async fn search(&self) {
         let search = inquire::search();
         if address::decode(&search).is_ok() {
-            match get::balance(&self.api, &search).await {
-                Ok(balance) => match get::staked(&self.api, &search).await {
-                    Ok(staked) => println!("Address found\nAccount balance: {}, staked: {}", balance.yellow(), staked.yellow()),
-                    Err(err) => println!("{}", err.to_string().red()),
-                },
-                Err(err) => println!("{}", err.to_string().red()),
-            };
+            let address_bytes = address::decode(&search).unwrap();
+            let vec = Some(bincode::serialize(&address_bytes).unwrap());
+            let balance: u128 = bincode::deserialize(&request(&self.api, Data::Balance, vec.clone()).await.unwrap()).unwrap();
+            let staked: u128 = bincode::deserialize(&request(&self.api, Data::Staked, vec).await.unwrap()).unwrap();
+            println!(
+                "Address found\nAccount balance: {}, staked: {}",
+                balance.to_string().yellow(),
+                staked.to_string().yellow()
+            );
             return;
         } else if search.len() == 64 {
-            if let Ok(block) = get::block(&self.api, &search).await {
-                println!("Block found\n{block:?}");
-                return;
-            };
-            if let Ok(transaction) = get::transaction(&self.api, &search).await {
-                println!("Transaction found\n{transaction:?}");
-                return;
-            };
-            if let Ok(stake) = get::stake(&self.api, &search).await {
-                println!("Stake found\n{stake:?}");
-                return;
-            };
         } else if search.parse::<usize>().is_ok() {
-            if let Ok(hash) = get::hash(&self.api, &search.parse::<usize>().unwrap()).await {
-                if let Ok(block) = get::block(&self.api, &hash).await {
-                    println!("Block found{block:?}");
-                    return;
-                };
-                return;
-            };
         }
         println!("{}", "Nothing found".red());
     }

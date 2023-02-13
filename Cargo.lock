@@ -2810,6 +2810,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "pea-api-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "pea-block"
 version = "0.6.4"
 dependencies = [

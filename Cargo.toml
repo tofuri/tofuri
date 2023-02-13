@@ -2,6 +2,7 @@
 members = [
     "address",
     "api",
+    "api-core",
     "block",
     "blockchain",
     "core",

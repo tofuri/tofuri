@@ -6,20 +6,13 @@ use colored::*;
 use log::info;
 use log::warn;
 use pea_blockchain::blockchain::Blockchain;
+use pea_core::*;
 use pea_key::Key;
 use pea_p2p::P2p;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use serde::Deserialize;
 use serde::Serialize;
-pub const TEMP_DB: bool = false;
-pub const TEMP_KEY: bool = false;
-pub const BIND_API: &str = ":::9332";
-pub const HOST: &str = "/ip4/0.0.0.0/tcp/9333";
-pub const DEV_TEMP_DB: bool = true;
-pub const DEV_TEMP_KEY: bool = true;
-pub const DEV_BIND_API: &str = ":::9334";
-pub const DEV_HOST: &str = "/ip4/0.0.0.0/tcp/9335";
 pub struct Node {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,

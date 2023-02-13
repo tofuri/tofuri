@@ -113,6 +113,12 @@ pub mod get {
     pub async fn height(api: &str) -> Result<Height, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::Get, "/height", None).await?)?)
     }
+    pub async fn height_by_hash(api: &str, hash: &str) -> Result<Height, Box<dyn Error>> {
+        Ok(serde_json::from_str(&request(api, Method::Get, &format!("/height/{hash}"), None).await?)?)
+    }
+    pub async fn hash_by_height(api: &str, height: usize) -> Result<Hash, Box<dyn Error>> {
+        Ok(serde_json::from_str(&request(api, Method::Get, &format!("/hash/{height}"), None).await?)?)
+    }
     pub async fn balance(api: &str, address: &str) -> Result<Amount, Box<dyn Error>> {
         Ok(serde_json::from_str(&request(api, Method::Get, &format!("/balance/{address}"), None).await?)?)
     }

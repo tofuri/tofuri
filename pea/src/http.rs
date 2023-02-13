@@ -89,14 +89,14 @@ fn get(node: &mut Node, args: Vec<&str>) -> Result<String, Box<dyn Error>> {
             },
             "height" => match args.get(1) {
                 Some(b) => match hex::decode(b) {
-                    Ok(c) => get_hash_height(node, c),
+                    Ok(c) => get_height_by_hash(node, c),
                     Err(_) => c400(),
                 },
                 None => get_height(node),
             },
             "hash" => match args.get(1) {
                 Some(b) => match b.parse::<usize>() {
-                    Ok(c) => get_height_hash(node, c),
+                    Ok(c) => get_hash_by_height(node, c),
                     Err(_) => c400(),
                 },
                 None => get_height(node),
@@ -230,7 +230,7 @@ fn get_height(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let height = node.blockchain.height();
     Ok(json(serde_json::to_string(&height)?))
 }
-fn get_hash_height(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
+fn get_height_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let block_c = db::block::get_c(&node.db, &hash)?;
     let height = node.blockchain.tree.height(&block_c.previous_hash);
     Ok(json(serde_json::to_string(&height)?))
@@ -249,7 +249,7 @@ fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
         stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     })?))
 }
-fn get_height_hash(node: &mut Node, height: usize) -> Result<String, Box<dyn Error>> {
+fn get_hash_by_height(node: &mut Node, height: usize) -> Result<String, Box<dyn Error>> {
     let states = &node.blockchain.states;
     let hashes_trusted = &states.trusted.hashes;
     let hashes_dynamic = &states.dynamic.hashes;

@@ -1,4 +1,4 @@
-pub mod http;
+pub mod api;
 pub mod interval;
 pub mod swarm;
 use clap::Parser;

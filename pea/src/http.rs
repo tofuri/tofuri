@@ -40,30 +40,30 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Strin
     let request: Request = bincode::deserialize(&buffer)?;
     stream
         .write_all(&match request.data {
-            Data::Info => get_info(node),
-            Data::Sync => get_sync(node),
-            Data::Dynamic => get_dynamic(node),
-            Data::Trusted => get_trusted(node),
-            Data::Args => get_args(node),
-            Data::Balance => get_balance(node, &request.vec),
-            Data::Staked => get_staked(node, &request.vec),
-            Data::Height => get_height(node),
-            Data::HeightByHash => get_height_by_hash(node, &request.vec),
-            Data::BlockLatest => get_block_latest(node),
-            Data::HashByHeight => get_hash_by_height(node, &request.vec),
-            Data::BlockByHash => get_block_by_hash(node, &request.vec),
-            Data::TransactionByHash => get_transaction_by_hash(node, &request.vec),
-            Data::StakeByHash => get_stake_by_hash(node, &request.vec),
-            Data::Peers => get_peers(node),
-            Data::Peer => get_peer(node, &request.vec),
-            Data::Transaction => post_transaction(node, &request.vec),
-            Data::Stake => post_stake(node, &request.vec),
+            Data::Info => info(node),
+            Data::Sync => sync(node),
+            Data::Dynamic => dynamic(node),
+            Data::Trusted => trusted(node),
+            Data::Args => args(node),
+            Data::Balance => balance(node, &request.vec),
+            Data::Staked => staked(node, &request.vec),
+            Data::Height => height(node),
+            Data::HeightByHash => height_by_hash(node, &request.vec),
+            Data::BlockLatest => block_latest(node),
+            Data::HashByHeight => hash_by_height(node, &request.vec),
+            Data::BlockByHash => block_by_hash(node, &request.vec),
+            Data::TransactionByHash => transaction_by_hash(node, &request.vec),
+            Data::StakeByHash => stake_by_hash(node, &request.vec),
+            Data::Peers => peers(node),
+            Data::Peer => peer(node, &request.vec),
+            Data::Transaction => transaction(node, &request.vec),
+            Data::Stake => stake(node, &request.vec),
         }?)
         .await?;
     stream.flush().await?;
     Ok((bytes, "".to_string()))
 }
-fn get_info(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+fn info(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(bincode::serialize(&api::Info::from(
         &node.key,
         node.ticks,
@@ -72,45 +72,45 @@ fn get_info(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
         node.lag,
     ))?)
 }
-fn get_sync(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+fn sync(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(bincode::serialize(&api::Sync::from(&node.blockchain))?)
 }
-fn get_dynamic(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+fn dynamic(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
     Ok(bincode::serialize(&api::Dynamic::from(&dynamic))?)
 }
-fn get_trusted(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+fn trusted(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
     Ok(bincode::serialize(&api::Trusted::from(&trusted))?)
 }
-fn get_args(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+fn args(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(bincode::serialize(&node.args)?)
 }
-fn get_balance(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn balance(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     let balance = node.blockchain.states.dynamic.balance(&address_bytes);
     Ok(bincode::serialize(&pea_int::to_string(balance))?)
 }
-fn get_staked(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn staked(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     let balance = node.blockchain.states.dynamic.staked(&address_bytes);
     Ok(bincode::serialize(&pea_int::to_string(balance))?)
 }
-fn get_height(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+fn height(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let height = node.blockchain.height();
     Ok(bincode::serialize(&height)?)
 }
-fn get_height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let block_c = db::block::get_c(&node.db, &hash)?;
     let height = node.blockchain.tree.height(&block_c.previous_hash);
     Ok(bincode::serialize(&height)?)
 }
-fn get_block_latest(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+fn block_latest(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let block_a = &node.blockchain.states.dynamic.latest_block;
     Ok(bincode::serialize(&api::Block::from(&block_a))?)
 }
-fn get_hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let height: usize = bincode::deserialize(bytes)?;
     let states = &node.blockchain.states;
     let hashes_trusted = &states.trusted.hashes;
@@ -125,33 +125,33 @@ fn get_hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn 
     };
     Ok(bincode::serialize(&hex::encode(hash))?)
 }
-fn get_block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let block_a = db::block::get_a(&node.db, &hash)?;
     Ok(bincode::serialize(&api::Block::from(&block_a))?)
 }
-fn get_transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let transaction_a = db::transaction::get_a(&node.db, &hash)?;
     Ok(bincode::serialize(&api::Transaction::from(&transaction_a))?)
 }
-fn get_stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let hash: Vec<u8> = bincode::deserialize(bytes)?;
     let stake_a = db::stake::get_a(&node.db, &hash)?;
     Ok(bincode::serialize(&api::Stake::from(&stake_a))?)
 }
-fn get_peers(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
+fn peers(node: &mut Node) -> Result<Vec<u8>, Box<dyn Error>> {
     let peers: Vec<&Multiaddr> = node.p2p.connections.keys().collect();
     Ok(bincode::serialize(&peers)?)
 }
-fn get_peer(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn peer(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let multiaddr: Multiaddr = bincode::deserialize(bytes)?;
     let multiaddr = multiaddr::ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
     let string = multiaddr.to_string();
     node.p2p.unknown.insert(multiaddr);
     Ok(bincode::serialize(&string)?)
 }
-fn post_transaction(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn transaction(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let transaction_b: TransactionB = bincode::deserialize(bytes)?;
     let data = bincode::serialize(&transaction_b).unwrap();
     let status = match node
@@ -173,7 +173,7 @@ fn post_transaction(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Er
     };
     Ok(bincode::serialize(&status)?)
 }
-fn post_stake(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+fn stake(node: &mut Node, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let stake_b: StakeB = bincode::deserialize(bytes)?;
     let data = bincode::serialize(&stake_b).unwrap();
     let status = match node

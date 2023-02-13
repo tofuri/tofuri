@@ -4,7 +4,24 @@ use libp2p::Multiaddr;
 use log::error;
 use log::info;
 use pea_api as api;
-use pea_api_core::internal::Data;
+use pea_api_core::internal::Data::Args;
+use pea_api_core::internal::Data::Balance;
+use pea_api_core::internal::Data::BlockByHash;
+use pea_api_core::internal::Data::BlockLatest;
+use pea_api_core::internal::Data::Dynamic;
+use pea_api_core::internal::Data::HashByHeight;
+use pea_api_core::internal::Data::Height;
+use pea_api_core::internal::Data::HeightByHash;
+use pea_api_core::internal::Data::Info;
+use pea_api_core::internal::Data::Peer;
+use pea_api_core::internal::Data::Peers;
+use pea_api_core::internal::Data::Stake;
+use pea_api_core::internal::Data::StakeByHash;
+use pea_api_core::internal::Data::Staked;
+use pea_api_core::internal::Data::Sync;
+use pea_api_core::internal::Data::Transaction;
+use pea_api_core::internal::Data::TransactionByHash;
+use pea_api_core::internal::Data::Trusted;
 use pea_api_core::internal::Request;
 use pea_core::*;
 use pea_db as db;
@@ -40,24 +57,24 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Strin
     let request: Request = bincode::deserialize(&buffer)?;
     stream
         .write_all(&match request.data {
-            Data::Info => info(node),
-            Data::Sync => sync(node),
-            Data::Dynamic => dynamic(node),
-            Data::Trusted => trusted(node),
-            Data::Args => args(node),
-            Data::Balance => balance(node, &request.vec),
-            Data::Staked => staked(node, &request.vec),
-            Data::Height => height(node),
-            Data::HeightByHash => height_by_hash(node, &request.vec),
-            Data::BlockLatest => block_latest(node),
-            Data::HashByHeight => hash_by_height(node, &request.vec),
-            Data::BlockByHash => block_by_hash(node, &request.vec),
-            Data::TransactionByHash => transaction_by_hash(node, &request.vec),
-            Data::StakeByHash => stake_by_hash(node, &request.vec),
-            Data::Peers => peers(node),
-            Data::Peer => peer(node, &request.vec),
-            Data::Transaction => transaction(node, &request.vec),
-            Data::Stake => stake(node, &request.vec),
+            Info => info(node),
+            Sync => sync(node),
+            Dynamic => dynamic(node),
+            Trusted => trusted(node),
+            Args => args(node),
+            Balance => balance(node, &request.vec),
+            Staked => staked(node, &request.vec),
+            Height => height(node),
+            HeightByHash => height_by_hash(node, &request.vec),
+            BlockLatest => block_latest(node),
+            HashByHeight => hash_by_height(node, &request.vec),
+            BlockByHash => block_by_hash(node, &request.vec),
+            TransactionByHash => transaction_by_hash(node, &request.vec),
+            StakeByHash => stake_by_hash(node, &request.vec),
+            Peers => peers(node),
+            Peer => peer(node, &request.vec),
+            Transaction => transaction(node, &request.vec),
+            Stake => stake(node, &request.vec),
         }?)
         .await?;
     stream.flush().await?;

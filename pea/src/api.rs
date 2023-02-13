@@ -3,6 +3,7 @@ use colored::*;
 use libp2p::Multiaddr;
 use log::error;
 use log::info;
+use pea_api_core::internal::Data;
 use pea_api_core::internal::Data::Balance;
 use pea_api_core::internal::Data::BlockByHash;
 use pea_api_core::internal::Data::BlockLatest;
@@ -34,15 +35,22 @@ use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
-    match res {
-        Ok((stream, socket_addr)) => match request(node, stream).await {
-            Ok(bytes) => info!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), bytes.to_string().yellow()),
-            Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err),
-        },
-        Err(err) => error!("{} {}", "API".cyan(), err),
+    if let Err(err) = &res {
+        error!("{} {}", "API".cyan(), err);
     }
+    let (stream, socket_addr) = res.unwrap();
+    match request(node, stream).await {
+        Ok((bytes, data)) => info!(
+            "{} {} {} {:?}",
+            "API".cyan(),
+            socket_addr.to_string().magenta(),
+            bytes.to_string().yellow(),
+            data
+        ),
+        Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err),
+    };
 }
-async fn request(node: &mut Node, mut stream: TcpStream) -> Result<usize, Box<dyn Error>> {
+async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data), Box<dyn Error>> {
     let mut buffer = [0; 1024];
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buffer)).await??;
     let request: Request = bincode::deserialize(&buffer)?;
@@ -64,7 +72,7 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<usize, Box<dy
         }?)
         .await?;
     stream.flush().await?;
-    Ok(bytes)
+    Ok((bytes, request.data))
 }
 fn balance(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;

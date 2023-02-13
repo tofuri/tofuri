@@ -2751,7 +2751,6 @@ name = "pea"
 version = "0.9.2"
 dependencies = [
  "bincode",
- "chrono",
  "clap",
  "colored",
  "hex",
@@ -2795,13 +2794,16 @@ dependencies = [
 name = "pea-api"
 version = "0.6.3"
 dependencies = [
+ "chrono",
  "hex",
  "pea-address",
  "pea-block",
  "pea-blockchain",
  "pea-int",
+ "pea-key",
  "pea-stake",
  "pea-transaction",
+ "pea-util",
  "serde",
  "serde_json",
  "tokio",

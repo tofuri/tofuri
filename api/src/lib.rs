@@ -1,7 +1,10 @@
+use chrono::TimeZone;
+use chrono::Utc;
 use pea_address::address;
 use pea_block::BlockA;
 use pea_blockchain::blockchain::Blockchain;
 use pea_blockchain::state;
+use pea_key::Key;
 use pea_stake::StakeA;
 use pea_transaction::TransactionA;
 use serde::Deserialize;
@@ -18,6 +21,18 @@ pub struct Info {
     pub ticks: usize,
     pub tree_size: usize,
     pub lag: f64,
+}
+impl Info {
+    pub fn from(key: &Key, ticks: usize, tps: f64, blockchain: &Blockchain, lag: f64) -> Info {
+        Info {
+            time: Utc.timestamp_nanos(chrono::offset::Utc::now().timestamp_micros() * 1_000).to_rfc2822(),
+            address: address::encode(&key.address_bytes()),
+            uptime: pea_util::uptime(ticks as f64, tps),
+            ticks,
+            tree_size: blockchain.tree.size(),
+            lag,
+        }
+    }
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Sync {

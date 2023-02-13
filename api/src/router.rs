@@ -27,7 +27,6 @@ pub async fn height() -> impl IntoResponse {
 }
 pub async fn height_by_hash(hash: Path<String>) -> impl IntoResponse {
     let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-    println!("{:?}", hash);
     let height = pea_api_client::height_by_hash(API, &hash).await.unwrap();
     (StatusCode::OK, Json(height))
 }

@@ -2795,6 +2795,11 @@ dependencies = [
 name = "pea-api"
 version = "0.6.3"
 dependencies = [
+ "hex",
+ "pea-address",
+ "pea-block",
+ "pea-blockchain",
+ "pea-int",
  "pea-stake",
  "pea-transaction",
  "serde",

@@ -190,30 +190,15 @@ fn get_info(node: &mut Node) -> Result<String, Box<dyn Error>> {
     })?))
 }
 fn get_sync(node: &mut Node) -> Result<String, Box<dyn Error>> {
-    let last_seen = node.blockchain.last_seen();
-    let status = node.blockchain.sync_status();
-    Ok(json(serde_json::to_string(&api::Sync {
-        status,
-        last_seen,
-        height: node.blockchain.height(),
-    })?))
+    Ok(json(serde_json::to_string(&api::Sync::from(&node.blockchain))?))
 }
 fn get_dynamic(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let dynamic = &node.blockchain.states.dynamic;
-    Ok(json(serde_json::to_string(&api::Dynamic {
-        random_queue: dynamic.stakers_n(8).iter().map(address::encode).collect(),
-        hashes: dynamic.hashes.len(),
-        latest_hashes: dynamic.hashes.iter().rev().take(16).map(hex::encode).collect(),
-        stakers: dynamic.stakers.iter().take(16).map(address::encode).collect(),
-    })?))
+    Ok(json(serde_json::to_string(&api::Dynamic::from(&dynamic))?))
 }
 fn get_trusted(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let trusted = &node.blockchain.states.trusted;
-    Ok(json(serde_json::to_string(&api::Trusted {
-        hashes: trusted.hashes.len(),
-        latest_hashes: trusted.hashes.iter().rev().take(16).map(hex::encode).collect(),
-        stakers: trusted.stakers.iter().take(16).map(address::encode).collect(),
-    })?))
+    Ok(json(serde_json::to_string(&api::Trusted::from(&trusted))?))
 }
 fn get_args(node: &mut Node) -> Result<String, Box<dyn Error>> {
     Ok(json(serde_json::to_string(&node.args)?))
@@ -237,17 +222,7 @@ fn get_height_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn 
 }
 fn get_block_latest(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let block_a = &node.blockchain.states.dynamic.latest_block;
-    Ok(json(serde_json::to_string(&api::Block {
-        hash: hex::encode(block_a.hash),
-        previous_hash: hex::encode(block_a.previous_hash),
-        timestamp: block_a.timestamp,
-        forger_address: address::encode(&block_a.input_address()),
-        signature: hex::encode(block_a.signature),
-        pi: hex::encode(block_a.pi),
-        beta: hex::encode(block_a.beta),
-        transactions: block_a.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
-        stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
-    })?))
+    Ok(json(serde_json::to_string(&api::Block::from(&block_a))?))
 }
 fn get_hash_by_height(node: &mut Node, height: usize) -> Result<String, Box<dyn Error>> {
     let states = &node.blockchain.states;
@@ -265,41 +240,15 @@ fn get_hash_by_height(node: &mut Node, height: usize) -> Result<String, Box<dyn 
 }
 fn get_block_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let block_a = db::block::get_a(&node.db, &hash)?;
-    Ok(json(serde_json::to_string(&api::Block {
-        hash: hex::encode(block_a.hash),
-        previous_hash: hex::encode(block_a.previous_hash),
-        timestamp: block_a.timestamp,
-        forger_address: address::encode(&block_a.input_address()),
-        signature: hex::encode(block_a.signature),
-        pi: hex::encode(block_a.pi),
-        beta: hex::encode(block_a.beta),
-        transactions: block_a.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
-        stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
-    })?))
+    Ok(json(serde_json::to_string(&api::Block::from(&block_a))?))
 }
 fn get_transaction_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let transaction_a = db::transaction::get_a(&node.db, &hash)?;
-    Ok(json(serde_json::to_string(&api::Transaction {
-        hash: hex::encode(transaction_a.hash),
-        input_address: address::encode(&transaction_a.input_address),
-        output_address: address::encode(&transaction_a.output_address),
-        amount: pea_int::to_string(transaction_a.amount),
-        fee: pea_int::to_string(transaction_a.fee),
-        timestamp: transaction_a.timestamp,
-        signature: hex::encode(transaction_a.signature),
-    })?))
+    Ok(json(serde_json::to_string(&api::Transaction::from(&transaction_a))?))
 }
 fn get_stake_by_hash(node: &mut Node, hash: Vec<u8>) -> Result<String, Box<dyn Error>> {
     let stake_a = db::stake::get_a(&node.db, &hash)?;
-    Ok(json(serde_json::to_string(&api::Stake {
-        hash: hex::encode(stake_a.hash),
-        input_address: address::encode(&stake_a.input_address),
-        amount: pea_int::to_string(stake_a.amount),
-        fee: pea_int::to_string(stake_a.fee),
-        deposit: stake_a.deposit,
-        timestamp: stake_a.timestamp,
-        signature: hex::encode(stake_a.signature),
-    })?))
+    Ok(json(serde_json::to_string(&api::Stake::from(&stake_a))?))
 }
 fn get_peers(node: &mut Node) -> Result<String, Box<dyn Error>> {
     let peers: Vec<&Multiaddr> = node.p2p.connections.keys().collect();

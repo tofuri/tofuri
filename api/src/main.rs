@@ -46,6 +46,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/time", get(router::time))
         .route("/tree_size", get(router::tree_size))
         .route("/sync", get(router::sync))
+        .route("/random_queue", get(router::random_queue))
+        .route("/dynamic_hashes", get(router::dynamic_hashes))
+        .route("/dynamic_latest_hashes", get(router::dynamic_latest_hashes))
+        .route("/dynamic_stakers", get(router::dynamic_stakers))
+        .route("/trusted_hashes", get(router::trusted_hashes))
+        .route("/trusted_latest_hashes", get(router::trusted_latest_hashes))
+        .route("/trusted_stakers", get(router::trusted_stakers))
         .layer(cors)
         .with_state(args);
     axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();

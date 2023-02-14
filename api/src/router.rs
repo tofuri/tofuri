@@ -122,3 +122,34 @@ pub async fn sync(State(args): State<Args>) -> impl IntoResponse {
     let sync = pea_api_internal::sync(&args.api_internal).await.unwrap();
     (StatusCode::OK, Json(sync))
 }
+pub async fn random_queue(State(args): State<Args>) -> impl IntoResponse {
+    let random_queue = pea_api_internal::random_queue(&args.api_internal).await.unwrap();
+    let random_queue: Vec<String> = random_queue.iter().map(address::encode).collect();
+    (StatusCode::OK, Json(random_queue))
+}
+pub async fn dynamic_hashes(State(args): State<Args>) -> impl IntoResponse {
+    let dynamic_hashes = pea_api_internal::dynamic_hashes(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(dynamic_hashes))
+}
+pub async fn dynamic_latest_hashes(State(args): State<Args>) -> impl IntoResponse {
+    let dynamic_latest_hashes = pea_api_internal::dynamic_latest_hashes(&args.api_internal).await.unwrap();
+    let dynamic_latest_hashes: Vec<String> = dynamic_latest_hashes.iter().map(hex::encode).collect();
+    (StatusCode::OK, Json(dynamic_latest_hashes))
+}
+pub async fn dynamic_stakers(State(args): State<Args>) -> impl IntoResponse {
+    let dynamic_stakers = pea_api_internal::dynamic_stakers(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(dynamic_stakers))
+}
+pub async fn trusted_hashes(State(args): State<Args>) -> impl IntoResponse {
+    let trusted_hashes = pea_api_internal::trusted_hashes(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(trusted_hashes))
+}
+pub async fn trusted_latest_hashes(State(args): State<Args>) -> impl IntoResponse {
+    let trusted_latest_hashes = pea_api_internal::trusted_latest_hashes(&args.api_internal).await.unwrap();
+    let trusted_latest_hashes: Vec<String> = trusted_latest_hashes.iter().map(hex::encode).collect();
+    (StatusCode::OK, Json(trusted_latest_hashes))
+}
+pub async fn trusted_stakers(State(args): State<Args>) -> impl IntoResponse {
+    let trusted_stakers = pea_api_internal::trusted_stakers(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(trusted_stakers))
+}

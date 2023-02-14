@@ -97,3 +97,24 @@ pub async fn tree_size(addr: &str) -> Result<usize, Box<dyn Error>> {
 pub async fn sync(addr: &str) -> Result<pea_blockchain::sync::Sync, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Sync, addr, None).await?)?)
 }
+pub async fn random_queue(addr: &str) -> Result<Vec<AddressBytes>, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::RandomQueue, addr, None).await?)?)
+}
+pub async fn dynamic_hashes(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::DynamicHashes, addr, None).await?)?)
+}
+pub async fn dynamic_latest_hashes(addr: &str) -> Result<Vec<Hash>, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::DynamicLatestHashes, addr, None).await?)?)
+}
+pub async fn dynamic_stakers(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::DynamicStakers, addr, None).await?)?)
+}
+pub async fn trusted_hashes(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::TrustedHashes, addr, None).await?)?)
+}
+pub async fn trusted_latest_hashes(addr: &str) -> Result<Vec<Hash>, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::TrustedLatestHashes, addr, None).await?)?)
+}
+pub async fn trusted_stakers(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::TrustedStakers, addr, None).await?)?)
+}

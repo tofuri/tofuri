@@ -26,6 +26,13 @@ pub enum Data {
     Time,
     TreeSize,
     Sync,
+    RandomQueue,
+    DynamicHashes,
+    DynamicLatestHashes,
+    DynamicStakers,
+    TrustedHashes,
+    TrustedLatestHashes,
+    TrustedStakers,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Request {

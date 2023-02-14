@@ -11,6 +11,9 @@ use pea_api_internal_core::Data::BlockLatest;
 use pea_api_internal_core::Data::CargoPkgName;
 use pea_api_internal_core::Data::CargoPkgRepository;
 use pea_api_internal_core::Data::CargoPkgVersion;
+use pea_api_internal_core::Data::DynamicHashes;
+use pea_api_internal_core::Data::DynamicLatestHashes;
+use pea_api_internal_core::Data::DynamicStakers;
 use pea_api_internal_core::Data::GitHash;
 use pea_api_internal_core::Data::HashByHeight;
 use pea_api_internal_core::Data::Height;
@@ -18,6 +21,7 @@ use pea_api_internal_core::Data::HeightByHash;
 use pea_api_internal_core::Data::Lag;
 use pea_api_internal_core::Data::Peer;
 use pea_api_internal_core::Data::Peers;
+use pea_api_internal_core::Data::RandomQueue;
 use pea_api_internal_core::Data::Stake;
 use pea_api_internal_core::Data::StakeByHash;
 use pea_api_internal_core::Data::Staked;
@@ -28,6 +32,9 @@ use pea_api_internal_core::Data::Tps;
 use pea_api_internal_core::Data::Transaction;
 use pea_api_internal_core::Data::TransactionByHash;
 use pea_api_internal_core::Data::TreeSize;
+use pea_api_internal_core::Data::TrustedHashes;
+use pea_api_internal_core::Data::TrustedLatestHashes;
+use pea_api_internal_core::Data::TrustedStakers;
 use pea_api_internal_core::Request;
 use pea_block::BlockA;
 use pea_core::*;
@@ -92,6 +99,13 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data)
             Time => bincode::serialize(&time()),
             TreeSize => bincode::serialize(&tree_size(node)),
             Sync => bincode::serialize(sync(node)),
+            RandomQueue => bincode::serialize(&random_queue(node)),
+            DynamicHashes => bincode::serialize(&dynamic_hashes(node)),
+            DynamicLatestHashes => bincode::serialize(&dynamic_latest_hashes(node)),
+            DynamicStakers => bincode::serialize(&dynamic_stakers(node)),
+            TrustedHashes => bincode::serialize(&trusted_hashes(node)),
+            TrustedLatestHashes => bincode::serialize(&trusted_latest_hashes(node)),
+            TrustedStakers => bincode::serialize(&trusted_stakers(node)),
         }?)
         .await?;
     stream.flush().await?;
@@ -228,4 +242,25 @@ fn tree_size(node: &mut Node) -> usize {
 }
 fn sync(node: &mut Node) -> &pea_blockchain::sync::Sync {
     &node.blockchain.sync
+}
+fn random_queue(node: &mut Node) -> Vec<AddressBytes> {
+    node.blockchain.states.dynamic.stakers_n(8)
+}
+fn dynamic_hashes(node: &mut Node) -> usize {
+    node.blockchain.states.dynamic.hashes.len()
+}
+fn dynamic_latest_hashes(node: &mut Node) -> Vec<&Hash> {
+    node.blockchain.states.dynamic.hashes.iter().rev().take(16).collect()
+}
+fn dynamic_stakers(node: &mut Node) -> usize {
+    node.blockchain.states.dynamic.stakers.len()
+}
+fn trusted_hashes(node: &mut Node) -> usize {
+    node.blockchain.states.trusted.hashes.len()
+}
+fn trusted_latest_hashes(node: &mut Node) -> Vec<&Hash> {
+    node.blockchain.states.trusted.hashes.iter().rev().take(16).collect()
+}
+fn trusted_stakers(node: &mut Node) -> usize {
+    node.blockchain.states.trusted.stakers.len()
 }

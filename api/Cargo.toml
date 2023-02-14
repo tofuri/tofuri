@@ -8,15 +8,18 @@ repository = "https://github.com/peacash/peacash"
 
 [dependencies]
 pea-address = { version = "0.6", path = "../address" }
+pea-core = { version = "0.6", path = "../core" }
+pea-api-internal = { version = "0.1", path = "../api-internal" }
+pea-api-core = { version = "0.1", path = "../api-core" }
+pea-api-util = { version = "0.1", path = "../api-util" }
 pea-block = { version = "0.6", path = "../block" }
-pea-blockchain = { version = "0.1", path = "../blockchain" }
 pea-int = { version = "0.4", path = "../int" }
 pea-stake = { version = "0.7", path = "../stake" }
 pea-transaction = { version = "0.8", path = "../transaction" }
-pea-key = { version = "0.6", path = "../key" }
-pea-util = { version = "0.1", path = "../util" }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.24", features = ["full"] }
-serde_json = "1.0"
 hex = "0.4"
-chrono = "0.4"
+axum = "0.6"
+tower-http = { version = "0.3", features = ["cors"] }
+multiaddr = "0.17"
+clap = { version = "3.2", features = ["derive"] }

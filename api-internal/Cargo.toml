@@ -1,0 +1,17 @@
+[package]
+name = "pea-api-internal"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0"
+description = "Peacash internal API"
+repository = "https://github.com/peacash/peacash"
+
+[dependencies]
+pea-core = { version = "0.6", path = "../core" }
+pea-api-internal-core = { version = "0.1", path = "../api-internal-core" }
+pea-block = { version = "0.6", path = "../block" }
+pea-transaction = { version = "0.8", path = "../transaction" }
+pea-stake = { version = "0.7", path = "../stake" }
+tokio = "1.24"
+bincode = "1.3"
+multiaddr = "0.17"

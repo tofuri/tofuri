@@ -10,7 +10,7 @@ repository = "https://github.com/peacash/peacash"
 
 [dependencies]
 pea-address = { version = "0.6", path = "../address" }
-pea-api = { version = "0.6", path = "../api" }
+pea-api-internal-core = { version = "0.1", path = "../api-internal-core" }
 pea-int = { version = "0.4", path = "../int" }
 pea-block = { version = "0.6", path = "../block" }
 pea-blockchain = { version = "0.1", path = "../blockchain" }

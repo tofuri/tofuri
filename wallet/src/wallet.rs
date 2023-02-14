@@ -15,8 +15,10 @@ use crossterm::event;
 use crossterm::terminal;
 use pea_address::address;
 use pea_address::secret;
-use pea_api::get;
-use pea_api::post;
+use pea_api_core::Block;
+use pea_api_core::Stake;
+use pea_api_core::Sync;
+use pea_api_core::Transaction;
 use pea_core::*;
 use pea_key::Key;
 use pea_stake::StakeA;
@@ -68,15 +70,21 @@ impl Wallet {
                 false
             }
             "Search" => {
-                self.search().await;
+                if let Err(err) = self.search().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Height" => {
-                self.height().await;
+                if let Err(err) = self.height().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "API" => {
-                self.api().await;
+                if let Err(err) = self.api().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Address" => {
@@ -84,15 +92,21 @@ impl Wallet {
                 true
             }
             "Balance" => {
-                self.balance().await;
+                if let Err(err) = self.balance().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Send" => {
-                self.transaction().await;
+                if let Err(err) = self.transaction().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Stake" => {
-                self.stake().await;
+                if let Err(err) = self.stake().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Secret" => {
@@ -115,37 +129,28 @@ impl Wallet {
         self.ciphertext = ciphertext;
         self.key = Some(key);
     }
-    async fn api(&self) {
-        match get::index(&self.api).await {
-            Ok(info) => println!("{}", info.green()),
-            Err(err) => println!("{}", err.to_string().red()),
-        };
-        match get::sync(&self.api).await {
-            Ok(sync) => {
-                println!("Synchronize {}", sync.status.yellow());
-                println!("Height {}", sync.height.to_string().yellow());
-                println!("Last block seen {}", sync.last_seen.yellow());
-            }
-            Err(err) => println!("{}", err.to_string().red()),
-        };
+    async fn api(&self) -> Result<(), Box<dyn Error>> {
+        let info = reqwest::get(&self.api).await?.text().await?;
+        println!("{}", info.green());
+        let sync: Sync = reqwest::get(&format!("{}/sync", self.api)).await?.json().await?;
+        println!("Synchronize {}", sync.status.yellow());
+        println!("Height {}", sync.height.to_string().yellow());
+        println!("Last block seen {}", sync.last_seen.yellow());
+        Ok(())
     }
-    async fn balance(&self) {
+    async fn balance(&self) -> Result<(), Box<dyn Error>> {
         let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
-        match get::balance(&self.api, &address).await {
-            Ok(balance) => match get::staked(&self.api, &address).await {
-                Ok(staked) => println!("Account balance: {}, staked: {}", balance.yellow(), staked.yellow()),
-                Err(err) => println!("{}", err.to_string().red()),
-            },
-            Err(err) => println!("{}", err.to_string().red()),
-        };
+        let balance: String = reqwest::get(format!("{}/balance/{}", self.api, address)).await?.json().await?;
+        let staked: String = reqwest::get(format!("{}/staked/{}", self.api, address)).await?.json().await?;
+        println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
+        Ok(())
     }
-    async fn height(&self) {
-        match get::height(&self.api).await {
-            Ok(height) => println!("Latest block height is {}.", height.to_string().yellow()),
-            Err(err) => println!("{}", err.to_string().red()),
-        };
+    async fn height(&self) -> Result<(), Box<dyn Error>> {
+        let height: usize = reqwest::get(format!("{}/height", self.api)).await?.json().await?;
+        println!("Latest block height is {}.", height.to_string().yellow());
+        Ok(())
     }
-    async fn transaction(&self) {
+    async fn transaction(&self) -> Result<(), Box<dyn Error>> {
         let address = inquire::address();
         let amount = inquire::amount();
         let fee = inquire::fee();
@@ -156,7 +161,7 @@ impl Wallet {
                 process::exit(0)
             }
         } {
-            return;
+            return Ok(());
         }
         let transaction_a = TransactionA::sign(
             address::decode(&address).unwrap(),
@@ -167,60 +172,76 @@ impl Wallet {
         )
         .unwrap();
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
-        match post::transaction(&self.api, &transaction_a.b()).await {
-            Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
-            Err(err) => println!("{}", err.to_string().red()),
-        };
+        let res: String = reqwest::Client::new()
+            .post(format!("{}/transaction", self.api))
+            .json(&pea_api_util::transaction(&transaction_a))
+            .send()
+            .await?
+            .json()
+            .await?;
+        println!("{}", if res == "success" { res.green() } else { res.red() });
+        Ok(())
     }
-    async fn stake(&self) {
+    async fn stake(&self) -> Result<(), Box<dyn Error>> {
         let deposit = inquire::deposit();
         let amount = inquire::amount();
         let fee = inquire::fee();
         let send = inquire::send();
         if !send {
-            return;
+            return Ok(());
         }
         let stake_a = StakeA::sign(deposit, amount, fee, pea_util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
-        match post::stake(&self.api, &stake_a.b()).await {
-            Ok(res) => println!("{}", if res == "success" { res.green() } else { res.red() }),
-            Err(err) => println!("{}", err.to_string().red()),
-        };
+        let res: String = reqwest::Client::new()
+            .post(format!("{}/stake", self.api))
+            .json(&pea_api_util::stake(&stake_a))
+            .send()
+            .await?
+            .json()
+            .await?;
+        println!("{}", if res == "success" { res.green() } else { res.red() });
+        Ok(())
     }
-    async fn search(&self) {
+    async fn search(&self) -> Result<(), Box<dyn Error>> {
         let search = inquire::search();
         if address::decode(&search).is_ok() {
-            match get::balance(&self.api, &search).await {
-                Ok(balance) => match get::staked(&self.api, &search).await {
-                    Ok(staked) => println!("Address found\nAccount balance: {}, staked: {}", balance.yellow(), staked.yellow()),
-                    Err(err) => println!("{}", err.to_string().red()),
-                },
-                Err(err) => println!("{}", err.to_string().red()),
-            };
-            return;
+            let balance: String = reqwest::get(format!("{}/balance/{}", self.api, search)).await?.json().await?;
+            let staked: String = reqwest::get(format!("{}/staked/{}", self.api, search)).await?.json().await?;
+            println!(
+                "Address found\nAccount balance: {}, staked: {}",
+                balance.to_string().yellow(),
+                staked.to_string().yellow()
+            );
+            return Ok(());
         } else if search.len() == 64 {
-            if let Ok(block) = get::block(&self.api, &search).await {
+            if let Ok(res) = reqwest::get(format!("{}/block/{}", self.api, search)).await {
+                let block: Block = res.json().await?;
                 println!("Block found\n{block:?}");
-                return;
-            };
-            if let Ok(transaction) = get::transaction(&self.api, &search).await {
+                return Ok(());
+            }
+            if let Ok(res) = reqwest::get(format!("{}/transaction/{}", self.api, search)).await {
+                let transaction: Transaction = res.json().await?;
                 println!("Transaction found\n{transaction:?}");
-                return;
-            };
-            if let Ok(stake) = get::stake(&self.api, &search).await {
+                return Ok(());
+            }
+            if let Ok(res) = reqwest::get(format!("{}/stake/{}", self.api, search)).await {
+                let stake: Stake = res.json().await?;
                 println!("Stake found\n{stake:?}");
-                return;
-            };
+                return Ok(());
+            }
         } else if search.parse::<usize>().is_ok() {
-            if let Ok(hash) = get::hash(&self.api, &search.parse::<usize>().unwrap()).await {
-                if let Ok(block) = get::block(&self.api, &hash).await {
-                    println!("Block found{block:?}");
-                    return;
-                };
-                return;
-            };
+            if let Ok(res) = reqwest::get(format!("{}/hash/{}", self.api, search)).await {
+                let hash: String = res.json().await?;
+                if let Ok(res) = reqwest::get(format!("{}/block/{}", self.api, hash)).await {
+                    let block: Block = res.json().await?;
+                    println!("Block found\n{block:?}");
+                    return Ok(());
+                }
+                return Ok(());
+            }
         }
         println!("{}", "Nothing found".red());
+        Ok(())
     }
     fn address(&self) {
         println!("{}", address::encode(&self.key.as_ref().unwrap().address_bytes()).green());

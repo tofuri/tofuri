@@ -9,6 +9,7 @@ use tower_http::cors::CorsLayer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = pea_api::Args::parse();
+    let addr: SocketAddr = args.api.parse().unwrap();
     let cors = CorsLayer::permissive();
     let app = Router::new()
         .route("/", get(router::root))
@@ -27,7 +28,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/stake", post(router::stake))
         .layer(cors)
         .with_state(args);
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();
     Ok(())
 }

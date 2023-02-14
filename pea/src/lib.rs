@@ -62,8 +62,8 @@ pub struct Args {
     #[clap(short, long, value_parser, default_value = "")]
     pub peer: String,
     /// TCP socket address to bind to
-    #[clap(long, value_parser, default_value = BIND_API)]
-    pub bind_api: String,
+    #[clap(long, value_parser, default_value = API_INTERNAL)]
+    pub api_internal: String,
     /// Multiaddr to listen on
     #[clap(short, long, value_parser, default_value = HOST)]
     pub host: String,

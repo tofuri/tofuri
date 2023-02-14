@@ -38,8 +38,8 @@ async fn main() {
         if args.tempkey == TEMP_KEY {
             args.tempkey = DEV_TEMP_KEY;
         }
-        if args.bind_api == BIND_API {
-            args.bind_api = DEV_BIND_API.to_string();
+        if args.api_internal == API_INTERNAL {
+            args.api_internal = DEV_API_INTERNAL.to_string();
         }
         if args.host == HOST {
             args.host = DEV_HOST.to_string();
@@ -58,7 +58,7 @@ async fn main() {
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
-    info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
+    info!("{} {}", "--bind-api".cyan(), args.api_internal.magenta());
     info!("{} {}", "--host".cyan(), args.host.magenta());
     info!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
     if args.dev {
@@ -109,7 +109,7 @@ async fn main() {
     let multiaddr: Multiaddr = node.args.host.parse().unwrap();
     node.p2p.swarm.listen_on(multiaddr.clone()).unwrap();
     info!("Swarm is listening on {}", multiaddr.to_string().magenta());
-    let listener = TcpListener::bind(&node.args.bind_api).await.unwrap();
+    let listener = TcpListener::bind(&node.args.api_internal).await.unwrap();
     info!(
         "API is listening on {}{}",
         "http://".cyan(),

@@ -14,7 +14,6 @@ pea-core = { version = "0.6", path = "../core" }
 pea-api-util = { version = "0.1", path = "../api-util" }
 pea-address = { version = "0.6", path = "../address" }
 pea-int = { version = "0.4", path = "../int" }
-pea-api = { version = "0.6", path = "../api" }
 pea-key = { version = "0.6", path = "../key" }
 pea-stake = { version = "0.7", path = "../stake" }
 pea-transaction = { version = "0.8", path = "../transaction" }

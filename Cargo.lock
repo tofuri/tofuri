@@ -3018,7 +3018,7 @@ dependencies = [
 
 [[package]]
 name = "pea-api"
-version = "0.6.3"
+version = "0.7.0"
 dependencies = [
  "axum",
  "clap",
@@ -3237,7 +3237,6 @@ dependencies = [
  "lazy_static",
  "log",
  "pea-address",
- "pea-api",
  "pea-api-core",
  "pea-api-util",
  "pea-core",

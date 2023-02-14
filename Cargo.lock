@@ -3028,6 +3028,7 @@ dependencies = [
  "pea-address",
  "pea-api-core",
  "pea-api-internal",
+ "pea-api-util",
  "pea-block",
  "pea-blockchain",
  "pea-core",
@@ -3068,6 +3069,19 @@ name = "pea-api-internal-core"
 version = "0.1.0"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "pea-api-util"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "pea-address",
+ "pea-api-core",
+ "pea-block",
+ "pea-int",
+ "pea-stake",
+ "pea-transaction",
 ]
 
 [[package]]
@@ -3230,6 +3244,7 @@ dependencies = [
  "pea-address",
  "pea-api",
  "pea-api-core",
+ "pea-api-util",
  "pea-core",
  "pea-int",
  "pea-key",

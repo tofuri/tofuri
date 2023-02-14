@@ -5,6 +5,7 @@ members = [
     "api-core",
     "api-internal",
     "api-internal-core",
+    "api-util",
     "block",
     "blockchain",
     "core",

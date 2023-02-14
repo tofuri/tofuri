@@ -5,7 +5,7 @@ use pea_api_core::Transaction;
 use pea_block::BlockA;
 use pea_stake::StakeA;
 use pea_transaction::TransactionA;
-pub fn external_block(block_a: &BlockA) -> Block {
+pub fn block_json(block_a: &BlockA) -> Block {
     Block {
         hash: hex::encode(block_a.hash),
         previous_hash: hex::encode(block_a.previous_hash),
@@ -18,7 +18,7 @@ pub fn external_block(block_a: &BlockA) -> Block {
         stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     }
 }
-pub fn external_transaction(transaction_a: &TransactionA) -> Transaction {
+pub fn transaction_json(transaction_a: &TransactionA) -> Transaction {
     Transaction {
         input_address: address::encode(&transaction_a.input_address),
         output_address: address::encode(&transaction_a.output_address),
@@ -29,7 +29,7 @@ pub fn external_transaction(transaction_a: &TransactionA) -> Transaction {
         signature: hex::encode(transaction_a.signature),
     }
 }
-pub fn external_stake(stake_a: &StakeA) -> Stake {
+pub fn stake_json(stake_a: &StakeA) -> Stake {
     Stake {
         amount: pea_int::to_string(stake_a.amount),
         fee: pea_int::to_string(stake_a.fee),

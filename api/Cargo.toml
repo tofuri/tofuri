@@ -11,6 +11,7 @@ pea-address = { version = "0.6", path = "../address" }
 pea-core = { version = "0.6", path = "../core" }
 pea-api-internal = { version = "0.1", path = "../api-internal" }
 pea-api-core = { version = "0.1", path = "../api-core" }
+pea-api-util = { version = "0.1", path = "../api-util" }
 pea-block = { version = "0.6", path = "../block" }
 pea-blockchain = { version = "0.1", path = "../blockchain" }
 pea-int = { version = "0.4", path = "../int" }

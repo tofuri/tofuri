@@ -10,6 +10,7 @@ repository = "https://github.com/peacash/peacash"
 pea-core = { version = "0.6", path = "../core" }
 pea-api-internal-core = { version = "0.1", path = "../api-internal-core" }
 pea-block = { version = "0.6", path = "../block" }
+pea-blockchain = { version = "0.1", path = "../blockchain" }
 pea-transaction = { version = "0.8", path = "../transaction" }
 pea-stake = { version = "0.7", path = "../stake" }
 tokio = { version = "1.24", features = ["full"] }

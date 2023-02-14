@@ -94,3 +94,31 @@ pub async fn git_hash(State(args): State<Args>) -> impl IntoResponse {
     let git_hash = pea_api_internal::git_hash(&args.api_internal).await.unwrap();
     (StatusCode::OK, Json(git_hash))
 }
+pub async fn address(State(args): State<Args>) -> impl IntoResponse {
+    let address = pea_api_internal::address(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(address))
+}
+pub async fn ticks(State(args): State<Args>) -> impl IntoResponse {
+    let ticks = pea_api_internal::ticks(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(ticks))
+}
+pub async fn tps(State(args): State<Args>) -> impl IntoResponse {
+    let tps = pea_api_internal::tps(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(tps))
+}
+pub async fn lag(State(args): State<Args>) -> impl IntoResponse {
+    let lag = pea_api_internal::lag(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(lag))
+}
+pub async fn time(State(args): State<Args>) -> impl IntoResponse {
+    let time = pea_api_internal::time(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(time))
+}
+pub async fn tree_size(State(args): State<Args>) -> impl IntoResponse {
+    let tree_size = pea_api_internal::tree_size(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(tree_size))
+}
+pub async fn sync(State(args): State<Args>) -> impl IntoResponse {
+    let sync = pea_api_internal::sync(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(sync))
+}

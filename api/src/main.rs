@@ -39,6 +39,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/cargo_pkg_version", get(router::cargo_pkg_version))
         .route("/cargo_pkg_repository", get(router::cargo_pkg_repository))
         .route("/git_hash", get(router::git_hash))
+        .route("/address", get(router::address))
+        .route("/ticks", get(router::ticks))
+        .route("/tps", get(router::tps))
+        .route("/lag", get(router::lag))
+        .route("/time", get(router::time))
+        .route("/tree_size", get(router::tree_size))
+        .route("/sync", get(router::sync))
         .layer(cors)
         .with_state(args);
     axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();

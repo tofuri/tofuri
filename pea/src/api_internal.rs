@@ -4,6 +4,7 @@ use libp2p::Multiaddr;
 use log::error;
 use log::info;
 use pea_api_internal_core::Data;
+use pea_api_internal_core::Data::Address;
 use pea_api_internal_core::Data::Balance;
 use pea_api_internal_core::Data::BlockByHash;
 use pea_api_internal_core::Data::BlockLatest;
@@ -14,13 +15,19 @@ use pea_api_internal_core::Data::GitHash;
 use pea_api_internal_core::Data::HashByHeight;
 use pea_api_internal_core::Data::Height;
 use pea_api_internal_core::Data::HeightByHash;
+use pea_api_internal_core::Data::Lag;
 use pea_api_internal_core::Data::Peer;
 use pea_api_internal_core::Data::Peers;
 use pea_api_internal_core::Data::Stake;
 use pea_api_internal_core::Data::StakeByHash;
 use pea_api_internal_core::Data::Staked;
+use pea_api_internal_core::Data::Sync;
+use pea_api_internal_core::Data::Ticks;
+use pea_api_internal_core::Data::Time;
+use pea_api_internal_core::Data::Tps;
 use pea_api_internal_core::Data::Transaction;
 use pea_api_internal_core::Data::TransactionByHash;
+use pea_api_internal_core::Data::TreeSize;
 use pea_api_internal_core::Request;
 use pea_block::BlockA;
 use pea_core::*;
@@ -78,6 +85,13 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data)
             CargoPkgVersion => bincode::serialize(cargo_pkg_version()),
             CargoPkgRepository => bincode::serialize(cargo_pkg_repository()),
             GitHash => bincode::serialize(git_hash()),
+            Address => bincode::serialize(&address(node)),
+            Ticks => bincode::serialize(ticks(node)),
+            Tps => bincode::serialize(tps(node)),
+            Lag => bincode::serialize(lag(node)),
+            Time => bincode::serialize(&time()),
+            TreeSize => bincode::serialize(&tree_size(node)),
+            Sync => bincode::serialize(sync(node)),
         }?)
         .await?;
     stream.flush().await?;
@@ -193,4 +207,25 @@ fn cargo_pkg_repository() -> &'static str {
 }
 fn git_hash() -> &'static str {
     env!("GIT_HASH")
+}
+fn address(node: &mut Node) -> AddressBytes {
+    node.key.address_bytes()
+}
+fn ticks(node: &mut Node) -> &usize {
+    &node.ticks
+}
+fn tps(node: &mut Node) -> &f64 {
+    &node.args.tps
+}
+fn lag(node: &mut Node) -> &f64 {
+    &node.lag
+}
+fn time() -> i64 {
+    chrono::offset::Utc::now().timestamp_millis()
+}
+fn tree_size(node: &mut Node) -> usize {
+    node.blockchain.tree.size()
+}
+fn sync(node: &mut Node) -> &pea_blockchain::sync::Sync {
+    &node.blockchain.sync
 }

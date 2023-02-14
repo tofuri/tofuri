@@ -1,9 +1,11 @@
 use lazy_static::lazy_static;
 use pea_core::*;
+use serde::Deserialize;
+use serde::Serialize;
 lazy_static! {
     static ref BPS: f32 = 0.5_f32 + (1_f32 / 2_f32.powf(BLOCK_TIME_MIN as f32));
 }
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Sync {
     pub bps: f32,
     pub new: f32,

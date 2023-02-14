@@ -76,3 +76,24 @@ pub async fn cargo_pkg_repository(addr: &str) -> Result<String, Box<dyn Error>> 
 pub async fn git_hash(addr: &str) -> Result<String, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::GitHash, addr, None).await?)?)
 }
+pub async fn address(addr: &str) -> Result<AddressBytes, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::Address, addr, None).await?)?)
+}
+pub async fn ticks(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::Ticks, addr, None).await?)?)
+}
+pub async fn tps(addr: &str) -> Result<f64, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::Tps, addr, None).await?)?)
+}
+pub async fn lag(addr: &str) -> Result<f64, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::Lag, addr, None).await?)?)
+}
+pub async fn time(addr: &str) -> Result<i64, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::Time, addr, None).await?)?)
+}
+pub async fn tree_size(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::TreeSize, addr, None).await?)?)
+}
+pub async fn sync(addr: &str) -> Result<pea_blockchain::sync::Sync, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::Sync, addr, None).await?)?)
+}

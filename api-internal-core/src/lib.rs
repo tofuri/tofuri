@@ -19,6 +19,13 @@ pub enum Data {
     CargoPkgVersion,
     CargoPkgRepository,
     GitHash,
+    Address,
+    Ticks,
+    Tps,
+    Lag,
+    Time,
+    TreeSize,
+    Sync,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Request {

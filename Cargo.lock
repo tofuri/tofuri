@@ -2977,6 +2977,7 @@ name = "pea"
 version = "0.9.2"
 dependencies = [
  "bincode",
+ "chrono",
  "clap",
  "colored",
  "hex",
@@ -3053,6 +3054,7 @@ dependencies = [
  "multiaddr 0.17.0",
  "pea-api-internal-core",
  "pea-block",
+ "pea-blockchain",
  "pea-core",
  "pea-stake",
  "pea-transaction",
@@ -3114,6 +3116,7 @@ dependencies = [
  "pea-tree",
  "pea-util",
  "rocksdb",
+ "serde",
 ]
 
 [[package]]

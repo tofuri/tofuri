@@ -1,12 +1,14 @@
 use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
+use clap::Parser;
 use pea_api::router;
 use std::error::Error;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let args = pea_api::Args::parse();
     let cors = CorsLayer::permissive();
     let app = Router::new()
         .route("/", get(router::root))
@@ -23,7 +25,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/peer/:a/:b/:c/:d", get(router::peer))
         .route("/transaction", post(router::transaction))
         .route("/stake", post(router::stake))
-        .layer(cors);
+        .layer(cors)
+        .with_state(args);
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();
     Ok(())

@@ -13,13 +13,13 @@ pub async fn root() -> &'static str {
 }
 pub async fn balance(address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let height = pea_api_internal::balance(API, &address_bytes).await.unwrap();
-    (StatusCode::OK, Json(pea_int::to_string(height)))
+    let balance = pea_int::to_string(pea_api_internal::balance(API, &address_bytes).await.unwrap());
+    (StatusCode::OK, Json(balance))
 }
 pub async fn staked(address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked = pea_api_internal::staked(API, &address_bytes).await.unwrap();
-    (StatusCode::OK, Json(pea_int::to_string(staked)))
+    let staked = pea_int::to_string(pea_api_internal::staked(API, &address_bytes).await.unwrap());
+    (StatusCode::OK, Json(staked))
 }
 pub async fn height() -> impl IntoResponse {
     let height = pea_api_internal::height(API).await.unwrap();
@@ -32,27 +32,31 @@ pub async fn height_by_hash(hash: Path<String>) -> impl IntoResponse {
 }
 pub async fn block_latest() -> impl IntoResponse {
     let block_a = pea_api_internal::block_latest(API).await.unwrap();
-    (StatusCode::OK, Json(pea_api_util::block_json(&block_a)))
+    let block = pea_api_util::block_json(&block_a);
+    (StatusCode::OK, Json(block))
 }
 pub async fn hash_by_height(height: Path<String>) -> impl IntoResponse {
     let height: usize = height.parse().unwrap();
-    let hash = pea_api_internal::hash_by_height(API, &height).await.unwrap();
-    (StatusCode::OK, Json(hex::encode(hash)))
+    let hash = hex::encode(pea_api_internal::hash_by_height(API, &height).await.unwrap());
+    (StatusCode::OK, Json(hash))
 }
 pub async fn block_by_hash(hash: Path<String>) -> impl IntoResponse {
     let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let block_a = pea_api_internal::block_by_hash(API, &hash).await.unwrap();
-    (StatusCode::OK, Json(pea_api_util::block_json(&block_a)))
+    let block = pea_api_util::block_json(&block_a);
+    (StatusCode::OK, Json(block))
 }
 pub async fn transaction_by_hash(hash: Path<String>) -> impl IntoResponse {
     let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let transaction_a = pea_api_internal::transaction_by_hash(API, &hash).await.unwrap();
-    (StatusCode::OK, Json(pea_api_util::transaction_json(&transaction_a)))
+    let transaction = pea_api_util::transaction_json(&transaction_a);
+    (StatusCode::OK, Json(transaction))
 }
 pub async fn stake_by_hash(hash: Path<String>) -> impl IntoResponse {
     let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let stake_a = pea_api_internal::stake_by_hash(API, &hash).await.unwrap();
-    (StatusCode::OK, Json(pea_api_util::stake_json(&stake_a)))
+    let stake = pea_api_util::stake_json(&stake_a);
+    (StatusCode::OK, Json(stake))
 }
 pub async fn peers() -> impl IntoResponse {
     let peers = pea_api_internal::peers(API).await.unwrap();

@@ -64,11 +64,13 @@ pub async fn peer(a: Path<String>, b: Path<String>, c: Path<String>, d: Path<Str
     (StatusCode::OK, Json(()))
 }
 pub async fn transaction(Json(payload): Json<Value>) -> impl IntoResponse {
+    println!("{:?}", payload);
     (StatusCode::OK, Json(()))
     // let status = pea_api_internal::transaction(API).await.unwrap();
     // (StatusCode::OK, Json(status))
 }
 pub async fn stake(Json(payload): Json<Value>) -> impl IntoResponse {
+    println!("{:?}", payload);
     (StatusCode::OK, Json(()))
     // let status = pea_api_internal::stake(API).await.unwrap();
     // (StatusCode::OK, Json(status))

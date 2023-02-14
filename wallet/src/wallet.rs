@@ -98,11 +98,15 @@ impl Wallet {
                 true
             }
             "Send" => {
-                self.transaction().await;
+                if let Err(err) = self.transaction().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Stake" => {
-                self.stake().await;
+                if let Err(err) = self.stake().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Secret" => {
@@ -146,7 +150,7 @@ impl Wallet {
         println!("Latest block height is {}.", height.to_string().yellow());
         Ok(())
     }
-    async fn transaction(&self) {
+    async fn transaction(&self) -> Result<(), Box<dyn Error>> {
         let address = inquire::address();
         let amount = inquire::amount();
         let fee = inquire::fee();
@@ -157,7 +161,7 @@ impl Wallet {
                 process::exit(0)
             }
         } {
-            return;
+            return Ok(());
         }
         let transaction_a = TransactionA::sign(
             address::decode(&address).unwrap(),
@@ -168,17 +172,35 @@ impl Wallet {
         )
         .unwrap();
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
+        let res: String = reqwest::Client::new()
+            .post(format!("{}/transaction", self.api))
+            .json(&transaction_a.b())
+            .send()
+            .await?
+            .json()
+            .await?;
+        println!("{}", if res == "success" { res.green() } else { res.red() });
+        Ok(())
     }
-    async fn stake(&self) {
+    async fn stake(&self) -> Result<(), Box<dyn Error>> {
         let deposit = inquire::deposit();
         let amount = inquire::amount();
         let fee = inquire::fee();
         let send = inquire::send();
         if !send {
-            return;
+            return Ok(());
         }
         let stake_a = StakeA::sign(deposit, amount, fee, pea_util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
+        let res: String = reqwest::Client::new()
+            .post(format!("{}/stake", self.api))
+            .json(&stake_a.b())
+            .send()
+            .await?
+            .json()
+            .await?;
+        println!("{}", if res == "success" { res.green() } else { res.red() });
+        Ok(())
     }
     async fn search(&self) -> Result<(), Box<dyn Error>> {
         let search = inquire::search();

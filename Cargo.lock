@@ -3021,8 +3021,6 @@ name = "pea-api"
 version = "0.6.3"
 dependencies = [
  "axum",
- "bincode",
- "chrono",
  "clap",
  "hex",
  "multiaddr 0.17.0",
@@ -3033,12 +3031,9 @@ dependencies = [
  "pea-block",
  "pea-core",
  "pea-int",
- "pea-key",
  "pea-stake",
  "pea-transaction",
- "pea-util",
  "serde",
- "serde_json",
  "tokio",
  "tower-http",
 ]

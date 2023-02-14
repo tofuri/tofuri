@@ -15,6 +15,10 @@ use crossterm::event;
 use crossterm::terminal;
 use pea_address::address;
 use pea_address::secret;
+use pea_api_core::Block;
+use pea_api_core::Stake;
+use pea_api_core::Sync;
+use pea_api_core::Transaction;
 use pea_core::*;
 use pea_key::Key;
 use pea_stake::StakeA;
@@ -66,15 +70,21 @@ impl Wallet {
                 false
             }
             "Search" => {
-                self.search().await;
+                if let Err(err) = self.search().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Height" => {
-                self.height().await;
+                if let Err(err) = self.height().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "API" => {
-                self.api().await;
+                if let Err(err) = self.api().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Address" => {
@@ -82,7 +92,9 @@ impl Wallet {
                 true
             }
             "Balance" => {
-                self.balance().await;
+                if let Err(err) = self.balance().await {
+                    println!("{}", err.to_string().red());
+                }
                 true
             }
             "Send" => {
@@ -113,16 +125,26 @@ impl Wallet {
         self.ciphertext = ciphertext;
         self.key = Some(key);
     }
-    async fn api(&self) {}
-    async fn balance(&self) {
-        let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
-        let balance: String = reqwest::get(format!("{}/balance/{}", self.api, address)).await.unwrap().json().await.unwrap();
-        let staked: String = reqwest::get(format!("{}/staked/{}", self.api, address)).await.unwrap().json().await.unwrap();
-        println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
+    async fn api(&self) -> Result<(), Box<dyn Error>> {
+        let info = reqwest::get(&self.api).await?.text().await?;
+        println!("{}", info.green());
+        let sync: Sync = reqwest::get(&format!("{}/sync", self.api)).await?.json().await?;
+        println!("Synchronize {}", sync.status.yellow());
+        println!("Height {}", sync.height.to_string().yellow());
+        println!("Last block seen {}", sync.last_seen.yellow());
+        Ok(())
     }
-    async fn height(&self) {
-        let height: usize = reqwest::get(format!("{}/height", self.api)).await.unwrap().json().await.unwrap();
+    async fn balance(&self) -> Result<(), Box<dyn Error>> {
+        let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
+        let balance: String = reqwest::get(format!("{}/balance/{}", self.api, address)).await?.json().await?;
+        let staked: String = reqwest::get(format!("{}/staked/{}", self.api, address)).await?.json().await?;
+        println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
+        Ok(())
+    }
+    async fn height(&self) -> Result<(), Box<dyn Error>> {
+        let height: usize = reqwest::get(format!("{}/height", self.api)).await?.json().await?;
         println!("Latest block height is {}.", height.to_string().yellow());
+        Ok(())
     }
     async fn transaction(&self) {
         let address = inquire::address();
@@ -158,21 +180,46 @@ impl Wallet {
         let stake_a = StakeA::sign(deposit, amount, fee, pea_util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
     }
-    async fn search(&self) {
+    async fn search(&self) -> Result<(), Box<dyn Error>> {
         let search = inquire::search();
         if address::decode(&search).is_ok() {
-            let balance: String = reqwest::get(format!("{}/balance/{}", self.api, search)).await.unwrap().json().await.unwrap();
-            let staked: String = reqwest::get(format!("{}/staked/{}", self.api, search)).await.unwrap().json().await.unwrap();
+            let balance: String = reqwest::get(format!("{}/balance/{}", self.api, search)).await?.json().await?;
+            let staked: String = reqwest::get(format!("{}/staked/{}", self.api, search)).await?.json().await?;
             println!(
                 "Address found\nAccount balance: {}, staked: {}",
                 balance.to_string().yellow(),
                 staked.to_string().yellow()
             );
-            return;
+            return Ok(());
         } else if search.len() == 64 {
+            if let Ok(res) = reqwest::get(format!("{}/block/{}", self.api, search)).await {
+                let block: Block = res.json().await?;
+                println!("Block found\n{block:?}");
+                return Ok(());
+            }
+            if let Ok(res) = reqwest::get(format!("{}/transaction/{}", self.api, search)).await {
+                let transaction: Transaction = res.json().await?;
+                println!("Transaction found\n{transaction:?}");
+                return Ok(());
+            }
+            if let Ok(res) = reqwest::get(format!("{}/block/{}", self.api, search)).await {
+                let stake: Stake = res.json().await?;
+                println!("Stake found\n{stake:?}");
+                return Ok(());
+            }
         } else if search.parse::<usize>().is_ok() {
+            if let Ok(res) = reqwest::get(format!("{}/hash/{}", self.api, search)).await {
+                let hash: String = res.json().await?;
+                if let Ok(res) = reqwest::get(format!("{}/block/{}", self.api, hash)).await {
+                    let block: Block = res.json().await?;
+                    println!("Block found\n{block:?}");
+                    return Ok(());
+                }
+                return Ok(());
+            }
         }
         println!("{}", "Nothing found".red());
+        Ok(())
     }
     fn address(&self) {
         println!("{}", address::encode(&self.key.as_ref().unwrap().address_bytes()).green());

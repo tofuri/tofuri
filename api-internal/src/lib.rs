@@ -19,8 +19,9 @@ async fn r(data: Data, addr: &str, vec: Option<Vec<u8>>) -> Result<Vec<u8>, Box<
     };
     stream.write_all(&bincode::serialize(&request)?).await?;
     let mut buf = [0; 1024];
-    let _ = stream.read(&mut buf).await?;
-    Ok(buf.to_vec())
+    let bytes = stream.read(&mut buf).await?;
+    let vec = buf[..bytes].to_vec();
+    Ok(vec)
 }
 pub async fn balance(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Balance, addr, Some(bincode::serialize(address_bytes)?)).await?)?)

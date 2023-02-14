@@ -51,9 +51,10 @@ pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Er
     };
 }
 async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data), Box<dyn Error>> {
-    let mut buffer = [0; 1024];
-    let bytes = timeout(Duration::from_millis(1), stream.read(&mut buffer)).await??;
-    let request: Request = bincode::deserialize(&buffer)?;
+    let mut buf = [0; 1024];
+    let bytes = timeout(Duration::from_millis(1), stream.read(&mut buf)).await??;
+    let slice = &buf[..bytes];
+    let request: Request = bincode::deserialize(slice)?;
     stream
         .write_all(&match request.data {
             Balance => bincode::serialize(&balance(node, &request.vec)?),

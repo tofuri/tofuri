@@ -35,6 +35,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/peer/:a/:b/:c/:d", get(router::peer))
         .route("/transaction", post(router::transaction))
         .route("/stake", post(router::stake))
+        .route("/cargo_pkg_name", get(router::cargo_pkg_name))
+        .route("/cargo_pkg_version", get(router::cargo_pkg_version))
+        .route("/cargo_pkg_repository", get(router::cargo_pkg_repository))
+        .route("/git_hash", get(router::git_hash))
         .layer(cors)
         .with_state(args);
     axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();

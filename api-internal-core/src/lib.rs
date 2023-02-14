@@ -15,6 +15,10 @@ pub enum Data {
     Peer,
     Transaction,
     Stake,
+    CargoPkgName,
+    CargoPkgVersion,
+    CargoPkgRepository,
+    GitHash,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Request {

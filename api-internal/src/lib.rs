@@ -64,3 +64,15 @@ pub async fn transaction(addr: &str, transaction_b: &TransactionB) -> Result<Str
 pub async fn stake(addr: &str, stake_b: &StakeB) -> Result<String, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Stake, addr, Some(bincode::serialize(stake_b)?)).await?)?)
 }
+pub async fn cargo_pkg_name(addr: &str) -> Result<String, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::CargoPkgName, addr, None).await?)?)
+}
+pub async fn cargo_pkg_version(addr: &str) -> Result<String, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::CargoPkgVersion, addr, None).await?)?)
+}
+pub async fn cargo_pkg_repository(addr: &str) -> Result<String, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::CargoPkgRepository, addr, None).await?)?)
+}
+pub async fn git_hash(addr: &str) -> Result<String, Box<dyn Error>> {
+    Ok(bincode::deserialize(&r(Data::GitHash, addr, None).await?)?)
+}

@@ -78,3 +78,19 @@ pub async fn stake(State(args): State<Args>, Json(stake): Json<Stake>) -> impl I
     let status = pea_api_internal::stake(&args.api_internal, &stake_b).await.unwrap();
     (StatusCode::OK, Json(status))
 }
+pub async fn cargo_pkg_name(State(args): State<Args>) -> impl IntoResponse {
+    let cargo_pkg_name = pea_api_internal::cargo_pkg_name(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(cargo_pkg_name))
+}
+pub async fn cargo_pkg_version(State(args): State<Args>) -> impl IntoResponse {
+    let cargo_pkg_version = pea_api_internal::cargo_pkg_version(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(cargo_pkg_version))
+}
+pub async fn cargo_pkg_repository(State(args): State<Args>) -> impl IntoResponse {
+    let cargo_pkg_repository = pea_api_internal::cargo_pkg_repository(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(cargo_pkg_repository))
+}
+pub async fn git_hash(State(args): State<Args>) -> impl IntoResponse {
+    let git_hash = pea_api_internal::git_hash(&args.api_internal).await.unwrap();
+    (StatusCode::OK, Json(git_hash))
+}

@@ -7,6 +7,10 @@ use pea_api_internal_core::Data;
 use pea_api_internal_core::Data::Balance;
 use pea_api_internal_core::Data::BlockByHash;
 use pea_api_internal_core::Data::BlockLatest;
+use pea_api_internal_core::Data::CargoPkgName;
+use pea_api_internal_core::Data::CargoPkgRepository;
+use pea_api_internal_core::Data::CargoPkgVersion;
+use pea_api_internal_core::Data::GitHash;
 use pea_api_internal_core::Data::HashByHeight;
 use pea_api_internal_core::Data::Height;
 use pea_api_internal_core::Data::HeightByHash;
@@ -70,6 +74,10 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data)
             Peer => bincode::serialize(&peer(node, &request.vec)?),
             Transaction => bincode::serialize(&transaction(node, &request.vec)?),
             Stake => bincode::serialize(&stake(node, &request.vec)?),
+            CargoPkgName => bincode::serialize(cargo_pkg_name()),
+            CargoPkgVersion => bincode::serialize(cargo_pkg_version()),
+            CargoPkgRepository => bincode::serialize(cargo_pkg_repository()),
+            GitHash => bincode::serialize(git_hash()),
         }?)
         .await?;
     stream.flush().await?;
@@ -173,4 +181,16 @@ fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
         }
     };
     Ok(status)
+}
+fn cargo_pkg_name() -> &'static str {
+    env!("CARGO_PKG_NAME")
+}
+fn cargo_pkg_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+fn cargo_pkg_repository() -> &'static str {
+    env!("CARGO_PKG_REPOSITORY")
+}
+fn git_hash() -> &'static str {
+    env!("GIT_HASH")
 }

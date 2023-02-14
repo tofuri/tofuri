@@ -4,7 +4,10 @@ use pea_api_core::Stake;
 use pea_api_core::Transaction;
 use pea_block::BlockA;
 use pea_stake::StakeA;
+use pea_stake::StakeB;
 use pea_transaction::TransactionA;
+use pea_transaction::TransactionB;
+use std::error::Error;
 pub fn block_json(block_a: &BlockA) -> Block {
     Block {
         hash: hex::encode(block_a.hash),
@@ -39,4 +42,22 @@ pub fn stake_json(stake_a: &StakeA) -> Stake {
         input_address: address::encode(&stake_a.input_address),
         hash: hex::encode(stake_a.hash),
     }
+}
+pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Box<dyn Error>> {
+    Ok(TransactionB {
+        output_address: address::decode(&transaction.output_address)?,
+        amount: pea_int::to_be_bytes(pea_int::from_str(&transaction.amount)?),
+        fee: pea_int::to_be_bytes(pea_int::from_str(&transaction.fee)?),
+        timestamp: transaction.timestamp,
+        signature: hex::decode(&transaction.signature)?.as_slice().try_into()?,
+    })
+}
+pub fn stake_b(stake: &Stake) -> Result<StakeB, Box<dyn Error>> {
+    Ok(StakeB {
+        amount: pea_int::to_be_bytes(pea_int::from_str(&stake.amount)?),
+        fee: pea_int::to_be_bytes(pea_int::from_str(&stake.fee)?),
+        deposit: stake.deposit,
+        timestamp: stake.timestamp,
+        signature: hex::decode(&stake.signature)?.as_slice().try_into()?,
+    })
 }

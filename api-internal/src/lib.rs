@@ -56,11 +56,11 @@ pub async fn peers(addr: &str) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
 pub async fn peer(addr: &str, multiaddr: &Multiaddr) -> Result<u128, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Peer, addr, Some(bincode::serialize(multiaddr)?)).await?)?)
 }
-pub async fn transaction(addr: &str, transaction_b: &TransactionB) -> Result<u128, Box<dyn Error>> {
+pub async fn transaction(addr: &str, transaction_b: &TransactionB) -> Result<String, Box<dyn Error>> {
     Ok(bincode::deserialize(
         &r(Data::Transaction, addr, Some(bincode::serialize(transaction_b)?)).await?,
     )?)
 }
-pub async fn stake(addr: &str, stake_b: &StakeB) -> Result<u128, Box<dyn Error>> {
+pub async fn stake(addr: &str, stake_b: &StakeB) -> Result<String, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Stake, addr, Some(bincode::serialize(stake_b)?)).await?)?)
 }

@@ -4,6 +4,8 @@ use axum::response::IntoResponse;
 use axum::Json;
 use multiaddr::Multiaddr;
 use pea_address::address;
+use pea_api_core::Stake;
+use pea_api_core::Transaction;
 use pea_core::*;
 use serde_json::Value;
 pub const API: &str = "localhost:9332";
@@ -62,15 +64,13 @@ pub async fn peer(a: Path<String>, b: Path<String>, c: Path<String>, d: Path<Str
     pea_api_internal::peer(API, &multiaddr).await.unwrap();
     (StatusCode::OK, Json(()))
 }
-pub async fn transaction(Json(payload): Json<Value>) -> impl IntoResponse {
-    println!("{:?}", payload);
-    (StatusCode::OK, Json(()))
-    // let status = pea_api_internal::transaction(API).await.unwrap();
-    // (StatusCode::OK, Json(status))
+pub async fn transaction(Json(transaction): Json<Transaction>) -> impl IntoResponse {
+    let transaction_b = pea_api_util::transaction_b(&transaction).unwrap();
+    let status = pea_api_internal::transaction(API, &transaction_b).await.unwrap();
+    (StatusCode::OK, Json(status))
 }
-pub async fn stake(Json(payload): Json<Value>) -> impl IntoResponse {
-    println!("{:?}", payload);
-    (StatusCode::OK, Json(()))
-    // let status = pea_api_internal::stake(API).await.unwrap();
-    // (StatusCode::OK, Json(status))
+pub async fn stake(Json(stake): Json<Stake>) -> impl IntoResponse {
+    let stake_b = pea_api_util::stake_b(&stake).unwrap();
+    let status = pea_api_internal::stake(API, &stake_b).await.unwrap();
+    (StatusCode::OK, Json(status))
 }

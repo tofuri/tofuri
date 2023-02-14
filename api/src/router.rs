@@ -7,7 +7,6 @@ use pea_address::address;
 use pea_api_core::Stake;
 use pea_api_core::Transaction;
 use pea_core::*;
-use serde_json::Value;
 pub const API: &str = "localhost:9332";
 pub async fn root() -> &'static str {
     "Hello, World!"

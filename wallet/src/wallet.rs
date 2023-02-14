@@ -202,7 +202,7 @@ impl Wallet {
                 println!("Transaction found\n{transaction:?}");
                 return Ok(());
             }
-            if let Ok(res) = reqwest::get(format!("{}/block/{}", self.api, search)).await {
+            if let Ok(res) = reqwest::get(format!("{}/stake/{}", self.api, search)).await {
                 let stake: Stake = res.json().await?;
                 println!("Stake found\n{stake:?}");
                 return Ok(());

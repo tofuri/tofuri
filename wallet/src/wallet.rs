@@ -174,7 +174,7 @@ impl Wallet {
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
         let res: String = reqwest::Client::new()
             .post(format!("{}/transaction", self.api))
-            .json(&pea_api_util::transaction_json(&transaction_a))
+            .json(&pea_api_util::transaction(&transaction_a))
             .send()
             .await?
             .json()
@@ -194,7 +194,7 @@ impl Wallet {
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
         let res: String = reqwest::Client::new()
             .post(format!("{}/stake", self.api))
-            .json(&pea_api_util::stake_json(&stake_a))
+            .json(&pea_api_util::stake(&stake_a))
             .send()
             .await?
             .json()

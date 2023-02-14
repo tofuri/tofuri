@@ -8,7 +8,7 @@ use pea_stake::StakeB;
 use pea_transaction::TransactionA;
 use pea_transaction::TransactionB;
 use std::error::Error;
-pub fn block_json(block_a: &BlockA) -> Block {
+pub fn block(block_a: &BlockA) -> Block {
     Block {
         hash: hex::encode(block_a.hash),
         previous_hash: hex::encode(block_a.previous_hash),
@@ -21,7 +21,7 @@ pub fn block_json(block_a: &BlockA) -> Block {
         stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     }
 }
-pub fn transaction_json(transaction_a: &TransactionA) -> Transaction {
+pub fn transaction(transaction_a: &TransactionA) -> Transaction {
     Transaction {
         input_address: address::encode(&transaction_a.input_address),
         output_address: address::encode(&transaction_a.output_address),
@@ -32,7 +32,7 @@ pub fn transaction_json(transaction_a: &TransactionA) -> Transaction {
         signature: hex::encode(transaction_a.signature),
     }
 }
-pub fn stake_json(stake_a: &StakeA) -> Stake {
+pub fn stake(stake_a: &StakeA) -> Stake {
     Stake {
         amount: pea_int::to_string(stake_a.amount),
         fee: pea_int::to_string(stake_a.fee),

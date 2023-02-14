@@ -3118,7 +3118,7 @@ dependencies = [
 
 [[package]]
 name = "pea-core"
-version = "0.6.3"
+version = "0.6.4"
 
 [[package]]
 name = "pea-db"

@@ -1,6 +1,6 @@
 use multiaddr::Multiaddr;
-use pea_api_core::internal::Data;
-use pea_api_core::internal::Request;
+use pea_api_internal_core::Data;
+use pea_api_internal_core::Request;
 use pea_block::BlockA;
 use pea_core::*;
 use pea_stake::StakeA;

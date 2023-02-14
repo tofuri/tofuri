@@ -2,7 +2,7 @@ use colored::*;
 use libp2p::futures::StreamExt;
 use libp2p::Multiaddr;
 use log::info;
-use pea::api;
+use pea::api_tcp;
 use pea::interval;
 use pea::swarm;
 use pea::Node;
@@ -78,7 +78,7 @@ async fn main() {
             biased;
             instant = interval.tick() => interval::tick(&mut node, instant),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
-            res = listener.accept() => api::accept(&mut node, res).await,
+            res = listener.accept() => api_tcp::accept(&mut node, res).await,
         }
     }
 }

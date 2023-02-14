@@ -3,6 +3,8 @@ members = [
     "address",
     "api",
     "api-core",
+    "api-internal",
+    "api-internal-core",
     "block",
     "blockchain",
     "core",

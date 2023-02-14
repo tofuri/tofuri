@@ -1,7 +1,7 @@
 use pea_address::address;
-use pea_api_core::external::Block;
-use pea_api_core::external::Stake;
-use pea_api_core::external::Transaction;
+use pea_api_core::Block;
+use pea_api_core::Stake;
+use pea_api_core::Transaction;
 use pea_block::BlockA;
 use pea_stake::StakeA;
 use pea_transaction::TransactionA;

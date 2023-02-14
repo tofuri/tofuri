@@ -116,12 +116,12 @@ impl Wallet {
     async fn api(&self) {}
     async fn balance(&self) {
         let address_bytes = self.key.as_ref().unwrap().address_bytes();
-        let balance = pea_api_client::balance(&self.api, &address_bytes).await.unwrap();
-        let staked = pea_api_client::staked(&self.api, &address_bytes).await.unwrap();
+        let balance = pea_api_internal::balance(&self.api, &address_bytes).await.unwrap();
+        let staked = pea_api_internal::staked(&self.api, &address_bytes).await.unwrap();
         println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
     }
     async fn height(&self) {
-        let height = pea_api_client::height(&self.api).await.unwrap();
+        let height = pea_api_internal::height(&self.api).await.unwrap();
         println!("Latest block height is {}.", height.to_string().yellow());
     }
     async fn transaction(&self) {
@@ -162,8 +162,8 @@ impl Wallet {
         let search = inquire::search();
         if address::decode(&search).is_ok() {
             let address_bytes = address::decode(&search).unwrap();
-            let balance = pea_api_client::balance(&self.api, &address_bytes).await.unwrap();
-            let staked = pea_api_client::staked(&self.api, &address_bytes).await.unwrap();
+            let balance = pea_api_internal::balance(&self.api, &address_bytes).await.unwrap();
+            let staked = pea_api_internal::staked(&self.api, &address_bytes).await.unwrap();
             println!(
                 "Address found\nAccount balance: {}, staked: {}",
                 balance.to_string().yellow(),

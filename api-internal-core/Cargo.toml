@@ -1,9 +1,9 @@
 [package]
-name = "pea-api-core"
+name = "pea-api-internal-core"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash API core"
+description = "Peacash internal API core"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]

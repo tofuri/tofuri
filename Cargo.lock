@@ -2911,7 +2911,7 @@ dependencies = [
  "libp2p",
  "log",
  "pea-address",
- "pea-api-core",
+ "pea-api-internal-core",
  "pea-block",
  "pea-blockchain",
  "pea-core",
@@ -2954,8 +2954,8 @@ dependencies = [
  "hex",
  "multiaddr 0.17.0",
  "pea-address",
- "pea-api-client",
  "pea-api-core",
+ "pea-api-internal",
  "pea-block",
  "pea-blockchain",
  "pea-core",
@@ -2971,12 +2971,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "pea-api-client"
+name = "pea-api-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "pea-api-internal"
 version = "0.1.0"
 dependencies = [
  "bincode",
  "multiaddr 0.17.0",
- "pea-api-core",
+ "pea-api-internal-core",
  "pea-block",
  "pea-core",
  "pea-stake",
@@ -2985,7 +2992,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pea-api-core"
+name = "pea-api-internal-core"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -3150,8 +3157,8 @@ dependencies = [
  "log",
  "pea-address",
  "pea-api",
- "pea-api-client",
- "pea-api-core",
+ "pea-api-internal",
+ "pea-api-internal-core",
  "pea-core",
  "pea-int",
  "pea-key",

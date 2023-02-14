@@ -8,7 +8,7 @@ use std::error::Error;
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// API Endpoint
-    #[clap(long, value_parser, default_value = "localhost:9332")]
+    #[clap(long, value_parser, default_value = "http://localhost:3000")]
     pub api: String,
 }
 #[tokio::main]

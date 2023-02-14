@@ -9,8 +9,7 @@ categories = ["cryptography::cryptocurrencies"]
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]
-pea-api-internal = { version = "0.1", path = "../api-internal" }
-pea-api-internal-core = { version = "0.1", path = "../api-internal-core" }
+pea-api-core = { version = "0.1", path = "../api-core" }
 pea-core = { version = "0.6", path = "../core" }
 pea-address = { version = "0.6", path = "../address" }
 pea-int = { version = "0.4", path = "../int" }
@@ -33,3 +32,4 @@ clap = { version = "3.2", features = ["derive"] }
 rand = "0.8"
 lazy_static = "1.4"
 bincode = "1.3"
+reqwest = { version = "0.11", features = ["json"] }

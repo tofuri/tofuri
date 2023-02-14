@@ -115,13 +115,13 @@ impl Wallet {
     }
     async fn api(&self) {}
     async fn balance(&self) {
-        let address_bytes = self.key.as_ref().unwrap().address_bytes();
-        let balance = pea_api_internal::balance(&self.api, &address_bytes).await.unwrap();
-        let staked = pea_api_internal::staked(&self.api, &address_bytes).await.unwrap();
+        let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
+        let balance: String = reqwest::get(format!("{}/balance/{}", self.api, address)).await.unwrap().json().await.unwrap();
+        let staked: String = reqwest::get(format!("{}/staked/{}", self.api, address)).await.unwrap().json().await.unwrap();
         println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
     }
     async fn height(&self) {
-        let height = pea_api_internal::height(&self.api).await.unwrap();
+        let height: usize = reqwest::get(format!("{}/height", self.api)).await.unwrap().json().await.unwrap();
         println!("Latest block height is {}.", height.to_string().yellow());
     }
     async fn transaction(&self) {
@@ -161,9 +161,8 @@ impl Wallet {
     async fn search(&self) {
         let search = inquire::search();
         if address::decode(&search).is_ok() {
-            let address_bytes = address::decode(&search).unwrap();
-            let balance = pea_api_internal::balance(&self.api, &address_bytes).await.unwrap();
-            let staked = pea_api_internal::staked(&self.api, &address_bytes).await.unwrap();
+            let balance: String = reqwest::get(format!("{}/balance/{}", self.api, search)).await.unwrap().json().await.unwrap();
+            let staked: String = reqwest::get(format!("{}/staked/{}", self.api, search)).await.unwrap().json().await.unwrap();
             println!(
                 "Address found\nAccount balance: {}, staked: {}",
                 balance.to_string().yellow(),

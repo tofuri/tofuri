@@ -39,3 +39,6 @@ pub const DEV_API_INTERNAL: &str = ":::9334";
 pub const HOST: &str = "/ip4/0.0.0.0/tcp/9333";
 pub const DEV_HOST: &str = "/ip4/0.0.0.0/tcp/9335";
 pub const API: &str = "127.0.0.1:80";
+pub const DEV_API: &str = "127.0.0.1:8080";
+pub const HTTP_API: &str = "http://localhost:80";
+pub const DEV_HTTP_API: &str = "http://localhost:8080";

@@ -3,12 +3,21 @@ use axum::routing::post;
 use axum::Router;
 use clap::Parser;
 use pea_api::router;
+use pea_core::*;
 use std::error::Error;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args = pea_api::Args::parse();
+    let mut args = pea_api::Args::parse();
+    if args.dev {
+        if args.api == API {
+            args.api = DEV_API.to_string();
+        }
+        if args.api_internal == API_INTERNAL {
+            args.api_internal = DEV_API_INTERNAL.to_string();
+        }
+    }
     let addr: SocketAddr = args.api.parse().unwrap();
     let cors = CorsLayer::permissive();
     let app = Router::new()

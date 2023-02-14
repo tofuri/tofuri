@@ -10,4 +10,7 @@ pub struct Args {
     /// API Internal Endpoint
     #[clap(long, value_parser, default_value = API_INTERNAL)]
     pub api_internal: String,
+    /// Development mode
+    #[clap(long, value_parser, default_value_t = false)]
+    pub dev: bool,
 }

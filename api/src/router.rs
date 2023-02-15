@@ -180,3 +180,9 @@ pub async fn sync_remaining(State(args): State<Args>) -> impl IntoResponse {
     diff /= sync.bps;
     (StatusCode::OK, Json(diff))
 }
+pub async fn uptime(State(args): State<Args>) -> impl IntoResponse {
+    let ticks = pea_api_internal::ticks(&args.api_internal).await.unwrap();
+    let tps = pea_api_internal::tps(&args.api_internal).await.unwrap();
+    let seconds = (ticks as f64 / tps) as u32;
+    (StatusCode::OK, Json(seconds))
+}

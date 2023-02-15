@@ -108,6 +108,7 @@ pub async fn git_hash(State(args): State<Args>) -> impl IntoResponse {
 }
 pub async fn address(State(args): State<Args>) -> impl IntoResponse {
     let address = pea_api_internal::address(&args.api_internal).await.unwrap();
+    let address = address::encode(&address);
     (StatusCode::OK, Json(address))
 }
 pub async fn ticks(State(args): State<Args>) -> impl IntoResponse {

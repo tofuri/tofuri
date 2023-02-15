@@ -3034,6 +3034,7 @@ dependencies = [
  "pea-int",
  "pea-stake",
  "pea-transaction",
+ "pea-util",
  "serde",
  "tokio",
  "tower-http",

@@ -53,6 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/trusted_hashes", get(router::trusted_hashes))
         .route("/trusted_latest_hashes", get(router::trusted_latest_hashes))
         .route("/trusted_stakers", get(router::trusted_stakers))
+        .route("/sync_remaining", get(router::sync_remaining))
         .layer(cors)
         .with_state(args);
     axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();

@@ -166,3 +166,17 @@ pub async fn trusted_stakers(State(args): State<Args>) -> impl IntoResponse {
     let trusted_stakers = pea_api_internal::trusted_stakers(&args.api_internal).await.unwrap();
     (StatusCode::OK, Json(trusted_stakers))
 }
+pub async fn sync_remaining(State(args): State<Args>) -> impl IntoResponse {
+    let sync = pea_api_internal::sync(&args.api_internal).await.unwrap();
+    if sync.completed {
+        return (StatusCode::OK, Json(0.0));
+    }
+    if !sync.downloading() {
+        return (StatusCode::OK, Json(-1.0));
+    }
+    let block_a = pea_api_internal::block_latest(&args.api_internal).await.unwrap();
+    let mut diff = pea_util::timestamp().saturating_sub(block_a.timestamp) as f32;
+    diff /= BLOCK_TIME_MIN as f32;
+    diff /= sync.bps;
+    (StatusCode::OK, Json(diff))
+}

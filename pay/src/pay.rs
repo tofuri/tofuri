@@ -1,6 +1,5 @@
 use colored::*;
 use log::info;
-use pea_address as address;
 use pea_api_core::Block;
 use pea_api_core::Transaction;
 use pea_core::*;
@@ -8,7 +7,6 @@ use pea_key::Key;
 use pea_pay_core::Charge;
 use pea_pay_core::ChargeStatus;
 use pea_pay_core::Payment;
-use pea_pay_db as db;
 use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
@@ -72,7 +70,7 @@ impl Pay {
             subkey: self.subkey,
         };
         let payment = charge.payment(&self.key);
-        db::charge::put(&self.db, &self.key, &charge).unwrap();
+        pea_pay_db::charge::put(&self.db, &self.key, &charge).unwrap();
         self.charges.insert(charge.address_bytes(&self.key), charge);
         self.subkey += 1;
         payment
@@ -93,7 +91,7 @@ impl Pay {
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
             for charge in self.charges.values() {
-                let address = address::address::encode(&charge.address_bytes(&self.key));
+                let address = pea_address::address::encode(&charge.address_bytes(&self.key));
                 if transaction.output_address == address {
                     let amount = match map.get(&address) {
                         Some(a) => *a,
@@ -105,7 +103,7 @@ impl Pay {
         }
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
-            let address = address::address::encode(&charge.address_bytes(&self.key));
+            let address = pea_address::address::encode(&charge.address_bytes(&self.key));
             let res = {
                 let amount = match map.get(&address) {
                     Some(a) => *a,
@@ -115,11 +113,11 @@ impl Pay {
             };
             if res {
                 charge.status = ChargeStatus::Completed;
-                db::charge::put(&self.db, &self.key, charge).unwrap();
+                pea_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
                 charges.push(charge);
             } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < pea_util::timestamp() - self.expires {
                 charge.status = ChargeStatus::Expired;
-                db::charge::put(&self.db, &self.key, charge).unwrap();
+                pea_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
             }
         }
         let mut payments = vec![];
@@ -171,7 +169,7 @@ impl Pay {
     }
     pub fn load(&mut self) {
         let start = Instant::now();
-        for res in self.db.iterator_cf(db::charges(&self.db), IteratorMode::Start) {
+        for res in self.db.iterator_cf(pea_pay_db::charges(&self.db), IteratorMode::Start) {
             self.subkey += 1;
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();

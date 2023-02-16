@@ -77,7 +77,6 @@ impl Pay {
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
         self.update_chain().await?;
-        println!("a");
         let mut transactions = vec![];
         for (i, block) in self.chain.iter().rev().enumerate() {
             if i + 1 < self.confirmations {
@@ -128,7 +127,6 @@ impl Pay {
     }
     async fn update_chain(&mut self) -> Result<(), Box<dyn Error>> {
         let latest_block: Block = reqwest::get(format!("{}/block", &self.api)).await?.json().await?;
-        println!("b");
         if match self.chain.last() {
             Some(block) => block.hash == latest_block.hash,
             None => false,
@@ -167,7 +165,6 @@ impl Pay {
             {
                 break;
             }
-            println!("{}", previous_hash);
             previous_hash = block.previous_hash.clone();
             chain.insert(0, block);
         }

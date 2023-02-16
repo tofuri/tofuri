@@ -3181,6 +3181,61 @@ dependencies = [
 ]
 
 [[package]]
+name = "pea-pay"
+version = "0.1.2"
+dependencies = [
+ "axum",
+ "bincode",
+ "chrono",
+ "clap",
+ "colored",
+ "futures",
+ "hex",
+ "lazy_static",
+ "log",
+ "pea-address",
+ "pea-api-core",
+ "pea-core",
+ "pea-int",
+ "pea-key",
+ "pea-logger",
+ "pea-pay-core",
+ "pea-pay-db",
+ "pea-transaction",
+ "pea-util",
+ "pea-wallet",
+ "regex",
+ "reqwest",
+ "rocksdb",
+ "serde_json",
+ "tempdir",
+ "tokio",
+ "tower-http",
+]
+
+[[package]]
+name = "pea-pay-core"
+version = "0.1.1"
+dependencies = [
+ "bincode",
+ "pea-address",
+ "pea-core",
+ "pea-key",
+ "serde",
+ "sha2 0.10.6",
+]
+
+[[package]]
+name = "pea-pay-db"
+version = "0.1.1"
+dependencies = [
+ "bincode",
+ "pea-key",
+ "pea-pay-core",
+ "rocksdb",
+]
+
+[[package]]
 name = "pea-stake"
 version = "0.7.7"
 dependencies = [

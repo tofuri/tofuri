@@ -11,7 +11,6 @@ use pea::Node;
 use pea_address::address;
 use pea_blockchain::blockchain::Blockchain;
 use pea_core::*;
-use pea_db as db;
 use pea_key::Key;
 use pea_p2p::multiaddr;
 use pea_p2p::P2p;
@@ -74,12 +73,12 @@ async fn main() {
         true => tempdir.path().to_str().unwrap(),
         false => "./peacash-db",
     };
-    let db = db::open(path);
+    let db = pea_db::open(path);
     let mut known = HashSet::new();
     if let Some(multiaddr) = multiaddr::ip_port(&args.peer.parse::<Multiaddr>().unwrap()) {
         known.insert(multiaddr);
     }
-    let peers = db::peer::get_all(&db);
+    let peers = pea_db::peer::get_all(&db);
     for peer in peers {
         if let Some(multiaddr) = multiaddr::ip_port(&peer.parse::<Multiaddr>().unwrap()) {
             known.insert(multiaddr);

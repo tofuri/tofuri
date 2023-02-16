@@ -18,7 +18,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value = "10")]
     pub confirmations: usize,
     /// Charge expires after seconds
-    #[clap(long, value_parser, default_value = "7200")]
+    #[clap(long, value_parser, default_value = "20")]
     pub expires: u32,
     /// Ticks per second
     #[clap(long, value_parser, default_value = "1")]

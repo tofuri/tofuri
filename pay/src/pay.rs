@@ -76,7 +76,7 @@ impl Pay {
         payment
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
-        // self.update_chain().await?;
+        self.update_chain().await?;
         println!("a");
         let mut transactions = vec![];
         for (i, block) in self.chain.iter().rev().enumerate() {
@@ -152,19 +152,26 @@ impl Pay {
         Ok(())
     }
     async fn reload_chain(&mut self) -> Result<(), Box<dyn Error>> {
-        self.chain = vec![];
-        let latest_block: Block = reqwest::get(format!("{}/block", &self.api)).await?.json().await?;
-        let mut previous_hash = latest_block.hash;
+        let mut chain = vec![];
+        let mut previous_hash = reqwest::get(format!("{}/block", &self.api)).await?.json::<Block>().await?.hash;
         loop {
             let block: Block = reqwest::get(format!("{}/block/{}", &self.api, &previous_hash)).await?.json().await?;
+            if let Some(latest_block) = self.chain.last() {
+                if latest_block.hash == block.previous_hash {
+                    self.chain.append(&mut chain);
+                    return Ok(());
+                }
+            }
             if block.previous_hash == "0000000000000000000000000000000000000000000000000000000000000000"
                 || block.timestamp < pea_util::timestamp() - self.expires
             {
                 break;
             }
+            println!("{}", previous_hash);
             previous_hash = block.previous_hash.clone();
-            self.chain.insert(0, block);
+            chain.insert(0, block);
         }
+        self.chain = chain;
         Ok(())
     }
     pub fn load(&mut self) {

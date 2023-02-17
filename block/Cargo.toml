@@ -7,7 +7,6 @@ description = "Peacash block"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]
-pea-address = { version = "0.6", path = "../address" }
 pea-core = { version = "0.6", path = "../core" }
 pea-key = { version = "0.6", path = "../key", features = ["vrf"]}
 pea-stake = { version = "0.7", path = "../stake" }

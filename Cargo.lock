@@ -3087,7 +3087,6 @@ name = "pea-block"
 version = "0.6.5"
 dependencies = [
  "merkle-cbt",
- "pea-address",
  "pea-core",
  "pea-key",
  "pea-stake",
@@ -3111,7 +3110,6 @@ dependencies = [
  "pea-db",
  "pea-int",
  "pea-key",
- "pea-logger",
  "pea-stake",
  "pea-transaction",
  "pea-tree",
@@ -3136,7 +3134,6 @@ dependencies = [
  "pea-transaction",
  "pea-tree",
  "rocksdb",
- "tempdir",
 ]
 
 [[package]]
@@ -3189,7 +3186,6 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
- "futures",
  "hex",
  "lazy_static",
  "log",
@@ -3217,7 +3213,6 @@ dependencies = [
 name = "pea-pay-core"
 version = "0.1.1"
 dependencies = [
- "bincode",
  "pea-address",
  "pea-core",
  "pea-key",
@@ -3239,7 +3234,6 @@ dependencies = [
 name = "pea-stake"
 version = "0.7.7"
 dependencies = [
- "pea-address",
  "pea-core",
  "pea-int",
  "pea-key",
@@ -3252,7 +3246,6 @@ dependencies = [
 name = "pea-transaction"
 version = "0.8.6"
 dependencies = [
- "pea-address",
  "pea-core",
  "pea-int",
  "pea-key",

@@ -7,7 +7,6 @@ description = "Peacash transaction"
 repository = "https://github.com/peacash/peacash"
 
 [dependencies]
-pea-address = { version = "0.6", path = "../address" }
 pea-int = { version = "0.4", path = "../int" }
 pea-core = { version = "0.6", path = "../core" }
 pea-key = { version = "0.6", path = "../key" }

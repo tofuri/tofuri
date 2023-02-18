@@ -20,14 +20,14 @@ pub fn u256(hash: &Hash) -> U256 {
 pub fn u256_modulo(hash: &Hash, modulo: u128) -> u128 {
     (u256(hash) % modulo).as_u128()
 }
-pub fn hash_n(hash: &Hash, n: u128) -> Hash {
+pub fn hash_beta_n(beta: &Beta, n: u128) -> Hash {
     let mut hasher = Sha256::new();
-    hasher.update(hash);
+    hasher.update(beta);
     hasher.update(n.to_be_bytes());
     hasher.finalize().into()
 }
 pub fn random(beta: &Beta, n: u128, modulo: u128) -> u128 {
-    u256_modulo(&hash_n(beta, n), modulo)
+    u256_modulo(&hash_beta_n(beta, n), modulo)
 }
 pub fn penalty(index: usize) -> u128 {
     if index == 0 {

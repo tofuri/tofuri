@@ -71,10 +71,17 @@ pub async fn peers(State(args): State<Args>) -> impl IntoResponse {
     let peers = pea_api_internal::peers(&args.api_internal).await.unwrap();
     Json(peers)
 }
-pub async fn peer(State(args): State<Args>, a: Path<String>, b: Path<String>, c: Path<String>, d: Path<String>) -> impl IntoResponse {
-    let multiaddr: Multiaddr = format!("/{}/{}/{}/{}", a.as_str(), b.as_str(), c.as_str(), d.as_str()).parse().unwrap();
+pub async fn peer_multiaddr_ip_port(State(args): State<Args>, Path((a, b, c, d)): Path<(String, String, String, String)>) -> impl IntoResponse {
+    let string = format!("/{}/{}/{}/{}", a, b, c, d);
+    let multiaddr: Multiaddr = string.parse().unwrap();
     pea_api_internal::peer(&args.api_internal, &multiaddr).await.unwrap();
-    Json(())
+    Json(true)
+}
+pub async fn peer_multiaddr_ip(State(args): State<Args>, Path((a, b)): Path<(String, String)>) -> impl IntoResponse {
+    let string = format!("/{}/{}", a, b);
+    let multiaddr: Multiaddr = string.parse().unwrap();
+    pea_api_internal::peer(&args.api_internal, &multiaddr).await.unwrap();
+    Json(true)
 }
 pub async fn transaction(State(args): State<Args>, Json(transaction): Json<Transaction>) -> impl IntoResponse {
     let transaction_b = pea_api_util::transaction_b(&transaction).unwrap();

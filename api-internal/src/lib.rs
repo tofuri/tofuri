@@ -53,7 +53,7 @@ pub async fn stake_by_hash(addr: &str, hash: &Hash) -> Result<StakeA, Box<dyn Er
 pub async fn peers(addr: &str) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Peers, addr, None).await?)?)
 }
-pub async fn peer(addr: &str, multiaddr: &Multiaddr) -> Result<u128, Box<dyn Error>> {
+pub async fn peer(addr: &str, multiaddr: &Multiaddr) -> Result<(), Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Peer, addr, Some(bincode::serialize(multiaddr)?)).await?)?)
 }
 pub async fn transaction(addr: &str, transaction_b: &TransactionB) -> Result<String, Box<dyn Error>> {

@@ -38,10 +38,6 @@ pub fn penalty(index: usize) -> u128 {
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
 }
-pub fn micros_per_tick(tps: f64) -> u64 {
-    let secs = 1_f64 / tps;
-    (secs * 1_000_000_f64) as u64
-}
 pub fn duration_to_string(seconds: u32, now: &str) -> String {
     if seconds == 0 {
         return now.to_string();
@@ -68,10 +64,6 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
         i += 1;
     }
     string
-}
-pub fn uptime(ticks: f64, tps: f64) -> String {
-    let seconds = (ticks / tps) as u32;
-    duration_to_string(seconds, "0")
 }
 pub fn ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
     ANCIENT_TIME + timestamp < latest_block_timestamp

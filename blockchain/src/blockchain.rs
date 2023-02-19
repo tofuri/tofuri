@@ -91,8 +91,18 @@ impl Blockchain {
         } else {
             self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, key).unwrap()];
         }
-        let mut transactions = self.pending_transactions.clone();
-        let mut stakes = self.pending_stakes.clone();
+        let mut transactions: Vec<TransactionA> = self
+            .pending_transactions
+            .iter()
+            .filter(|a| a.timestamp + ANCIENT_TIME >= timestamp)
+            .cloned()
+            .collect();
+        let mut stakes: Vec<StakeA> = self
+            .pending_stakes
+            .iter()
+            .filter(|a| a.timestamp + ANCIENT_TIME >= timestamp)
+            .cloned()
+            .collect();
         transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
         stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
         while *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * transactions.len() + *STAKE_SIZE * stakes.len() > BLOCK_SIZE_LIMIT {

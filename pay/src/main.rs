@@ -27,7 +27,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
     info!("{} {}", "--confirmations".cyan(), args.confirmations.to_string().magenta());
     info!("{} {}", "--expires".cyan(), args.expires.to_string().magenta());
-    info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     info!("{} {}", "--api".cyan(), args.api.magenta());
@@ -52,7 +51,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             tempkey: args.tempkey,
             confirmations: args.confirmations,
             expires: args.expires,
-            tps: args.tps,
             wallet: &args.wallet,
             passphrase: &args.passphrase,
             api: args.api,
@@ -70,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_state(pay.clone());
     tokio::spawn(async move {
         pay.lock().await.load();
-        let mut interval = tokio::time::interval(Duration::from_micros(pea_util::micros_per_tick(args.tps)));
+        let mut interval = tokio::time::interval(Duration::from_secs(1));
         loop {
             interval.tick().await;
             match pay.lock().await.check().await {

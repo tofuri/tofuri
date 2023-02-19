@@ -20,9 +20,6 @@ pub struct Args {
     /// Charge expires after seconds
     #[clap(long, value_parser, default_value = "60")]
     pub expires: u32,
-    /// Ticks per second
-    #[clap(long, value_parser, default_value = "1")]
-    pub tps: f64,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,

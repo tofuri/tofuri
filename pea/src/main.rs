@@ -118,8 +118,8 @@ async fn main() {
     let mut interval_b = interval(Duration::from_secs(1));
     let mut interval_c = interval(Duration::from_millis(200));
     let mut interval_d = interval(Duration::from_secs(10));
-    let mut interval_e = interval(Duration::from_secs(5));
-    let mut interval_f = interval(Duration::from_secs(60));
+    let mut interval_e = interval(Duration::from_secs(60));
+    let mut interval_f = interval(Duration::from_secs(5));
     let mut interval_g = interval(Duration::from_secs(1));
     info!("Last whole second {}", format!("{:?}", pea_util::duration_since_last_second()).yellow());
     loop {
@@ -128,9 +128,9 @@ async fn main() {
             instant = interval_b.tick() => interval::offline_staker(&mut node, instant),
             instant = interval_c.tick() => interval::sync_request(&mut node, instant),
             instant = interval_d.tick() => interval::share(&mut node, instant),
-            instant = interval_g.tick() => interval::dial_known(&mut node, instant),
+            instant = interval_e.tick() => interval::dial_known(&mut node, instant),
             instant = interval_f.tick() => interval::dial_unknown(&mut node, instant),
-            instant = interval_e.tick() => interval::clear(&mut node, instant),
+            instant = interval_g.tick() => interval::clear(&mut node, instant),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
             res = listener.accept() => api_internal::accept(&mut node, res).await
         };

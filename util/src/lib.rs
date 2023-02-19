@@ -73,3 +73,6 @@ pub fn uptime(ticks: f64, tps: f64) -> String {
     let seconds = (ticks / tps) as u32;
     duration_to_string(seconds, "0")
 }
+pub fn ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
+    ANCIENT_TIME + timestamp < latest_block_timestamp
+}

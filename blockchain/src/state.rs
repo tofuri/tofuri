@@ -305,7 +305,7 @@ pub fn update<T: State>(state: &mut T, block: &BlockA, previous_timestamp: u32, 
     update_3(state, block);
 }
 fn update_non_ancient_blocks<T: State>(state: &mut T, block: &BlockA) {
-    while state.get_non_ancient_blocks().first().is_some() && state.get_non_ancient_blocks().first().unwrap().timestamp + ANCIENT_TIME < block.timestamp {
+    while state.get_non_ancient_blocks().first().is_some() && pea_util::ancient(state.get_non_ancient_blocks().first().unwrap().timestamp, block.timestamp) {
         (*state.get_non_ancient_blocks_mut()).remove(0);
     }
     (*state.get_non_ancient_blocks_mut()).push(block.clone());

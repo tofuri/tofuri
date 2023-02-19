@@ -94,13 +94,13 @@ impl Blockchain {
         let mut transactions: Vec<TransactionA> = self
             .pending_transactions
             .iter()
-            .filter(|a| a.timestamp + ANCIENT_TIME >= timestamp)
+            .filter(|a| !pea_util::ancient(a.timestamp, timestamp))
             .cloned()
             .collect();
         let mut stakes: Vec<StakeA> = self
             .pending_stakes
             .iter()
-            .filter(|a| a.timestamp + ANCIENT_TIME >= timestamp)
+            .filter(|a| !pea_util::ancient(a.timestamp, timestamp))
             .cloned()
             .collect();
         transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -302,7 +302,7 @@ impl Blockchain {
         if transaction_a.timestamp > timestamp + time_delta {
             return Err("transaction timestamp future".into());
         }
-        if transaction_a.timestamp + ANCIENT_TIME < dynamic.latest_block.timestamp {
+        if pea_util::ancient(transaction_a.timestamp, dynamic.latest_block.timestamp) {
             return Err("transaction timestamp ancient".into());
         }
         for block in dynamic.non_ancient_blocks.iter() {
@@ -328,7 +328,7 @@ impl Blockchain {
         if stake_a.timestamp > timestamp + time_delta {
             return Err("stake timestamp future".into());
         }
-        if stake_a.timestamp + ANCIENT_TIME < dynamic.latest_block.timestamp {
+        if pea_util::ancient(stake_a.timestamp, dynamic.latest_block.timestamp) {
             return Err("stake timestamp ancient".into());
         }
         for block in dynamic.non_ancient_blocks.iter() {

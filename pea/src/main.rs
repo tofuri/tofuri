@@ -2,6 +2,7 @@ use clap::Parser;
 use colored::*;
 use libp2p::futures::StreamExt;
 use libp2p::Multiaddr;
+use log::debug;
 use log::info;
 use log::warn;
 use pea::api_internal;
@@ -14,12 +15,12 @@ use pea_core::*;
 use pea_key::Key;
 use pea_p2p::multiaddr;
 use pea_p2p::P2p;
-use pea_util;
 use pea_wallet::wallet;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
+use tokio::time::interval;
 #[tokio::main]
 async fn main() {
     let mut args = pea::Args::parse();
@@ -52,7 +53,6 @@ async fn main() {
     info!("{} {}", "--ban-offline".cyan(), args.ban_offline.to_string().magenta());
     info!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());
     info!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
-    info!("{} {}", "--tps".cyan(), args.tps.to_string().magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     info!("{} {}", "--peer".cyan(), args.peer.magenta());
@@ -113,13 +113,28 @@ async fn main() {
         "http://".cyan(),
         listener.local_addr().unwrap().to_string().magenta()
     );
-    let mut interval = tokio::time::interval(Duration::from_micros(pea_util::micros_per_tick(node.args.tps)));
+    let mut interval_a = interval(Duration::from_secs(1));
+    let mut interval_b = interval(Duration::from_secs(1));
+    let mut interval_c = interval(Duration::from_millis(200));
+    let mut interval_d = interval(Duration::from_secs(10));
+    let mut interval_e = interval(Duration::from_secs(5));
+    let mut interval_f = interval(Duration::from_secs(60));
+    let mut interval_g = interval(Duration::from_secs(1));
     loop {
-        tokio::select! {
-            biased;
-            instant = interval.tick() => interval::tick(&mut node, instant),
+        let instant = tokio::select! {
+            instant = interval_a.tick() => interval::grow(&mut node, instant),
+            instant = interval_b.tick() => interval::offline_staker(&mut node, instant),
+            instant = interval_c.tick() => interval::sync_request(&mut node, instant),
+            instant = interval_d.tick() => interval::share(&mut node, instant),
+            instant = interval_g.tick() => interval::dial_known(&mut node, instant),
+            instant = interval_f.tick() => interval::dial_unknown(&mut node, instant),
+            instant = interval_e.tick() => interval::clear(&mut node, instant),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
-            res = listener.accept() => api_internal::accept(&mut node, res).await,
-        }
+            res = listener.accept() => api_internal::accept(&mut node, res).await
+        };
+        let elapsed = instant.elapsed();
+        node.lag = elapsed.as_micros() as f64 / 1_000_f64;
+        node.ticks += 1;
+        debug!("{} {} {}", "Tick".cyan(), node.ticks, format!("{elapsed:?}").yellow());
     }
 }

@@ -46,9 +46,6 @@ pub struct Args {
     /// Swarm connection limits
     #[clap(long, value_parser)]
     pub max_established: Option<u32>,
-    /// Ticks per second
-    #[clap(long, value_parser, default_value = "5")]
-    pub tps: f64,
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,

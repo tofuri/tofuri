@@ -21,7 +21,6 @@ pub enum Data {
     GitHash,
     Address,
     Ticks,
-    Tps,
     Lag,
     Time,
     TreeSize,

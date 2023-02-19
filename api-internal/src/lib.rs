@@ -82,9 +82,6 @@ pub async fn address(addr: &str) -> Result<AddressBytes, Box<dyn Error>> {
 pub async fn ticks(addr: &str) -> Result<usize, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Ticks, addr, None).await?)?)
 }
-pub async fn tps(addr: &str) -> Result<f64, Box<dyn Error>> {
-    Ok(bincode::deserialize(&r(Data::Tps, addr, None).await?)?)
-}
 pub async fn lag(addr: &str) -> Result<f64, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Lag, addr, None).await?)?)
 }

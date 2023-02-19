@@ -31,12 +31,14 @@ use pea_util;
 use std::error::Error;
 use std::io;
 use std::num::NonZeroU32;
+use tokio::time::Instant;
 use void::Void;
 type HandlerErr = EitherError<
     EitherError<EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<io::Error>>,
     ConnectionHandlerUpgrErr<io::Error>,
 >;
-pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
+pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) -> Instant {
+    let instant = Instant::now();
     debug!("{:?}", event);
     match event {
         SwarmEvent::Dialing(_) => {}
@@ -83,7 +85,8 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
         SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::OutboundFailure { .. })) => {}
         SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::ResponseSent { .. })) => {}
         _ => {}
-    }
+    };
+    instant
 }
 fn event_connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
     if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {

@@ -28,7 +28,6 @@ use pea_api_internal_core::Data::Staked;
 use pea_api_internal_core::Data::Sync;
 use pea_api_internal_core::Data::Ticks;
 use pea_api_internal_core::Data::Time;
-use pea_api_internal_core::Data::Tps;
 use pea_api_internal_core::Data::Transaction;
 use pea_api_internal_core::Data::TransactionByHash;
 use pea_api_internal_core::Data::TreeSize;
@@ -52,7 +51,9 @@ use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
-pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
+use tokio::time::Instant;
+pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) -> Instant {
+    let instant = Instant::now();
     if let Err(err) = &res {
         error!("{} {}", "API".cyan(), err);
     }
@@ -67,6 +68,7 @@ pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Er
         ),
         Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err),
     };
+    instant
 }
 async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data), Box<dyn Error>> {
     let mut buf = [0; 1024];
@@ -94,7 +96,6 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data)
             GitHash => bincode::serialize(git_hash()),
             Address => bincode::serialize(&address(node)),
             Ticks => bincode::serialize(ticks(node)),
-            Tps => bincode::serialize(tps(node)),
             Lag => bincode::serialize(lag(node)),
             Time => bincode::serialize(&time()),
             TreeSize => bincode::serialize(&tree_size(node)),
@@ -224,9 +225,6 @@ fn address(node: &mut Node) -> AddressBytes {
 }
 fn ticks(node: &mut Node) -> &usize {
     &node.ticks
-}
-fn tps(node: &mut Node) -> &f64 {
-    &node.args.tps
 }
 fn lag(node: &mut Node) -> &f64 {
     &node.lag

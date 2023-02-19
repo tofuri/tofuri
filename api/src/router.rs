@@ -118,10 +118,6 @@ pub async fn ticks(State(args): State<Args>) -> impl IntoResponse {
     let ticks = pea_api_internal::ticks(&args.api_internal).await.unwrap();
     Json(ticks)
 }
-pub async fn tps(State(args): State<Args>) -> impl IntoResponse {
-    let tps = pea_api_internal::tps(&args.api_internal).await.unwrap();
-    Json(tps)
-}
 pub async fn lag(State(args): State<Args>) -> impl IntoResponse {
     let lag = pea_api_internal::lag(&args.api_internal).await.unwrap();
     Json(lag)
@@ -182,10 +178,4 @@ pub async fn sync_remaining(State(args): State<Args>) -> impl IntoResponse {
     diff /= BLOCK_TIME as f32;
     diff /= sync.bps;
     Json(diff)
-}
-pub async fn uptime(State(args): State<Args>) -> impl IntoResponse {
-    let ticks = pea_api_internal::ticks(&args.api_internal).await.unwrap();
-    let tps = pea_api_internal::tps(&args.api_internal).await.unwrap();
-    let seconds = (ticks as f64 / tps) as u32;
-    Json(seconds)
 }

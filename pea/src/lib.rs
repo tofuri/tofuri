@@ -34,9 +34,6 @@ pub struct Args {
     /// Generate genesis block
     #[clap(long, value_parser, default_value_t = false)]
     pub mint: bool,
-    /// Use time api to adjust time difference
-    #[clap(long, value_parser, default_value_t = false)]
-    pub time_api: bool,
     /// Trust fork after blocks
     #[clap(long, value_parser, default_value = "2")]
     pub trust: usize,

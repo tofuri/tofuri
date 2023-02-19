@@ -48,7 +48,6 @@ async fn main() {
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
     info!("{} {}", "--mint".cyan(), args.mint.to_string().magenta());
-    info!("{} {}", "--time-api".cyan(), args.time_api.to_string().magenta());
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
     info!("{} {}", "--ban-offline".cyan(), args.ban_offline.to_string().magenta());
     info!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());

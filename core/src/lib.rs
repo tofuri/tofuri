@@ -19,6 +19,7 @@ pub const COIN: u128 = 10_u128.pow(DECIMAL_PLACES as u32);
 pub const BLOCK_TIME_MIN: u32 = 1;
 pub const TIME_DELTA: u32 = 1; // ping delay & perception of time
 pub const BLOCK_TIME_MAX: u32 = BLOCK_TIME_MIN + TIME_DELTA;
+pub const ANCIENT_TIME: u32 = 10;
 pub const EXTENSION: &str = "pea";
 pub const AMOUNT_BYTES: usize = 4;
 pub const GENESIS_BETA: Beta = [0; 32];

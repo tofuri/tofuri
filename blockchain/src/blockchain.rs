@@ -166,13 +166,7 @@ impl Blockchain {
         }
         info!("{} {} {} {}", info_0, info_1, info_2, info_3);
     }
-    pub fn pending_transactions_push(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        transaction_b: TransactionB,
-        timestamp: u32,
-        time_delta: u32,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, timestamp: u32, time_delta: u32) -> Result<(), Box<dyn Error>> {
         let transaction_a = transaction_b.a(None)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
             return Err("transaction pending".into());
@@ -181,7 +175,7 @@ impl Blockchain {
         if transaction_a.amount + transaction_a.fee > balance {
             return Err("transaction too expensive".into());
         }
-        Blockchain::validate_transaction(&self.states.dynamic, db, &transaction_a, timestamp, time_delta)?;
+        Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, timestamp, time_delta)?;
         info!("Transaction {}", hex::encode(transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -190,13 +184,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn pending_stakes_push(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        stake_b: StakeB,
-        timestamp: u32,
-        time_delta: u32,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn pending_stakes_push(&mut self, stake_b: StakeB, timestamp: u32, time_delta: u32) -> Result<(), Box<dyn Error>> {
         let stake_a = stake_b.a(None)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
             return Err("stake pending".into());
@@ -212,7 +200,7 @@ impl Blockchain {
                 return Err("stake withdraw too expensive".into());
             }
         }
-        Blockchain::validate_stake(&self.states.dynamic, db, &stake_a, timestamp, time_delta)?;
+        Blockchain::validate_stake(&self.states.dynamic, &stake_a, timestamp, time_delta)?;
         info!("Stake {}", hex::encode(stake_a.hash).green());
         self.pending_stakes.push(stake_a);
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -277,21 +265,15 @@ impl Blockchain {
             return Ok(());
         }
         for stake_a in block_a.stakes.iter() {
-            Blockchain::validate_stake(&dynamic, db, stake_a, timestamp, time_delta)?;
+            Blockchain::validate_stake(&dynamic, stake_a, timestamp, time_delta)?;
         }
         for transaction_a in block_a.transactions.iter() {
-            Blockchain::validate_transaction(&dynamic, db, transaction_a, timestamp, time_delta)?;
+            Blockchain::validate_transaction(&dynamic, transaction_a, timestamp, time_delta)?;
         }
         dynamic.check_overflow(&block_a.transactions, &block_a.stakes)?;
         Ok(())
     }
-    fn validate_transaction(
-        dynamic: &Dynamic,
-        db: &DBWithThreadMode<SingleThreaded>,
-        transaction_a: &TransactionA,
-        timestamp: u32,
-        time_delta: u32,
-    ) -> Result<(), Box<dyn Error>> {
+    fn validate_transaction(dynamic: &Dynamic, transaction_a: &TransactionA, timestamp: u32, time_delta: u32) -> Result<(), Box<dyn Error>> {
         if transaction_a.amount == 0 {
             return Err("transaction amount zero".into());
         }
@@ -310,21 +292,17 @@ impl Blockchain {
         if transaction_a.timestamp > timestamp + time_delta {
             return Err("transaction timestamp future".into());
         }
-        if transaction_a.timestamp < dynamic.latest_block.timestamp {
+        if transaction_a.timestamp + ANCIENT_TIME < dynamic.latest_block.timestamp {
             return Err("transaction timestamp ancient".into());
         }
-        if db::transaction::get_b(db, &transaction_a.hash).is_ok() {
-            return Err("transaction in chain".into());
+        for block in dynamic.non_ancient_blocks.iter() {
+            if block.transactions.iter().any(|a| a.hash == transaction_a.hash) {
+                return Err("transaction in chain".into());
+            }
         }
         Ok(())
     }
-    fn validate_stake(
-        dynamic: &Dynamic,
-        db: &DBWithThreadMode<SingleThreaded>,
-        stake_a: &StakeA,
-        timestamp: u32,
-        time_delta: u32,
-    ) -> Result<(), Box<dyn Error>> {
+    fn validate_stake(dynamic: &Dynamic, stake_a: &StakeA, timestamp: u32, time_delta: u32) -> Result<(), Box<dyn Error>> {
         if stake_a.amount == 0 {
             return Err("stake amount zero".into());
         }
@@ -340,11 +318,13 @@ impl Blockchain {
         if stake_a.timestamp > timestamp + time_delta {
             return Err("stake timestamp future".into());
         }
-        if stake_a.timestamp < dynamic.latest_block.timestamp {
+        if stake_a.timestamp + ANCIENT_TIME < dynamic.latest_block.timestamp {
             return Err("stake timestamp ancient".into());
         }
-        if db::stake::get_b(db, &stake_a.hash).is_ok() {
-            return Err("stake in chain".into());
+        for block in dynamic.non_ancient_blocks.iter() {
+            if block.stakes.iter().any(|a| a.hash == stake_a.hash) {
+                return Err("stake in chain".into());
+            }
         }
         Ok(())
     }

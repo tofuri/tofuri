@@ -22,13 +22,16 @@ pub trait State {
     fn get_map_staked_mut(&mut self) -> &mut Map;
     fn get_latest_block(&self) -> &BlockA;
     fn get_latest_block_mut(&mut self) -> &mut BlockA;
+    fn get_non_ancient_blocks(&self) -> &Vec<BlockA>;
+    fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA>;
     fn is_trusted() -> bool;
-    fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool);
+    fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
 }
 #[derive(Default, Debug, Clone)]
 pub struct Trusted {
     pub latest_block: BlockA,
+    pub non_ancient_blocks: Vec<BlockA>,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
     map_balance: Map,
@@ -37,14 +40,15 @@ pub struct Trusted {
 #[derive(Default, Debug, Clone)]
 pub struct Dynamic {
     pub latest_block: BlockA,
+    pub non_ancient_blocks: Vec<BlockA>,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
     map_balance: Map,
     map_staked: Map,
 }
 impl Trusted {
-    pub fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32) {
-        append_block(self, db, block, previous_timestamp, false)
+    pub fn append_block(&mut self, block: &BlockA, previous_timestamp: u32) {
+        append_block(self, block, previous_timestamp, false)
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
@@ -64,6 +68,7 @@ impl Dynamic {
             map_balance: trusted.map_balance.clone(),
             map_staked: trusted.map_staked.clone(),
             latest_block: BlockA::default(),
+            non_ancient_blocks: vec![],
         };
         dynamic.load(db, hashes);
         dynamic
@@ -142,11 +147,17 @@ impl State for Trusted {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
+    fn get_non_ancient_blocks(&self) -> &Vec<BlockA> {
+        &self.non_ancient_blocks
+    }
+    fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA> {
+        &mut self.non_ancient_blocks
+    }
     fn is_trusted() -> bool {
         true
     }
-    fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
-        append_block(self, db, block, previous_timestamp, loading)
+    fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool) {
+        append_block(self, block, previous_timestamp, loading)
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
@@ -180,11 +191,17 @@ impl State for Dynamic {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
+    fn get_non_ancient_blocks(&self) -> &Vec<BlockA> {
+        &self.non_ancient_blocks
+    }
+    fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA> {
+        &mut self.non_ancient_blocks
+    }
     fn is_trusted() -> bool {
         false
     }
-    fn append_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
-        append_block(self, db, block, previous_timestamp, loading)
+    fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool) {
+        append_block(self, block, previous_timestamp, loading)
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
@@ -287,10 +304,17 @@ pub fn update<T: State>(state: &mut T, block: &BlockA, previous_timestamp: u32, 
     update_2(state, block);
     update_3(state, block);
 }
-pub fn append_block<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, block: &BlockA, previous_timestamp: u32, loading: bool) {
+fn update_non_ancient_blocks<T: State>(state: &mut T, block: &BlockA) {
+    while state.get_non_ancient_blocks().first().is_some() && state.get_non_ancient_blocks().first().unwrap().timestamp + ANCIENT_TIME < block.timestamp {
+        (*state.get_non_ancient_blocks_mut()).remove(0);
+    }
+    (*state.get_non_ancient_blocks_mut()).push(block.clone());
+}
+pub fn append_block<T: State>(state: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
     state.get_hashes_mut().push(block.hash);
     update(state, block, previous_timestamp, loading);
-    *state.get_latest_block_mut() = db::block::get_a(db, &block.hash).unwrap();
+    *state.get_latest_block_mut() = block.clone();
+    update_non_ancient_blocks(state, block);
 }
 pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
     let mut previous_timestamp = match hashes.first() {
@@ -299,7 +323,7 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
     };
     for hash in hashes.iter() {
         let block_a = db::block::get_a(db, hash).unwrap();
-        state.append_block(db, &block_a, previous_timestamp, true);
+        state.append_block(&block_a, previous_timestamp, true);
         previous_timestamp = block_a.timestamp;
     }
 }

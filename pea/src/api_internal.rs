@@ -171,7 +171,7 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> 
     let data = bincode::serialize(&transaction_b).unwrap();
     let status = match node
         .blockchain
-        .pending_transactions_push(&node.db, transaction_b, pea_util::timestamp(), node.args.time_delta)
+        .pending_transactions_push(transaction_b, pea_util::timestamp(), node.args.time_delta)
     {
         Ok(()) => {
             if node.p2p.gossipsub_has_mesh_peers("transaction") {
@@ -191,10 +191,7 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> 
 fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     let stake_b: StakeB = bincode::deserialize(bytes)?;
     let data = bincode::serialize(&stake_b).unwrap();
-    let status = match node
-        .blockchain
-        .pending_stakes_push(&node.db, stake_b, pea_util::timestamp(), node.args.time_delta)
-    {
+    let status = match node.blockchain.pending_stakes_push(stake_b, pea_util::timestamp(), node.args.time_delta) {
         Ok(()) => {
             if node.p2p.gossipsub_has_mesh_peers("stake") {
                 if let Err(err) = node.p2p.gossipsub_publish("stake", data) {

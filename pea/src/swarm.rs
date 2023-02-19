@@ -161,7 +161,7 @@ fn event_gossipsub_message(node: &mut Node, message: GossipsubMessage, propagati
             }
             let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
             node.blockchain
-                .pending_transactions_push(&node.db, transaction_b, pea_util::timestamp(), node.args.time_delta)?;
+                .pending_transactions_push(transaction_b, pea_util::timestamp(), node.args.time_delta)?;
         }
         "stake" => {
             node.p2p.ratelimit(propagation_source, Endpoint::Stake)?;
@@ -169,8 +169,7 @@ fn event_gossipsub_message(node: &mut Node, message: GossipsubMessage, propagati
                 return Err("filter stake".into());
             }
             let stake_b: StakeB = bincode::deserialize(&message.data)?;
-            node.blockchain
-                .pending_stakes_push(&node.db, stake_b, pea_util::timestamp(), node.args.time_delta)?;
+            node.blockchain.pending_stakes_push(stake_b, pea_util::timestamp(), node.args.time_delta)?;
         }
         "multiaddr" => {
             node.p2p.ratelimit(propagation_source, Endpoint::Multiaddr)?;

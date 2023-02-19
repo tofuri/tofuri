@@ -94,13 +94,13 @@ impl Blockchain {
         let mut transactions: Vec<TransactionA> = self
             .pending_transactions
             .iter()
-            .filter(|a| !pea_util::ancient(a.timestamp, timestamp))
+            .filter(|a| !pea_util::ancient(a.timestamp, timestamp) && a.timestamp <= timestamp)
             .cloned()
             .collect();
         let mut stakes: Vec<StakeA> = self
             .pending_stakes
             .iter()
-            .filter(|a| !pea_util::ancient(a.timestamp, timestamp))
+            .filter(|a| !pea_util::ancient(a.timestamp, timestamp) && a.timestamp <= timestamp)
             .cloned()
             .collect();
         transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -141,7 +141,7 @@ impl Blockchain {
         trust_fork_after_blocks: usize,
     ) -> Result<(), Box<dyn Error>> {
         let block_a = block_b.a()?;
-        self.validate_block(db, &block_a, timestamp, time_delta, trust_fork_after_blocks)?;
+        self.validate_block(db, &block_a, timestamp + time_delta, trust_fork_after_blocks)?;
         self.save_block(db, &block_a, false, trust_fork_after_blocks);
         Ok(())
     }
@@ -185,7 +185,7 @@ impl Blockchain {
         if transaction_a.amount + transaction_a.fee > balance {
             return Err("transaction too expensive".into());
         }
-        Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, timestamp, time_delta)?;
+        Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, timestamp + time_delta)?;
         info!("Transaction {}", hex::encode(transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
         self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -210,7 +210,7 @@ impl Blockchain {
                 return Err("stake withdraw too expensive".into());
             }
         }
-        Blockchain::validate_stake(&self.states.dynamic, &stake_a, timestamp, time_delta)?;
+        Blockchain::validate_stake(&self.states.dynamic, &stake_a, timestamp + time_delta)?;
         info!("Stake {}", hex::encode(stake_a.hash).green());
         self.pending_stakes.push(stake_a);
         self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -224,13 +224,12 @@ impl Blockchain {
         db: &DBWithThreadMode<SingleThreaded>,
         block_a: &BlockA,
         timestamp: u32,
-        time_delta: u32,
         trust_fork_after_blocks: usize,
     ) -> Result<(), Box<dyn Error>> {
         if self.tree.get(&block_a.hash).is_some() {
             return Err("block hash in tree".into());
         }
-        if block_a.timestamp > timestamp + time_delta {
+        if block_a.timestamp > timestamp {
             return Err("block timestamp future".into());
         }
         if block_a.previous_hash != [0; 32] && self.tree.get(&block_a.previous_hash).is_none() {
@@ -275,15 +274,15 @@ impl Blockchain {
             return Ok(());
         }
         for stake_a in block_a.stakes.iter() {
-            Blockchain::validate_stake(&dynamic, stake_a, timestamp, time_delta)?;
+            Blockchain::validate_stake(&dynamic, stake_a, block_a.timestamp)?;
         }
         for transaction_a in block_a.transactions.iter() {
-            Blockchain::validate_transaction(&dynamic, transaction_a, timestamp, time_delta)?;
+            Blockchain::validate_transaction(&dynamic, transaction_a, block_a.timestamp)?;
         }
         dynamic.check_overflow(&block_a.transactions, &block_a.stakes)?;
         Ok(())
     }
-    fn validate_transaction(dynamic: &Dynamic, transaction_a: &TransactionA, timestamp: u32, time_delta: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_transaction(dynamic: &Dynamic, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if transaction_a.amount == 0 {
             return Err("transaction amount zero".into());
         }
@@ -299,7 +298,7 @@ impl Blockchain {
         if transaction_a.input_address == transaction_a.output_address {
             return Err("transaction input output".into());
         }
-        if transaction_a.timestamp > timestamp + time_delta {
+        if transaction_a.timestamp > timestamp {
             return Err("transaction timestamp future".into());
         }
         if pea_util::ancient(transaction_a.timestamp, dynamic.latest_block.timestamp) {
@@ -312,7 +311,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn validate_stake(dynamic: &Dynamic, stake_a: &StakeA, timestamp: u32, time_delta: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_stake(dynamic: &Dynamic, stake_a: &StakeA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if stake_a.amount == 0 {
             return Err("stake amount zero".into());
         }
@@ -325,7 +324,7 @@ impl Blockchain {
         if stake_a.fee != pea_int::floor(stake_a.fee) {
             return Err("stake fee floor".into());
         }
-        if stake_a.timestamp > timestamp + time_delta {
+        if stake_a.timestamp > timestamp {
             return Err("stake timestamp future".into());
         }
         if pea_util::ancient(stake_a.timestamp, dynamic.latest_block.timestamp) {

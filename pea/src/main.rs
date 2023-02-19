@@ -113,6 +113,7 @@ async fn main() {
         "http://".cyan(),
         listener.local_addr().unwrap().to_string().magenta()
     );
+    pea_util::sleep_until_next_second().await;
     let mut interval_a = interval(Duration::from_secs(1));
     let mut interval_b = interval(Duration::from_secs(1));
     let mut interval_c = interval(Duration::from_millis(200));
@@ -120,6 +121,7 @@ async fn main() {
     let mut interval_e = interval(Duration::from_secs(5));
     let mut interval_f = interval(Duration::from_secs(60));
     let mut interval_g = interval(Duration::from_secs(1));
+    info!("Last whole second {}", format!("{:?}", pea_util::duration_since_last_second()).yellow());
     loop {
         let instant = tokio::select! {
             instant = interval_a.tick() => interval::grow(&mut node, instant),

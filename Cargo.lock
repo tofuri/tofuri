@@ -3270,6 +3270,7 @@ dependencies = [
  "pea-stake",
  "pea-transaction",
  "sha2 0.10.6",
+ "tokio",
  "uint",
 ]
 

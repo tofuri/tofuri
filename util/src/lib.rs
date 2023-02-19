@@ -5,6 +5,7 @@ use pea_stake::StakeB;
 use pea_transaction::TransactionB;
 use sha2::Digest;
 use sha2::Sha256;
+use std::time::Duration;
 use uint::construct_uint;
 lazy_static! {
     pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
@@ -67,4 +68,14 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
 }
 pub fn ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
     ANCIENT_TIME + timestamp < latest_block_timestamp
+}
+pub async fn sleep_until_next_second() {
+    let nanos = 1_000_000_000 - timestamp_subsec_nanos();
+    tokio::time::sleep(Duration::from_nanos(nanos as u64)).await;
+}
+pub fn timestamp_subsec_nanos() -> u32 {
+    chrono::offset::Utc::now().timestamp_subsec_nanos()
+}
+pub fn duration_since_last_second() -> Duration {
+    Duration::from_nanos(timestamp_subsec_nanos() as u64)
 }

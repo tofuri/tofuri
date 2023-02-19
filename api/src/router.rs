@@ -179,7 +179,7 @@ pub async fn sync_remaining(State(args): State<Args>) -> impl IntoResponse {
     }
     let block_a = pea_api_internal::block_latest(&args.api_internal).await.unwrap();
     let mut diff = pea_util::timestamp().saturating_sub(block_a.timestamp) as f32;
-    diff /= BLOCK_TIME_MIN as f32;
+    diff /= BLOCK_TIME as f32;
     diff /= sync.bps;
     Json(diff)
 }

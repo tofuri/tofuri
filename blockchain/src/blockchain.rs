@@ -85,7 +85,7 @@ impl Blockchain {
     }
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> Option<BlockA> {
         if let Some(staker) = self.states.dynamic.next_staker(timestamp) {
-            if staker != key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME_MIN {
+            if staker != key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME {
                 return None;
             }
         } else {
@@ -243,7 +243,7 @@ impl Blockchain {
                 return Err("block staker banned".into());
             }
         }
-        if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME_MIN {
+        if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME {
             return Err("block timestamp early".into());
         }
         let previous_beta = Key::vrf_proof_to_hash(&dynamic.latest_block.pi).unwrap_or(GENESIS_BETA);

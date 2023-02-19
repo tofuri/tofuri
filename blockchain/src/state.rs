@@ -68,7 +68,7 @@ impl Dynamic {
             map_balance: trusted.map_balance.clone(),
             map_staked: trusted.map_staked.clone(),
             latest_block: BlockA::default(),
-            non_ancient_blocks: vec![],
+            non_ancient_blocks: trusted.non_ancient_blocks.clone(),
         };
         dynamic.load(db, hashes);
         dynamic

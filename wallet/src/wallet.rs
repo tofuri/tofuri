@@ -30,6 +30,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process;
+use std::thread;
+use std::time::Duration;
 const INCORRECT: &str = "Incorrect passphrase";
 pub type Salt = [u8; 32];
 pub type Nonce = [u8; 12];
@@ -192,14 +194,17 @@ impl Wallet {
         }
         let stake_a = StakeA::sign(deposit, amount, fee, pea_util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
-        let res: String = reqwest::Client::new()
-            .post(format!("{}/stake", self.api))
-            .json(&pea_api_util::stake(&stake_a))
-            .send()
-            .await?
-            .json()
-            .await?;
-        println!("{}", if res == "success" { res.green() } else { res.red() });
+        for _ in 0..12 {
+            thread::sleep(Duration::from_secs(1));
+            let res: String = reqwest::Client::new()
+                .post(format!("{}/stake", self.api))
+                .json(&pea_api_util::stake(&stake_a))
+                .send()
+                .await?
+                .json()
+                .await?;
+            println!("{}", if res == "success" { res.green() } else { res.red() });
+        }
         Ok(())
     }
     async fn search(&self) -> Result<(), Box<dyn Error>> {

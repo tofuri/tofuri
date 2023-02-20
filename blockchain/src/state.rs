@@ -378,7 +378,7 @@ fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
 }
 fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
     let diff = timestamp.saturating_sub(previous_timestamp + 1);
-    (diff / (BLOCK_TIME * 2)) as usize
+    (diff / BLOCK_TIME) as usize
 }
 pub fn next_staker<T: State>(state: &T, timestamp: u32) -> Option<AddressBytes> {
     match stakers_n(state, offline(timestamp, state.get_latest_block().timestamp)) {

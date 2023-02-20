@@ -211,10 +211,10 @@ impl Blockchain {
                 return Err("stake deposit too expensive".into());
             }
         } else {
-            let staked = self.staked_available(&stake_a.input_address);
             if stake_a.fee > balance {
                 return Err("stake withdraw fee too expensive".into());
             }
+            let staked = self.staked_available(&stake_a.input_address);
             if stake_a.amount > staked {
                 return Err("stake withdraw amount too expensive".into());
             }

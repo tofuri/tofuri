@@ -59,6 +59,7 @@ pub fn share(node: &mut Node, instant: Instant) -> Instant {
 pub fn grow(node: &mut Node, instant: Instant) -> Instant {
     let timestamp = pea_util::timestamp();
     node.blockchain.pending_retain_non_ancient(timestamp);
+    node.blockchain.save_blocks(&node.db, node.args.trust);
     if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.states.dynamic.next_staker(timestamp).is_none() {
         if timestamp % 60 == 0 {
             info!(

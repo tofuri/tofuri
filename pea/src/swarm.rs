@@ -153,7 +153,7 @@ fn event_gossipsub_message(node: &mut Node, message: GossipsubMessage, propagati
                 return Err("filter block".into());
             }
             let block_b: BlockB = bincode::deserialize(&message.data)?;
-            node.blockchain.append_block(&node.db, block_b, node.args.time_delta, node.args.trust)?;
+            node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)?;
         }
         "transaction" => {
             node.p2p.ratelimit(propagation_source, Endpoint::Transaction)?;
@@ -211,8 +211,9 @@ fn event_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel
 fn event_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
     node.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
-        if let Err(err) = node.blockchain.append_block(&node.db, block_b, node.args.time_delta, node.args.trust) {
-            debug!("response_handler {}", err);
+        match node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust) {
+            Ok(()) => node.blockchain.save_blocks(&node.db, node.args.trust),
+            Err(err) => debug!("response_handler {}", err),
         }
     }
     Ok(())

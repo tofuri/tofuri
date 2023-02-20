@@ -124,20 +124,7 @@ impl Blockchain {
         self.save_block(db, &block_a, true, trust_fork_after_blocks);
         Some(block_a)
     }
-    pub fn append_block(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        block_b: BlockB,
-        time_delta: u32,
-        trust_fork_after_blocks: usize,
-    ) -> Result<(), Box<dyn Error>> {
-        let timestamp = pea_util::timestamp();
-        let block_a = block_b.a()?;
-        self.validate_block(db, &block_a, timestamp + time_delta, trust_fork_after_blocks)?;
-        self.save_block(db, &block_a, false, trust_fork_after_blocks);
-        Ok(())
-    }
-    pub fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forged: bool, trust_fork_after_blocks: usize) {
+    fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forged: bool, trust_fork_after_blocks: usize) {
         db::block::put(block_a, db).unwrap();
         if self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap() {
             warn!("{} {}", "Forked".red(), hex::encode(block_a.hash));
@@ -167,6 +154,21 @@ impl Blockchain {
             }
         }
         info!("{} {} {} {}", info_0, info_1, info_2, info_3);
+    }
+    pub fn save_blocks(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
+        let timestamp = pea_util::timestamp();
+        let mut vec = vec![];
+        let mut i = 0;
+        while i < self.pending_blocks.len() {
+            if self.pending_blocks[i].timestamp <= timestamp {
+                vec.push(self.pending_blocks.remove(i));
+            } else {
+                i += 1;
+            }
+        }
+        for block_a in vec {
+            self.save_block(db, &block_a, false, trust_fork_after_blocks);
+        }
     }
     pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, time_delta: u32) -> Result<(), Box<dyn Error>> {
         let timestamp = pea_util::timestamp();
@@ -211,6 +213,19 @@ impl Blockchain {
         while *STAKE_SIZE * self.pending_stakes.len() > BLOCK_SIZE_LIMIT - *EMPTY_BLOCK_SIZE {
             self.pending_stakes.remove(self.pending_stakes.len() - 1);
         }
+        Ok(())
+    }
+    pub fn pending_blocks_push(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        block_b: BlockB,
+        time_delta: u32,
+        trust_fork_after_blocks: usize,
+    ) -> Result<(), Box<dyn Error>> {
+        let timestamp = pea_util::timestamp();
+        let block_a = block_b.a()?;
+        self.validate_block(db, &block_a, timestamp + time_delta, trust_fork_after_blocks)?;
+        self.pending_blocks.push(block_a);
         Ok(())
     }
     pub fn pending_retain_non_ancient(&mut self, timestamp: u32) {

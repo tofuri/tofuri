@@ -172,10 +172,8 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> 
     let data = bincode::serialize(&transaction_b).unwrap();
     let status = match node.blockchain.pending_transactions_push(transaction_b, node.args.time_delta) {
         Ok(()) => {
-            if node.p2p.gossipsub_has_mesh_peers("transaction") {
-                if let Err(err) = node.p2p.gossipsub_publish("transaction", data) {
-                    error!("{}", err);
-                }
+            if let Err(err) = node.p2p.gossipsub_publish("transaction", data) {
+                error!("{}", err);
             }
             "success".to_string()
         }
@@ -191,10 +189,8 @@ fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     let data = bincode::serialize(&stake_b).unwrap();
     let status = match node.blockchain.pending_stakes_push(stake_b, node.args.time_delta) {
         Ok(()) => {
-            if node.p2p.gossipsub_has_mesh_peers("stake") {
-                if let Err(err) = node.p2p.gossipsub_publish("stake", data) {
-                    error!("{}", err);
-                }
+            if let Err(err) = node.p2p.gossipsub_publish("stake", data) {
+                error!("{}", err);
             }
             "success".to_string()
         }

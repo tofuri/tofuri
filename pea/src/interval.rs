@@ -48,9 +48,6 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     }
 }
 pub fn share(node: &mut Node, instant: Instant) -> Instant {
-    if !node.p2p.gossipsub_has_mesh_peers("multiaddr") {
-        return instant;
-    }
     let vec: Vec<&Multiaddr> = node.p2p.connections.keys().collect();
     if let Err(err) = node.p2p.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap()) {
         error!("{}", err);
@@ -82,9 +79,6 @@ pub fn grow(node: &mut Node, instant: Instant) -> Instant {
         }
     }
     let block_a = node.blockchain.forge_block(&node.db, &node.key, timestamp, node.args.trust);
-    if !node.p2p.gossipsub_has_mesh_peers("block") {
-        return instant;
-    }
     if let Err(err) = node.p2p.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap()) {
         error!("{}", err);
     }

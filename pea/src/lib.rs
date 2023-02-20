@@ -37,9 +37,9 @@ pub struct Args {
     /// Trust fork after blocks
     #[clap(long, value_parser, default_value = "2")]
     pub trust: usize,
-    /// Max time delta allowed
+    /// Allow timestamps from the future
     #[clap(long, value_parser, default_value = "1")]
-    pub time_delta: u32, // ping delay & perception of time
+    pub time_delta: u32,
     /// Swarm connection limits
     #[clap(long, value_parser)]
     pub max_established: Option<u32>,

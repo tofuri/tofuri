@@ -31,18 +31,18 @@ pub trait State {
 #[derive(Default, Debug, Clone)]
 pub struct Trusted {
     pub latest_block: BlockA,
-    pub non_ancient_blocks: Vec<BlockA>,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
+    non_ancient_blocks: Vec<BlockA>,
     map_balance: Map,
     map_staked: Map,
 }
 #[derive(Default, Debug, Clone)]
 pub struct Dynamic {
     pub latest_block: BlockA,
-    pub non_ancient_blocks: Vec<BlockA>,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
+    non_ancient_blocks: Vec<BlockA>,
     map_balance: Map,
     map_staked: Map,
 }

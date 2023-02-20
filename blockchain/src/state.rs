@@ -118,6 +118,22 @@ impl Dynamic {
         }
         Ok(())
     }
+    pub fn transaction_in_chain(&self, transaction_a: &TransactionA) -> bool {
+        for block in self.non_ancient_blocks.iter() {
+            if block.transactions.iter().any(|a| a.hash == transaction_a.hash) {
+                return true;
+            }
+        }
+        false
+    }
+    pub fn stake_in_chain(&self, stake_a: &StakeA) -> bool {
+        for block in self.non_ancient_blocks.iter() {
+            if block.stakes.iter().any(|a| a.hash == stake_a.hash) {
+                return true;
+            }
+        }
+        false
+    }
 }
 impl State for Trusted {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {

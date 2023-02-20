@@ -96,13 +96,13 @@ impl Blockchain {
         let mut transactions: Vec<TransactionA> = self
             .pending_transactions
             .iter()
-            .filter(|a| a.timestamp <= timestamp && !Blockchain::transaction_in_chain(&self.states.dynamic, a))
+            .filter(|a| a.timestamp <= timestamp && !self.states.dynamic.transaction_in_chain(a))
             .cloned()
             .collect();
         let mut stakes: Vec<StakeA> = self
             .pending_stakes
             .iter()
-            .filter(|a| a.timestamp <= timestamp && !Blockchain::stake_in_chain(&self.states.dynamic, a))
+            .filter(|a| a.timestamp <= timestamp && !self.states.dynamic.stake_in_chain(a))
             .cloned()
             .collect();
         transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -267,7 +267,7 @@ impl Blockchain {
         if pea_util::ancient(transaction_a.timestamp, dynamic.latest_block.timestamp) {
             return Err("transaction timestamp ancient".into());
         }
-        if Blockchain::transaction_in_chain(dynamic, transaction_a) {
+        if dynamic.transaction_in_chain(transaction_a) {
             return Err("transaction in chain".into());
         }
         Ok(())
@@ -291,7 +291,7 @@ impl Blockchain {
         if pea_util::ancient(stake_a.timestamp, dynamic.latest_block.timestamp) {
             return Err("stake timestamp ancient".into());
         }
-        if Blockchain::stake_in_chain(dynamic, stake_a) {
+        if dynamic.stake_in_chain(stake_a) {
             return Err("stake in chain".into());
         }
         Ok(())
@@ -394,21 +394,5 @@ impl Blockchain {
     }
     pub fn pending_staked() {
         unimplemented!()
-    }
-    pub fn transaction_in_chain(dynamic: &Dynamic, transaction_a: &TransactionA) -> bool {
-        for block in dynamic.non_ancient_blocks.iter() {
-            if block.transactions.iter().any(|a| a.hash == transaction_a.hash) {
-                return true;
-            }
-        }
-        false
-    }
-    pub fn stake_in_chain(dynamic: &Dynamic, stake_a: &StakeA) -> bool {
-        for block in dynamic.non_ancient_blocks.iter() {
-            if block.stakes.iter().any(|a| a.hash == stake_a.hash) {
-                return true;
-            }
-        }
-        false
     }
 }

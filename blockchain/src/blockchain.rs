@@ -136,10 +136,10 @@ impl Blockchain {
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
         block_b: BlockB,
-        timestamp: u32,
         time_delta: u32,
         trust_fork_after_blocks: usize,
     ) -> Result<(), Box<dyn Error>> {
+        let timestamp = pea_util::timestamp();
         let block_a = block_b.a()?;
         self.validate_block(db, &block_a, timestamp + time_delta, trust_fork_after_blocks)?;
         self.save_block(db, &block_a, false, trust_fork_after_blocks);
@@ -176,7 +176,8 @@ impl Blockchain {
         }
         info!("{} {} {} {}", info_0, info_1, info_2, info_3);
     }
-    pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, timestamp: u32, time_delta: u32) -> Result<(), Box<dyn Error>> {
+    pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, time_delta: u32) -> Result<(), Box<dyn Error>> {
+        let timestamp = pea_util::timestamp();
         let transaction_a = transaction_b.a(None)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
             return Err("transaction pending".into());
@@ -194,7 +195,8 @@ impl Blockchain {
         }
         Ok(())
     }
-    pub fn pending_stakes_push(&mut self, stake_b: StakeB, timestamp: u32, time_delta: u32) -> Result<(), Box<dyn Error>> {
+    pub fn pending_stakes_push(&mut self, stake_b: StakeB, time_delta: u32) -> Result<(), Box<dyn Error>> {
+        let timestamp = pea_util::timestamp();
         let stake_a = stake_b.a(None)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
             return Err("stake pending".into());

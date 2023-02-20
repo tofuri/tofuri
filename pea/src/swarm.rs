@@ -27,7 +27,6 @@ use pea_p2p::multiaddr;
 use pea_p2p::ratelimit::Endpoint;
 use pea_stake::StakeB;
 use pea_transaction::TransactionB;
-use pea_util;
 use std::error::Error;
 use std::io;
 use std::num::NonZeroU32;
@@ -154,8 +153,7 @@ fn event_gossipsub_message(node: &mut Node, message: GossipsubMessage, propagati
                 return Err("filter block".into());
             }
             let block_b: BlockB = bincode::deserialize(&message.data)?;
-            node.blockchain
-                .append_block(&node.db, block_b, pea_util::timestamp(), node.args.time_delta, node.args.trust)?;
+            node.blockchain.append_block(&node.db, block_b, node.args.time_delta, node.args.trust)?;
         }
         "transaction" => {
             node.p2p.ratelimit(propagation_source, Endpoint::Transaction)?;
@@ -163,8 +161,7 @@ fn event_gossipsub_message(node: &mut Node, message: GossipsubMessage, propagati
                 return Err("filter transaction".into());
             }
             let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
-            node.blockchain
-                .pending_transactions_push(transaction_b, pea_util::timestamp(), node.args.time_delta)?;
+            node.blockchain.pending_transactions_push(transaction_b, node.args.time_delta)?;
         }
         "stake" => {
             node.p2p.ratelimit(propagation_source, Endpoint::Stake)?;
@@ -172,7 +169,7 @@ fn event_gossipsub_message(node: &mut Node, message: GossipsubMessage, propagati
                 return Err("filter stake".into());
             }
             let stake_b: StakeB = bincode::deserialize(&message.data)?;
-            node.blockchain.pending_stakes_push(stake_b, pea_util::timestamp(), node.args.time_delta)?;
+            node.blockchain.pending_stakes_push(stake_b, node.args.time_delta)?;
         }
         "multiaddr" => {
             node.p2p.ratelimit(propagation_source, Endpoint::Multiaddr)?;
@@ -213,12 +210,8 @@ fn event_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel
 }
 fn event_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
     node.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
-    let timestamp = pea_util::timestamp();
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
-        if let Err(err) = node
-            .blockchain
-            .append_block(&node.db, block_b, timestamp, node.args.time_delta, node.args.trust)
-        {
+        if let Err(err) = node.blockchain.append_block(&node.db, block_b, node.args.time_delta, node.args.trust) {
             debug!("response_handler {}", err);
         }
     }

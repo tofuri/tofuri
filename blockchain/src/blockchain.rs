@@ -26,20 +26,20 @@ use std::time::Instant;
 pub struct Blockchain {
     pub tree: Tree,
     pub states: States,
+    pub sync: Sync,
     pending_transactions: Vec<TransactionA>,
     pending_stakes: Vec<StakeA>,
     pending_blocks: Vec<BlockA>,
-    pub sync: Sync,
 }
 impl Blockchain {
     pub fn new() -> Self {
         Self {
             tree: Tree::default(),
             states: States::default(),
+            sync: Sync::default(),
             pending_transactions: vec![],
             pending_stakes: vec![],
             pending_blocks: vec![],
-            sync: Sync::default(),
         }
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {

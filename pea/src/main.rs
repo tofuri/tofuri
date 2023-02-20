@@ -20,7 +20,7 @@ use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
-use tokio::time::interval;
+use tokio::time::interval_at;
 #[tokio::main]
 async fn main() {
     let mut args = pea::Args::parse();
@@ -113,15 +113,14 @@ async fn main() {
         "http://".cyan(),
         listener.local_addr().unwrap().to_string().magenta()
     );
-    pea_util::sleep_until_next_second().await;
-    let mut interval_a = interval(Duration::from_secs(1));
-    let mut interval_b = interval(Duration::from_secs(1));
-    let mut interval_c = interval(Duration::from_millis(200));
-    let mut interval_d = interval(Duration::from_secs(10));
-    let mut interval_e = interval(Duration::from_secs(60));
-    let mut interval_f = interval(Duration::from_secs(5));
-    let mut interval_g = interval(Duration::from_secs(1));
-    info!("Last whole second {}", format!("{:?}", pea_util::duration_since_last_second()).yellow());
+    let start = pea_util::interval_at_start();
+    let mut interval_a = interval_at(start, Duration::from_secs(1));
+    let mut interval_b = interval_at(start, Duration::from_secs(1));
+    let mut interval_c = interval_at(start, Duration::from_millis(200));
+    let mut interval_d = interval_at(start, Duration::from_secs(10));
+    let mut interval_e = interval_at(start, Duration::from_secs(60));
+    let mut interval_f = interval_at(start, Duration::from_secs(5));
+    let mut interval_g = interval_at(start, Duration::from_secs(1));
     loop {
         let instant = tokio::select! {
             instant = interval_a.tick() => interval::grow(&mut node, instant),

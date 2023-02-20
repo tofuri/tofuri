@@ -5,6 +5,7 @@ use libp2p::Multiaddr;
 use log::debug;
 use log::error;
 use log::info;
+use pea_core::*;
 use pea_p2p::behaviour::SyncRequest;
 use pea_p2p::multiaddr;
 use pea_util;
@@ -72,13 +73,20 @@ pub fn grow(node: &mut Node, instant: Instant) -> Instant {
     if !node.blockchain.sync.completed {
         return instant;
     }
-    if let Some(block_a) = node.blockchain.forge_block(&node.db, &node.key, timestamp, node.args.trust) {
-        if !node.p2p.gossipsub_has_mesh_peers("block") {
+    if timestamp < node.blockchain.states.dynamic.latest_block.timestamp + BLOCK_TIME {
+        return instant;
+    }
+    if let Some(staker) = node.blockchain.states.dynamic.next_staker(timestamp) {
+        if staker != node.key.address_bytes() {
             return instant;
         }
-        if let Err(err) = node.p2p.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap()) {
-            error!("{}", err);
-        }
+    }
+    let block_a = node.blockchain.forge_block(&node.db, &node.key, timestamp, node.args.trust);
+    if !node.p2p.gossipsub_has_mesh_peers("block") {
+        return instant;
+    }
+    if let Err(err) = node.p2p.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap()) {
+        error!("{}", err);
     }
     instant
 }

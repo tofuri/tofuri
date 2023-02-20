@@ -82,15 +82,8 @@ impl Blockchain {
         debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
         db::block::get_b(db, &hash).ok()
     }
-    pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> Option<BlockA> {
-        if timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME {
-            return None;
-        }
-        if let Some(staker) = self.states.dynamic.next_staker(timestamp) {
-            if staker != key.address_bytes() {
-                return None;
-            }
-        } else {
+    pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> BlockA {
+        if self.states.dynamic.next_staker(timestamp).is_none() {
             self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, key).unwrap()];
         }
         let mut transactions: Vec<TransactionA> = self
@@ -132,7 +125,7 @@ impl Blockchain {
         }
         .unwrap();
         self.save_block(db, &block_a, true, trust_fork_after_blocks);
-        Some(block_a)
+        block_a
     }
     fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forged: bool, trust_fork_after_blocks: usize) {
         db::block::put(block_a, db).unwrap();

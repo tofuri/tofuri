@@ -186,8 +186,7 @@ impl Blockchain {
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
             return Err("transaction pending".into());
         }
-        let balance = self.balance_available(&transaction_a.input_address);
-        if transaction_a.amount + transaction_a.fee > balance {
+        if transaction_a.amount + transaction_a.fee > self.balance_available(&transaction_a.input_address) {
             return Err("transaction too expensive".into());
         }
         Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, timestamp + time_delta)?;
@@ -214,8 +213,7 @@ impl Blockchain {
             if stake_a.fee > balance {
                 return Err("stake withdraw fee too expensive".into());
             }
-            let staked = self.staked_available(&stake_a.input_address);
-            if stake_a.amount > staked {
+            if stake_a.amount > self.staked_available(&stake_a.input_address) {
                 return Err("stake withdraw amount too expensive".into());
             }
         }

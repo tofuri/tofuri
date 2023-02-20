@@ -37,9 +37,6 @@ pub struct Args {
     /// Trust fork after blocks
     #[clap(long, value_parser, default_value = "2")]
     pub trust: usize,
-    /// Mesh peers required to ban stakers that failed to show up
-    #[clap(long, value_parser, default_value = "10")]
-    pub ban_offline: usize,
     /// Max time delta allowed
     #[clap(long, value_parser, default_value = "1")]
     pub time_delta: u32, // ping delay & perception of time

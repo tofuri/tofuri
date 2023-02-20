@@ -31,10 +31,9 @@ pub struct P2p {
     pub ratelimit: Ratelimit,
     pub unknown: HashSet<Multiaddr>,
     pub known: HashSet<Multiaddr>,
-    pub ban_offline: usize,
 }
 impl P2p {
-    pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<Multiaddr>, ban_offline: usize) -> Result<P2p, Box<dyn Error>> {
+    pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<Multiaddr>) -> Result<P2p, Box<dyn Error>> {
         Ok(P2p {
             swarm: swarm(max_established, timeout).await?,
             filter: HashSet::new(),
@@ -42,7 +41,6 @@ impl P2p {
             ratelimit: Ratelimit::default(),
             unknown: HashSet::new(),
             known,
-            ban_offline,
         })
     }
     pub fn ratelimit(&mut self, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Box<dyn Error>> {

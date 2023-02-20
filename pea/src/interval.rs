@@ -5,35 +5,11 @@ use libp2p::Multiaddr;
 use log::debug;
 use log::error;
 use log::info;
-use log::warn;
-use pea_address::address;
 use pea_p2p::behaviour::SyncRequest;
 use pea_p2p::multiaddr;
 use pea_util;
 use rand::prelude::*;
 use tokio::time::Instant;
-pub fn offline_staker(node: &mut Node, instant: Instant) -> Instant {
-    let timestamp = pea_util::timestamp();
-    if node.p2p.ban_offline == 0 {
-        return instant;
-    }
-    if !node.blockchain.sync.completed {
-        return instant;
-    }
-    if node.p2p.connections.len() < node.p2p.ban_offline {
-        return instant;
-    }
-    let dynamic = &node.blockchain.states.dynamic;
-    for staker in dynamic.stakers_offline(timestamp, dynamic.latest_block.timestamp) {
-        if let Some(hash) = node.blockchain.offline.insert(staker, dynamic.latest_block.hash) {
-            if hash == dynamic.latest_block.hash {
-                return instant;
-            }
-        }
-        warn!("Banned offline staker {}", address::encode(&staker).green());
-    }
-    instant
-}
 pub fn dial_known(node: &mut Node, instant: Instant) -> Instant {
     let vec = node.p2p.known.clone().into_iter().collect();
     dial(node, vec, true);

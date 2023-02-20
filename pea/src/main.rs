@@ -50,7 +50,6 @@ async fn main() {
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
     info!("{} {}", "--mint".cyan(), args.mint.to_string().magenta());
     info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
-    info!("{} {}", "--ban-offline".cyan(), args.ban_offline.to_string().magenta());
     info!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());
     info!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
     info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
@@ -83,7 +82,7 @@ async fn main() {
             known.insert(multiaddr);
         }
     }
-    let p2p = P2p::new(args.max_established, args.timeout, known, args.ban_offline).await.unwrap();
+    let p2p = P2p::new(args.max_established, args.timeout, known).await.unwrap();
     let blockchain = Blockchain::new();
     let mut node = Node {
         key,
@@ -115,21 +114,19 @@ async fn main() {
     );
     let start = pea_util::interval_at_start();
     let mut interval_a = interval_at(start, Duration::from_secs(1));
-    let mut interval_b = interval_at(start, Duration::from_secs(1));
-    let mut interval_c = interval_at(start, Duration::from_millis(200));
-    let mut interval_d = interval_at(start, Duration::from_secs(10));
-    let mut interval_e = interval_at(start, Duration::from_secs(60));
-    let mut interval_f = interval_at(start, Duration::from_secs(5));
-    let mut interval_g = interval_at(start, Duration::from_secs(1));
+    let mut interval_b = interval_at(start, Duration::from_millis(200));
+    let mut interval_c = interval_at(start, Duration::from_secs(10));
+    let mut interval_d = interval_at(start, Duration::from_secs(60));
+    let mut interval_e = interval_at(start, Duration::from_secs(5));
+    let mut interval_f = interval_at(start, Duration::from_secs(1));
     loop {
         let instant = tokio::select! {
             instant = interval_a.tick() => interval::grow(&mut node, instant),
-            instant = interval_b.tick() => interval::offline_staker(&mut node, instant),
-            instant = interval_c.tick() => interval::sync_request(&mut node, instant),
-            instant = interval_d.tick() => interval::share(&mut node, instant),
-            instant = interval_e.tick() => interval::dial_known(&mut node, instant),
-            instant = interval_f.tick() => interval::dial_unknown(&mut node, instant),
-            instant = interval_g.tick() => interval::clear(&mut node, instant),
+            instant = interval_b.tick() => interval::sync_request(&mut node, instant),
+            instant = interval_c.tick() => interval::share(&mut node, instant),
+            instant = interval_d.tick() => interval::dial_known(&mut node, instant),
+            instant = interval_e.tick() => interval::dial_unknown(&mut node, instant),
+            instant = interval_f.tick() => interval::clear(&mut node, instant),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
             res = listener.accept() => api_internal::accept(&mut node, res).await
         };

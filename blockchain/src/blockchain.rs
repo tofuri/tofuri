@@ -20,7 +20,6 @@ use pea_util::STAKE_SIZE;
 use pea_util::TRANSACTION_SIZE;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
-use std::collections::HashMap;
 use std::error::Error;
 use std::time::Instant;
 #[derive(Debug)]
@@ -30,7 +29,6 @@ pub struct Blockchain {
     pending_transactions: Vec<TransactionA>,
     pending_stakes: Vec<StakeA>,
     pub sync: Sync,
-    pub offline: HashMap<AddressBytes, Hash>,
 }
 impl Blockchain {
     pub fn new() -> Self {
@@ -40,7 +38,6 @@ impl Blockchain {
             pending_transactions: vec![],
             pending_stakes: vec![],
             sync: Sync::default(),
-            offline: HashMap::new(),
         }
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
@@ -237,11 +234,6 @@ impl Blockchain {
         }
         let input_address = block_a.input_address();
         let dynamic = self.states.dynamic_fork(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
-        if let Some(hash) = self.offline.get(&input_address) {
-            if hash == &block_a.previous_hash {
-                return Err("block staker banned".into());
-            }
-        }
         if block_a.timestamp < dynamic.latest_block.timestamp + BLOCK_TIME {
             return Err("block timestamp early".into());
         }

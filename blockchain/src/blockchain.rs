@@ -224,6 +224,9 @@ impl Blockchain {
     ) -> Result<(), Box<dyn Error>> {
         let timestamp = pea_util::timestamp();
         let block_a = block_b.a()?;
+        if self.pending_blocks.iter().any(|a| a.hash == block_a.hash) {
+            return Err("block pending".into());
+        }
         self.validate_block(db, &block_a, timestamp + time_delta, trust_fork_after_blocks)?;
         self.pending_blocks.push(block_a);
         Ok(())

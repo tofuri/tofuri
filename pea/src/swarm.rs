@@ -154,6 +154,7 @@ fn event_gossipsub_message(node: &mut Node, message: GossipsubMessage, propagati
             }
             let block_b: BlockB = bincode::deserialize(&message.data)?;
             node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)?;
+            node.blockchain.save_blocks(&node.db, node.args.trust);
         }
         "transaction" => {
             node.p2p.ratelimit(propagation_source, Endpoint::Transaction)?;

@@ -192,10 +192,6 @@ impl Blockchain {
         Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, timestamp + time_delta)?;
         info!("Transaction {}", hex::encode(transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
-        self.pending_transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
-        while *TRANSACTION_SIZE * self.pending_transactions.len() > BLOCK_SIZE_LIMIT - *EMPTY_BLOCK_SIZE {
-            self.pending_transactions.remove(self.pending_transactions.len() - 1);
-        }
         Ok(())
     }
     pub fn pending_stakes_push(&mut self, stake_b: StakeB, time_delta: u32) -> Result<(), Box<dyn Error>> {
@@ -220,10 +216,6 @@ impl Blockchain {
         Blockchain::validate_stake(&self.states.dynamic, &stake_a, timestamp + time_delta)?;
         info!("Stake {}", hex::encode(stake_a.hash).green());
         self.pending_stakes.push(stake_a);
-        self.pending_stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
-        while *STAKE_SIZE * self.pending_stakes.len() > BLOCK_SIZE_LIMIT - *EMPTY_BLOCK_SIZE {
-            self.pending_stakes.remove(self.pending_stakes.len() - 1);
-        }
         Ok(())
     }
     pub fn pending_blocks_push(

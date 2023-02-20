@@ -81,8 +81,11 @@ impl Blockchain {
         db::block::get_b(db, &hash).ok()
     }
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> Option<BlockA> {
+        if timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME {
+            return None;
+        }
         if let Some(staker) = self.states.dynamic.next_staker(timestamp) {
-            if staker != key.address_bytes() || timestamp < self.states.dynamic.latest_block.timestamp + BLOCK_TIME {
+            if staker != key.address_bytes() {
                 return None;
             }
         } else {

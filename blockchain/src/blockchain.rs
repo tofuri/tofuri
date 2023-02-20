@@ -181,7 +181,6 @@ impl Blockchain {
         }
     }
     pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, time_delta: u32) -> Result<(), Box<dyn Error>> {
-        let timestamp = pea_util::timestamp();
         let transaction_a = transaction_b.a(None)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
             return Err("transaction pending".into());
@@ -189,13 +188,12 @@ impl Blockchain {
         if transaction_a.amount + transaction_a.fee > self.balance_available(&transaction_a.input_address) {
             return Err("transaction too expensive".into());
         }
-        Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, timestamp + time_delta)?;
+        Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, pea_util::timestamp() + time_delta)?;
         info!("Transaction {}", hex::encode(transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
         Ok(())
     }
     pub fn pending_stakes_push(&mut self, stake_b: StakeB, time_delta: u32) -> Result<(), Box<dyn Error>> {
-        let timestamp = pea_util::timestamp();
         let stake_a = stake_b.a(None)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
             return Err("stake pending".into());
@@ -213,7 +211,7 @@ impl Blockchain {
                 return Err("stake withdraw amount too expensive".into());
             }
         }
-        Blockchain::validate_stake(&self.states.dynamic, &stake_a, timestamp + time_delta)?;
+        Blockchain::validate_stake(&self.states.dynamic, &stake_a, pea_util::timestamp() + time_delta)?;
         info!("Stake {}", hex::encode(stake_a.hash).green());
         self.pending_stakes.push(stake_a);
         Ok(())
@@ -225,12 +223,11 @@ impl Blockchain {
         time_delta: u32,
         trust_fork_after_blocks: usize,
     ) -> Result<(), Box<dyn Error>> {
-        let timestamp = pea_util::timestamp();
         let block_a = block_b.a()?;
         if self.pending_blocks.iter().any(|a| a.hash == block_a.hash) {
             return Err("block pending".into());
         }
-        self.validate_block(db, &block_a, timestamp + time_delta, trust_fork_after_blocks)?;
+        self.validate_block(db, &block_a, pea_util::timestamp() + time_delta, trust_fork_after_blocks)?;
         self.pending_blocks.push(block_a);
         Ok(())
     }

@@ -28,6 +28,7 @@ pub struct Blockchain {
     pub states: States,
     pending_transactions: Vec<TransactionA>,
     pending_stakes: Vec<StakeA>,
+    pending_blocks: Vec<BlockA>,
     pub sync: Sync,
 }
 impl Blockchain {
@@ -37,6 +38,7 @@ impl Blockchain {
             states: States::default(),
             pending_transactions: vec![],
             pending_stakes: vec![],
+            pending_blocks: vec![],
             sync: Sync::default(),
         }
     }
@@ -65,10 +67,6 @@ impl Blockchain {
     }
     pub fn height(&self) -> usize {
         self.states.trusted.hashes.len() + self.states.dynamic.hashes.len()
-    }
-    pub fn pending_retain_non_ancient(&mut self, timestamp: u32) {
-        self.pending_transactions.retain(|a| !pea_util::ancient(a.timestamp, timestamp));
-        self.pending_stakes.retain(|a| !pea_util::ancient(a.timestamp, timestamp));
     }
     pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, height: usize) -> Option<BlockB> {
         let hashes_trusted = &self.states.trusted.hashes;
@@ -215,6 +213,65 @@ impl Blockchain {
         }
         Ok(())
     }
+    pub fn pending_retain_non_ancient(&mut self, timestamp: u32) {
+        self.pending_transactions.retain(|a| !pea_util::ancient(a.timestamp, timestamp));
+        self.pending_stakes.retain(|a| !pea_util::ancient(a.timestamp, timestamp));
+    }
+    fn validate_transaction(dynamic: &Dynamic, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        if transaction_a.amount == 0 {
+            return Err("transaction amount zero".into());
+        }
+        if transaction_a.fee == 0 {
+            return Err("transaction fee zero".into());
+        }
+        if transaction_a.amount != pea_int::floor(transaction_a.amount) {
+            return Err("transaction amount floor".into());
+        }
+        if transaction_a.fee != pea_int::floor(transaction_a.fee) {
+            return Err("transaction fee floor".into());
+        }
+        if transaction_a.input_address == transaction_a.output_address {
+            return Err("transaction input output".into());
+        }
+        if transaction_a.timestamp > timestamp {
+            return Err("transaction timestamp future".into());
+        }
+        if pea_util::ancient(transaction_a.timestamp, dynamic.latest_block.timestamp) {
+            return Err("transaction timestamp ancient".into());
+        }
+        for block in dynamic.non_ancient_blocks.iter() {
+            if block.transactions.iter().any(|a| a.hash == transaction_a.hash) {
+                return Err("transaction in chain".into());
+            }
+        }
+        Ok(())
+    }
+    fn validate_stake(dynamic: &Dynamic, stake_a: &StakeA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+        if stake_a.amount == 0 {
+            return Err("stake amount zero".into());
+        }
+        if stake_a.fee == 0 {
+            return Err("stake fee zero".into());
+        }
+        if stake_a.amount != pea_int::floor(stake_a.amount) {
+            return Err("stake amount floor".into());
+        }
+        if stake_a.fee != pea_int::floor(stake_a.fee) {
+            return Err("stake fee floor".into());
+        }
+        if stake_a.timestamp > timestamp {
+            return Err("stake timestamp future".into());
+        }
+        if pea_util::ancient(stake_a.timestamp, dynamic.latest_block.timestamp) {
+            return Err("stake timestamp ancient".into());
+        }
+        for block in dynamic.non_ancient_blocks.iter() {
+            if block.stakes.iter().any(|a| a.hash == stake_a.hash) {
+                return Err("stake in chain".into());
+            }
+        }
+        Ok(())
+    }
     pub fn validate_block(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -271,61 +328,6 @@ impl Blockchain {
             Blockchain::validate_transaction(&dynamic, transaction_a, block_a.timestamp)?;
         }
         dynamic.check_overflow(&block_a.transactions, &block_a.stakes)?;
-        Ok(())
-    }
-    fn validate_transaction(dynamic: &Dynamic, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if transaction_a.amount == 0 {
-            return Err("transaction amount zero".into());
-        }
-        if transaction_a.fee == 0 {
-            return Err("transaction fee zero".into());
-        }
-        if transaction_a.amount != pea_int::floor(transaction_a.amount) {
-            return Err("transaction amount floor".into());
-        }
-        if transaction_a.fee != pea_int::floor(transaction_a.fee) {
-            return Err("transaction fee floor".into());
-        }
-        if transaction_a.input_address == transaction_a.output_address {
-            return Err("transaction input output".into());
-        }
-        if transaction_a.timestamp > timestamp {
-            return Err("transaction timestamp future".into());
-        }
-        if pea_util::ancient(transaction_a.timestamp, dynamic.latest_block.timestamp) {
-            return Err("transaction timestamp ancient".into());
-        }
-        for block in dynamic.non_ancient_blocks.iter() {
-            if block.transactions.iter().any(|a| a.hash == transaction_a.hash) {
-                return Err("transaction in chain".into());
-            }
-        }
-        Ok(())
-    }
-    fn validate_stake(dynamic: &Dynamic, stake_a: &StakeA, timestamp: u32) -> Result<(), Box<dyn Error>> {
-        if stake_a.amount == 0 {
-            return Err("stake amount zero".into());
-        }
-        if stake_a.fee == 0 {
-            return Err("stake fee zero".into());
-        }
-        if stake_a.amount != pea_int::floor(stake_a.amount) {
-            return Err("stake amount floor".into());
-        }
-        if stake_a.fee != pea_int::floor(stake_a.fee) {
-            return Err("stake fee floor".into());
-        }
-        if stake_a.timestamp > timestamp {
-            return Err("stake timestamp future".into());
-        }
-        if pea_util::ancient(stake_a.timestamp, dynamic.latest_block.timestamp) {
-            return Err("stake timestamp ancient".into());
-        }
-        for block in dynamic.non_ancient_blocks.iter() {
-            if block.stakes.iter().any(|a| a.hash == stake_a.hash) {
-                return Err("stake in chain".into());
-            }
-        }
         Ok(())
     }
     fn balance_available(&self, address: &AddressBytes) -> u128 {

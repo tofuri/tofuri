@@ -66,6 +66,10 @@ impl Blockchain {
     pub fn height(&self) -> usize {
         self.states.trusted.hashes.len() + self.states.dynamic.hashes.len()
     }
+    pub fn pending_retain_non_ancient(&mut self, timestamp: u32) {
+        self.pending_transactions.retain(|a| !pea_util::ancient(a.timestamp, timestamp));
+        self.pending_stakes.retain(|a| !pea_util::ancient(a.timestamp, timestamp));
+    }
     pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, height: usize) -> Option<BlockB> {
         let hashes_trusted = &self.states.trusted.hashes;
         let hashes_dynamic = &self.states.dynamic.hashes;
@@ -91,18 +95,8 @@ impl Blockchain {
         } else {
             self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, key).unwrap()];
         }
-        let mut transactions: Vec<TransactionA> = self
-            .pending_transactions
-            .iter()
-            .filter(|a| !pea_util::ancient(a.timestamp, timestamp) && a.timestamp <= timestamp)
-            .cloned()
-            .collect();
-        let mut stakes: Vec<StakeA> = self
-            .pending_stakes
-            .iter()
-            .filter(|a| !pea_util::ancient(a.timestamp, timestamp) && a.timestamp <= timestamp)
-            .cloned()
-            .collect();
+        let mut transactions: Vec<TransactionA> = self.pending_transactions.iter().filter(|a| a.timestamp <= timestamp).cloned().collect();
+        let mut stakes: Vec<StakeA> = self.pending_stakes.iter().filter(|a| a.timestamp <= timestamp).cloned().collect();
         transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
         stakes.sort_by(|a, b| b.fee.cmp(&a.fee));
         while *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * transactions.len() + *STAKE_SIZE * stakes.len() > BLOCK_SIZE_LIMIT {

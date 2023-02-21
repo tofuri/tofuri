@@ -4,11 +4,14 @@ use clap::Parser;
 use colored::*;
 use log::error;
 use log::info;
+use log::warn;
 use pea_address::address;
+use pea_core::*;
 use pea_key::Key;
 use pea_pay::router;
 use pea_pay::Args;
 use pea_pay::Pay;
+use pea_util::GIT_HASH;
 use pea_wallet::wallet;
 use std::error::Error;
 use std::net::SocketAddr;
@@ -19,8 +22,28 @@ use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args = Args::parse();
+    let mut args = Args::parse();
     pea_logger::init(args.debug);
+    info!(
+        "{} = {{ version = \"{}\" }}",
+        env!("CARGO_PKG_NAME").yellow(),
+        env!("CARGO_PKG_VERSION").magenta()
+    );
+    info!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), GIT_HASH.magenta());
+    if args.dev {
+        if args.tempdb == TEMP_DB {
+            args.tempdb = DEV_TEMP_DB;
+        }
+        if args.tempkey == TEMP_KEY {
+            args.tempkey = DEV_TEMP_KEY;
+        }
+        if args.api == HTTP_API {
+            args.api = DEV_HTTP_API.to_string();
+        }
+        if args.pay_api == PAY_API {
+            args.pay_api = DEV_PAY_API.to_string();
+        }
+    }
     info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
     info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
     info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
@@ -30,6 +53,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     info!("{} {}", "--api".cyan(), args.api.magenta());
     info!("{} {}", "--pay_api".cyan(), args.pay_api.magenta());
+    info!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
+    if args.dev {
+        warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
+    }
     let addr: SocketAddr = args.pay_api.parse().unwrap();
     let key = match args.tempkey {
         true => Key::generate(),

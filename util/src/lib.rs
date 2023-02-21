@@ -8,6 +8,7 @@ use sha2::Sha256;
 use std::time::Duration;
 use tokio::time::Instant;
 use uint::construct_uint;
+pub const GIT_HASH: &str = env!("GIT_HASH");
 lazy_static! {
     pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
     pub static ref TRANSACTION_SIZE: usize = bincode::serialize(&TransactionB::default()).unwrap().len();

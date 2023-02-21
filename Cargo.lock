@@ -3023,6 +3023,7 @@ version = "0.7.0"
 dependencies = [
  "axum",
  "clap",
+ "colored",
  "hex",
  "multiaddr 0.17.0",
  "pea-address",
@@ -3264,7 +3265,9 @@ version = "0.1.1"
 dependencies = [
  "bincode",
  "chrono",
+ "colored",
  "lazy_static",
+ "log",
  "pea-block",
  "pea-core",
  "pea-stake",

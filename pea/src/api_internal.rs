@@ -43,6 +43,7 @@ use pea_stake::StakeA;
 use pea_stake::StakeB;
 use pea_transaction::TransactionA;
 use pea_transaction::TransactionB;
+use pea_util::GIT_HASH;
 use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
@@ -211,7 +212,7 @@ fn cargo_pkg_repository() -> &'static str {
     env!("CARGO_PKG_REPOSITORY")
 }
 fn git_hash() -> &'static str {
-    env!("GIT_HASH")
+    GIT_HASH
 }
 fn address(node: &mut Node) -> AddressBytes {
     node.key.address_bytes()

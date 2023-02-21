@@ -46,6 +46,9 @@ pub struct Args {
     /// Pay API Endpoint
     #[clap(long, value_parser, default_value = PAY_API)]
     pub pay_api: String,
+    /// Development mode
+    #[clap(long, value_parser, default_value_t = false)]
+    pub dev: bool,
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,

@@ -15,6 +15,7 @@ use pea_core::*;
 use pea_key::Key;
 use pea_p2p::multiaddr;
 use pea_p2p::P2p;
+use pea_util::GIT_HASH;
 use pea_wallet::wallet;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -30,7 +31,7 @@ async fn main() {
         env!("CARGO_PKG_NAME").yellow(),
         env!("CARGO_PKG_VERSION").magenta()
     );
-    info!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), env!("GIT_HASH").magenta());
+    info!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), GIT_HASH.magenta());
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = DEV_TEMP_DB;

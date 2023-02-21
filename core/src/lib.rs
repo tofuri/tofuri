@@ -42,3 +42,4 @@ pub const DEV_API: &str = "0.0.0.0:3000";
 pub const HTTP_API: &str = "http://localhost:80";
 pub const DEV_HTTP_API: &str = "http://localhost:3000";
 pub const PAY_API: &str = "0.0.0.0:4000";
+pub const DEV_PAY_API: &str = "0.0.0.0:5000";

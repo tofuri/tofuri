@@ -1,6 +1,7 @@
 use crate::inquire;
 use crate::inquire::GENERATE;
 use crate::inquire::IMPORT;
+use crate::Args;
 use ::inquire::Confirm;
 use ::inquire::Select;
 use argon2::Algorithm;
@@ -35,25 +36,22 @@ const INCORRECT: &str = "Incorrect passphrase";
 pub type Salt = [u8; 32];
 pub type Nonce = [u8; 12];
 pub type Ciphertext = [u8; 48];
-pub struct Options {
-    pub api: String,
-}
 pub struct Wallet {
     key: Option<Key>,
     salt: Salt,
     nonce: Nonce,
     ciphertext: Ciphertext,
-    api: String,
+    args: Args,
     client: Client,
 }
 impl Wallet {
-    pub fn new(options: Options) -> Wallet {
+    pub fn new(args: Args) -> Wallet {
         Wallet {
             key: None,
             salt: [0; 32],
             nonce: [0; 12],
             ciphertext: [0; 48],
-            api: options.api,
+            args,
             client: Client::new(),
         }
     }
@@ -133,19 +131,19 @@ impl Wallet {
         self.key = Some(key);
     }
     async fn api(&self) -> Result<(), Box<dyn Error>> {
-        let root: Root = self.client.get(&self.api).send().await?.json().await?;
+        let root: Root = self.client.get(&self.args.api).send().await?.json().await?;
         println!("{:#?}", root);
         Ok(())
     }
     async fn balance(&self) -> Result<(), Box<dyn Error>> {
         let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
-        let balance: String = self.client.get(format!("{}/balance/{}", self.api, address)).send().await?.json().await?;
-        let staked: String = self.client.get(format!("{}/staked/{}", self.api, address)).send().await?.json().await?;
+        let balance: String = self.client.get(format!("{}/balance/{}", self.args.api, address)).send().await?.json().await?;
+        let staked: String = self.client.get(format!("{}/staked/{}", self.args.api, address)).send().await?.json().await?;
         println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
         Ok(())
     }
     async fn height(&self) -> Result<(), Box<dyn Error>> {
-        let height: usize = self.client.get(format!("{}/height", self.api)).send().await?.json().await?;
+        let height: usize = self.client.get(format!("{}/height", self.args.api)).send().await?.json().await?;
         println!("Latest block height is {}.", height.to_string().yellow());
         Ok(())
     }
@@ -173,7 +171,7 @@ impl Wallet {
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
         let res: String = self
             .client
-            .post(format!("{}/transaction", self.api))
+            .post(format!("{}/transaction", self.args.api))
             .json(&pea_api_util::transaction(&transaction_a))
             .send()
             .await?
@@ -194,7 +192,7 @@ impl Wallet {
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
         let res: String = self
             .client
-            .post(format!("{}/stake", self.api))
+            .post(format!("{}/stake", self.args.api))
             .json(&pea_api_util::stake(&stake_a))
             .send()
             .await?
@@ -206,8 +204,8 @@ impl Wallet {
     async fn search(&self) -> Result<(), Box<dyn Error>> {
         let search = inquire::search();
         if address::decode(&search).is_ok() {
-            let balance: String = self.client.get(format!("{}/balance/{}", self.api, search)).send().await?.json().await?;
-            let staked: String = self.client.get(format!("{}/staked/{}", self.api, search)).send().await?.json().await?;
+            let balance: String = self.client.get(format!("{}/balance/{}", self.args.api, search)).send().await?.json().await?;
+            let staked: String = self.client.get(format!("{}/staked/{}", self.args.api, search)).send().await?.json().await?;
             println!(
                 "Address found\nAccount balance: {}, staked: {}",
                 balance.to_string().yellow(),
@@ -215,25 +213,25 @@ impl Wallet {
             );
             return Ok(());
         } else if search.len() == 64 {
-            if let Ok(res) = self.client.get(format!("{}/block/{}", self.api, search)).send().await {
+            if let Ok(res) = self.client.get(format!("{}/block/{}", self.args.api, search)).send().await {
                 let block: Block = res.json().await?;
                 println!("Block found\n{block:?}");
                 return Ok(());
             }
-            if let Ok(res) = self.client.get(format!("{}/transaction/{}", self.api, search)).send().await {
+            if let Ok(res) = self.client.get(format!("{}/transaction/{}", self.args.api, search)).send().await {
                 let transaction: Transaction = res.json().await?;
                 println!("Transaction found\n{transaction:?}");
                 return Ok(());
             }
-            if let Ok(res) = self.client.get(format!("{}/stake/{}", self.api, search)).send().await {
+            if let Ok(res) = self.client.get(format!("{}/stake/{}", self.args.api, search)).send().await {
                 let stake: Stake = res.json().await?;
                 println!("Stake found\n{stake:?}");
                 return Ok(());
             }
         } else if search.parse::<usize>().is_ok() {
-            if let Ok(res) = self.client.get(format!("{}/hash/{}", self.api, search)).send().await {
+            if let Ok(res) = self.client.get(format!("{}/hash/{}", self.args.api, search)).send().await {
                 let hash: String = res.json().await?;
-                if let Ok(res) = self.client.get(format!("{}/block/{}", self.api, hash)).send().await {
+                if let Ok(res) = self.client.get(format!("{}/block/{}", self.args.api, hash)).send().await {
                     let block: Block = res.json().await?;
                     println!("Block found\n{block:?}");
                     return Ok(());

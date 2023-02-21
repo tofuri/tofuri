@@ -2,7 +2,6 @@ use clap::Parser;
 use pea_core::*;
 use pea_wallet::wallet::clear;
 use pea_wallet::wallet::press_any_key_to_continue;
-use pea_wallet::wallet::Options;
 use pea_wallet::wallet::Wallet;
 use pea_wallet::CARGO_PKG_NAME;
 use pea_wallet::CARGO_PKG_REPOSITORY;
@@ -16,7 +15,7 @@ async fn main() {
             args.api = DEV_HTTP_API.to_string();
         }
     }
-    let mut wallet = Wallet::new(Options { api: args.api });
+    let mut wallet = Wallet::new(args);
     loop {
         if wallet.select().await {
             press_any_key_to_continue();

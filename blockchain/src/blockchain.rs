@@ -297,14 +297,14 @@ impl Blockchain {
         }
         let input_address = block_a.input_address();
         let dynamic = self.states.dynamic_fork(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
-        if block_a.timestamp != dynamic.latest_block.timestamp + BLOCK_TIME {
-            return Err("block timestamp".into());
-        }
         let previous_beta = Key::vrf_proof_to_hash(&dynamic.latest_block.pi).unwrap_or(GENESIS_BETA);
         Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
         if let Some(staker) = dynamic.next_staker(block_a.timestamp) {
             if staker != input_address {
                 return Err("block staker address".into());
+            }
+            if block_a.timestamp != dynamic.latest_block.timestamp + BLOCK_TIME {
+                return Err("block timestamp".into());
             }
         } else {
             if !block_a.transactions.is_empty() {

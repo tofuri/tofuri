@@ -70,7 +70,8 @@ pub fn grow(node: &mut Node, instant: Instant) -> Instant {
     if !node.blockchain.sync.completed {
         return instant;
     }
-    if timestamp < node.blockchain.states.dynamic.latest_block.timestamp + BLOCK_TIME {
+    let diff = timestamp.saturating_sub(node.blockchain.states.dynamic.latest_block.timestamp);
+    if diff == 0 || diff % BLOCK_TIME != 0 {
         return instant;
     }
     if let Some(staker) = node.blockchain.states.dynamic.next_staker(timestamp) {

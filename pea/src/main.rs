@@ -18,7 +18,6 @@ use pea_core::*;
 use pea_key::Key;
 use pea_p2p::multiaddr;
 use pea_p2p::P2p;
-use pea_wallet::wallet;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
@@ -61,7 +60,7 @@ async fn main() {
     }
     let key = match args.tempkey {
         true => Key::generate(),
-        false => wallet::load(&args.wallet, &args.passphrase).unwrap().3,
+        false => pea_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
     };
     info!("Address {}", address::encode(&key.address_bytes()).green());
     let tempdir = TempDir::new("peacash-db").unwrap();

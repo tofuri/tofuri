@@ -1,4 +1,4 @@
-use crate::wallet::filenames;
+use crate::filenames;
 use colored::*;
 use inquire::validator::Validation;
 use inquire::Confirm;

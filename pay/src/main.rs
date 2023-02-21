@@ -14,7 +14,6 @@ use pea_pay::Pay;
 use pea_pay::CARGO_PKG_NAME;
 use pea_pay::CARGO_PKG_REPOSITORY;
 use pea_pay::CARGO_PKG_VERSION;
-use pea_wallet::wallet;
 use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -57,7 +56,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let addr: SocketAddr = args.pay_api.parse().unwrap();
     let key = match args.tempkey {
         true => Key::generate(),
-        false => wallet::load(&args.wallet, &args.passphrase).unwrap().3,
+        false => pea_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
     };
     info!("Address {}", address::encode(&key.address_bytes()).green());
     let tempdir = TempDir::new("peacash-pay-db").unwrap();

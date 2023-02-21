@@ -133,4 +133,17 @@ mod tests {
         let beta = Key::vrf_verify(&key.public_key_bytes(), &pi, &alpha);
         assert!(beta.unwrap() == Key::vrf_proof_to_hash(&pi).unwrap());
     }
+    #[test]
+    fn test_subkey() {
+        let key = Key::from_slice(&[0xcd; 32]);
+        let subkey = key.subkey(0);
+        println!("{:x?}", subkey.secret_key_bytes());
+        assert_eq!(
+            subkey.secret_key_bytes(),
+            [
+                0xa2, 0xcf, 0x3f, 0x85, 0xbd, 0x37, 0xfa, 0x8d, 0xa0, 0xdc, 0xce, 0x6d, 0xde, 0x50, 0x2b, 0xa7, 0xe1, 0xc4, 0x75, 0x42, 0x35, 0x94, 0x81, 0xd0,
+                0x34, 0x4d, 0x35, 0xdd, 0x91, 0x94, 0xba, 0x63
+            ]
+        );
+    }
 }

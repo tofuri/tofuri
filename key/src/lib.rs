@@ -65,6 +65,12 @@ impl Key {
         let public_key_bytes: PublicKeyBytes = SECP256K1.recover_ecdsa(&message, &signature)?.serialize();
         Ok(public_key_bytes)
     }
+    pub fn subkey(&self, n: u128) -> Key {
+        let mut hasher = Sha256::new();
+        hasher.update(self.secret_key_bytes());
+        hasher.update(n.to_be_bytes());
+        Key::from_slice(&hasher.finalize().into())
+    }
     #[cfg(feature = "vrf")]
     pub fn vrf_prove(&self, alpha: &[u8]) -> Option<Pi> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();

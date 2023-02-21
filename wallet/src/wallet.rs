@@ -171,7 +171,8 @@ impl Wallet {
         )
         .unwrap();
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
-        let res: String = reqwest::Client::new()
+        let res: String = self
+            .client
             .post(format!("{}/transaction", self.api))
             .json(&pea_api_util::transaction(&transaction_a))
             .send()
@@ -191,7 +192,8 @@ impl Wallet {
         }
         let stake_a = StakeA::sign(deposit, amount, fee, pea_util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
-        let res: String = reqwest::Client::new()
+        let res: String = self
+            .client
             .post(format!("{}/stake", self.api))
             .json(&pea_api_util::stake(&stake_a))
             .send()

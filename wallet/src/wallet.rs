@@ -16,8 +16,8 @@ use crossterm::terminal;
 use pea_address::address;
 use pea_address::secret;
 use pea_api_core::Block;
+use pea_api_core::Root;
 use pea_api_core::Stake;
-use pea_api_core::Sync;
 use pea_api_core::Transaction;
 use pea_core::*;
 use pea_key::Key;
@@ -130,12 +130,8 @@ impl Wallet {
         self.key = Some(key);
     }
     async fn api(&self) -> Result<(), Box<dyn Error>> {
-        let info = reqwest::get(&self.api).await?.text().await?;
-        println!("{}", info.green());
-        let sync: Sync = reqwest::get(&format!("{}/sync", self.api)).await?.json().await?;
-        println!("Synchronize {}", sync.status.yellow());
-        println!("Height {}", sync.height.to_string().yellow());
-        println!("Last block seen {}", sync.last_seen.yellow());
+        let root: Root = reqwest::get(&self.api).await?.json().await?;
+        println!("{}", format!("{:#?}", root).yellow());
         Ok(())
     }
     async fn balance(&self) -> Result<(), Box<dyn Error>> {

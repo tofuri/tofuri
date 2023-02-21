@@ -137,7 +137,6 @@ mod tests {
     fn test_subkey() {
         let key = Key::from_slice(&[0xcd; 32]);
         let subkey = key.subkey(0);
-        println!("{:x?}", subkey.secret_key_bytes());
         assert_eq!(
             subkey.secret_key_bytes(),
             [

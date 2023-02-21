@@ -131,7 +131,7 @@ impl Wallet {
     }
     async fn api(&self) -> Result<(), Box<dyn Error>> {
         let root: Root = reqwest::get(&self.api).await?.json().await?;
-        println!("{}", format!("{:#?}", root).yellow());
+        println!("{:#?}", root);
         Ok(())
     }
     async fn balance(&self) -> Result<(), Box<dyn Error>> {

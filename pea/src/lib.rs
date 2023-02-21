@@ -19,6 +19,19 @@ pub struct Node {
     pub ticks: usize,
     pub lag: f64,
 }
+impl Node {
+    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, args: Args, p2p: P2p, blockchain: Blockchain) -> Node {
+        Node {
+            db,
+            key,
+            args,
+            p2p,
+            blockchain,
+            ticks: 0,
+            lag: 0.0,
+        }
+    }
+}
 #[derive(Parser, Debug, Serialize, Deserialize, Clone)]
 #[clap(version, about, long_about = None)]
 pub struct Args {

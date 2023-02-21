@@ -84,15 +84,7 @@ async fn main() {
     }
     let p2p = P2p::new(args.max_established, args.timeout, known).await.unwrap();
     let blockchain = Blockchain::new();
-    let mut node = Node {
-        key,
-        p2p,
-        blockchain,
-        db,
-        args,
-        ticks: 0,
-        lag: 0.0,
-    };
+    let mut node = Node::new(db, key, args, p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust);
     info!(
         "Blockchain height is {}",

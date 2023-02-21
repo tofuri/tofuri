@@ -8,34 +8,6 @@ pub struct Root {
     pub git_hash: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Info {
-    pub time: String,
-    pub address: String,
-    pub uptime: String,
-    pub ticks: usize,
-    pub tree_size: usize,
-    pub lag: f64,
-}
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Sync {
-    pub status: String,
-    pub height: usize,
-    pub last_seen: String,
-}
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Dynamic {
-    pub random_queue: Vec<String>,
-    pub hashes: usize,
-    pub latest_hashes: Vec<String>,
-    pub stakers: Vec<String>,
-}
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Trusted {
-    pub hashes: usize,
-    pub latest_hashes: Vec<String>,
-    pub stakers: Vec<String>,
-}
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Block {
     pub hash: String,
     pub previous_hash: String,

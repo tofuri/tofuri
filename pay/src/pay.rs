@@ -1,3 +1,4 @@
+use crate::Args;
 use colored::*;
 use log::info;
 use pea_api_core::Block;
@@ -14,37 +15,21 @@ use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use std::error::Error;
 use std::time::Instant;
-pub struct Options<'a> {
-    pub tempdb: bool,
-    pub tempkey: bool,
-    pub confirmations: usize,
-    pub expires: u32,
-    pub wallet: &'a str,
-    pub passphrase: &'a str,
-    pub api: String,
-    pub bind_api: String,
-}
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,
-    pub api: String,
-    pub bind_api: String,
-    pub confirmations: usize,
-    pub expires: u32,
+    pub args: Args,
     charges: HashMap<AddressBytes, Charge>,
     chain: Vec<Block>,
     subkey: u128,
     client: Client,
 }
 impl Pay {
-    pub fn new(key: Key, db: DBWithThreadMode<SingleThreaded>, options: Options) -> Self {
-        Self {
+    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, args: Args) -> Pay {
+        Pay {
             db,
             key,
-            api: options.api,
-            bind_api: options.bind_api,
-            confirmations: options.confirmations,
-            expires: options.expires,
+            args,
             chain: vec![],
             charges: HashMap::new(),
             subkey: 0,
@@ -79,11 +64,17 @@ impl Pay {
         self.update_chain().await?;
         let mut transactions = vec![];
         for (i, block) in self.chain.iter().rev().enumerate() {
-            if i + 1 < self.confirmations {
+            if i + 1 < self.args.confirmations {
                 continue;
             }
             for hash in block.transactions.iter() {
-                let transaction: Transaction = self.client.get(format!("{}/transaction/{}", &self.api, &hash)).send().await?.json().await?;
+                let transaction: Transaction = self
+                    .client
+                    .get(format!("{}/transaction/{}", &self.args.api, &hash))
+                    .send()
+                    .await?
+                    .json()
+                    .await?;
                 transactions.push(transaction);
             }
         }
@@ -114,7 +105,7 @@ impl Pay {
                 charge.status = ChargeStatus::Completed;
                 pea_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
                 charges.push(charge);
-            } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < pea_util::timestamp() - self.expires {
+            } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < pea_util::timestamp() - self.args.expires {
                 charge.status = ChargeStatus::Expired;
                 pea_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
             }
@@ -126,7 +117,7 @@ impl Pay {
         Ok(payments)
     }
     async fn update_chain(&mut self) -> Result<(), Box<dyn Error>> {
-        let latest_block: Block = self.client.get(format!("{}/block", &self.api)).send().await?.json().await?;
+        let latest_block: Block = self.client.get(format!("{}/block", &self.args.api)).send().await?.json().await?;
         if match self.chain.last() {
             Some(block) => block.hash == latest_block.hash,
             None => false,
@@ -142,7 +133,7 @@ impl Pay {
             self.reload_chain().await?;
         }
         while match self.chain.first() {
-            Some(block) => block.timestamp < pea_util::timestamp() - self.expires,
+            Some(block) => block.timestamp < pea_util::timestamp() - self.args.expires,
             None => false,
         } {
             self.chain.remove(0);
@@ -151,9 +142,15 @@ impl Pay {
     }
     async fn reload_chain(&mut self) -> Result<(), Box<dyn Error>> {
         let mut chain = vec![];
-        let mut previous_hash = self.client.get(format!("{}/block", &self.api)).send().await?.json::<Block>().await?.hash;
+        let mut previous_hash = self.client.get(format!("{}/block", &self.args.api)).send().await?.json::<Block>().await?.hash;
         loop {
-            let block: Block = self.client.get(format!("{}/block/{}", &self.api, &previous_hash)).send().await?.json().await?;
+            let block: Block = self
+                .client
+                .get(format!("{}/block/{}", &self.args.api, &previous_hash))
+                .send()
+                .await?
+                .json()
+                .await?;
             if let Some(latest_block) = self.chain.last() {
                 if latest_block.hash == block.previous_hash {
                     self.chain.append(&mut chain);
@@ -161,7 +158,7 @@ impl Pay {
                 }
             }
             if block.previous_hash == "0000000000000000000000000000000000000000000000000000000000000000"
-                || block.timestamp < pea_util::timestamp() - self.expires
+                || block.timestamp < pea_util::timestamp() - self.args.expires
             {
                 break;
             }

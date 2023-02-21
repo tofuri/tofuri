@@ -6,7 +6,6 @@ use log::error;
 use log::info;
 use pea_address::address;
 use pea_key::Key;
-use pea_pay::pay::Options;
 use pea_pay::pay::Pay;
 use pea_pay::router;
 use pea_pay::Args;
@@ -32,6 +31,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--api".cyan(), args.api.magenta());
     info!("{} {}", "--pay_api".cyan(), args.pay_api.magenta());
     info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
+    let addr: SocketAddr = args.pay_api.parse().unwrap();
     let key = match args.tempkey {
         true => Key::generate(),
         false => wallet::load(&args.wallet, &args.passphrase).unwrap().3,
@@ -43,21 +43,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         false => "./peacash-pay-db",
     };
     let db = pea_pay_db::open(path);
-    let pay = Arc::new(Mutex::new(Pay::new(
-        key,
-        db,
-        Options {
-            tempdb: args.tempdb,
-            tempkey: args.tempkey,
-            confirmations: args.confirmations,
-            expires: args.expires,
-            wallet: &args.wallet,
-            passphrase: &args.passphrase,
-            api: args.api,
-            bind_api: args.bind_api,
-        },
-    )));
-    let addr: SocketAddr = args.pay_api.parse().unwrap();
+    let pay = Arc::new(Mutex::new(Pay::new(db, key, args)));
     let cors = CorsLayer::permissive();
     let app = Router::new()
         .route("/", get(router::root))

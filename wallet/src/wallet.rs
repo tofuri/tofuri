@@ -333,7 +333,7 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         let salt: Salt = slice[0..32].try_into()?;
         let nonce: Nonce = slice[32..44].try_into()?;
         let ciphertext: Ciphertext = slice[44..92].try_into()?;
-        let key = Key::from_slice(decrypt(&salt, &nonce, &ciphertext, passphrase)?.as_slice().try_into()?);
+        let key = Key::from_slice(decrypt(&salt, &nonce, &ciphertext, passphrase)?.as_slice().try_into()?)?;
         Ok((salt, nonce, ciphertext, key))
     }
     if filename.is_empty() ^ passphrase.is_empty() {

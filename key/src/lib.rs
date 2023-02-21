@@ -24,10 +24,10 @@ impl Key {
             secret_key: SecretKey::new(&mut rand::thread_rng()),
         }
     }
-    pub fn from_slice(secret_key_bytes: &SecretKeyBytes) -> Key {
-        Key {
-            secret_key: SecretKey::from_slice(secret_key_bytes).expect("32 bytes, within curve order"),
-        }
+    pub fn from_slice(secret_key_bytes: &SecretKeyBytes) -> Result<Key, Box<dyn Error>> {
+        Ok(Key {
+            secret_key: SecretKey::from_slice(secret_key_bytes)?,
+        })
     }
     pub fn secret_key_bytes(&self) -> SecretKeyBytes {
         self.secret_key.secret_bytes()
@@ -65,11 +65,11 @@ impl Key {
         let public_key_bytes: PublicKeyBytes = SECP256K1.recover_ecdsa(&message, &signature)?.serialize();
         Ok(public_key_bytes)
     }
-    pub fn subkey(&self, n: u128) -> Key {
+    pub fn subkey(&self, n: u128) -> Result<Key, Box<dyn Error>> {
         let mut hasher = Sha256::new();
         hasher.update(self.secret_key_bytes());
         hasher.update(n.to_be_bytes());
-        Key::from_slice(&hasher.finalize().into())
+        Ok(Key::from_slice(&hasher.finalize().into())?)
     }
     #[cfg(feature = "vrf")]
     pub fn vrf_prove(&self, alpha: &[u8]) -> Option<Pi> {
@@ -135,8 +135,8 @@ mod tests {
     }
     #[test]
     fn test_subkey() {
-        let key = Key::from_slice(&[0xcd; 32]);
-        let subkey = key.subkey(0);
+        let key = Key::from_slice(&[0xcd; 32]).unwrap();
+        let subkey = key.subkey(0).unwrap();
         assert_eq!(
             subkey.secret_key_bytes(),
             [

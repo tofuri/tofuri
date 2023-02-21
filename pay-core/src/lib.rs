@@ -24,17 +24,14 @@ pub struct Charge {
     pub amount: u128,
     pub timestamp: u32,
     pub status: ChargeStatus,
-    pub subkey: u128,
+    pub subkey_n: u128,
 }
 impl Charge {
-    pub fn key(&self, key: &Key) -> Key {
-        *key
-    }
     pub fn address_bytes(&self, key: &Key) -> AddressBytes {
-        self.key(key).address_bytes()
+        key.subkey(self.subkey_n).unwrap().address_bytes()
     }
     pub fn payment(&self, key: &Key) -> Payment {
-        let address = pea_address::address::encode(&key.address_bytes());
+        let address = pea_address::address::encode(&self.address_bytes(key));
         let status = status(&self.status);
         Payment {
             address,

@@ -53,7 +53,7 @@ pub struct Pay {
     pub args: Args,
     charges: HashMap<AddressBytes, Charge>,
     chain: Vec<Block>,
-    subkey: u128,
+    subkey_n: u128,
     client: Client,
 }
 impl Pay {
@@ -64,7 +64,7 @@ impl Pay {
             args,
             chain: vec![],
             charges: HashMap::new(),
-            subkey: 0,
+            subkey_n: 0,
             client: Client::new(),
         }
     }
@@ -84,12 +84,12 @@ impl Pay {
             amount,
             timestamp: pea_util::timestamp(),
             status: ChargeStatus::Pending,
-            subkey: self.subkey,
+            subkey_n: self.subkey_n,
         };
         let payment = charge.payment(&self.key);
         pea_pay_db::charge::put(&self.db, &self.key, &charge).unwrap();
         self.charges.insert(charge.address_bytes(&self.key), charge);
-        self.subkey += 1;
+        self.subkey_n += 1;
         payment
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
@@ -203,7 +203,7 @@ impl Pay {
     pub fn load(&mut self) {
         let start = Instant::now();
         for res in self.db.iterator_cf(pea_pay_db::charges(&self.db), IteratorMode::Start) {
-            self.subkey += 1;
+            self.subkey_n += 1;
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
             let charge: Charge = bincode::deserialize(&bytes).unwrap();

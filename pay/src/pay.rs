@@ -7,6 +7,7 @@ use pea_key::Key;
 use pea_pay_core::Charge;
 use pea_pay_core::ChargeStatus;
 use pea_pay_core::Payment;
+use reqwest::Client;
 use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
@@ -33,6 +34,7 @@ pub struct Pay {
     charges: HashMap<AddressBytes, Charge>,
     chain: Vec<Block>,
     subkey: u128,
+    client: Client,
 }
 impl Pay {
     pub fn new(key: Key, db: DBWithThreadMode<SingleThreaded>, options: Options) -> Self {
@@ -46,6 +48,7 @@ impl Pay {
             chain: vec![],
             charges: HashMap::new(),
             subkey: 0,
+            client: Client::new(),
         }
     }
     pub fn get_charges(&self) -> Vec<Payment> {
@@ -80,7 +83,7 @@ impl Pay {
                 continue;
             }
             for hash in block.transactions.iter() {
-                let transaction: Transaction = reqwest::get(format!("{}/transaction/{}", &self.api, &hash)).await?.json().await?;
+                let transaction: Transaction = self.client.get(format!("{}/transaction/{}", &self.api, &hash)).send().await?.json().await?;
                 transactions.push(transaction);
             }
         }
@@ -123,7 +126,7 @@ impl Pay {
         Ok(payments)
     }
     async fn update_chain(&mut self) -> Result<(), Box<dyn Error>> {
-        let latest_block: Block = reqwest::get(format!("{}/block", &self.api)).await?.json().await?;
+        let latest_block: Block = self.client.get(format!("{}/block", &self.api)).send().await?.json().await?;
         if match self.chain.last() {
             Some(block) => block.hash == latest_block.hash,
             None => false,
@@ -148,9 +151,9 @@ impl Pay {
     }
     async fn reload_chain(&mut self) -> Result<(), Box<dyn Error>> {
         let mut chain = vec![];
-        let mut previous_hash = reqwest::get(format!("{}/block", &self.api)).await?.json::<Block>().await?.hash;
+        let mut previous_hash = self.client.get(format!("{}/block", &self.api)).send().await?.json::<Block>().await?.hash;
         loop {
-            let block: Block = reqwest::get(format!("{}/block/{}", &self.api, &previous_hash)).await?.json().await?;
+            let block: Block = self.client.get(format!("{}/block/{}", &self.api, &previous_hash)).send().await?.json().await?;
             if let Some(latest_block) = self.chain.last() {
                 if latest_block.hash == block.previous_hash {
                     self.chain.append(&mut chain);

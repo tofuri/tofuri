@@ -23,6 +23,7 @@ use pea_core::*;
 use pea_key::Key;
 use pea_stake::StakeA;
 use pea_transaction::TransactionA;
+use reqwest::Client;
 use std::error::Error;
 use std::fs::create_dir_all;
 use std::fs::read_dir;
@@ -43,6 +44,7 @@ pub struct Wallet {
     nonce: Nonce,
     ciphertext: Ciphertext,
     api: String,
+    client: Client,
 }
 impl Wallet {
     pub fn new(options: Options) -> Wallet {
@@ -52,6 +54,7 @@ impl Wallet {
             nonce: [0; 12],
             ciphertext: [0; 48],
             api: options.api,
+            client: Client::new(),
         }
     }
     pub async fn select(&mut self) -> bool {
@@ -130,19 +133,19 @@ impl Wallet {
         self.key = Some(key);
     }
     async fn api(&self) -> Result<(), Box<dyn Error>> {
-        let root: Root = reqwest::get(&self.api).await?.json().await?;
+        let root: Root = self.client.get(&self.api).send().await?.json().await?;
         println!("{:#?}", root);
         Ok(())
     }
     async fn balance(&self) -> Result<(), Box<dyn Error>> {
         let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
-        let balance: String = reqwest::get(format!("{}/balance/{}", self.api, address)).await?.json().await?;
-        let staked: String = reqwest::get(format!("{}/staked/{}", self.api, address)).await?.json().await?;
+        let balance: String = self.client.get(format!("{}/balance/{}", self.api, address)).send().await?.json().await?;
+        let staked: String = self.client.get(format!("{}/staked/{}", self.api, address)).send().await?.json().await?;
         println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
         Ok(())
     }
     async fn height(&self) -> Result<(), Box<dyn Error>> {
-        let height: usize = reqwest::get(format!("{}/height", self.api)).await?.json().await?;
+        let height: usize = self.client.get(format!("{}/height", self.api)).send().await?.json().await?;
         println!("Latest block height is {}.", height.to_string().yellow());
         Ok(())
     }
@@ -201,8 +204,8 @@ impl Wallet {
     async fn search(&self) -> Result<(), Box<dyn Error>> {
         let search = inquire::search();
         if address::decode(&search).is_ok() {
-            let balance: String = reqwest::get(format!("{}/balance/{}", self.api, search)).await?.json().await?;
-            let staked: String = reqwest::get(format!("{}/staked/{}", self.api, search)).await?.json().await?;
+            let balance: String = self.client.get(format!("{}/balance/{}", self.api, search)).send().await?.json().await?;
+            let staked: String = self.client.get(format!("{}/staked/{}", self.api, search)).send().await?.json().await?;
             println!(
                 "Address found\nAccount balance: {}, staked: {}",
                 balance.to_string().yellow(),
@@ -210,25 +213,25 @@ impl Wallet {
             );
             return Ok(());
         } else if search.len() == 64 {
-            if let Ok(res) = reqwest::get(format!("{}/block/{}", self.api, search)).await {
+            if let Ok(res) = self.client.get(format!("{}/block/{}", self.api, search)).send().await {
                 let block: Block = res.json().await?;
                 println!("Block found\n{block:?}");
                 return Ok(());
             }
-            if let Ok(res) = reqwest::get(format!("{}/transaction/{}", self.api, search)).await {
+            if let Ok(res) = self.client.get(format!("{}/transaction/{}", self.api, search)).send().await {
                 let transaction: Transaction = res.json().await?;
                 println!("Transaction found\n{transaction:?}");
                 return Ok(());
             }
-            if let Ok(res) = reqwest::get(format!("{}/stake/{}", self.api, search)).await {
+            if let Ok(res) = self.client.get(format!("{}/stake/{}", self.api, search)).send().await {
                 let stake: Stake = res.json().await?;
                 println!("Stake found\n{stake:?}");
                 return Ok(());
             }
         } else if search.parse::<usize>().is_ok() {
-            if let Ok(res) = reqwest::get(format!("{}/hash/{}", self.api, search)).await {
+            if let Ok(res) = self.client.get(format!("{}/hash/{}", self.api, search)).send().await {
                 let hash: String = res.json().await?;
-                if let Ok(res) = reqwest::get(format!("{}/block/{}", self.api, hash)).await {
+                if let Ok(res) = self.client.get(format!("{}/block/{}", self.api, hash)).send().await {
                     let block: Block = res.json().await?;
                     println!("Block found\n{block:?}");
                     return Ok(());

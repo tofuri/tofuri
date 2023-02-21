@@ -46,9 +46,6 @@ pub struct Args {
     /// Pay API Endpoint
     #[clap(long, value_parser, default_value = PAY_API)]
     pub pay_api: String,
-    /// TCP socket address to bind to
-    #[clap(long, value_parser, default_value = ":::9331")]
-    pub bind_api: String,
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,

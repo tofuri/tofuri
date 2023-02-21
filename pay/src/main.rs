@@ -30,7 +30,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     info!("{} {}", "--api".cyan(), args.api.magenta());
     info!("{} {}", "--pay_api".cyan(), args.pay_api.magenta());
-    info!("{} {}", "--bind-api".cyan(), args.bind_api.magenta());
     let addr: SocketAddr = args.pay_api.parse().unwrap();
     let key = match args.tempkey {
         true => Key::generate(),

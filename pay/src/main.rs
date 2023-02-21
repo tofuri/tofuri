@@ -11,7 +11,6 @@ use pea_key::Key;
 use pea_pay::router;
 use pea_pay::Args;
 use pea_pay::Pay;
-use pea_util::GIT_HASH;
 use pea_wallet::wallet;
 use std::error::Error;
 use std::net::SocketAddr;
@@ -20,16 +19,14 @@ use std::time::Duration;
 use tempdir::TempDir;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
+pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
+pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut args = Args::parse();
     pea_logger::init(args.debug);
-    info!(
-        "{} = {{ version = \"{}\" }}",
-        env!("CARGO_PKG_NAME").yellow(),
-        env!("CARGO_PKG_VERSION").magenta()
-    );
-    info!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), GIT_HASH.magenta());
+    info!("{}", pea_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = DEV_TEMP_DB;

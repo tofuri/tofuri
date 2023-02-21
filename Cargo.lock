@@ -3023,7 +3023,6 @@ version = "0.7.0"
 dependencies = [
  "axum",
  "clap",
- "colored",
  "hex",
  "multiaddr 0.17.0",
  "pea-address",

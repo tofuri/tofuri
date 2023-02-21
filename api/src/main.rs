@@ -2,22 +2,18 @@ use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
 use clap::Parser;
-use colored::*;
 use pea_api::router;
 use pea_core::*;
-use pea_util::GIT_HASH;
 use std::error::Error;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
+pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
+pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut args = pea_api::Args::parse();
-    println!(
-        "{} = {{ version = \"{}\" }}",
-        env!("CARGO_PKG_NAME").yellow(),
-        env!("CARGO_PKG_VERSION").magenta()
-    );
-    println!("{}/tree/{}", env!("CARGO_PKG_REPOSITORY").yellow(), GIT_HASH.magenta());
+    println!("{}", pea_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.api == API {
             args.api = DEV_API.to_string();

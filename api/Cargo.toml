@@ -24,4 +24,3 @@ axum = "0.6"
 tower-http = { version = "0.3", features = ["cors"] }
 multiaddr = "0.17"
 clap = { version = "3.2", features = ["derive"] }
-colored = "2.0"

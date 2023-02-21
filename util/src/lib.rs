@@ -1,3 +1,4 @@
+use colored::*;
 use lazy_static::lazy_static;
 use pea_block::BlockB;
 use pea_core::*;
@@ -73,4 +74,15 @@ pub fn ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
 }
 pub fn interval_at_start() -> Instant {
     Instant::now() + Duration::from_nanos(1_000_000_000 - chrono::offset::Utc::now().timestamp_subsec_nanos() as u64)
+}
+pub fn build(cargo_pkg_name: &str, cargo_pkg_version: &str, cargo_pkg_repository: &str) -> String {
+    format!(
+        "\
+{} = {{ version = \"{}\" }}
+{}/tree/{}",
+        cargo_pkg_name.yellow(),
+        cargo_pkg_version.magenta(),
+        cargo_pkg_repository.yellow(),
+        GIT_HASH.magenta()
+    )
 }

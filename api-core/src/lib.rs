@@ -1,6 +1,13 @@
 use serde::Deserialize;
 use serde::Serialize;
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct Root {
+    pub cargo_pkg_name: String,
+    pub cargo_pkg_version: String,
+    pub cargo_pkg_repository: String,
+    pub git_hash: String,
+}
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Info {
     pub time: String,
     pub address: String,

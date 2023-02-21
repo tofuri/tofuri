@@ -5,6 +5,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use multiaddr::Multiaddr;
 use pea_address::address;
+use pea_api_core::Root;
 use pea_api_core::Stake;
 use pea_api_core::Transaction;
 use pea_core::*;
@@ -13,12 +14,12 @@ pub async fn root(State(args): State<Args>) -> impl IntoResponse {
     let cargo_pkg_version = pea_api_internal::cargo_pkg_version(&args.api_internal).await.unwrap();
     let cargo_pkg_repository = pea_api_internal::cargo_pkg_repository(&args.api_internal).await.unwrap();
     let git_hash = pea_api_internal::git_hash(&args.api_internal).await.unwrap();
-    format!(
-        "\
-{} = {{ version = \"{}\" }}
-{}/tree/{}",
-        cargo_pkg_name, cargo_pkg_version, cargo_pkg_repository, git_hash,
-    )
+    Json(Root {
+        cargo_pkg_name,
+        cargo_pkg_version,
+        cargo_pkg_repository,
+        git_hash,
+    })
 }
 pub async fn balance(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();

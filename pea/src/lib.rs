@@ -8,8 +8,6 @@ use pea_key::Key;
 use pea_p2p::P2p;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
-use serde::Deserialize;
-use serde::Serialize;
 pub struct Node {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,
@@ -32,7 +30,7 @@ impl Node {
         }
     }
 }
-#[derive(Parser, Debug, Serialize, Deserialize, Clone)]
+#[derive(Parser, Debug, Clone)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// Log path to source file

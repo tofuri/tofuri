@@ -11,6 +11,9 @@ use pea_key::Key;
 use pea_pay::router;
 use pea_pay::Args;
 use pea_pay::Pay;
+use pea_pay::CARGO_PKG_NAME;
+use pea_pay::CARGO_PKG_REPOSITORY;
+use pea_pay::CARGO_PKG_VERSION;
 use pea_wallet::wallet;
 use std::error::Error;
 use std::net::SocketAddr;
@@ -19,9 +22,6 @@ use std::time::Duration;
 use tempdir::TempDir;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
-pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
-pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut args = Args::parse();

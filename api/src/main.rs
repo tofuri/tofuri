@@ -3,13 +3,13 @@ use axum::routing::post;
 use axum::Router;
 use clap::Parser;
 use pea_api::router;
+use pea_api::CARGO_PKG_NAME;
+use pea_api::CARGO_PKG_REPOSITORY;
+use pea_api::CARGO_PKG_VERSION;
 use pea_core::*;
 use std::error::Error;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
-pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
-pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut args = pea_api::Args::parse();

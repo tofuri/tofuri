@@ -8,6 +8,9 @@ use pea_key::Key;
 use pea_p2p::P2p;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
+pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
+pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 pub struct Node {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,

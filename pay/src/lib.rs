@@ -16,6 +16,9 @@ use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use std::error::Error;
 use std::time::Instant;
+pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
+pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[derive(Parser, Debug, Clone)]
 #[clap(version, about, long_about = None)]
 pub struct Args {

@@ -9,6 +9,9 @@ use pea::api_internal;
 use pea::interval;
 use pea::swarm;
 use pea::Node;
+use pea::CARGO_PKG_NAME;
+use pea::CARGO_PKG_REPOSITORY;
+use pea::CARGO_PKG_VERSION;
 use pea_address::address;
 use pea_blockchain::blockchain::Blockchain;
 use pea_core::*;
@@ -21,9 +24,6 @@ use std::time::Duration;
 use tempdir::TempDir;
 use tokio::net::TcpListener;
 use tokio::time::interval_at;
-pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
-pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[tokio::main]
 async fn main() {
     let mut args = pea::Args::parse();

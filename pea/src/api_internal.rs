@@ -1,4 +1,7 @@
 use crate::Node;
+use crate::CARGO_PKG_NAME;
+use crate::CARGO_PKG_REPOSITORY;
+use crate::CARGO_PKG_VERSION;
 use colored::*;
 use libp2p::Multiaddr;
 use log::error;
@@ -203,13 +206,13 @@ fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     Ok(status)
 }
 fn cargo_pkg_name() -> &'static str {
-    env!("CARGO_PKG_NAME")
+    CARGO_PKG_NAME
 }
 fn cargo_pkg_version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
+    CARGO_PKG_VERSION
 }
 fn cargo_pkg_repository() -> &'static str {
-    env!("CARGO_PKG_REPOSITORY")
+    CARGO_PKG_REPOSITORY
 }
 fn git_hash() -> &'static str {
     GIT_HASH

@@ -1,4 +1,4 @@
-use crate::pay::Pay;
+use crate::Pay;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;

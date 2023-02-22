@@ -2,18 +2,12 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 type Hash = [u8; 32];
 type Branch = (Hash, usize, u32);
-#[derive(Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Tree {
     branches: Vec<Branch>,
     hashes: HashMap<Hash, Hash>,
 }
 impl Tree {
-    pub fn new() -> Tree {
-        Tree {
-            branches: vec![],
-            hashes: HashMap::new(),
-        }
-    }
     pub fn main(&self) -> Option<&Branch> {
         self.branches.first()
     }
@@ -111,17 +105,12 @@ impl Tree {
         self.hashes.clear();
     }
 }
-impl Default for Tree {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn test() {
-        let mut tree = Tree::new();
+        let mut tree = Tree::default();
         tree.insert([0x11; 32], [0x00; 32], 1);
         tree.insert([0x22; 32], [0x11; 32], 1);
         tree.insert([0x33; 32], [0x22; 32], 1);

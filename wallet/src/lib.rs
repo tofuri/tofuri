@@ -49,6 +49,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value_t = false)]
     pub dev: bool,
 }
+#[derive(Debug, Clone)]
 pub struct Wallet {
     key: Option<Key>,
     salt: Salt,
@@ -65,7 +66,7 @@ impl Wallet {
             nonce: [0; 12],
             ciphertext: [0; 48],
             args,
-            client: Client::new(),
+            client: Client::default(),
         }
     }
     pub async fn select(&mut self) -> bool {

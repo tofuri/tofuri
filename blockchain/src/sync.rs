@@ -5,7 +5,7 @@ use serde::Serialize;
 lazy_static! {
     static ref BPS: f32 = 0.5_f32 + (1_f32 / 2_f32.powf(BLOCK_TIME as f32));
 }
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Sync {
     pub bps: f32,
     pub new: f32,
@@ -20,14 +20,5 @@ impl Sync {
     }
     pub fn downloading(&self) -> bool {
         self.bps > *BPS
-    }
-}
-impl Default for Sync {
-    fn default() -> Self {
-        Self {
-            bps: 0.0,
-            new: 0.0,
-            completed: false,
-        }
     }
 }

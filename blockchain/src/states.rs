@@ -9,18 +9,12 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::error::Error;
 use std::time::Instant;
-#[derive(Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct States {
     pub dynamic: Dynamic,
     pub trusted: Trusted,
 }
 impl States {
-    pub fn new() -> States {
-        States {
-            dynamic: Dynamic::default(),
-            trusted: Trusted::default(),
-        }
-    }
     pub fn dynamic_fork(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -71,10 +65,5 @@ impl States {
         }
         self.dynamic = Dynamic::from(db, hashes_1, &self.trusted);
         debug!("{} {:?}", "States update".cyan(), start.elapsed());
-    }
-}
-impl Default for States {
-    fn default() -> Self {
-        Self::new()
     }
 }

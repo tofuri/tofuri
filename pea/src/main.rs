@@ -80,7 +80,7 @@ async fn main() {
         }
     }
     let p2p = P2p::new(args.max_established, args.timeout, known).await.unwrap();
-    let blockchain = Blockchain::new();
+    let blockchain = Blockchain::default();
     let mut node = Node::new(db, key, args, p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust);
     info!(

@@ -1,6 +1,6 @@
 use pea_tree::Tree;
 fn main() {
-    let mut tree = Tree::new();
+    let mut tree = Tree::default();
     tree.insert([0x11; 32], [0x00; 32], 1);
     tree.insert([0x22; 32], [0x11; 32], 1);
     tree.insert([0x33; 32], [0x22; 32], 1);

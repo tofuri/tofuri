@@ -22,7 +22,7 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::error::Error;
 use std::time::Instant;
-#[derive(Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Blockchain {
     pub tree: Tree,
     pub states: States,
@@ -32,16 +32,6 @@ pub struct Blockchain {
     pending_blocks: Vec<BlockA>,
 }
 impl Blockchain {
-    pub fn new() -> Self {
-        Self {
-            tree: Tree::default(),
-            states: States::default(),
-            sync: Sync::default(),
-            pending_transactions: vec![],
-            pending_stakes: vec![],
-            pending_blocks: vec![],
-        }
-    }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         let start = Instant::now();
         db::tree::reload(&mut self.tree, db);

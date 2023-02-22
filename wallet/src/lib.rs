@@ -145,14 +145,14 @@ impl Wallet {
     }
     async fn api(&self) -> Result<(), Box<dyn Error>> {
         let root: Root = self.client.get(&self.args.api).send().await?.json().await?;
-        println!("{:#?}", root);
+        println!("{root:#?}");
         Ok(())
     }
     async fn balance(&self) -> Result<(), Box<dyn Error>> {
         let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
         let balance: String = self.client.get(format!("{}/balance/{}", self.args.api, address)).send().await?.json().await?;
         let staked: String = self.client.get(format!("{}/staked/{}", self.args.api, address)).send().await?.json().await?;
-        println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.to_string().yellow());
+        println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.yellow());
         Ok(())
     }
     async fn height(&self) -> Result<(), Box<dyn Error>> {
@@ -219,11 +219,7 @@ impl Wallet {
         if address::decode(&search).is_ok() {
             let balance: String = self.client.get(format!("{}/balance/{}", self.args.api, search)).send().await?.json().await?;
             let staked: String = self.client.get(format!("{}/staked/{}", self.args.api, search)).send().await?.json().await?;
-            println!(
-                "Address found\nAccount balance: {}, staked: {}",
-                balance.to_string().yellow(),
-                staked.to_string().yellow()
-            );
+            println!("Address found\nAccount balance: {}, staked: {}", balance.to_string().yellow(), staked.yellow());
             return Ok(());
         } else if search.len() == 64 {
             if let Ok(res) = self.client.get(format!("{}/block/{}", self.args.api, search)).send().await {

@@ -134,7 +134,7 @@ pub fn import() -> Result<Key, Box<dyn Error>> {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    Ok(Key::from_slice(&pea_address::secret::decode(&secret)?)?)
+    Key::from_slice(&pea_address::secret::decode(&secret)?)
 }
 pub fn send() -> bool {
     match Confirm::new("Send?").prompt() {

@@ -69,7 +69,7 @@ impl Key {
         let mut hasher = Sha256::new();
         hasher.update(self.secret_key_bytes());
         hasher.update(n.to_be_bytes());
-        Ok(Key::from_slice(&hasher.finalize().into())?)
+        Key::from_slice(&hasher.finalize().into())
     }
     #[cfg(feature = "vrf")]
     pub fn vrf_prove(&self, alpha: &[u8]) -> Option<Pi> {

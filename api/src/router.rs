@@ -93,13 +93,13 @@ pub async fn peers(State(args): State<Args>) -> impl IntoResponse {
     Json(peers)
 }
 pub async fn peer_multiaddr_ip_port(State(args): State<Args>, Path((a, b, c, d)): Path<(String, String, String, String)>) -> impl IntoResponse {
-    let string = format!("/{}/{}/{}/{}", a, b, c, d);
+    let string = format!("/{a}/{b}/{c}/{d}");
     let multiaddr: Multiaddr = string.parse().unwrap();
     pea_api_internal::peer(&args.api_internal, &multiaddr).await.unwrap();
     Json(true)
 }
 pub async fn peer_multiaddr_ip(State(args): State<Args>, Path((a, b)): Path<(String, String)>) -> impl IntoResponse {
-    let string = format!("/{}/{}", a, b);
+    let string = format!("/{a}/{b}");
     let multiaddr: Multiaddr = string.parse().unwrap();
     pea_api_internal::peer(&args.api_internal, &multiaddr).await.unwrap();
     Json(true)

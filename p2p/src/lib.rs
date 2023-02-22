@@ -65,7 +65,7 @@ impl P2p {
             return Ok(());
         }
         if self.filter(&data) {
-            return Err(format!("gossipsub_publish filter {}", topic).into());
+            return Err(format!("gossipsub_publish filter {topic}").into());
         }
         if let Err(err) = self.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
             return Err(err.into());

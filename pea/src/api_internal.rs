@@ -152,7 +152,7 @@ fn height(node: &mut Node) -> Result<usize, Box<dyn Error>> {
     Ok(node.blockchain.height())
 }
 fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Box<dyn Error>> {
-    let hash: Hash = bincode::deserialize(&bytes)?;
+    let hash: Hash = bincode::deserialize(bytes)?;
     let block_c = db::block::get_c(&node.db, &hash)?;
     Ok(node.blockchain.tree.height(&block_c.previous_hash))
 }
@@ -176,15 +176,15 @@ fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Box<dyn Error>>
 }
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
-    Ok(db::block::get_a(&node.db, &hash)?)
+    db::block::get_a(&node.db, &hash)
 }
 fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<TransactionA, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
-    Ok(db::transaction::get_a(&node.db, &hash)?)
+    db::transaction::get_a(&node.db, &hash)
 }
 fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<StakeA, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
-    Ok(db::stake::get_a(&node.db, &hash)?)
+    db::stake::get_a(&node.db, &hash)
 }
 fn peers(node: &mut Node) -> Result<Vec<&Multiaddr>, Box<dyn Error>> {
     Ok(node.p2p.connections.keys().collect())

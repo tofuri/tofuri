@@ -28,8 +28,8 @@ pub async fn balance(State(args): State<Args>, address: Path<String>) -> impl In
 }
 pub async fn balance_pending_min(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance_pending = pea_int::to_string(pea_api_internal::balance_pending_min(&args.api_internal, &address_bytes).await.unwrap());
-    Json(balance_pending)
+    let balance_pending_min = pea_int::to_string(pea_api_internal::balance_pending_min(&args.api_internal, &address_bytes).await.unwrap());
+    Json(balance_pending_min)
 }
 pub async fn staked(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
@@ -38,8 +38,8 @@ pub async fn staked(State(args): State<Args>, address: Path<String>) -> impl Int
 }
 pub async fn staked_pending_min(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked_pending = pea_int::to_string(pea_api_internal::staked_pending_min(&args.api_internal, &address_bytes).await.unwrap());
-    Json(staked_pending)
+    let staked_pending_min = pea_int::to_string(pea_api_internal::staked_pending_min(&args.api_internal, &address_bytes).await.unwrap());
+    Json(staked_pending_min)
 }
 pub async fn height(State(args): State<Args>) -> impl IntoResponse {
     let height = pea_api_internal::height(&args.api_internal).await.unwrap();

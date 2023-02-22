@@ -71,6 +71,7 @@ pub fn grow(node: &mut Node, instant: Instant) -> Instant {
         return instant;
     }
     let diff = timestamp.saturating_sub(node.blockchain.states.dynamic.latest_block.timestamp);
+    #[allow(clippy::modulo_one)]
     if diff == 0 || diff % BLOCK_TIME != 0 {
         return instant;
     }

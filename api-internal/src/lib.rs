@@ -31,12 +31,22 @@ pub async fn balance_pending_min(addr: &str, address_bytes: &AddressBytes) -> Re
         &r(Data::BalancePendingMin, addr, Some(bincode::serialize(address_bytes)?)).await?,
     )?)
 }
+pub async fn balance_pending_max(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Box<dyn Error>> {
+    Ok(bincode::deserialize(
+        &r(Data::BalancePendingMax, addr, Some(bincode::serialize(address_bytes)?)).await?,
+    )?)
+}
 pub async fn staked(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Staked, addr, Some(bincode::serialize(address_bytes)?)).await?)?)
 }
 pub async fn staked_pending_min(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Box<dyn Error>> {
     Ok(bincode::deserialize(
         &r(Data::StakedPendingMin, addr, Some(bincode::serialize(address_bytes)?)).await?,
+    )?)
+}
+pub async fn staked_pending_max(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Box<dyn Error>> {
+    Ok(bincode::deserialize(
+        &r(Data::StakedPendingMax, addr, Some(bincode::serialize(address_bytes)?)).await?,
     )?)
 }
 pub async fn height(addr: &str) -> Result<usize, Box<dyn Error>> {

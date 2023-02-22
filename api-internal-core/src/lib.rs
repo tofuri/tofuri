@@ -4,8 +4,10 @@ use serde::Serialize;
 pub enum Data {
     Balance,
     BalancePendingMin,
+    BalancePendingMax,
     Staked,
     StakedPendingMin,
+    StakedPendingMax,
     Height,
     HeightByHash,
     BlockLatest,

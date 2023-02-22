@@ -350,8 +350,26 @@ impl Blockchain {
         for stake_a in self.pending_stakes.iter() {
             if &stake_a.input_address == address {
                 if stake_a.deposit {
-                    balance -= stake_a.amount + stake_a.fee;
+                    balance -= stake_a.amount;
+                    balance -= stake_a.fee;
                 } else {
+                    balance -= stake_a.fee;
+                }
+            }
+        }
+        balance
+    }
+    pub fn balance_pending_max(&self, address: &AddressBytes) -> u128 {
+        let mut balance = self.balance(address);
+        for transaction_a in self.pending_transactions.iter() {
+            if &transaction_a.output_address == address {
+                balance += transaction_a.amount;
+            }
+        }
+        for stake_a in self.pending_stakes.iter() {
+            if &stake_a.input_address == address {
+                if !stake_a.deposit {
+                    balance += stake_a.amount;
                     balance -= stake_a.fee;
                 }
             }
@@ -367,6 +385,17 @@ impl Blockchain {
             if &stake_a.input_address == address {
                 if !stake_a.deposit {
                     staked -= stake_a.amount;
+                }
+            }
+        }
+        staked
+    }
+    pub fn staked_pending_max(&self, address: &AddressBytes) -> u128 {
+        let mut staked = self.staked(address);
+        for stake_a in self.pending_stakes.iter() {
+            if &stake_a.input_address == address {
+                if stake_a.deposit {
+                    staked += stake_a.amount;
                 }
             }
         }

@@ -4,6 +4,7 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::Options;
 use rocksdb::SingleThreaded;
 use rocksdb::DB;
+use std::path::Path;
 fn descriptors() -> Vec<ColumnFamilyDescriptor> {
     let options = Options::default();
     vec![
@@ -16,7 +17,7 @@ fn descriptors() -> Vec<ColumnFamilyDescriptor> {
         ColumnFamilyDescriptor::new("betas", options),
     ]
 }
-pub fn open(path: &str) -> DBWithThreadMode<SingleThreaded> {
+pub fn open(path: impl AsRef<Path>) -> DBWithThreadMode<SingleThreaded> {
     let mut options = Options::default();
     options.create_missing_column_families(true);
     options.create_if_missing(true);

@@ -1,10 +1,10 @@
-use std::path::Path;
 use rocksdb::ColumnFamily;
 use rocksdb::ColumnFamilyDescriptor;
 use rocksdb::DBWithThreadMode;
 use rocksdb::Options;
 use rocksdb::SingleThreaded;
 use rocksdb::DB;
+use std::path::Path;
 fn descriptors() -> Vec<ColumnFamilyDescriptor> {
     let options = Options::default();
     vec![ColumnFamilyDescriptor::new("charges", options)]

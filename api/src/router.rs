@@ -26,10 +26,20 @@ pub async fn balance(State(args): State<Args>, address: Path<String>) -> impl In
     let balance = pea_int::to_string(pea_api_internal::balance(&args.api_internal, &address_bytes).await.unwrap());
     Json(balance)
 }
+pub async fn balance_pending_min(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
+    let address_bytes = address::decode(&address).unwrap();
+    let balance_pending = pea_int::to_string(pea_api_internal::balance_pending_min(&args.api_internal, &address_bytes).await.unwrap());
+    Json(balance_pending)
+}
 pub async fn staked(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
     let staked = pea_int::to_string(pea_api_internal::staked(&args.api_internal, &address_bytes).await.unwrap());
     Json(staked)
+}
+pub async fn staked_pending_min(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
+    let address_bytes = address::decode(&address).unwrap();
+    let staked_pending = pea_int::to_string(pea_api_internal::staked_pending_min(&args.api_internal, &address_bytes).await.unwrap());
+    Json(staked_pending)
 }
 pub async fn height(State(args): State<Args>) -> impl IntoResponse {
     let height = pea_api_internal::height(&args.api_internal).await.unwrap();

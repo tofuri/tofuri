@@ -26,8 +26,18 @@ async fn r(data: Data, addr: &str, vec: Option<Vec<u8>>) -> Result<Vec<u8>, Box<
 pub async fn balance(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Balance, addr, Some(bincode::serialize(address_bytes)?)).await?)?)
 }
+pub async fn balance_pending_min(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Box<dyn Error>> {
+    Ok(bincode::deserialize(
+        &r(Data::BalancePendingMin, addr, Some(bincode::serialize(address_bytes)?)).await?,
+    )?)
+}
 pub async fn staked(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Staked, addr, Some(bincode::serialize(address_bytes)?)).await?)?)
+}
+pub async fn staked_pending_min(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Box<dyn Error>> {
+    Ok(bincode::deserialize(
+        &r(Data::StakedPendingMin, addr, Some(bincode::serialize(address_bytes)?)).await?,
+    )?)
 }
 pub async fn height(addr: &str) -> Result<usize, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Height, addr, None).await?)?)

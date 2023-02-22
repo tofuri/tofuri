@@ -9,6 +9,7 @@ use log::info;
 use pea_api_internal_core::Data;
 use pea_api_internal_core::Data::Address;
 use pea_api_internal_core::Data::Balance;
+use pea_api_internal_core::Data::BalancePendingMin;
 use pea_api_internal_core::Data::BlockByHash;
 use pea_api_internal_core::Data::BlockLatest;
 use pea_api_internal_core::Data::CargoPkgName;
@@ -28,6 +29,7 @@ use pea_api_internal_core::Data::RandomQueue;
 use pea_api_internal_core::Data::Stake;
 use pea_api_internal_core::Data::StakeByHash;
 use pea_api_internal_core::Data::Staked;
+use pea_api_internal_core::Data::StakedPendingMin;
 use pea_api_internal_core::Data::Sync;
 use pea_api_internal_core::Data::Ticks;
 use pea_api_internal_core::Data::Time;
@@ -82,7 +84,9 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data)
     stream
         .write_all(&match request.data {
             Balance => bincode::serialize(&balance(node, &request.vec)?),
+            BalancePendingMin => bincode::serialize(&balance_pending_min(node, &request.vec)?),
             Staked => bincode::serialize(&staked(node, &request.vec)?),
+            StakedPendingMin => bincode::serialize(&staked_pending_min(node, &request.vec)?),
             Height => bincode::serialize(&height(node)?),
             HeightByHash => bincode::serialize(&height_by_hash(node, &request.vec)?),
             BlockLatest => bincode::serialize(block_latest(node)?),
@@ -118,11 +122,19 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data)
 }
 fn balance(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
-    Ok(node.blockchain.states.dynamic.balance(&address_bytes))
+    Ok(node.blockchain.balance(&address_bytes))
+}
+fn balance_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
+    let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
+    Ok(node.blockchain.balance_pending_min(&address_bytes))
 }
 fn staked(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
-    Ok(node.blockchain.states.dynamic.staked(&address_bytes))
+    Ok(node.blockchain.staked(&address_bytes))
+}
+fn staked_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
+    let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
+    Ok(node.blockchain.staked_pending_min(&address_bytes))
 }
 fn height(node: &mut Node) -> Result<usize, Box<dyn Error>> {
     Ok(node.blockchain.height())

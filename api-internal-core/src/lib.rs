@@ -3,7 +3,9 @@ use serde::Serialize;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Data {
     Balance,
+    BalancePendingMin,
     Staked,
+    StakedPendingMin,
     Height,
     HeightByHash,
     BlockLatest,

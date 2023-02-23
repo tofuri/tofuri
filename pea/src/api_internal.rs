@@ -153,26 +153,14 @@ fn height(node: &mut Node) -> Result<usize, Box<dyn Error>> {
 }
 fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
-    let block_c = db::block::get_c(&node.db, &hash)?;
-    Ok(node.blockchain.tree.height(&block_c.previous_hash))
+    Ok(node.blockchain.height_by_hash(&hash).ok_or("GET HEIGHT_BY_HASH")?)
 }
 fn block_latest(node: &mut Node) -> Result<&BlockA, Box<dyn Error>> {
     Ok(&node.blockchain.states.dynamic.latest_block)
 }
 fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Box<dyn Error>> {
     let height: usize = bincode::deserialize(bytes)?;
-    let states = &node.blockchain.states;
-    let hashes_trusted = &states.trusted.hashes;
-    let hashes_dynamic = &states.dynamic.hashes;
-    if height >= hashes_trusted.len() + hashes_dynamic.len() {
-        return Err("GET HEIGHT_HASH".into());
-    }
-    let hash = if height < hashes_trusted.len() {
-        hashes_trusted[height]
-    } else {
-        hashes_dynamic[height - hashes_trusted.len()]
-    };
-    Ok(hash)
+    Ok(node.blockchain.hash_by_height(height).ok_or("GET HASH_BY_HEIGHT")?)
 }
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;

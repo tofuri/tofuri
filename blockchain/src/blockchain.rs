@@ -58,6 +58,24 @@ impl Blockchain {
     pub fn height(&self) -> usize {
         self.states.trusted.hashes.len() + self.states.dynamic.hashes.len()
     }
+    pub fn height_by_hash(&self, hash: &Hash) -> Option<usize> {
+        if let Some(index) = self.states.dynamic.hashes.iter().position(|a| a == hash) {
+            return Some(self.states.trusted.hashes.len() + index);
+        }
+        self.states.trusted.hashes.iter().position(|a| a == hash)
+    }
+    pub fn hash_by_height(&self, height: usize) -> Option<Hash> {
+        let len_trusted = self.states.trusted.hashes.len();
+        let len_dynamic = self.states.dynamic.hashes.len();
+        if height >= len_trusted + len_dynamic {
+            return None;
+        }
+        if height < len_trusted {
+            Some(self.states.trusted.hashes[height])
+        } else {
+            Some(self.states.dynamic.hashes[height - len_trusted])
+        }
+    }
     pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, height: usize) -> Option<BlockB> {
         let hashes_trusted = &self.states.trusted.hashes;
         let hashes_dynamic = &self.states.dynamic.hashes;

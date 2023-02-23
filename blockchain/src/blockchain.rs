@@ -137,8 +137,6 @@ impl Blockchain {
         };
         if let Some(main) = self.tree.main() {
             if block_a.hash == main.0 {
-                self.pending_transactions.clear();
-                self.pending_stakes.clear();
                 if !forged {
                     self.sync.new += 1.0;
                 }

@@ -91,7 +91,11 @@ impl Tree {
             x => x,
         });
     }
-    pub fn height(&self, previous_hash: &Hash) -> usize {
+    pub fn clear(&mut self) {
+        self.branches.clear();
+        self.hashes.clear();
+    }
+    fn height(&self, previous_hash: &Hash) -> usize {
         let mut hash = previous_hash;
         let mut height = 0;
         loop {
@@ -109,10 +113,6 @@ impl Tree {
             };
         }
         height
-    }
-    pub fn clear(&mut self) {
-        self.branches.clear();
-        self.hashes.clear();
     }
 }
 #[cfg(test)]

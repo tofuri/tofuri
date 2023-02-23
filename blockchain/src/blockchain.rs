@@ -119,32 +119,34 @@ impl Blockchain {
     }
     fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forged: bool, trust_fork_after_blocks: usize) {
         db::block::put(block_a, db).unwrap();
-        if self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap() {
-            warn!("{} {}", "Forked".red(), hex::encode(block_a.hash));
-        }
+        let fork = self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap();
         self.tree.sort_branches();
-        self.states
-            .update(db, &self.tree.hashes_dynamic(trust_fork_after_blocks), trust_fork_after_blocks);
-        let info_0 = if forged { "Forged".magenta() } else { "Accept".green() };
-        let info_1 = hex::encode(block_a.hash);
-        let info_2 = match block_a.transactions.len() {
-            0 => "0".red(),
-            x => x.to_string().green(),
-        };
-        let info_3 = match block_a.stakes.len() {
-            0 => "0".red(),
-            x => x.to_string().green(),
-        };
         if let Some(main) = self.tree.main() {
-            if block_a.hash == main.0 {
-                if !forged {
-                    self.sync.new += 1.0;
-                }
-                info!("{} {} {} {} {}", info_0, main.1.to_string().yellow(), info_1, info_2, info_3);
-                return;
+            if block_a.hash == main.0 && !forged {
+                self.sync.new += 1.0;
             }
         }
-        info!("{} {} {} {}", info_0, info_1, info_2, info_3);
+        self.states
+            .update(db, &self.tree.hashes_dynamic(trust_fork_after_blocks), trust_fork_after_blocks);
+        let info = format!(
+            "{} {} {} {} {}",
+            if forged { "Forged".magenta() } else { "Accept".green() },
+            self.height().to_string().yellow(),
+            hex::encode(block_a.hash),
+            match block_a.transactions.len() {
+                0 => "0".red(),
+                x => x.to_string().green(),
+            },
+            match block_a.stakes.len() {
+                0 => "0".red(),
+                x => x.to_string().green(),
+            }
+        );
+        if fork {
+            warn!("{} {}", "Fork".red(), info);
+        } else {
+            info!("{}", info);
+        }
     }
     pub fn save_blocks(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         let timestamp = pea_util::timestamp();

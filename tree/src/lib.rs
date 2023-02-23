@@ -1,7 +1,17 @@
+use pea_core::*;
 use std::cmp::Ordering;
 use std::collections::HashMap;
-type Hash = [u8; 32];
-type Branch = (Hash, usize, u32);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Branch {
+    pub hash: Hash,
+    pub height: usize,
+    pub timestamp: u32,
+}
+impl Branch {
+    fn new(hash: Hash, height: usize, timestamp: u32) -> Branch {
+        Branch { hash, height, timestamp }
+    }
+}
 #[derive(Default, Debug, Clone)]
 pub struct Tree {
     branches: Vec<Branch>,
@@ -17,7 +27,7 @@ impl Tree {
     pub fn hashes(&self, trust_fork_after_blocks: usize) -> (Vec<Hash>, Vec<Hash>) {
         let mut trusted = vec![];
         if let Some(main) = self.main() {
-            let mut hash = main.0;
+            let mut hash = main.hash;
             loop {
                 trusted.push(hash);
                 match self.get(&hash) {
@@ -41,7 +51,7 @@ impl Tree {
     pub fn hashes_dynamic(&self, trust_fork_after_blocks: usize) -> Vec<Hash> {
         let mut vec = vec![];
         if let Some(main) = self.main() {
-            let mut hash = main.0;
+            let mut hash = main.hash;
             for _ in 0..trust_fork_after_blocks {
                 vec.push(hash);
                 match self.get(&hash) {
@@ -65,19 +75,19 @@ impl Tree {
         if self.hashes.insert(hash, previous_hash).is_some() {
             return None;
         }
-        if let Some(index) = self.branches.iter().position(|(hash, _, _)| hash == &previous_hash) {
+        if let Some(index) = self.branches.iter().position(|a| a.hash == previous_hash) {
             // extend branch
-            self.branches[index] = (hash, self.branches[index].1 + 1, timestamp);
+            self.branches[index] = Branch::new(hash, self.branches[index].height + 1, timestamp);
             Some(false)
         } else {
             // new branch
-            self.branches.push((hash, self.height(&previous_hash), timestamp));
+            self.branches.push(Branch::new(hash, self.height(&previous_hash), timestamp));
             Some(true)
         }
     }
     pub fn sort_branches(&mut self) {
-        self.branches.sort_by(|a, b| match b.1.cmp(&a.1) {
-            Ordering::Equal => a.2.cmp(&b.2),
+        self.branches.sort_by(|a, b| match b.height.cmp(&a.height) {
+            Ordering::Equal => a.timestamp.cmp(&b.timestamp),
             x => x,
         });
     }
@@ -119,9 +129,9 @@ mod tests {
         tree.insert([0x55; 32], [0x22; 32], 1);
         tree.insert([0x66; 32], [0x00; 32], 1);
         tree.insert([0x77; 32], [0x55; 32], 0);
-        assert_eq!(tree.main(), Some(&([0x44; 32], 3, 1)));
+        assert_eq!(tree.main(), Some(&Branch::new([0x44; 32], 3, 1)));
         tree.sort_branches();
-        assert_eq!(tree.main(), Some(&([0x77; 32], 3, 0)));
+        assert_eq!(tree.main(), Some(&Branch::new([0x77; 32], 3, 0)));
         assert_eq!(tree.size(), 7);
     }
 }

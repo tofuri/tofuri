@@ -5,3 +5,6 @@ edition = "2021"
 license = "GPL-3.0"
 description = "Peacash tree"
 repository = "https://github.com/peacash/peacash"
+
+[dependencies]
+pea-core = { version = "0.6", path = "../core" }

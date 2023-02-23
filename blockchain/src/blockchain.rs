@@ -127,7 +127,7 @@ impl Blockchain {
             }
         }
         let block_a = if let Some(main) = self.tree.main() {
-            BlockA::sign(main.0, timestamp, transactions, stakes, key, &self.states.dynamic.latest_block.beta)
+            BlockA::sign(main.hash, timestamp, transactions, stakes, key, &self.states.dynamic.latest_block.beta)
         } else {
             BlockA::sign([0; 32], timestamp, transactions, stakes, key, &GENESIS_BETA)
         }
@@ -140,7 +140,7 @@ impl Blockchain {
         let fork = self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap();
         self.tree.sort_branches();
         if let Some(main) = self.tree.main() {
-            if block_a.hash == main.0 && !forged {
+            if block_a.hash == main.hash && !forged {
                 self.sync.new += 1.0;
             }
         }

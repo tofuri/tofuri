@@ -86,7 +86,7 @@ async fn main() {
     info!(
         "Blockchain height is {}",
         if let Some(main) = node.blockchain.tree.main() {
-            main.1.to_string().yellow()
+            main.height.to_string().yellow()
         } else {
             "0".red()
         }

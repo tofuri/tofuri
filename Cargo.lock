@@ -3257,6 +3257,9 @@ dependencies = [
 [[package]]
 name = "pea-tree"
 version = "0.4.1"
+dependencies = [
+ "pea-core",
+]
 
 [[package]]
 name = "pea-util"

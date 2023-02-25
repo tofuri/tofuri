@@ -1,17 +1,17 @@
 [package]
-name = "pea-db"
-version = "0.7.3"
+name = "tofuri-db"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash database"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri database"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-int = { version = "0.4", path = "../int" }
-pea-block = { version = "0.6", path = "../block" }
-pea-core = { version = "0.6", path = "../core" }
-pea-stake = { version = "0.7", path = "../stake" }
-pea-transaction = { version = "0.8", path = "../transaction" }
-pea-tree = { version = "0.4", path = "../tree" }
+tofuri-int = { version = "0.1", path = "../int" }
+tofuri-block = { version = "0.1", path = "../block" }
+tofuri-core = { version = "0.1", path = "../core" }
+tofuri-stake = { version = "0.1", path = "../stake" }
+tofuri-transaction = { version = "0.1", path = "../transaction" }
+tofuri-tree = { version = "0.1", path = "../tree" }
 rocksdb = "0.19"
 bincode = "1.3"

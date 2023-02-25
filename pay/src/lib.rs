@@ -2,13 +2,6 @@ pub mod router;
 use clap::Parser;
 use colored::*;
 use log::info;
-use pea_api_core::Block;
-use pea_api_core::Transaction;
-use pea_core::*;
-use pea_key::Key;
-use pea_pay_core::Charge;
-use pea_pay_core::ChargeStatus;
-use pea_pay_core::Payment;
 use reqwest::Client;
 use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
@@ -16,6 +9,13 @@ use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use std::error::Error;
 use std::time::Instant;
+use tofuri_api_core::Block;
+use tofuri_api_core::Transaction;
+use tofuri_core::*;
+use tofuri_key::Key;
+use tofuri_pay_core::Charge;
+use tofuri_pay_core::ChargeStatus;
+use tofuri_pay_core::Payment;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
@@ -88,12 +88,12 @@ impl Pay {
     pub fn charge(&mut self, amount: u128) -> Payment {
         let charge = Charge {
             amount,
-            timestamp: pea_util::timestamp(),
+            timestamp: tofuri_util::timestamp(),
             status: ChargeStatus::Pending,
             subkey_n: self.subkey_n,
         };
         let payment = charge.payment(&self.key);
-        pea_pay_db::charge::put(&self.db, &self.key, &charge).unwrap();
+        tofuri_pay_db::charge::put(&self.db, &self.key, &charge).unwrap();
         self.charges.insert(charge.address_bytes(&self.key), charge);
         self.subkey_n += 1;
         payment
@@ -119,19 +119,19 @@ impl Pay {
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
             for charge in self.charges.values() {
-                let address = pea_address::address::encode(&charge.address_bytes(&self.key));
+                let address = tofuri_address::address::encode(&charge.address_bytes(&self.key));
                 if transaction.output_address == address {
                     let amount = match map.get(&address) {
                         Some(a) => *a,
                         None => 0,
                     };
-                    map.insert(address, amount + pea_int::from_str(&transaction.amount).unwrap());
+                    map.insert(address, amount + tofuri_int::from_str(&transaction.amount).unwrap());
                 }
             }
         }
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
-            let address = pea_address::address::encode(&charge.address_bytes(&self.key));
+            let address = tofuri_address::address::encode(&charge.address_bytes(&self.key));
             let res = {
                 let amount = match map.get(&address) {
                     Some(a) => *a,
@@ -141,11 +141,11 @@ impl Pay {
             };
             if res {
                 charge.status = ChargeStatus::Completed;
-                pea_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
+                tofuri_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
                 charges.push(charge);
-            } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < pea_util::timestamp() - self.args.expires {
+            } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < tofuri_util::timestamp() - self.args.expires {
                 charge.status = ChargeStatus::Expired;
-                pea_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
+                tofuri_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
             }
         }
         let mut payments = vec![];
@@ -171,7 +171,7 @@ impl Pay {
             self.reload_chain().await?;
         }
         while match self.chain.first() {
-            Some(block) => block.timestamp < pea_util::timestamp() - self.args.expires,
+            Some(block) => block.timestamp < tofuri_util::timestamp() - self.args.expires,
             None => false,
         } {
             self.chain.remove(0);
@@ -196,7 +196,7 @@ impl Pay {
                 }
             }
             if block.previous_hash == "0000000000000000000000000000000000000000000000000000000000000000"
-                || block.timestamp < pea_util::timestamp() - self.args.expires
+                || block.timestamp < tofuri_util::timestamp() - self.args.expires
             {
                 break;
             }
@@ -208,7 +208,7 @@ impl Pay {
     }
     pub fn load(&mut self) {
         let start = Instant::now();
-        for res in self.db.iterator_cf(pea_pay_db::charges(&self.db), IteratorMode::Start) {
+        for res in self.db.iterator_cf(tofuri_pay_db::charges(&self.db), IteratorMode::Start) {
             self.subkey_n += 1;
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();

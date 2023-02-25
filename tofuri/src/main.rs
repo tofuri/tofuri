@@ -5,29 +5,29 @@ use libp2p::Multiaddr;
 use log::debug;
 use log::info;
 use log::warn;
-use pea::api_internal;
-use pea::interval;
-use pea::swarm;
-use pea::Node;
-use pea::CARGO_PKG_NAME;
-use pea::CARGO_PKG_REPOSITORY;
-use pea::CARGO_PKG_VERSION;
-use pea_address::address;
-use pea_blockchain::blockchain::Blockchain;
-use pea_core::*;
-use pea_key::Key;
-use pea_p2p::multiaddr;
-use pea_p2p::P2p;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
+use tofuri::api_internal;
+use tofuri::interval;
+use tofuri::swarm;
+use tofuri::Node;
+use tofuri::CARGO_PKG_NAME;
+use tofuri::CARGO_PKG_REPOSITORY;
+use tofuri::CARGO_PKG_VERSION;
+use tofuri_address::address;
+use tofuri_blockchain::blockchain::Blockchain;
+use tofuri_core::*;
+use tofuri_key::Key;
+use tofuri_p2p::multiaddr;
+use tofuri_p2p::P2p;
 use tokio::net::TcpListener;
 use tokio::time::interval_at;
 #[tokio::main]
 async fn main() {
-    let mut args = pea::Args::parse();
-    pea_logger::init(args.debug);
-    info!("{}", pea_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    let mut args = tofuri::Args::parse();
+    tofuri_logger::init(args.debug);
+    info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = DEV_TEMP_DB;
@@ -60,20 +60,20 @@ async fn main() {
     }
     let key = match args.tempkey {
         true => Key::generate(),
-        false => pea_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
+        false => tofuri_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
     };
     info!("Address {}", address::encode(&key.address_bytes()).green());
-    let tempdir = TempDir::new("peacash-db").unwrap();
+    let tempdir = TempDir::new("tofuri-db").unwrap();
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),
-        false => "./peacash-db",
+        false => "./tofuri-db",
     };
-    let db = pea_db::open(path);
+    let db = tofuri_db::open(path);
     let mut known = HashSet::new();
     if let Some(multiaddr) = multiaddr::ip_port(&args.peer.parse::<Multiaddr>().unwrap()) {
         known.insert(multiaddr);
     }
-    let peers = pea_db::peer::get_all(&db);
+    let peers = tofuri_db::peer::get_all(&db);
     for peer in peers {
         if let Some(multiaddr) = multiaddr::ip_port(&peer.parse::<Multiaddr>().unwrap()) {
             known.insert(multiaddr);
@@ -101,7 +101,7 @@ async fn main() {
         "http://".cyan(),
         listener.local_addr().unwrap().to_string().magenta()
     );
-    let start = pea_util::interval_at_start();
+    let start = tofuri_util::interval_at_start();
     let mut interval_a = interval_at(start, Duration::from_secs(1));
     let mut interval_b = interval_at(start, Duration::from_millis(200));
     let mut interval_c = interval_at(start, Duration::from_secs(10));

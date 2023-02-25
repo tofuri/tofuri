@@ -17,7 +17,7 @@ members = [
     "pay",
     "pay-core",
     "pay-db",
-    "pea",
+    "tofuri",
     "stake",
     "transaction",
     "tree",

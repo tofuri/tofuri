@@ -1,23 +1,23 @@
 [package]
-name = "pea-wallet"
-version = "0.6.5"
+name = "tofuri-wallet"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash wallet"
+description = "Tofuri wallet"
 readme = "crate.md"
 categories = ["cryptography::cryptocurrencies"]
-repository = "https://github.com/peacash/peacash"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-api-core = { version = "0.1", path = "../api-core" }
-pea-core = { version = "0.6", path = "../core" }
-pea-api-util = { version = "0.1", path = "../api-util" }
-pea-address = { version = "0.6", path = "../address" }
-pea-int = { version = "0.4", path = "../int" }
-pea-key = { version = "0.6", path = "../key" }
-pea-stake = { version = "0.7", path = "../stake" }
-pea-transaction = { version = "0.8", path = "../transaction" }
-pea-util = { version = "0.1", path = "../util" }
+tofuri-api-core = { version = "0.1", path = "../api-core" }
+tofuri-core = { version = "0.1", path = "../core" }
+tofuri-api-util = { version = "0.1", path = "../api-util" }
+tofuri-address = { version = "0.1", path = "../address" }
+tofuri-int = { version = "0.1", path = "../int" }
+tofuri-key = { version = "0.1", path = "../key" }
+tofuri-stake = { version = "0.1", path = "../stake" }
+tofuri-transaction = { version = "0.1", path = "../transaction" }
+tofuri-util = { version = "0.1", path = "../util" }
 chacha20poly1305 = "0.10"
 inquire = "0.3"
 colored = "2.0"

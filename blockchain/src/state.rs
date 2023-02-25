@@ -1,16 +1,16 @@
 use colored::Colorize;
 use log::warn;
-use pea_address::address;
-use pea_block::BlockA;
-use pea_core::*;
-use pea_db as db;
-use pea_stake::StakeA;
-use pea_transaction::TransactionA;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::error::Error;
+use tofuri_address::address;
+use tofuri_block::BlockA;
+use tofuri_core::*;
+use tofuri_db as db;
+use tofuri_stake::StakeA;
+use tofuri_transaction::TransactionA;
 pub type Map = HashMap<AddressBytes, u128>;
 pub trait State {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;
@@ -260,7 +260,7 @@ fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, lo
     let stakers = stakers_offline(state, timestamp, previous_timestamp);
     for (index, staker) in stakers.iter().enumerate() {
         let mut staked = get_staked(state, staker);
-        let penalty = pea_util::penalty(index + 1);
+        let penalty = tofuri_util::penalty(index + 1);
         staked = staked.saturating_sub(penalty);
         insert_staked(state, *staker, staked);
         update_stakers(state, *staker);
@@ -270,7 +270,7 @@ fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, lo
                 "Slashed".red(),
                 address::encode(staker).green(),
                 "-".yellow(),
-                pea_int::to_string(penalty).yellow()
+                tofuri_int::to_string(penalty).yellow()
             );
         }
     }
@@ -321,7 +321,7 @@ pub fn update<T: State>(state: &mut T, block: &BlockA, previous_timestamp: u32, 
     update_3(state, block);
 }
 fn update_non_ancient_blocks<T: State>(state: &mut T, block: &BlockA) {
-    while state.get_non_ancient_blocks().first().is_some() && pea_util::ancient(state.get_non_ancient_blocks().first().unwrap().timestamp, block.timestamp) {
+    while state.get_non_ancient_blocks().first().is_some() && tofuri_util::ancient(state.get_non_ancient_blocks().first().unwrap().timestamp, block.timestamp) {
         (*state.get_non_ancient_blocks_mut()).remove(0);
     }
     (*state.get_non_ancient_blocks_mut()).push(block.clone());
@@ -345,7 +345,7 @@ pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hash
 }
 fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     fn random_n(slice: &[(AddressBytes, u128)], beta: &Beta, n: u128, modulo: u128) -> usize {
-        let random = pea_util::random(beta, n, modulo);
+        let random = tofuri_util::random(beta, n, modulo);
         let mut counter = 0;
         for (index, (_, staked)) in slice.iter().enumerate() {
             counter += staked;
@@ -365,7 +365,7 @@ fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     vec.sort_by(|a, b| b.1.cmp(&a.1));
     let mut random_queue = vec![];
     for index in 0..(n + 1) {
-        let penalty = pea_util::penalty(index);
+        let penalty = tofuri_util::penalty(index);
         modulo = modulo.saturating_sub(penalty);
         if modulo == 0 {
             return (random_queue, true);

@@ -16,8 +16,8 @@ use libp2p::request_response::RequestResponse;
 use libp2p::request_response::RequestResponseCodec;
 use libp2p::request_response::RequestResponseEvent;
 use libp2p::swarm::NetworkBehaviour;
-use pea_core::*;
 use std::error::Error;
+use tofuri_core::*;
 use tokio::io;
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "OutEvent")]

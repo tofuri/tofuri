@@ -1,12 +1,12 @@
 use colored::*;
 use lazy_static::lazy_static;
-use pea_block::BlockB;
-use pea_core::*;
-use pea_stake::StakeB;
-use pea_transaction::TransactionB;
 use sha2::Digest;
 use sha2::Sha256;
 use std::time::Duration;
+use tofuri_block::BlockB;
+use tofuri_core::*;
+use tofuri_stake::StakeB;
+use tofuri_transaction::TransactionB;
 use tokio::time::Instant;
 use uint::construct_uint;
 pub const GIT_HASH: &str = env!("GIT_HASH");

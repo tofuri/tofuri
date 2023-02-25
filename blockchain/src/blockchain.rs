@@ -5,23 +5,23 @@ use colored::*;
 use log::debug;
 use log::info;
 use log::warn;
-use pea_block::BlockA;
-use pea_block::BlockB;
-use pea_core::*;
-use pea_db as db;
-use pea_key::Key;
-use pea_stake::StakeA;
-use pea_stake::StakeB;
-use pea_transaction::TransactionA;
-use pea_transaction::TransactionB;
-use pea_tree::Tree;
-use pea_util::EMPTY_BLOCK_SIZE;
-use pea_util::STAKE_SIZE;
-use pea_util::TRANSACTION_SIZE;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::error::Error;
 use std::time::Instant;
+use tofuri_block::BlockA;
+use tofuri_block::BlockB;
+use tofuri_core::*;
+use tofuri_db as db;
+use tofuri_key::Key;
+use tofuri_stake::StakeA;
+use tofuri_stake::StakeB;
+use tofuri_transaction::TransactionA;
+use tofuri_transaction::TransactionB;
+use tofuri_tree::Tree;
+use tofuri_util::EMPTY_BLOCK_SIZE;
+use tofuri_util::STAKE_SIZE;
+use tofuri_util::TRANSACTION_SIZE;
 #[derive(Default, Debug, Clone)]
 pub struct Blockchain {
     pub tree: Tree,
@@ -47,9 +47,9 @@ impl Blockchain {
             return "never".to_string();
         }
         let timestamp = self.states.dynamic.latest_block.timestamp;
-        let diff = pea_util::timestamp().saturating_sub(timestamp);
+        let diff = tofuri_util::timestamp().saturating_sub(timestamp);
         let now = "just now";
-        let mut string = pea_util::duration_to_string(diff, now);
+        let mut string = tofuri_util::duration_to_string(diff, now);
         if string != now {
             string.push_str(" ago");
         }
@@ -167,7 +167,7 @@ impl Blockchain {
         }
     }
     pub fn save_blocks(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
-        let timestamp = pea_util::timestamp();
+        let timestamp = tofuri_util::timestamp();
         let mut vec = vec![];
         let mut i = 0;
         while i < self.pending_blocks.len() {
@@ -189,7 +189,7 @@ impl Blockchain {
         if transaction_a.amount + transaction_a.fee > self.balance_pending_min(&transaction_a.input_address) {
             return Err("transaction too expensive".into());
         }
-        Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, pea_util::timestamp() + time_delta)?;
+        Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, tofuri_util::timestamp() + time_delta)?;
         info!("Transaction {}", hex::encode(transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
         Ok(())
@@ -212,7 +212,7 @@ impl Blockchain {
                 return Err("stake withdraw amount too expensive".into());
             }
         }
-        Blockchain::validate_stake(&self.states.dynamic, &stake_a, pea_util::timestamp() + time_delta)?;
+        Blockchain::validate_stake(&self.states.dynamic, &stake_a, tofuri_util::timestamp() + time_delta)?;
         info!("Stake {}", hex::encode(stake_a.hash).green());
         self.pending_stakes.push(stake_a);
         Ok(())
@@ -228,13 +228,13 @@ impl Blockchain {
         if self.pending_blocks.iter().any(|a| a.hash == block_a.hash) {
             return Err("block pending".into());
         }
-        self.validate_block(db, &block_a, pea_util::timestamp() + time_delta, trust_fork_after_blocks)?;
+        self.validate_block(db, &block_a, tofuri_util::timestamp() + time_delta, trust_fork_after_blocks)?;
         self.pending_blocks.push(block_a);
         Ok(())
     }
     pub fn pending_retain_non_ancient(&mut self, timestamp: u32) {
-        self.pending_transactions.retain(|a| !pea_util::ancient(a.timestamp, timestamp));
-        self.pending_stakes.retain(|a| !pea_util::ancient(a.timestamp, timestamp));
+        self.pending_transactions.retain(|a| !tofuri_util::ancient(a.timestamp, timestamp));
+        self.pending_stakes.retain(|a| !tofuri_util::ancient(a.timestamp, timestamp));
     }
     fn validate_transaction(dynamic: &Dynamic, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if transaction_a.amount == 0 {
@@ -243,10 +243,10 @@ impl Blockchain {
         if transaction_a.fee == 0 {
             return Err("transaction fee zero".into());
         }
-        if transaction_a.amount != pea_int::floor(transaction_a.amount) {
+        if transaction_a.amount != tofuri_int::floor(transaction_a.amount) {
             return Err("transaction amount floor".into());
         }
-        if transaction_a.fee != pea_int::floor(transaction_a.fee) {
+        if transaction_a.fee != tofuri_int::floor(transaction_a.fee) {
             return Err("transaction fee floor".into());
         }
         if transaction_a.input_address == transaction_a.output_address {
@@ -255,7 +255,7 @@ impl Blockchain {
         if transaction_a.timestamp > timestamp {
             return Err("transaction timestamp future".into());
         }
-        if pea_util::ancient(transaction_a.timestamp, dynamic.latest_block.timestamp) {
+        if tofuri_util::ancient(transaction_a.timestamp, dynamic.latest_block.timestamp) {
             return Err("transaction timestamp ancient".into());
         }
         if dynamic.transaction_in_chain(transaction_a) {
@@ -270,16 +270,16 @@ impl Blockchain {
         if stake_a.fee == 0 {
             return Err("stake fee zero".into());
         }
-        if stake_a.amount != pea_int::floor(stake_a.amount) {
+        if stake_a.amount != tofuri_int::floor(stake_a.amount) {
             return Err("stake amount floor".into());
         }
-        if stake_a.fee != pea_int::floor(stake_a.fee) {
+        if stake_a.fee != tofuri_int::floor(stake_a.fee) {
             return Err("stake fee floor".into());
         }
         if stake_a.timestamp > timestamp {
             return Err("stake timestamp future".into());
         }
-        if pea_util::ancient(stake_a.timestamp, dynamic.latest_block.timestamp) {
+        if tofuri_util::ancient(stake_a.timestamp, dynamic.latest_block.timestamp) {
             return Err("stake timestamp ancient".into());
         }
         if dynamic.stake_in_chain(stake_a) {

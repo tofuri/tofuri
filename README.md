@@ -1,13 +1,13 @@
-# Pea Core integration/staging tree
+# Tofuri Core integration/staging tree
 
-It is recommended that you read through [The Technical Paper](https://github.com/peacash/paper/blob/main/README.md).
+It is recommended that you read through [The Technical Paper](https://github.com/tofuri/paper/blob/main/README.md).
 
 ## Installation
 
 ```bash
-git clone https://github.com/peacash/peacash.git
-cd peacash
-cargo run --bin pea
+git clone https://github.com/tofuri/tofuri.git
+cd tofuri
+cargo run --bin tofuri
 ```
 
 ### Dependencies

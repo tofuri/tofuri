@@ -5,11 +5,11 @@ use libp2p::Multiaddr;
 use log::debug;
 use log::error;
 use log::info;
-use pea_core::*;
-use pea_p2p::behaviour::SyncRequest;
-use pea_p2p::multiaddr;
-use pea_util;
 use rand::prelude::*;
+use tofuri_core::*;
+use tofuri_p2p::behaviour::SyncRequest;
+use tofuri_p2p::multiaddr;
+use tofuri_util;
 use tokio::time::Instant;
 pub fn dial_known(node: &mut Node, instant: Instant) -> Instant {
     let vec = node.p2p.known.clone().into_iter().collect();
@@ -55,7 +55,7 @@ pub fn share(node: &mut Node, instant: Instant) -> Instant {
     instant
 }
 pub fn grow(node: &mut Node, instant: Instant) -> Instant {
-    let timestamp = pea_util::timestamp();
+    let timestamp = tofuri_util::timestamp();
     node.blockchain.pending_retain_non_ancient(timestamp);
     node.blockchain.save_blocks(&node.db, node.args.trust);
     if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.states.dynamic.next_staker(timestamp).is_none() {

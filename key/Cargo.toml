@@ -1,13 +1,13 @@
 [package]
-name = "pea-key"
-version = "0.6.4"
+name = "tofuri-key"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash key"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri key"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-core = { version = "0.6", path = "../core" }
+tofuri-core = { version = "0.1", path = "../core" }
 secp256k1 = { version = "0.25", features = ["rand-std","recovery","global-context"] }
 vrf = { version = "0.2", optional = true }
 rand = "0.8"

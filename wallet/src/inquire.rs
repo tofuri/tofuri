@@ -7,12 +7,12 @@ use inquire::Password;
 use inquire::PasswordDisplayMode;
 use inquire::Select;
 use lazy_static::lazy_static;
-use pea_address::address;
-use pea_core::*;
-use pea_key::Key;
 use std::error::Error;
 use std::path::PathBuf;
 use std::process;
+use tofuri_address::address;
+use tofuri_core::*;
+use tofuri_key::Key;
 lazy_static! {
     pub static ref GENERATE: String = "Generate".green().to_string();
     pub static ref IMPORT: String = "Import".magenta().to_string();
@@ -124,7 +124,7 @@ pub fn import() -> Result<Key, Box<dyn Error>> {
     let secret = Password::new("Enter secret key:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
-        .with_validator(move |input: &str| match pea_address::secret::decode(input) {
+        .with_validator(move |input: &str| match tofuri_address::secret::decode(input) {
             Ok(_) => Ok(Validation::Valid),
             Err(_) => Ok(Validation::Invalid("Invalid secret key.".into())),
         })
@@ -134,7 +134,7 @@ pub fn import() -> Result<Key, Box<dyn Error>> {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    Key::from_slice(&pea_address::secret::decode(&secret)?)
+    Key::from_slice(&tofuri_address::secret::decode(&secret)?)
 }
 pub fn send() -> bool {
     match Confirm::new("Send?").prompt() {
@@ -177,11 +177,11 @@ pub fn address() -> String {
 }
 pub fn amount() -> u128 {
     (CustomType::<f64>::new("Amount:")
-        .with_formatter(&|i| format!("{i:.18} pea"))
+        .with_formatter(&|i| format!("{i:.18} tofuri"))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount to send using a decimal point as a separator")
         .with_parser(&|x| match x.parse::<f64>() {
-            Ok(f) => Ok(pea_int::floor((f * COIN as f64) as u128) as f64 / COIN as f64),
+            Ok(f) => Ok(tofuri_int::floor((f * COIN as f64) as u128) as f64 / COIN as f64),
             Err(_) => Err(()),
         })
         .prompt()
@@ -197,7 +197,7 @@ pub fn fee() -> u128 {
         .with_error_message("Please type a valid number")
         .with_help_message("Type the fee to use in satoshis")
         .with_parser(&|x| match x.parse::<u128>() {
-            Ok(u) => Ok(pea_int::floor(u)),
+            Ok(u) => Ok(tofuri_int::floor(u)),
             Err(_) => Err(()),
         })
         .prompt()

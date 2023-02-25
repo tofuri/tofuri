@@ -14,16 +14,6 @@ use clap::Parser;
 use colored::*;
 use crossterm::event;
 use crossterm::terminal;
-use pea_address::address;
-use pea_address::secret;
-use pea_api_core::Block;
-use pea_api_core::Root;
-use pea_api_core::Stake;
-use pea_api_core::Transaction;
-use pea_core::*;
-use pea_key::Key;
-use pea_stake::StakeA;
-use pea_transaction::TransactionA;
 use reqwest::Client;
 use std::error::Error;
 use std::fs::create_dir_all;
@@ -32,6 +22,16 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process;
+use tofuri_address::address;
+use tofuri_address::secret;
+use tofuri_api_core::Block;
+use tofuri_api_core::Root;
+use tofuri_api_core::Stake;
+use tofuri_api_core::Transaction;
+use tofuri_core::*;
+use tofuri_key::Key;
+use tofuri_stake::StakeA;
+use tofuri_transaction::TransactionA;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
@@ -178,7 +178,7 @@ impl Wallet {
             address::decode(&address).unwrap(),
             amount,
             fee,
-            pea_util::timestamp(),
+            tofuri_util::timestamp(),
             self.key.as_ref().unwrap(),
         )
         .unwrap();
@@ -186,7 +186,7 @@ impl Wallet {
         let res: String = self
             .client
             .post(format!("{}/transaction", self.args.api))
-            .json(&pea_api_util::transaction(&transaction_a))
+            .json(&tofuri_api_util::transaction(&transaction_a))
             .send()
             .await?
             .json()
@@ -202,12 +202,12 @@ impl Wallet {
         if !send {
             return Ok(());
         }
-        let stake_a = StakeA::sign(deposit, amount, fee, pea_util::timestamp(), self.key.as_ref().unwrap()).unwrap();
+        let stake_a = StakeA::sign(deposit, amount, fee, tofuri_util::timestamp(), self.key.as_ref().unwrap()).unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
         let res: String = self
             .client
             .post(format!("{}/stake", self.args.api))
-            .json(&pea_api_util::stake(&stake_a))
+            .json(&tofuri_api_util::stake(&stake_a))
             .send()
             .await?
             .json()
@@ -316,7 +316,7 @@ pub fn decrypt(salt: &Salt, nonce: &Nonce, ciphertext: &Ciphertext, passphrase: 
     }
 }
 pub fn default_path() -> &'static Path {
-    Path::new("./peacash-wallet")
+    Path::new("./tofuri-wallet")
 }
 pub fn save(filename: &str, key: &Key) -> Result<(), Box<dyn Error>> {
     let (salt, nonce, ciphertext) = encrypt(key)?;

@@ -1,14 +1,14 @@
 [package]
-name = "pea-p2p"
-version = "0.1.1"
+name = "tofuri-p2p"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash P2P"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri P2P"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-core = { version = "0.6", path = "../core" }
-pea-util = { version = "0.1", path = "../util" }
+tofuri-core = { version = "0.1", path = "../core" }
+tofuri-util = { version = "0.1", path = "../util" }
 libp2p = { version = "0.50", features = ["mplex","noise","tcp","request-response","autonat","macros","identify","mdns","gossipsub","tokio"] }
 tokio = "1.24"
 async-trait = "0.1"

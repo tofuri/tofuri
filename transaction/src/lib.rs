@@ -1,11 +1,11 @@
-use pea_core::*;
-use pea_key::Key;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
 use std::error::Error;
+use tofuri_core::*;
+use tofuri_key::Key;
 pub trait Transaction {
     fn get_output_address(&self) -> &AddressBytes;
     fn get_timestamp(&self) -> u32;
@@ -22,10 +22,10 @@ impl Transaction for TransactionA {
         self.timestamp
     }
     fn get_amount_bytes(&self) -> AmountBytes {
-        pea_int::to_be_bytes(self.amount)
+        tofuri_int::to_be_bytes(self.amount)
     }
     fn get_fee_bytes(&self) -> AmountBytes {
-        pea_int::to_be_bytes(self.fee)
+        tofuri_int::to_be_bytes(self.fee)
     }
     fn hash(&self) -> Hash {
         hash(self)
@@ -78,8 +78,8 @@ impl TransactionA {
     pub fn b(&self) -> TransactionB {
         TransactionB {
             output_address: self.output_address,
-            amount: pea_int::to_be_bytes(self.amount),
-            fee: pea_int::to_be_bytes(self.fee),
+            amount: tofuri_int::to_be_bytes(self.amount),
+            fee: tofuri_int::to_be_bytes(self.fee),
             timestamp: self.timestamp,
             signature: self.signature,
         }
@@ -91,8 +91,8 @@ impl TransactionA {
         let mut transaction_a = TransactionA {
             input_address: [0; 20],
             output_address: public_key_output,
-            amount: pea_int::floor(amount),
-            fee: pea_int::floor(fee),
+            amount: tofuri_int::floor(amount),
+            fee: tofuri_int::floor(fee),
             timestamp,
             hash: [0; 32],
             signature: [0; 64],
@@ -108,8 +108,8 @@ impl TransactionB {
         let input_address = input_address.unwrap_or(self.input_address()?);
         Ok(TransactionA {
             output_address: self.output_address,
-            amount: pea_int::from_be_slice(&self.amount),
-            fee: pea_int::from_be_slice(&self.fee),
+            amount: tofuri_int::from_be_slice(&self.amount),
+            fee: tofuri_int::from_be_slice(&self.fee),
             timestamp: self.timestamp,
             signature: self.signature,
             input_address,

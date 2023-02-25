@@ -1,7 +1,7 @@
 #![feature(test)]
 extern crate test;
-use pea_key::Key;
 use test::Bencher;
+use tofuri_key::Key;
 #[bench]
 fn sign(b: &mut Bencher) {
     let key = Key::generate();

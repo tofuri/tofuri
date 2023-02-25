@@ -2,18 +2,18 @@ use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
 use clap::Parser;
-use pea_api::router;
-use pea_api::CARGO_PKG_NAME;
-use pea_api::CARGO_PKG_REPOSITORY;
-use pea_api::CARGO_PKG_VERSION;
-use pea_core::*;
 use std::error::Error;
 use std::net::SocketAddr;
+use tofuri_api::router;
+use tofuri_api::CARGO_PKG_NAME;
+use tofuri_api::CARGO_PKG_REPOSITORY;
+use tofuri_api::CARGO_PKG_VERSION;
+use tofuri_core::*;
 use tower_http::cors::CorsLayer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let mut args = pea_api::Args::parse();
-    println!("{}", pea_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    let mut args = tofuri_api::Args::parse();
+    println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.api == API {
             args.api = DEV_API.to_string();

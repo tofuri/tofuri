@@ -1,10 +1,10 @@
 [package]
-name = "pea-logger"
-version = "0.1.3"
+name = "tofuri-logger"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash logger"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri logger"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 log = "0.4"

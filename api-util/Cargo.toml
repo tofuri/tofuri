@@ -1,16 +1,16 @@
 [package]
-name = "pea-api-util"
+name = "tofuri-api-util"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash API utilities"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri API utilities"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-address = { version = "0.6", path = "../address" }
-pea-api-core = { version = "0.1", path = "../api-core" }
-pea-block = { version = "0.6", path = "../block" }
-pea-int = { version = "0.4", path = "../int" }
-pea-stake = { version = "0.7", path = "../stake" }
-pea-transaction = { version = "0.8", path = "../transaction" }
+tofuri-address = { version = "0.1", path = "../address" }
+tofuri-api-core = { version = "0.1", path = "../api-core" }
+tofuri-block = { version = "0.1", path = "../block" }
+tofuri-int = { version = "0.1", path = "../int" }
+tofuri-stake = { version = "0.1", path = "../stake" }
+tofuri-transaction = { version = "0.1", path = "../transaction" }
 hex = "0.4"

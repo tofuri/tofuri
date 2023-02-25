@@ -1,7 +1,7 @@
-use pea_core::*;
 use sha2::Digest;
 use sha2::Sha256;
 use std::error::Error;
+use tofuri_core::*;
 pub fn checksum(bytes: &[u8]) -> [u8; 4] {
     let mut hasher = Sha256::new();
     hasher.update(bytes);

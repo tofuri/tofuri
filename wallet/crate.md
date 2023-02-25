@@ -1,5 +1,5 @@
-# Pea Wallet
+# Tofuri Wallet
 
 ```bash
-cargo install pea-wallet
+cargo install tofuri-wallet
 ```

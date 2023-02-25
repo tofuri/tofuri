@@ -1,12 +1,12 @@
 [package]
-name = "pea-address"
-version = "0.6.3"
+name = "tofuri-address"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash address"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri address"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-core = { version = "0.6", path = "../core" }
+tofuri-core = { version = "0.1", path = "../core" }
 hex = "0.4"
 sha2 = "0.10"

@@ -1,16 +1,16 @@
 [package]
-name = "pea-block"
-version = "0.6.5"
+name = "tofuri-block"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash block"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri block"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-core = { version = "0.6", path = "../core" }
-pea-key = { version = "0.6", path = "../key", features = ["vrf"]}
-pea-stake = { version = "0.7", path = "../stake" }
-pea-transaction = { version = "0.8", path = "../transaction" }
+tofuri-core = { version = "0.1", path = "../core" }
+tofuri-key = { version = "0.1", path = "../key", features = ["vrf"]}
+tofuri-stake = { version = "0.1", path = "../stake" }
+tofuri-transaction = { version = "0.1", path = "../transaction" }
 serde = { version = "1.0", features = ["derive"] }
 serde-big-array = "0.4"
 sha2 = "0.10"

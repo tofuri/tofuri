@@ -1,13 +1,13 @@
 use multiaddr::Multiaddr;
-use pea_api_internal_core::Data;
-use pea_api_internal_core::Request;
-use pea_block::BlockA;
-use pea_core::*;
-use pea_stake::StakeA;
-use pea_stake::StakeB;
-use pea_transaction::TransactionA;
-use pea_transaction::TransactionB;
 use std::error::Error;
+use tofuri_api_internal_core::Data;
+use tofuri_api_internal_core::Request;
+use tofuri_block::BlockA;
+use tofuri_core::*;
+use tofuri_stake::StakeA;
+use tofuri_stake::StakeB;
+use tofuri_transaction::TransactionA;
+use tofuri_transaction::TransactionB;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
@@ -111,7 +111,7 @@ pub async fn time(addr: &str) -> Result<i64, Box<dyn Error>> {
 pub async fn tree_size(addr: &str) -> Result<usize, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::TreeSize, addr, None).await?)?)
 }
-pub async fn sync(addr: &str) -> Result<pea_blockchain::sync::Sync, Box<dyn Error>> {
+pub async fn sync(addr: &str) -> Result<tofuri_blockchain::sync::Sync, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Sync, addr, None).await?)?)
 }
 pub async fn random_queue(addr: &str) -> Result<Vec<AddressBytes>, Box<dyn Error>> {

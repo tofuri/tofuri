@@ -1,5 +1,5 @@
-# Pea Pay
+# Tofuri Pay
 
 ```bash
-cargo install pea-pay
+cargo install tofuri-pay
 ```

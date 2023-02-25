@@ -1,4 +1,4 @@
-use pea_int as int;
+use tofuri_int as int;
 fn main() {
     for i in 0..39 {
         let x = 10_u128.pow(i);

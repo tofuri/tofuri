@@ -1,25 +1,25 @@
 [package]
-name = "pea-pay"
-version = "0.1.2"
+name = "tofuri-pay"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash Pay"
+description = "Tofuri Pay"
 readme = "crate.md"
 categories = ["cryptography::cryptocurrencies"]
-repository = "https://github.com/peacash/peacash"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-address = { version = "0.6", path = "../address" }
-pea-int = { version = "0.4", path = "../int" }
-pea-core = { version = "0.6", path = "../core" }
-pea-api-core = { version = "0.1", path = "../api-core" }
-pea-pay-core = { version = "0.1", path = "../pay-core" }
-pea-pay-db = { version = "0.1", path = "../pay-db" }
-pea-key = { version = "0.6", path = "../key" }
-pea-logger = { version = "0.1", path = "../logger" }
-pea-transaction = { version = "0.8", path = "../transaction" }
-pea-wallet = { version = "0.6", path = "../wallet" }
-pea-util = { version = "0.1", path = "../util" }
+tofuri-address = { version = "0.1", path = "../address" }
+tofuri-int = { version = "0.1", path = "../int" }
+tofuri-core = { version = "0.1", path = "../core" }
+tofuri-api-core = { version = "0.1", path = "../api-core" }
+tofuri-pay-core = { version = "0.1", path = "../pay-core" }
+tofuri-pay-db = { version = "0.1", path = "../pay-db" }
+tofuri-key = { version = "0.1", path = "../key" }
+tofuri-logger = { version = "0.1", path = "../logger" }
+tofuri-transaction = { version = "0.1", path = "../transaction" }
+tofuri-wallet = { version = "0.1", path = "../wallet" }
+tofuri-util = { version = "0.1", path = "../util" }
 hex = "0.4"
 clap = { version = "3.2", features = ["derive"] }
 lazy_static = "1.4"

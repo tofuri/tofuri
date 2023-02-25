@@ -1,9 +1,9 @@
 #![feature(test)]
 extern crate test;
-use pea_core::*;
 use sha2::Digest;
 use sha2::Sha256;
 use test::Bencher;
+use tofuri_core::*;
 #[bench]
 fn hash(b: &mut Bencher) {
     b.iter(|| {
@@ -14,12 +14,12 @@ fn hash(b: &mut Bencher) {
 }
 #[bench]
 fn u256(b: &mut Bencher) {
-    b.iter(|| pea_util::u256(&[0xff; 32]));
+    b.iter(|| tofuri_util::u256(&[0xff; 32]));
 }
 #[bench]
 fn random(b: &mut Bencher) {
     let mut hasher = Sha256::new();
     hasher.update([0; 32]);
     let beta: Beta = hasher.finalize().into();
-    b.iter(|| pea_util::random(&beta, 0, 10));
+    b.iter(|| tofuri_util::random(&beta, 0, 10));
 }

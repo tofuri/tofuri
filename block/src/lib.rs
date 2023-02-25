@@ -1,17 +1,17 @@
 use merkle_cbt::merkle_tree::Merge;
 use merkle_cbt::CBMT as ExCBMT;
-use pea_core::*;
-use pea_key::Key;
-use pea_stake::StakeA;
-use pea_stake::StakeB;
-use pea_transaction::TransactionA;
-use pea_transaction::TransactionB;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
 use std::error::Error;
+use tofuri_core::*;
+use tofuri_key::Key;
+use tofuri_stake::StakeA;
+use tofuri_stake::StakeB;
+use tofuri_transaction::TransactionA;
+use tofuri_transaction::TransactionB;
 pub trait Block {
     fn get_previous_hash(&self) -> &Hash;
     fn get_merkle_root_transaction(&self) -> MerkleRoot;

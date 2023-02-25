@@ -21,7 +21,7 @@ pub async fn charge(State(pay): State<Arc<Mutex<Pay>>>, hash: Path<String>) -> i
     (StatusCode::OK, Json(payment))
 }
 pub async fn charge_new(State(pay): State<Arc<Mutex<Pay>>>, amount: Path<String>) -> impl IntoResponse {
-    let amount = pea_int::from_str(&amount).unwrap();
+    let amount = tofuri_int::from_str(&amount).unwrap();
     let mut pay = pay.lock().await;
     let payment = pay.charge(amount);
     (StatusCode::OK, Json(payment))

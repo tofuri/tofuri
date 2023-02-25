@@ -5,27 +5,27 @@ use colored::*;
 use log::error;
 use log::info;
 use log::warn;
-use pea_address::address;
-use pea_core::*;
-use pea_key::Key;
-use pea_pay::router;
-use pea_pay::Args;
-use pea_pay::Pay;
-use pea_pay::CARGO_PKG_NAME;
-use pea_pay::CARGO_PKG_REPOSITORY;
-use pea_pay::CARGO_PKG_VERSION;
 use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tempdir::TempDir;
+use tofuri_address::address;
+use tofuri_core::*;
+use tofuri_key::Key;
+use tofuri_pay::router;
+use tofuri_pay::Args;
+use tofuri_pay::Pay;
+use tofuri_pay::CARGO_PKG_NAME;
+use tofuri_pay::CARGO_PKG_REPOSITORY;
+use tofuri_pay::CARGO_PKG_VERSION;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut args = Args::parse();
-    pea_logger::init(args.debug);
-    info!("{}", pea_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    tofuri_logger::init(args.debug);
+    info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = DEV_TEMP_DB;
@@ -56,15 +56,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let addr: SocketAddr = args.pay_api.parse().unwrap();
     let key = match args.tempkey {
         true => Key::generate(),
-        false => pea_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
+        false => tofuri_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
     };
     info!("Address {}", address::encode(&key.address_bytes()).green());
-    let tempdir = TempDir::new("peacash-pay-db").unwrap();
+    let tempdir = TempDir::new("tofuri-pay-db").unwrap();
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),
-        false => "./peacash-pay-db",
+        false => "./tofuri-pay-db",
     };
-    let db = pea_pay_db::open(path);
+    let db = tofuri_pay_db::open(path);
     let pay = Arc::new(Mutex::new(Pay::new(db, key, args)));
     let cors = CorsLayer::permissive();
     let app = Router::new()

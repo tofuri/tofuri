@@ -1,11 +1,11 @@
-use pea_core::*;
-use pea_key::Key;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
 use std::error::Error;
+use tofuri_core::*;
+use tofuri_key::Key;
 pub trait Stake {
     fn get_timestamp(&self) -> u32;
     fn get_deposit(&self) -> bool;
@@ -21,7 +21,7 @@ impl Stake for StakeA {
         self.deposit
     }
     fn get_fee_bytes(&self) -> AmountBytes {
-        pea_int::to_be_bytes(self.fee)
+        tofuri_int::to_be_bytes(self.fee)
     }
     fn hash(&self) -> Hash {
         hash(self)
@@ -70,8 +70,8 @@ pub struct StakeB {
 impl StakeA {
     pub fn b(&self) -> StakeB {
         StakeB {
-            amount: pea_int::to_be_bytes(self.amount),
-            fee: pea_int::to_be_bytes(self.fee),
+            amount: tofuri_int::to_be_bytes(self.amount),
+            fee: tofuri_int::to_be_bytes(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -82,8 +82,8 @@ impl StakeA {
     }
     pub fn sign(deposit: bool, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<StakeA, Box<dyn Error>> {
         let mut stake_a = StakeA {
-            amount: pea_int::floor(amount),
-            fee: pea_int::floor(fee),
+            amount: tofuri_int::floor(amount),
+            fee: tofuri_int::floor(fee),
             deposit,
             timestamp,
             signature: [0; 64],
@@ -100,8 +100,8 @@ impl StakeB {
     pub fn a(&self, input_address: Option<AddressBytes>) -> Result<StakeA, Box<dyn Error>> {
         let input_address = input_address.unwrap_or(self.input_address()?);
         Ok(StakeA {
-            amount: pea_int::from_be_slice(&self.amount),
-            fee: pea_int::from_be_slice(&self.fee),
+            amount: tofuri_int::from_be_slice(&self.amount),
+            fee: tofuri_int::from_be_slice(&self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,

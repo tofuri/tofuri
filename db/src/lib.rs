@@ -49,12 +49,12 @@ pub mod block {
     use super::input_public_key;
     use super::stake;
     use super::transaction;
-    use pea_block::BlockA;
-    use pea_block::BlockB;
-    use pea_block::BlockC;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
     use std::error::Error;
+    use tofuri_block::BlockA;
+    use tofuri_block::BlockB;
+    use tofuri_block::BlockC;
     pub fn put(block_a: &BlockA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         for transaction_a in block_a.transactions.iter() {
             transaction::put(transaction_a, db)?;
@@ -108,11 +108,11 @@ pub mod block {
 }
 pub mod transaction {
     use super::input_address;
-    use pea_transaction::TransactionA;
-    use pea_transaction::TransactionB;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
     use std::error::Error;
+    use tofuri_transaction::TransactionA;
+    use tofuri_transaction::TransactionB;
     pub fn put(transaction_a: &TransactionA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::transactions(db), transaction_a.hash, bincode::serialize(&transaction_a.b())?)?;
         Ok(())
@@ -136,11 +136,11 @@ pub mod transaction {
 }
 pub mod stake {
     use super::input_address;
-    use pea_stake::StakeA;
-    use pea_stake::StakeB;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
     use std::error::Error;
+    use tofuri_stake::StakeA;
+    use tofuri_stake::StakeB;
     pub fn put(stake_a: &StakeA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::stakes(db), stake_a.hash, bincode::serialize(&stake_a.b())?)?;
         Ok(())
@@ -163,13 +163,13 @@ pub mod stake {
     }
 }
 pub mod tree {
-    use pea_block::BlockC;
-    use pea_core::*;
-    use pea_tree::Tree;
     use rocksdb::DBWithThreadMode;
     use rocksdb::IteratorMode;
     use rocksdb::SingleThreaded;
     use std::collections::HashMap;
+    use tofuri_block::BlockC;
+    use tofuri_core::*;
+    use tofuri_tree::Tree;
     pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) {
         tree.clear();
         let mut map: HashMap<Hash, Vec<(Hash, u32)>> = HashMap::new();
@@ -244,10 +244,10 @@ pub mod peer {
     }
 }
 pub mod input_address {
-    use pea_core::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
     use std::error::Error;
+    use tofuri_core::*;
     pub fn put(hash: &[u8], input_address: &AddressBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::input_addresses(db), hash, input_address)?;
         Ok(())
@@ -258,10 +258,10 @@ pub mod input_address {
     }
 }
 pub mod input_public_key {
-    use pea_core::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
     use std::error::Error;
+    use tofuri_core::*;
     pub fn put(hash: &[u8], input_public_key: &PublicKeyBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::input_public_keys(db), hash, input_public_key)?;
         Ok(())
@@ -272,10 +272,10 @@ pub mod input_public_key {
     }
 }
 pub mod beta {
-    use pea_core::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
     use std::error::Error;
+    use tofuri_core::*;
     pub fn put(block_hash: &[u8], beta: &Beta, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::betas(db), block_hash, beta)?;
         Ok(())

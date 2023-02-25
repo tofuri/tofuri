@@ -1,13 +1,13 @@
-use pea_address::address;
-use pea_api_core::Block;
-use pea_api_core::Stake;
-use pea_api_core::Transaction;
-use pea_block::BlockA;
-use pea_stake::StakeA;
-use pea_stake::StakeB;
-use pea_transaction::TransactionA;
-use pea_transaction::TransactionB;
 use std::error::Error;
+use tofuri_address::address;
+use tofuri_api_core::Block;
+use tofuri_api_core::Stake;
+use tofuri_api_core::Transaction;
+use tofuri_block::BlockA;
+use tofuri_stake::StakeA;
+use tofuri_stake::StakeB;
+use tofuri_transaction::TransactionA;
+use tofuri_transaction::TransactionB;
 pub fn block(block_a: &BlockA) -> Block {
     Block {
         hash: hex::encode(block_a.hash),
@@ -25,8 +25,8 @@ pub fn transaction(transaction_a: &TransactionA) -> Transaction {
     Transaction {
         input_address: address::encode(&transaction_a.input_address),
         output_address: address::encode(&transaction_a.output_address),
-        amount: pea_int::to_string(transaction_a.amount),
-        fee: pea_int::to_string(transaction_a.fee),
+        amount: tofuri_int::to_string(transaction_a.amount),
+        fee: tofuri_int::to_string(transaction_a.fee),
         timestamp: transaction_a.timestamp,
         hash: hex::encode(transaction_a.hash),
         signature: hex::encode(transaction_a.signature),
@@ -34,8 +34,8 @@ pub fn transaction(transaction_a: &TransactionA) -> Transaction {
 }
 pub fn stake(stake_a: &StakeA) -> Stake {
     Stake {
-        amount: pea_int::to_string(stake_a.amount),
-        fee: pea_int::to_string(stake_a.fee),
+        amount: tofuri_int::to_string(stake_a.amount),
+        fee: tofuri_int::to_string(stake_a.fee),
         deposit: stake_a.deposit,
         timestamp: stake_a.timestamp,
         signature: hex::encode(stake_a.signature),
@@ -46,16 +46,16 @@ pub fn stake(stake_a: &StakeA) -> Stake {
 pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Box<dyn Error>> {
     Ok(TransactionB {
         output_address: address::decode(&transaction.output_address)?,
-        amount: pea_int::to_be_bytes(pea_int::from_str(&transaction.amount)?),
-        fee: pea_int::to_be_bytes(pea_int::from_str(&transaction.fee)?),
+        amount: tofuri_int::to_be_bytes(tofuri_int::from_str(&transaction.amount)?),
+        fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&transaction.fee)?),
         timestamp: transaction.timestamp,
         signature: hex::decode(&transaction.signature)?.as_slice().try_into()?,
     })
 }
 pub fn stake_b(stake: &Stake) -> Result<StakeB, Box<dyn Error>> {
     Ok(StakeB {
-        amount: pea_int::to_be_bytes(pea_int::from_str(&stake.amount)?),
-        fee: pea_int::to_be_bytes(pea_int::from_str(&stake.fee)?),
+        amount: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.amount)?),
+        fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.fee)?),
         deposit: stake.deposit,
         timestamp: stake.timestamp,
         signature: hex::decode(&stake.signature)?.as_slice().try_into()?,

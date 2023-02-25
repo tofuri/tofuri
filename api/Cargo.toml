@@ -1,22 +1,22 @@
 [package]
-name = "pea-api"
-version = "0.7.0"
+name = "tofuri-api"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash API"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri API"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-address = { version = "0.6", path = "../address" }
-pea-core = { version = "0.6", path = "../core" }
-pea-api-internal = { version = "0.1", path = "../api-internal" }
-pea-api-core = { version = "0.1", path = "../api-core" }
-pea-api-util = { version = "0.1", path = "../api-util" }
-pea-block = { version = "0.6", path = "../block" }
-pea-int = { version = "0.4", path = "../int" }
-pea-stake = { version = "0.7", path = "../stake" }
-pea-transaction = { version = "0.8", path = "../transaction" }
-pea-util = { version = "0.1", path = "../util" }
+tofuri-address = { version = "0.1", path = "../address" }
+tofuri-core = { version = "0.1", path = "../core" }
+tofuri-api-internal = { version = "0.1", path = "../api-internal" }
+tofuri-api-core = { version = "0.1", path = "../api-core" }
+tofuri-api-util = { version = "0.1", path = "../api-util" }
+tofuri-block = { version = "0.1", path = "../block" }
+tofuri-int = { version = "0.1", path = "../int" }
+tofuri-stake = { version = "0.1", path = "../stake" }
+tofuri-transaction = { version = "0.1", path = "../transaction" }
+tofuri-util = { version = "0.1", path = "../util" }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.24", features = ["full"] }
 hex = "0.4"

@@ -1,7 +1,7 @@
-use pea_core::*;
-use pea_key::Key;
 use serde::Deserialize;
 use serde::Serialize;
+use tofuri_core::*;
+use tofuri_key::Key;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ChargeStatus {
     New,
@@ -31,7 +31,7 @@ impl Charge {
         key.subkey(self.subkey_n).unwrap().address_bytes()
     }
     pub fn payment(&self, key: &Key) -> Payment {
-        let address = pea_address::address::encode(&self.address_bytes(key));
+        let address = tofuri_address::address::encode(&self.address_bytes(key));
         let status = status(&self.status);
         Payment {
             address,

@@ -1,10 +1,10 @@
 [package]
-name = "pea-int"
-version = "0.4.2"
+name = "tofuri-int"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash integer"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri integer"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-core = { version = "0.6", path = "../core" }
+tofuri-core = { version = "0.1", path = "../core" }

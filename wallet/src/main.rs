@@ -1,15 +1,15 @@
 use clap::Parser;
-use pea_core::*;
-use pea_wallet::clear;
-use pea_wallet::press_any_key_to_continue;
-use pea_wallet::Wallet;
-use pea_wallet::CARGO_PKG_NAME;
-use pea_wallet::CARGO_PKG_REPOSITORY;
-use pea_wallet::CARGO_PKG_VERSION;
+use tofuri_core::*;
+use tofuri_wallet::clear;
+use tofuri_wallet::press_any_key_to_continue;
+use tofuri_wallet::Wallet;
+use tofuri_wallet::CARGO_PKG_NAME;
+use tofuri_wallet::CARGO_PKG_REPOSITORY;
+use tofuri_wallet::CARGO_PKG_VERSION;
 #[tokio::main]
 async fn main() {
-    let mut args = pea_wallet::Args::parse();
-    println!("{}", pea_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    let mut args = tofuri_wallet::Args::parse();
+    println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev && args.api == HTTP_API {
         args.api = DEV_HTTP_API.to_string();
     }

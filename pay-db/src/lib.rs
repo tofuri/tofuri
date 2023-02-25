@@ -19,11 +19,11 @@ pub fn charges(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("charges").unwrap()
 }
 pub mod charge {
-    use pea_key::Key;
-    use pea_pay_core::Charge;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
     use std::error::Error;
+    use tofuri_key::Key;
+    use tofuri_pay_core::Charge;
     pub fn put(db: &DBWithThreadMode<SingleThreaded>, key: &Key, charge: &Charge) -> Result<(), Box<dyn Error>> {
         db.put_cf(super::charges(db), charge.address_bytes(key), bincode::serialize(charge)?)?;
         Ok(())

@@ -1,5 +1,5 @@
-use pea_core::*;
 use std::error::Error;
+use tofuri_core::*;
 pub fn to_be_bytes(uint: u128) -> AmountBytes {
     if uint == 0 {
         return [0; AMOUNT_BYTES];

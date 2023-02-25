@@ -1,4 +1,3 @@
-use pea_core::*;
 use secp256k1::ecdsa::RecoverableSignature;
 use secp256k1::ecdsa::RecoveryId;
 use secp256k1::Message;
@@ -8,6 +7,7 @@ use secp256k1::SECP256K1;
 use sha2::Digest;
 use sha2::Sha256;
 use std::error::Error;
+use tofuri_core::*;
 #[cfg(feature = "vrf")]
 use vrf::openssl::CipherSuite;
 #[cfg(feature = "vrf")]

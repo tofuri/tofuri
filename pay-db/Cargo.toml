@@ -1,13 +1,13 @@
 [package]
-name = "pea-pay-db"
-version = "0.1.1"
+name = "tofuri-pay-db"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash Pay database"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri Pay database"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-pea-key = { version = "0.6", path = "../key" }
-pea-pay-core = { version = "0.1", path = "../pay-core" }
+tofuri-key = { version = "0.1", path = "../key" }
+tofuri-pay-core = { version = "0.1", path = "../pay-core" }
 rocksdb = "0.19"
 bincode = "1.3"

@@ -15,7 +15,6 @@ use libp2p::Multiaddr;
 use libp2p::PeerId;
 use libp2p::Swarm;
 use libp2p::Transport;
-use pea_core::*;
 use ratelimit::Endpoint;
 use ratelimit::Ratelimit;
 use sha2::Digest;
@@ -24,6 +23,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
 use std::time::Duration;
+use tofuri_core::*;
 pub struct P2p {
     pub swarm: Swarm<Behaviour>,
     pub filter: HashSet<Hash>,

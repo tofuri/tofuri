@@ -1,10 +1,10 @@
 [package]
-name = "pea-api-internal-core"
+name = "tofuri-api-internal-core"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Peacash internal API core"
-repository = "https://github.com/peacash/peacash"
+description = "Tofuri internal API core"
+repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

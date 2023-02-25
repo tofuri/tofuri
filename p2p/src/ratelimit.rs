@@ -1,6 +1,6 @@
-use pea_core::*;
 use std::collections::HashMap;
 use std::net::IpAddr;
+use tofuri_core::*;
 pub enum Endpoint {
     Block,
     Transaction,
@@ -19,7 +19,7 @@ impl Ratelimit {
     }
     pub fn is_ratelimited(&self, b: &Option<u32>) -> bool {
         if let Some(timestamp) = b {
-            if timestamp + RATELIMIT_DURATION > pea_util::timestamp() {
+            if timestamp + RATELIMIT_DURATION > tofuri_util::timestamp() {
                 return true;
             }
         }
@@ -59,7 +59,7 @@ impl Ratelimit {
             }
         };
         if ratelimited {
-            *b = Some(pea_util::timestamp());
+            *b = Some(tofuri_util::timestamp());
         }
         self.map.insert(addr, value);
         ratelimited

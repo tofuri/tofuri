@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
-use pea_core::*;
 use serde::Deserialize;
 use serde::Serialize;
+use tofuri_core::*;
 lazy_static! {
     static ref BPS: f32 = 0.5_f32 + (1_f32 / 2_f32.powf(BLOCK_TIME as f32));
 }

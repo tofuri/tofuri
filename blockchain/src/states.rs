@@ -22,32 +22,31 @@ impl States {
         trust_fork_after_blocks: usize,
         previous_hash: &Hash,
     ) -> Result<Dynamic, Box<dyn Error>> {
-        if previous_hash == &[0; 32] {
+        if previous_hash == &GENESIS_BLOCK_PREVIOUS_HASH {
             return Ok(Dynamic::default());
         }
+        let first = self.dynamic.hashes.first().unwrap();
         let mut hashes = vec![];
-        if let Some(first) = self.dynamic.hashes.first() {
-            let mut hash = *previous_hash;
-            for _ in 0..trust_fork_after_blocks {
-                hashes.push(hash);
-                if first == &hash {
-                    break;
-                }
-                match tree.get(&hash) {
-                    Some(previous_hash) => hash = *previous_hash,
-                    None => break,
-                };
+        let mut hash = *previous_hash;
+        for _ in 0..trust_fork_after_blocks {
+            hashes.push(hash);
+            if first == &hash {
+                break;
             }
-            if first != &hash && hash != [0; 32] {
-                return Err("not allowed to fork trusted chain".into());
-            }
-            if let Some(hash) = hashes.last() {
-                if hash == &[0; 32] {
-                    hashes.pop();
-                }
-            }
-            hashes.reverse();
+            match tree.get(&hash) {
+                Some(previous_hash) => hash = *previous_hash,
+                None => break,
+            };
         }
+        if first != &hash && hash != GENESIS_BLOCK_PREVIOUS_HASH {
+            return Err("not allowed to fork trusted chain".into());
+        }
+        if let Some(hash) = hashes.last() {
+            if hash == &GENESIS_BLOCK_PREVIOUS_HASH {
+                hashes.pop();
+            }
+        }
+        hashes.reverse();
         Ok(Dynamic::from(db, &hashes, &self.trusted))
     }
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[Hash], trust_fork_after_blocks: usize) {

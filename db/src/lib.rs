@@ -191,7 +191,7 @@ pub mod tree {
         if map.is_empty() {
             return;
         }
-        let previous_hash = [0; 32];
+        let previous_hash = GENESIS_BLOCK_PREVIOUS_HASH;
         let mut previous_hashes = vec![previous_hash];
         let mut hashes_0 = vec![];
         for (hash, timestamp) in map.get(&previous_hash).expect("genesis block hashes") {

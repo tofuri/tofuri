@@ -37,7 +37,7 @@ impl Tree {
             }
         }
         if let Some(hash) = trusted.last() {
-            if hash != &[0; 32] {
+            if hash != &GENESIS_BLOCK_PREVIOUS_HASH {
                 panic!("broken chain")
             }
             trusted.pop();
@@ -61,7 +61,7 @@ impl Tree {
             }
         }
         if let Some(hash) = vec.last() {
-            if hash == &[0; 32] {
+            if hash == &GENESIS_BLOCK_PREVIOUS_HASH {
                 vec.pop();
             }
         }

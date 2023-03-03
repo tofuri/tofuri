@@ -129,7 +129,7 @@ impl Blockchain {
         let block_a = if let Some(main) = self.tree.main() {
             BlockA::sign(main.hash, timestamp, transactions, stakes, key, &self.states.dynamic.latest_block.beta)
         } else {
-            BlockA::sign([0; 32], timestamp, transactions, stakes, key, &GENESIS_BETA)
+            BlockA::sign(GENESIS_BLOCK_PREVIOUS_HASH, timestamp, transactions, stakes, key, &GENESIS_BLOCK_BETA)
         }
         .unwrap();
         self.save_block(db, &block_a, true, trust_fork_after_blocks);
@@ -300,12 +300,12 @@ impl Blockchain {
         if block_a.timestamp > timestamp {
             return Err("block timestamp future".into());
         }
-        if block_a.previous_hash != [0; 32] && self.tree.get(&block_a.previous_hash).is_none() {
+        if block_a.previous_hash != GENESIS_BLOCK_PREVIOUS_HASH && self.tree.get(&block_a.previous_hash).is_none() {
             return Err("block previous_hash not in tree".into());
         }
         let input_address = block_a.input_address();
         let dynamic = self.states.dynamic_fork(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
-        let previous_beta = Key::vrf_proof_to_hash(&dynamic.latest_block.pi).unwrap_or(GENESIS_BETA);
+        let previous_beta = Key::vrf_proof_to_hash(&dynamic.latest_block.pi).unwrap_or(GENESIS_BLOCK_BETA);
         Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
         if let Some(staker) = dynamic.next_staker(block_a.timestamp) {
             if staker != input_address {

@@ -140,12 +140,13 @@ impl Blockchain {
         self.forks
             .update(db, &self.tree.hashes_dynamic(trust_fork_after_blocks), trust_fork_after_blocks);
         info!(
-            forger,
             height = self.height(),
             fork,
             hash = hex::encode(block_a.hash),
             transactions = block_a.transactions.len(),
-            stakes = block_a.stakes.len()
+            stakes = block_a.stakes.len(),
+            "{}",
+            if forger { "Forged".magenta() } else { "Accept".green() }
         );
     }
     pub fn save_blocks(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {

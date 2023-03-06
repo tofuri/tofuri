@@ -25,7 +25,6 @@ pub enum Type {
     GitHash,
     Address,
     Ticks,
-    Lag,
     Time,
     TreeSize,
     Sync,

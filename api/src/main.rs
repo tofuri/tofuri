@@ -50,7 +50,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/git_hash", get(router::git_hash))
         .route("/address", get(router::address))
         .route("/ticks", get(router::ticks))
-        .route("/lag", get(router::lag))
         .route("/time", get(router::time))
         .route("/tree_size", get(router::tree_size))
         .route("/sync", get(router::sync))

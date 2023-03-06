@@ -70,7 +70,6 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type)
             Type::GitHash => bincode::serialize(git_hash()),
             Type::Address => bincode::serialize(&address(node)),
             Type::Ticks => bincode::serialize(ticks(node)),
-            Type::Lag => bincode::serialize(lag(node)),
             Type::Time => bincode::serialize(&time()),
             Type::TreeSize => bincode::serialize(&tree_size(node)),
             Type::Sync => bincode::serialize(sync(node)),
@@ -219,10 +218,6 @@ fn address(node: &mut Node) -> AddressBytes {
 #[tracing::instrument(skip_all, level = "trace")]
 fn ticks(node: &mut Node) -> &usize {
     &node.ticks
-}
-#[tracing::instrument(skip_all, level = "trace")]
-fn lag(node: &mut Node) -> &f64 {
-    &node.lag
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn time() -> i64 {

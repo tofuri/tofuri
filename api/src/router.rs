@@ -139,10 +139,6 @@ pub async fn ticks(State(args): State<Args>) -> impl IntoResponse {
     let ticks = tofuri_rpc::ticks(&args.api_internal).await.unwrap();
     Json(ticks)
 }
-pub async fn lag(State(args): State<Args>) -> impl IntoResponse {
-    let lag = tofuri_rpc::lag(&args.api_internal).await.unwrap();
-    Json(lag)
-}
 pub async fn time(State(args): State<Args>) -> impl IntoResponse {
     let time = tofuri_rpc::time(&args.api_internal).await.unwrap();
     Json(time)

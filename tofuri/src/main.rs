@@ -128,7 +128,6 @@ async fn main() {
             res = listener.accept() => rpc::accept(&mut node, res).await
         };
         let elapsed = instant.elapsed();
-        node.lag = elapsed.as_micros() as f64 / 1_000_f64;
         node.ticks += 1;
         debug!("{} {} {}", "Tick".cyan(), node.ticks, format!("{elapsed:?}").yellow());
     }

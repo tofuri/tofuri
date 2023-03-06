@@ -18,7 +18,6 @@ pub struct Node {
     pub p2p: P2p,
     pub blockchain: Blockchain,
     pub ticks: usize,
-    pub lag: f64,
 }
 impl Node {
     pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, args: Args, p2p: P2p, blockchain: Blockchain) -> Node {
@@ -29,7 +28,6 @@ impl Node {
             p2p,
             blockchain,
             ticks: 0,
-            lag: 0.0,
         }
     }
 }

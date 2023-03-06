@@ -101,7 +101,7 @@ impl Forks {
             );
         }
         self.dynamic = Dynamic::from(db, hashes_1, &self.trusted);
-        debug!("{} {:?}", "States update".cyan(), start.elapsed());
+        debug!("{} {:?}", "Forks update".cyan(), start.elapsed());
     }
 }
 impl Trusted {

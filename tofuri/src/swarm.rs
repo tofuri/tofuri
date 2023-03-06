@@ -26,7 +26,6 @@ use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
-use tracing::debug;
 use tracing::error;
 use tracing::info;
 use tracing::warn;

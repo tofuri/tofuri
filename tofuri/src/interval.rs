@@ -7,7 +7,6 @@ use tofuri_core::*;
 use tofuri_p2p::behaviour::SyncRequest;
 use tofuri_p2p::multiaddr;
 use tofuri_util;
-use tracing::debug;
 use tracing::error;
 use tracing::info;
 #[tracing::instrument(skip_all, level = "trace")]
@@ -36,7 +35,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>) {
         if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
             continue;
         }
-        debug!(multiaddr = multiaddr.to_string());
+        info!(multiaddr = multiaddr.to_string(), "Dial");
         if !multiaddr::has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }

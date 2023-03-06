@@ -29,50 +29,6 @@ pub trait Fork {
     fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
 }
-impl Fork for ForkB {
-    fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
-        &mut self.hashes
-    }
-    fn get_stakers(&self) -> &VecDeque<AddressBytes> {
-        &self.stakers
-    }
-    fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
-        &mut self.stakers
-    }
-    fn get_map_balance(&self) -> &HashMap<AddressBytes, u128> {
-        &self.map_balance
-    }
-    fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
-        &mut self.map_balance
-    }
-    fn get_map_staked(&self) -> &HashMap<AddressBytes, u128> {
-        &self.map_staked
-    }
-    fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
-        &mut self.map_staked
-    }
-    fn get_latest_block(&self) -> &BlockA {
-        &self.latest_block
-    }
-    fn get_latest_block_mut(&mut self) -> &mut BlockA {
-        &mut self.latest_block
-    }
-    fn get_non_ancient_blocks(&self) -> &Vec<BlockA> {
-        &self.non_ancient_blocks
-    }
-    fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA> {
-        &mut self.non_ancient_blocks
-    }
-    fn is_trusted() -> bool {
-        true
-    }
-    fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool) {
-        append_block(self, block, previous_timestamp, loading)
-    }
-    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
-        load(self, db, hashes)
-    }
-}
 impl Fork for ForkA {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
         &mut self.hashes
@@ -117,13 +73,57 @@ impl Fork for ForkA {
         load(self, db, hashes)
     }
 }
+impl Fork for ForkB {
+    fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
+        &mut self.hashes
+    }
+    fn get_stakers(&self) -> &VecDeque<AddressBytes> {
+        &self.stakers
+    }
+    fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
+        &mut self.stakers
+    }
+    fn get_map_balance(&self) -> &HashMap<AddressBytes, u128> {
+        &self.map_balance
+    }
+    fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
+        &mut self.map_balance
+    }
+    fn get_map_staked(&self) -> &HashMap<AddressBytes, u128> {
+        &self.map_staked
+    }
+    fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
+        &mut self.map_staked
+    }
+    fn get_latest_block(&self) -> &BlockA {
+        &self.latest_block
+    }
+    fn get_latest_block_mut(&mut self) -> &mut BlockA {
+        &mut self.latest_block
+    }
+    fn get_non_ancient_blocks(&self) -> &Vec<BlockA> {
+        &self.non_ancient_blocks
+    }
+    fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA> {
+        &mut self.non_ancient_blocks
+    }
+    fn is_trusted() -> bool {
+        true
+    }
+    fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool) {
+        append_block(self, block, previous_timestamp, loading)
+    }
+    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
+        load(self, db, hashes)
+    }
+}
 #[derive(Default, Debug, Clone)]
 pub struct Manager {
     pub a: ForkA,
     pub b: ForkB,
 }
 #[derive(Default, Debug, Clone)]
-pub struct ForkB {
+pub struct ForkA {
     pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
@@ -132,7 +132,7 @@ pub struct ForkB {
     map_staked: HashMap<AddressBytes, u128>,
 }
 #[derive(Default, Debug, Clone)]
-pub struct ForkA {
+pub struct ForkB {
     pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
@@ -190,14 +190,6 @@ impl Manager {
         }
         self.a = ForkA::from(db, hashes_1, &self.b);
         debug!("{} {:?}", "Forks update".cyan(), start.elapsed());
-    }
-}
-impl ForkB {
-    pub fn append_block(&mut self, block: &BlockA, previous_timestamp: u32) {
-        append_block(self, block, previous_timestamp, false)
-    }
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
-        load(self, db, hashes)
     }
 }
 impl ForkA {
@@ -279,6 +271,14 @@ impl ForkA {
             }
         }
         false
+    }
+}
+impl ForkB {
+    pub fn append_block(&mut self, block: &BlockA, previous_timestamp: u32) {
+        append_block(self, block, previous_timestamp, false)
+    }
+    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
+        load(self, db, hashes)
     }
 }
 fn get_balance<T: Fork>(fork: &T, address: &AddressBytes) -> u128 {

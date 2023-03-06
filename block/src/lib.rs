@@ -122,9 +122,6 @@ impl BlockA {
             stakes: self.stakes.iter().map(|x| x.b()).collect(),
         }
     }
-    pub fn hash(&self) -> Hash {
-        hash(self)
-    }
     pub fn sign(
         previous_hash: Hash,
         timestamp: u32,
@@ -205,9 +202,6 @@ impl BlockB {
             transaction_hashes: self.transaction_hashes(),
             stake_hashes: self.stake_hashes(),
         }
-    }
-    pub fn hash(&self) -> Hash {
-        hash(self)
     }
     fn transaction_hashes(&self) -> Vec<Hash> {
         self.transactions.iter().map(|x| x.hash()).collect()

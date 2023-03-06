@@ -183,7 +183,7 @@ impl Blockchain {
             return Err("transaction too expensive".into());
         }
         Blockchain::validate_transaction(&self.forks.a, &transaction_a, tofuri_util::timestamp() + time_delta)?;
-        info!("Transaction {}", hex::encode(transaction_a.hash).green());
+        info!(hash = hex::encode(transaction_a.hash), "Transaction");
         self.pending_transactions.push(transaction_a);
         Ok(())
     }
@@ -207,7 +207,7 @@ impl Blockchain {
             }
         }
         Blockchain::validate_stake(&self.forks.a, &stake_a, tofuri_util::timestamp() + time_delta)?;
-        info!("Stake {}", hex::encode(stake_a.hash).green());
+        info!(hash = hex::encode(stake_a.hash), "Stake");
         self.pending_stakes.push(stake_a);
         Ok(())
     }

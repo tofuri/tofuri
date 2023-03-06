@@ -18,6 +18,7 @@ use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::P2p;
+use tofuri_tree::Branch;
 use tokio::net::TcpListener;
 use tokio::time::interval_at;
 use tracing::info;
@@ -34,7 +35,7 @@ async fn main() {
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
     let mut args = tofuri::Args::parse();
-    info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = DEV_TEMP_DB;
@@ -49,19 +50,19 @@ async fn main() {
             args.host = DEV_HOST.to_string();
         }
     }
-    info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
-    info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
-    info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
-    info!("{} {}", "--mint".cyan(), args.mint.to_string().magenta());
-    info!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
-    info!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());
-    info!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
-    info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
-    info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
-    info!("{} {}", "--peer".cyan(), args.peer.magenta());
-    info!("{} {}", "--bind-api".cyan(), args.api_internal.magenta());
-    info!("{} {}", "--host".cyan(), args.host.magenta());
-    info!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
+    println!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
+    println!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
+    println!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
+    println!("{} {}", "--mint".cyan(), args.mint.to_string().magenta());
+    println!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
+    println!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());
+    println!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
+    println!("{} {}", "--wallet".cyan(), args.wallet.magenta());
+    println!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
+    println!("{} {}", "--peer".cyan(), args.peer.magenta());
+    println!("{} {}", "--bind-api".cyan(), args.api_internal.magenta());
+    println!("{} {}", "--host".cyan(), args.host.magenta());
+    println!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
     if args.dev {
         warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
     }
@@ -69,7 +70,7 @@ async fn main() {
         true => Key::generate(),
         false => tofuri_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
     };
-    info!("Address {}", address::encode(&key.address_bytes()).green());
+    info!(address = address::encode(&key.address_bytes()));
     let tempdir = TempDir::new("tofuri-db").unwrap();
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),
@@ -91,23 +92,23 @@ async fn main() {
     let mut node = Node::new(db, key, args, p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust);
     info!(
-        "Blockchain height is {}",
-        if let Some(main) = node.blockchain.tree.main() {
-            main.height.to_string().yellow()
-        } else {
-            "0".red()
-        }
+        height = node
+            .blockchain
+            .tree
+            .main()
+            .unwrap_or(&Branch {
+                height: 0,
+                hash: [0; 32],
+                timestamp: 0
+            })
+            .height,
     );
-    info!("Latest block seen {}", node.blockchain.last_seen().yellow());
+    info!(last_seen = node.blockchain.last_seen());
     let multiaddr: Multiaddr = node.args.host.parse().unwrap();
-    node.p2p.swarm.listen_on(multiaddr.clone()).unwrap();
-    info!("Swarm is listening on {}", multiaddr.to_string().magenta());
+    info!(multiaddr = multiaddr.to_string(), "P2P");
+    node.p2p.swarm.listen_on(multiaddr).unwrap();
     let listener = TcpListener::bind(&node.args.api_internal).await.unwrap();
-    info!(
-        "API is listening on {}{}",
-        "http://".cyan(),
-        listener.local_addr().unwrap().to_string().magenta()
-    );
+    info!(local_addr = listener.local_addr().unwrap().to_string(), "RPC");
     let start = tofuri_util::interval_at_start();
     let mut interval_a = interval_at(start, Duration::from_secs(1));
     let mut interval_b = interval_at(start, Duration::from_millis(200));

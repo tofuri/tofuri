@@ -98,12 +98,7 @@ fn event_connection_established(node: &mut Node, peer_id: PeerId, endpoint: Conn
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn event_connection_established_save(node: &mut Node, peer_id: PeerId, num_established: NonZeroU32, multiaddr: Multiaddr) {
-    info!(
-        "Connection {} {} {}",
-        "established".green(),
-        multiaddr.to_string().magenta(),
-        num_established.to_string().yellow()
-    );
+    info!(multiaddr = multiaddr.to_string(), num_established, "Connection established");
     let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
     if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
         warn!("Ratelimited {}", multiaddr.to_string().magenta());
@@ -136,12 +131,7 @@ fn event_connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_establ
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn event_connection_closed_save(node: &mut Node, num_established: u32, multiaddr: Multiaddr) {
-    info!(
-        "Connection {} {} {}",
-        "closed".red(),
-        multiaddr.to_string().magenta(),
-        num_established.to_string().yellow()
-    );
+    info!(multiaddr = multiaddr.to_string(), num_established, "Connection closed");
     node.p2p.connections.remove(&multiaddr);
     let _ = node.p2p.swarm.dial(multiaddr);
 }

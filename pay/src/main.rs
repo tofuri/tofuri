@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
     let mut args = Args::parse();
-    info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = DEV_TEMP_DB;
@@ -48,16 +48,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             args.pay_api = DEV_PAY_API.to_string();
         }
     }
-    info!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
-    info!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
-    info!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
-    info!("{} {}", "--confirmations".cyan(), args.confirmations.to_string().magenta());
-    info!("{} {}", "--expires".cyan(), args.expires.to_string().magenta());
-    info!("{} {}", "--wallet".cyan(), args.wallet.magenta());
-    info!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
-    info!("{} {}", "--api".cyan(), args.api.magenta());
-    info!("{} {}", "--pay_api".cyan(), args.pay_api.magenta());
-    info!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
+    println!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
+    println!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
+    println!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
+    println!("{} {}", "--confirmations".cyan(), args.confirmations.to_string().magenta());
+    println!("{} {}", "--expires".cyan(), args.expires.to_string().magenta());
+    println!("{} {}", "--wallet".cyan(), args.wallet.magenta());
+    println!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
+    println!("{} {}", "--api".cyan(), args.api.magenta());
+    println!("{} {}", "--pay_api".cyan(), args.pay_api.magenta());
+    println!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
     if args.dev {
         warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
     }
@@ -66,7 +66,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         true => Key::generate(),
         false => tofuri_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
     };
-    info!("Address {}", address::encode(&key.address_bytes()).green());
+    info!(address = address::encode(&key.address_bytes()));
     let tempdir = TempDir::new("tofuri-pay-db").unwrap();
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),

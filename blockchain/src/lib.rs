@@ -29,7 +29,7 @@ pub struct Blockchain {
     pending_blocks: Vec<BlockA>,
 }
 impl Blockchain {
-    #[tracing::instrument(skip_all, level = "trace")]
+    #[tracing::instrument(skip_all)]
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         tofuri_db::tree::reload(&mut self.tree, db);
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(trust_fork_after_blocks);

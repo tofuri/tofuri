@@ -7,7 +7,6 @@ use tofuri_block::BlockA;
 use tofuri_block::BlockB;
 use tofuri_blockchain_sync::Sync;
 use tofuri_core::*;
-use tofuri_db as db;
 use tofuri_fork::Dynamic;
 use tofuri_fork::Forks;
 use tofuri_key::Key;
@@ -34,7 +33,7 @@ pub struct Blockchain {
 impl Blockchain {
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         let start = Instant::now();
-        db::tree::reload(&mut self.tree, db);
+        tofuri_db::tree::reload(&mut self.tree, db);
         info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(trust_fork_after_blocks);
@@ -88,7 +87,7 @@ impl Blockchain {
             hashes_dynamic[height - hashes_trusted.len()]
         };
         debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
-        db::block::get_b(db, &hash).ok()
+        tofuri_db::block::get_b(db, &hash).ok()
     }
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> BlockA {
         if self.forks.dynamic.next_staker(timestamp).is_none() {
@@ -136,7 +135,7 @@ impl Blockchain {
         block_a
     }
     fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forged: bool, trust_fork_after_blocks: usize) {
-        db::block::put(block_a, db).unwrap();
+        tofuri_db::block::put(block_a, db).unwrap();
         let fork = self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap();
         self.tree.sort_branches();
         if let Some(main) = self.tree.main() {

@@ -208,7 +208,7 @@ impl ForkA {
         dynamic.load(db, hashes);
         dynamic
     }
-    #[tracing::instrument(skip_all, level = "trace")]
+    #[tracing::instrument(skip_all, level = "debug")]
     pub fn check_overflow(&self, transactions: &Vec<TransactionA>, stakes: &Vec<StakeA>) -> Result<(), Box<dyn Error>> {
         let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
         let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
@@ -245,7 +245,7 @@ impl ForkA {
         }
         Ok(())
     }
-    #[tracing::instrument(skip_all, level = "trace")]
+    #[tracing::instrument(skip_all, level = "debug")]
     pub fn transaction_in_chain(&self, transaction_a: &TransactionA) -> bool {
         for block in self.non_ancient_blocks.iter() {
             if block.transactions.iter().any(|a| a.hash == transaction_a.hash) {
@@ -254,7 +254,7 @@ impl ForkA {
         }
         false
     }
-    #[tracing::instrument(skip_all, level = "trace")]
+    #[tracing::instrument(skip_all, level = "debug")]
     pub fn stake_in_chain(&self, stake_a: &StakeA) -> bool {
         for block in self.non_ancient_blocks.iter() {
             if block.stakes.iter().any(|a| a.hash == stake_a.hash) {
@@ -287,30 +287,35 @@ impl ForkB {
         load(self, db, hashes)
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn get_balance<T: Fork>(fork: &T, address: &AddressBytes) -> u128 {
     match fork.get_map_balance().get(address) {
         Some(b) => *b,
         None => 0,
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn get_staked<T: Fork>(fork: &T, address: &AddressBytes) -> u128 {
     match fork.get_map_staked().get(address) {
         Some(b) => *b,
         None => 0,
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn insert_balance<T: Fork>(fork: &mut T, address: AddressBytes, balance: u128) {
     match balance {
         0 => fork.get_map_balance_mut().remove(&address),
         x => fork.get_map_balance_mut().insert(address, x),
     };
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn insert_staked<T: Fork>(fork: &mut T, address: AddressBytes, staked: u128) {
     match staked {
         0 => fork.get_map_staked_mut().remove(&address),
         x => fork.get_map_staked_mut().insert(address, x),
     };
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn update_stakers<T: Fork>(fork: &mut T, address: AddressBytes) {
     let staked = get_staked(fork, &address);
     let index = fork.get_stakers().iter().position(|x| x == &address);
@@ -320,6 +325,7 @@ fn update_stakers<T: Fork>(fork: &mut T, address: AddressBytes) {
         fork.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn update_0<T: Fork>(fork: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
     let stakers = stakers_offline(fork, timestamp, previous_timestamp);
     for (index, staker) in stakers.iter().enumerate() {
@@ -339,6 +345,7 @@ fn update_0<T: Fork>(fork: &mut T, timestamp: u32, previous_timestamp: u32, load
         }
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn update_1<T: Fork>(fork: &mut T, block: &BlockA) {
     let input_address = block.input_address();
     let mut balance = get_balance(fork, &input_address);
@@ -350,6 +357,7 @@ fn update_1<T: Fork>(fork: &mut T, block: &BlockA) {
     }
     insert_balance(fork, input_address, balance)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn update_2<T: Fork>(fork: &mut T, block: &BlockA) {
     for transaction in block.transactions.iter() {
         let mut balance_input = get_balance(fork, &transaction.input_address);
@@ -373,29 +381,34 @@ fn update_2<T: Fork>(fork: &mut T, block: &BlockA) {
         insert_staked(fork, stake.input_address, staked);
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn update_3<T: Fork>(fork: &mut T, block: &BlockA) {
     for stake in block.stakes.iter() {
         update_stakers(fork, stake.input_address);
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn update<T: Fork>(fork: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
     update_0(fork, block.timestamp, previous_timestamp, loading);
     update_1(fork, block);
     update_2(fork, block);
     update_3(fork, block);
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn update_non_ancient_blocks<T: Fork>(fork: &mut T, block: &BlockA) {
     while fork.get_non_ancient_blocks().first().is_some() && tofuri_util::ancient(fork.get_non_ancient_blocks().first().unwrap().timestamp, block.timestamp) {
         (*fork.get_non_ancient_blocks_mut()).remove(0);
     }
     (*fork.get_non_ancient_blocks_mut()).push(block.clone());
 }
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn append_block<T: Fork>(fork: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
     fork.get_hashes_mut().push(block.hash);
     update(fork, block, previous_timestamp, loading);
     *fork.get_latest_block_mut() = block.clone();
     update_non_ancient_blocks(fork, block);
 }
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
     let mut previous_timestamp = match hashes.first() {
         Some(hash) => tofuri_db::block::get_b(db, hash).unwrap().timestamp,
@@ -407,6 +420,7 @@ pub fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes
         previous_timestamp = block_a.timestamp;
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn stakers_n<T: Fork>(fork: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     fn random_n(slice: &[(AddressBytes, u128)], beta: &Beta, n: u128, modulo: u128) -> usize {
         let random = tofuri_util::random(beta, n, modulo);
@@ -440,16 +454,19 @@ fn stakers_n<T: Fork>(fork: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     }
     (random_queue, false)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
     let diff = timestamp.saturating_sub(previous_timestamp + 1);
     (diff / BLOCK_TIME) as usize
 }
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn next_staker<T: Fork>(fork: &T, timestamp: u32) -> Option<AddressBytes> {
     match stakers_n(fork, offline(timestamp, fork.get_latest_block().timestamp)) {
         (_, true) => None,
         (x, _) => x.last().copied(),
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn stakers_offline<T: Fork>(fork: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
     match offline(timestamp, previous_timestamp) {
         0 => vec![],

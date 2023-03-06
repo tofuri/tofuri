@@ -216,10 +216,8 @@ fn event_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel
 fn event_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
     node.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
-        match node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust) {
-            Ok(()) => node.blockchain.save_blocks(&node.db, node.args.trust),
-            Err(err) => debug!(err),
-        }
+        node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)?;
+        node.blockchain.save_blocks(&node.db, node.args.trust);
     }
     Ok(())
 }

@@ -3,6 +3,7 @@ use std::error::Error;
 use tofuri_api_internal_core::Data;
 use tofuri_api_internal_core::Request;
 use tofuri_block::BlockA;
+use tofuri_blockchain_sync::Sync;
 use tofuri_core::*;
 use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
@@ -111,7 +112,7 @@ pub async fn time(addr: &str) -> Result<i64, Box<dyn Error>> {
 pub async fn tree_size(addr: &str) -> Result<usize, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::TreeSize, addr, None).await?)?)
 }
-pub async fn sync(addr: &str) -> Result<tofuri_blockchain::sync::Sync, Box<dyn Error>> {
+pub async fn sync(addr: &str) -> Result<Sync, Box<dyn Error>> {
     Ok(bincode::deserialize(&r(Data::Sync, addr, None).await?)?)
 }
 pub async fn random_queue(addr: &str) -> Result<Vec<AddressBytes>, Box<dyn Error>> {

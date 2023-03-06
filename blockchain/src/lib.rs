@@ -1,9 +1,7 @@
 pub mod state;
 pub mod states;
-pub mod sync;
 use crate::state::Dynamic;
 use crate::states::States;
-use crate::sync::Sync;
 use colored::*;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
@@ -11,6 +9,7 @@ use std::error::Error;
 use std::time::Instant;
 use tofuri_block::BlockA;
 use tofuri_block::BlockB;
+use tofuri_blockchain_sync::Sync;
 use tofuri_core::*;
 use tofuri_db as db;
 use tofuri_key::Key;

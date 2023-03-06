@@ -10,7 +10,7 @@ repository = "https://github.com/tofuri/tofuri"
 tofuri-core = { version = "0.1", path = "../core" }
 tofuri-api-internal-core = { version = "0.1", path = "../api-internal-core" }
 tofuri-block = { version = "0.1", path = "../block" }
-tofuri-blockchain = { version = "0.1", path = "../blockchain" }
+tofuri-blockchain-sync = { version = "0.1", path = "../blockchain-sync" }
 tofuri-transaction = { version = "0.1", path = "../transaction" }
 tofuri-stake = { version = "0.1", path = "../stake" }
 tokio = { version = "1.24", features = ["full"] }

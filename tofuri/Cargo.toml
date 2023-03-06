@@ -14,6 +14,7 @@ tofuri-api-internal-core = { version = "0.1", path = "../api-internal-core" }
 tofuri-int = { version = "0.1", path = "../int" }
 tofuri-block = { version = "0.1", path = "../block" }
 tofuri-blockchain = { version = "0.1", path = "../blockchain" }
+tofuri-blockchain-sync = { version = "0.1", path = "../blockchain-sync" }
 tofuri-core = { version = "0.1", path = "../core" }
 tofuri-db = { version = "0.1", path = "../db" }
 tofuri-p2p = { version = "0.1", path = "../p2p" }

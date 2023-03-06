@@ -4254,6 +4254,7 @@ dependencies = [
  "tofuri-api-internal-core",
  "tofuri-block",
  "tofuri-blockchain",
+ "tofuri-blockchain-sync",
  "tofuri-core",
  "tofuri-db",
  "tofuri-int",
@@ -4317,7 +4318,7 @@ dependencies = [
  "multiaddr 0.17.0",
  "tofuri-api-internal-core",
  "tofuri-block",
- "tofuri-blockchain",
+ "tofuri-blockchain-sync",
  "tofuri-core",
  "tofuri-stake",
  "tofuri-transaction",
@@ -4364,11 +4365,10 @@ version = "0.1.0"
 dependencies = [
  "colored",
  "hex",
- "lazy_static",
  "rocksdb",
- "serde",
  "tofuri-address",
  "tofuri-block",
+ "tofuri-blockchain-sync",
  "tofuri-core",
  "tofuri-db",
  "tofuri-int",
@@ -4378,6 +4378,15 @@ dependencies = [
  "tofuri-tree",
  "tofuri-util",
  "tracing",
+]
+
+[[package]]
+name = "tofuri-blockchain-sync"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "serde",
+ "tofuri-core",
 ]
 
 [[package]]

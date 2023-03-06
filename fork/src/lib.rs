@@ -281,47 +281,47 @@ impl Fork for Dynamic {
         load(self, db, hashes)
     }
 }
-fn get_balance<T: Fork>(state: &T, address: &AddressBytes) -> u128 {
-    match state.get_map_balance().get(address) {
+fn get_balance<T: Fork>(fork: &T, address: &AddressBytes) -> u128 {
+    match fork.get_map_balance().get(address) {
         Some(b) => *b,
         None => 0,
     }
 }
-fn get_staked<T: Fork>(state: &T, address: &AddressBytes) -> u128 {
-    match state.get_map_staked().get(address) {
+fn get_staked<T: Fork>(fork: &T, address: &AddressBytes) -> u128 {
+    match fork.get_map_staked().get(address) {
         Some(b) => *b,
         None => 0,
     }
 }
-fn insert_balance<T: Fork>(state: &mut T, address: AddressBytes, balance: u128) {
+fn insert_balance<T: Fork>(fork: &mut T, address: AddressBytes, balance: u128) {
     match balance {
-        0 => state.get_map_balance_mut().remove(&address),
-        x => state.get_map_balance_mut().insert(address, x),
+        0 => fork.get_map_balance_mut().remove(&address),
+        x => fork.get_map_balance_mut().insert(address, x),
     };
 }
-fn insert_staked<T: Fork>(state: &mut T, address: AddressBytes, staked: u128) {
+fn insert_staked<T: Fork>(fork: &mut T, address: AddressBytes, staked: u128) {
     match staked {
-        0 => state.get_map_staked_mut().remove(&address),
-        x => state.get_map_staked_mut().insert(address, x),
+        0 => fork.get_map_staked_mut().remove(&address),
+        x => fork.get_map_staked_mut().insert(address, x),
     };
 }
-fn update_stakers<T: Fork>(state: &mut T, address: AddressBytes) {
-    let staked = get_staked(state, &address);
-    let index = state.get_stakers().iter().position(|x| x == &address);
+fn update_stakers<T: Fork>(fork: &mut T, address: AddressBytes) {
+    let staked = get_staked(fork, &address);
+    let index = fork.get_stakers().iter().position(|x| x == &address);
     if index.is_none() && staked >= COIN {
-        state.get_stakers_mut().push_back(address);
+        fork.get_stakers_mut().push_back(address);
     } else if index.is_some() && staked < COIN {
-        state.get_stakers_mut().remove(index.unwrap()).unwrap();
+        fork.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }
-fn update_0<T: Fork>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
-    let stakers = stakers_offline(state, timestamp, previous_timestamp);
+fn update_0<T: Fork>(fork: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
+    let stakers = stakers_offline(fork, timestamp, previous_timestamp);
     for (index, staker) in stakers.iter().enumerate() {
-        let mut staked = get_staked(state, staker);
+        let mut staked = get_staked(fork, staker);
         let penalty = tofuri_util::penalty(index + 1);
         staked = staked.saturating_sub(penalty);
-        insert_staked(state, *staker, staked);
-        update_stakers(state, *staker);
+        insert_staked(fork, *staker, staked);
+        update_stakers(fork, *staker);
         if !loading && !T::is_trusted() {
             warn!(
                 "{} {} {}{}",
@@ -333,29 +333,29 @@ fn update_0<T: Fork>(state: &mut T, timestamp: u32, previous_timestamp: u32, loa
         }
     }
 }
-fn update_1<T: Fork>(state: &mut T, block: &BlockA) {
+fn update_1<T: Fork>(fork: &mut T, block: &BlockA) {
     let input_address = block.input_address();
-    let mut balance = get_balance(state, &input_address);
+    let mut balance = get_balance(fork, &input_address);
     balance += block.reward();
     if let Some(stake) = block.stakes.first() {
         if stake.fee == 0 {
-            insert_staked(state, input_address, COIN)
+            insert_staked(fork, input_address, COIN)
         }
     }
-    insert_balance(state, input_address, balance)
+    insert_balance(fork, input_address, balance)
 }
-fn update_2<T: Fork>(state: &mut T, block: &BlockA) {
+fn update_2<T: Fork>(fork: &mut T, block: &BlockA) {
     for transaction in block.transactions.iter() {
-        let mut balance_input = get_balance(state, &transaction.input_address);
-        let mut balance_output = get_balance(state, &transaction.output_address);
+        let mut balance_input = get_balance(fork, &transaction.input_address);
+        let mut balance_output = get_balance(fork, &transaction.output_address);
         balance_input -= transaction.amount + transaction.fee;
         balance_output += transaction.amount;
-        insert_balance(state, transaction.input_address, balance_input);
-        insert_balance(state, transaction.output_address, balance_output);
+        insert_balance(fork, transaction.input_address, balance_input);
+        insert_balance(fork, transaction.output_address, balance_output);
     }
     for stake in block.stakes.iter() {
-        let mut balance = get_balance(state, &stake.input_address);
-        let mut staked = get_staked(state, &stake.input_address);
+        let mut balance = get_balance(fork, &stake.input_address);
+        let mut staked = get_staked(fork, &stake.input_address);
         if stake.deposit {
             balance -= stake.amount + stake.fee;
             staked += stake.amount;
@@ -363,45 +363,45 @@ fn update_2<T: Fork>(state: &mut T, block: &BlockA) {
             balance += stake.amount - stake.fee;
             staked -= stake.amount;
         }
-        insert_balance(state, stake.input_address, balance);
-        insert_staked(state, stake.input_address, staked);
+        insert_balance(fork, stake.input_address, balance);
+        insert_staked(fork, stake.input_address, staked);
     }
 }
-fn update_3<T: Fork>(state: &mut T, block: &BlockA) {
+fn update_3<T: Fork>(fork: &mut T, block: &BlockA) {
     for stake in block.stakes.iter() {
-        update_stakers(state, stake.input_address);
+        update_stakers(fork, stake.input_address);
     }
 }
-pub fn update<T: Fork>(state: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
-    update_0(state, block.timestamp, previous_timestamp, loading);
-    update_1(state, block);
-    update_2(state, block);
-    update_3(state, block);
+pub fn update<T: Fork>(fork: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
+    update_0(fork, block.timestamp, previous_timestamp, loading);
+    update_1(fork, block);
+    update_2(fork, block);
+    update_3(fork, block);
 }
-fn update_non_ancient_blocks<T: Fork>(state: &mut T, block: &BlockA) {
-    while state.get_non_ancient_blocks().first().is_some() && tofuri_util::ancient(state.get_non_ancient_blocks().first().unwrap().timestamp, block.timestamp) {
-        (*state.get_non_ancient_blocks_mut()).remove(0);
+fn update_non_ancient_blocks<T: Fork>(fork: &mut T, block: &BlockA) {
+    while fork.get_non_ancient_blocks().first().is_some() && tofuri_util::ancient(fork.get_non_ancient_blocks().first().unwrap().timestamp, block.timestamp) {
+        (*fork.get_non_ancient_blocks_mut()).remove(0);
     }
-    (*state.get_non_ancient_blocks_mut()).push(block.clone());
+    (*fork.get_non_ancient_blocks_mut()).push(block.clone());
 }
-pub fn append_block<T: Fork>(state: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
-    state.get_hashes_mut().push(block.hash);
-    update(state, block, previous_timestamp, loading);
-    *state.get_latest_block_mut() = block.clone();
-    update_non_ancient_blocks(state, block);
+pub fn append_block<T: Fork>(fork: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
+    fork.get_hashes_mut().push(block.hash);
+    update(fork, block, previous_timestamp, loading);
+    *fork.get_latest_block_mut() = block.clone();
+    update_non_ancient_blocks(fork, block);
 }
-pub fn load<T: Fork>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
+pub fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
     let mut previous_timestamp = match hashes.first() {
         Some(hash) => tofuri_db::block::get_b(db, hash).unwrap().timestamp,
         None => 0,
     };
     for hash in hashes.iter() {
         let block_a = tofuri_db::block::get_a(db, hash).unwrap();
-        state.append_block(&block_a, previous_timestamp, true);
+        fork.append_block(&block_a, previous_timestamp, true);
         previous_timestamp = block_a.timestamp;
     }
 }
-fn stakers_n<T: Fork>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
+fn stakers_n<T: Fork>(fork: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     fn random_n(slice: &[(AddressBytes, u128)], beta: &Beta, n: u128, modulo: u128) -> usize {
         let random = tofuri_util::random(beta, n, modulo);
         let mut counter = 0;
@@ -415,8 +415,8 @@ fn stakers_n<T: Fork>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     }
     let mut modulo = 0;
     let mut vec: Vec<(AddressBytes, u128)> = vec![];
-    for staker in state.get_stakers().iter() {
-        let staked = get_staked(state, staker);
+    for staker in fork.get_stakers().iter() {
+        let staked = get_staked(fork, staker);
         modulo += staked;
         vec.push((*staker, staked));
     }
@@ -428,7 +428,7 @@ fn stakers_n<T: Fork>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
         if modulo == 0 {
             return (random_queue, true);
         }
-        let index = random_n(&vec, &state.get_latest_block().beta, index as u128, modulo);
+        let index = random_n(&vec, &fork.get_latest_block().beta, index as u128, modulo);
         vec[index] = (vec[index].0, vec[index].1.saturating_sub(penalty));
         random_queue.push(vec[index].0);
     }
@@ -438,15 +438,15 @@ fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
     let diff = timestamp.saturating_sub(previous_timestamp + 1);
     (diff / BLOCK_TIME) as usize
 }
-pub fn next_staker<T: Fork>(state: &T, timestamp: u32) -> Option<AddressBytes> {
-    match stakers_n(state, offline(timestamp, state.get_latest_block().timestamp)) {
+pub fn next_staker<T: Fork>(fork: &T, timestamp: u32) -> Option<AddressBytes> {
+    match stakers_n(fork, offline(timestamp, fork.get_latest_block().timestamp)) {
         (_, true) => None,
         (x, _) => x.last().copied(),
     }
 }
-fn stakers_offline<T: Fork>(state: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
+fn stakers_offline<T: Fork>(fork: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
     match offline(timestamp, previous_timestamp) {
         0 => vec![],
-        n => stakers_n(state, n - 1).0,
+        n => stakers_n(fork, n - 1).0,
     }
 }

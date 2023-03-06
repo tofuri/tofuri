@@ -114,14 +114,14 @@ fn height(node: &mut Node) -> Result<usize, Box<dyn Error>> {
 }
 fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
-    Ok(node.blockchain.height_by_hash(&hash).ok_or("GET HEIGHT_BY_HASH")?)
+    Ok(node.blockchain.height_by_hash(&hash).ok_or("height_by_hash")?)
 }
 fn block_latest(node: &mut Node) -> Result<&BlockA, Box<dyn Error>> {
     Ok(&node.blockchain.forks.a.latest_block)
 }
 fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Box<dyn Error>> {
     let height: usize = bincode::deserialize(bytes)?;
-    Ok(node.blockchain.hash_by_height(height).ok_or("GET HASH_BY_HEIGHT")?)
+    Ok(node.blockchain.hash_by_height(height).ok_or("hash_by_height")?)
 }
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
@@ -140,7 +140,7 @@ fn peers(node: &mut Node) -> Result<Vec<&Multiaddr>, Box<dyn Error>> {
 }
 fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
     let multiaddr: Multiaddr = bincode::deserialize(bytes)?;
-    let multiaddr = multiaddr::ip_port(&multiaddr).ok_or("multiaddr filter_ip_port")?;
+    let multiaddr = multiaddr::ip_port(&multiaddr).ok_or("ip_port")?;
     node.p2p.unknown.insert(multiaddr);
     Ok(())
 }

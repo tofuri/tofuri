@@ -4400,7 +4400,6 @@ dependencies = [
 name = "tofuri-fork"
 version = "0.1.0"
 dependencies = [
- "colored",
  "rocksdb",
  "tofuri-address",
  "tofuri-block",

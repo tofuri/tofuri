@@ -1,4 +1,3 @@
-use colored::Colorize;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;

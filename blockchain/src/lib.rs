@@ -35,7 +35,6 @@ impl Blockchain {
         self.forks.b.load(db, &hashes_trusted);
         self.forks.a = ForkA::from(db, &hashes_dynamic, &self.forks.b);
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn last_seen(&self) -> String {
         if self.forks.a.latest_block.timestamp == 0 {
             return "never".to_string();
@@ -49,18 +48,15 @@ impl Blockchain {
         }
         string
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn height(&self) -> usize {
         self.forks.b.hashes.len() + self.forks.a.hashes.len()
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn height_by_hash(&self, hash: &Hash) -> Option<usize> {
         if let Some(index) = self.forks.a.hashes.iter().position(|a| a == hash) {
             return Some(self.forks.b.hashes.len() + index);
         }
         self.forks.b.hashes.iter().position(|a| a == hash)
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn hash_by_height(&self, height: usize) -> Option<Hash> {
         let len_trusted = self.forks.b.hashes.len();
         let len_dynamic = self.forks.a.hashes.len();
@@ -73,7 +69,6 @@ impl Blockchain {
             Some(self.forks.a.hashes[height - len_trusted])
         }
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, height: usize) -> Option<BlockB> {
         let hashes_trusted = &self.forks.b.hashes;
         let hashes_dynamic = &self.forks.a.hashes;
@@ -87,7 +82,6 @@ impl Blockchain {
         };
         tofuri_db::block::get_b(db, &hash).ok()
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> BlockA {
         if self.forks.a.next_staker(timestamp).is_none() {
             self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, key).unwrap()];
@@ -133,7 +127,6 @@ impl Blockchain {
         self.save_block(db, &block_a, true, trust_fork_after_blocks);
         block_a
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forger: bool, trust_fork_after_blocks: usize) {
         tofuri_db::block::put(block_a, db).unwrap();
         let fork = self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap();
@@ -155,7 +148,6 @@ impl Blockchain {
             if forger { "Forged".magenta() } else { "Accept".green() }
         );
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn save_blocks(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         let timestamp = tofuri_util::timestamp();
         let mut vec = vec![];
@@ -171,7 +163,6 @@ impl Blockchain {
             self.save_block(db, &block_a, false, trust_fork_after_blocks);
         }
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, time_delta: u32) -> Result<(), Box<dyn Error>> {
         let transaction_a = transaction_b.a(None)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
@@ -185,7 +176,6 @@ impl Blockchain {
         self.pending_transactions.push(transaction_a);
         Ok(())
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn pending_stakes_push(&mut self, stake_b: StakeB, time_delta: u32) -> Result<(), Box<dyn Error>> {
         let stake_a = stake_b.a(None)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
@@ -209,7 +199,6 @@ impl Blockchain {
         self.pending_stakes.push(stake_a);
         Ok(())
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn pending_blocks_push(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -225,12 +214,10 @@ impl Blockchain {
         self.pending_blocks.push(block_a);
         Ok(())
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn pending_retain_non_ancient(&mut self, timestamp: u32) {
         self.pending_transactions.retain(|a| !tofuri_util::ancient(a.timestamp, timestamp));
         self.pending_stakes.retain(|a| !tofuri_util::ancient(a.timestamp, timestamp));
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     fn validate_transaction(dynamic: &ForkA, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if transaction_a.amount == 0 {
             return Err("transaction amount zero".into());
@@ -258,7 +245,6 @@ impl Blockchain {
         }
         Ok(())
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     fn validate_stake(dynamic: &ForkA, stake_a: &StakeA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if stake_a.amount == 0 {
             return Err("stake amount zero".into());
@@ -283,7 +269,6 @@ impl Blockchain {
         }
         Ok(())
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn validate_block(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -342,11 +327,9 @@ impl Blockchain {
         dynamic.check_overflow(&block_a.transactions, &block_a.stakes)?;
         Ok(())
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn balance(&self, address: &AddressBytes) -> u128 {
         self.forks.a.balance(address)
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn balance_pending_min(&self, address: &AddressBytes) -> u128 {
         let mut balance = self.balance(address);
         for transaction_a in self.pending_transactions.iter() {
@@ -366,7 +349,6 @@ impl Blockchain {
         }
         balance
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn balance_pending_max(&self, address: &AddressBytes) -> u128 {
         let mut balance = self.balance(address);
         for transaction_a in self.pending_transactions.iter() {
@@ -382,11 +364,9 @@ impl Blockchain {
         }
         balance
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn staked(&self, address: &AddressBytes) -> u128 {
         self.forks.a.staked(address)
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn staked_pending_min(&self, address: &AddressBytes) -> u128 {
         let mut staked = self.staked(address);
         for stake_a in self.pending_stakes.iter() {
@@ -396,7 +376,6 @@ impl Blockchain {
         }
         staked
     }
-    #[tracing::instrument(skip_all, level = "trace")]
     pub fn staked_pending_max(&self, address: &AddressBytes) -> u128 {
         let mut staked = self.staked(address);
         for stake_a in self.pending_stakes.iter() {

@@ -1,5 +1,4 @@
 use crate::Node;
-use colored::*;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::core::either::EitherError;
 use libp2p::gossipsub::error::GossipsubHandlerError;

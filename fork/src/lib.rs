@@ -139,7 +139,7 @@ pub struct ForkB {
     map_staked: HashMap<AddressBytes, u128>,
 }
 impl Manager {
-    #[tracing::instrument(skip_all, level = "debug")]
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn dynamic_fork(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -174,7 +174,7 @@ impl Manager {
         hashes.reverse();
         Ok(ForkA::from(db, &hashes, &self.b))
     }
-    #[tracing::instrument(skip_all, level = "debug")]
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[Hash], trust_fork_after_blocks: usize) {
         let hashes_0 = &self.a.hashes;
         if hashes_0.len() == trust_fork_after_blocks {
@@ -191,7 +191,7 @@ impl Manager {
     }
 }
 impl ForkA {
-    #[tracing::instrument(skip_all, level = "debug")]
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash], trusted: &ForkB) -> ForkA {
         let mut dynamic = Self {
             hashes: vec![],
@@ -204,7 +204,7 @@ impl ForkA {
         dynamic.load(db, hashes);
         dynamic
     }
-    #[tracing::instrument(skip_all, level = "debug")]
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn check_overflow(&self, transactions: &Vec<TransactionA>, stakes: &Vec<StakeA>) -> Result<(), Box<dyn Error>> {
         let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
         let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
@@ -241,7 +241,7 @@ impl ForkA {
         }
         Ok(())
     }
-    #[tracing::instrument(skip_all, level = "debug")]
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn transaction_in_chain(&self, transaction_a: &TransactionA) -> bool {
         for block in self.non_ancient_blocks.iter() {
             if block.transactions.iter().any(|a| a.hash == transaction_a.hash) {
@@ -250,7 +250,7 @@ impl ForkA {
         }
         false
     }
-    #[tracing::instrument(skip_all, level = "debug")]
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn stake_in_chain(&self, stake_a: &StakeA) -> bool {
         for block in self.non_ancient_blocks.iter() {
             if block.stakes.iter().any(|a| a.hash == stake_a.hash) {

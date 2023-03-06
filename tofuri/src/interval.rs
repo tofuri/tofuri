@@ -13,12 +13,12 @@ use tracing::info;
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn dial_known(node: &mut Node) {
     let vec = node.p2p.known.clone().into_iter().collect();
-    dial(node, vec, true);
+    dial(node, vec);
 }
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn dial_unknown(node: &mut Node) {
     let vec = node.p2p.unknown.drain().collect();
-    dial(node, vec, false);
+    dial(node, vec);
 }
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn clear(node: &mut Node) {
@@ -27,7 +27,7 @@ pub fn clear(node: &mut Node) {
     node.p2p.filter.clear();
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
+fn dial(node: &mut Node, vec: Vec<Multiaddr>) {
     for mut multiaddr in vec {
         if node.p2p.connections.contains_key(&multiaddr::ip(&multiaddr).expect("multiaddr to include ip")) {
             continue;
@@ -36,11 +36,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
         if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
             continue;
         }
-        debug!(
-            "Dialing {} peer {}",
-            if known { "known".green() } else { "unknown".red() },
-            multiaddr.to_string().magenta()
-        );
+        debug!(multiaddr = multiaddr.to_string());
         if !multiaddr::has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }

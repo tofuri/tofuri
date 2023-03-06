@@ -206,8 +206,8 @@ impl Pay {
         self.chain = chain;
         Ok(())
     }
+    #[tracing::instrument(skip_all)]
     pub fn load(&mut self) {
-        let start = Instant::now();
         for res in self.db.iterator_cf(tofuri_pay_db::charges(&self.db), IteratorMode::Start) {
             self.subkey_n += 1;
             let (hash, bytes) = res.unwrap();
@@ -217,6 +217,5 @@ impl Pay {
                 self.charges.insert(hash, charge);
             }
         }
-        info!("Loaded charges in {}", format!("{:?}", start.elapsed()).yellow());
     }
 }

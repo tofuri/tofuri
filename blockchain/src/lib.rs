@@ -35,7 +35,7 @@ impl Blockchain {
         self.forks.b.load(db, &hashes_trusted);
         self.forks.a = ForkA::from(db, &hashes_dynamic, &self.forks.b);
     }
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn last_seen(&self) -> String {
         if self.forks.a.latest_block.timestamp == 0 {
             return "never".to_string();

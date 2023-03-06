@@ -2,7 +2,6 @@ use colored::*;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::error::Error;
-use std::time::Instant;
 use tofuri_block::BlockA;
 use tofuri_block::BlockB;
 use tofuri_core::*;
@@ -20,7 +19,6 @@ use tofuri_util::STAKE_SIZE;
 use tofuri_util::TRANSACTION_SIZE;
 use tracing::debug;
 use tracing::info;
-use tracing::warn;
 #[derive(Default, Debug, Clone)]
 pub struct Blockchain {
     pub tree: Tree,
@@ -32,14 +30,10 @@ pub struct Blockchain {
 }
 impl Blockchain {
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
-        let start = Instant::now();
         tofuri_db::tree::reload(&mut self.tree, db);
-        info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
-        let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(trust_fork_after_blocks);
         self.forks.b.load(db, &hashes_trusted);
         self.forks.a = ForkA::from(db, &hashes_dynamic, &self.forks.b);
-        info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
     }
     pub fn last_seen(&self) -> String {
         if self.forks.a.latest_block.timestamp == 0 {

@@ -199,6 +199,7 @@ impl ForkA {
     pub fn staked(&self, address: &AddressBytes) -> u128 {
         get_staked(self, address)
     }
+    #[tracing::instrument(skip_all, level = "debug")]
     pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash], trusted: &ForkB) -> ForkA {
         let mut dynamic = Self {
             hashes: vec![],
@@ -277,6 +278,7 @@ impl ForkB {
     pub fn append_block(&mut self, block: &BlockA, previous_timestamp: u32) {
         append_block(self, block, previous_timestamp, false)
     }
+    #[tracing::instrument(skip_all)]
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
     }

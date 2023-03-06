@@ -170,6 +170,7 @@ pub mod tree {
     use tofuri_block::BlockC;
     use tofuri_core::*;
     use tofuri_tree::Tree;
+    #[tracing::instrument(skip_all)]
     pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) {
         tree.clear();
         let mut map: HashMap<Hash, Vec<(Hash, u32)>> = HashMap::new();

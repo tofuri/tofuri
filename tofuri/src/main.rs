@@ -22,10 +22,18 @@ use tokio::net::TcpListener;
 use tokio::time::interval_at;
 use tracing::debug;
 use tracing::info;
+use tracing::metadata::LevelFilter;
 use tracing::warn;
+use tracing_subscriber::fmt;
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::registry()
+        .with(EnvFilter::builder().with_default_directive(LevelFilter::INFO.into()).from_env_lossy())
+        .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
+        .init();
     let mut args = tofuri::Args::parse();
     info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {

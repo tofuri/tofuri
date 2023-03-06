@@ -156,7 +156,7 @@ fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Box<dyn Error>
     Ok(node.blockchain.height_by_hash(&hash).ok_or("GET HEIGHT_BY_HASH")?)
 }
 fn block_latest(node: &mut Node) -> Result<&BlockA, Box<dyn Error>> {
-    Ok(&node.blockchain.forks.dynamic.latest_block)
+    Ok(&node.blockchain.forks.a.latest_block)
 }
 fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Box<dyn Error>> {
     let height: usize = bincode::deserialize(bytes)?;
@@ -248,23 +248,23 @@ fn sync(node: &mut Node) -> &tofuri_sync::Sync {
     &node.blockchain.sync
 }
 fn random_queue(node: &mut Node) -> Vec<AddressBytes> {
-    node.blockchain.forks.dynamic.stakers_n(8)
+    node.blockchain.forks.a.stakers_n(8)
 }
 fn dynamic_hashes(node: &mut Node) -> usize {
-    node.blockchain.forks.dynamic.hashes.len()
+    node.blockchain.forks.a.hashes.len()
 }
 fn dynamic_latest_hashes(node: &mut Node) -> Vec<&Hash> {
-    node.blockchain.forks.dynamic.hashes.iter().rev().take(16).collect()
+    node.blockchain.forks.a.hashes.iter().rev().take(16).collect()
 }
 fn dynamic_stakers(node: &mut Node) -> usize {
-    node.blockchain.forks.dynamic.stakers.len()
+    node.blockchain.forks.a.stakers.len()
 }
 fn trusted_hashes(node: &mut Node) -> usize {
-    node.blockchain.forks.trusted.hashes.len()
+    node.blockchain.forks.b.hashes.len()
 }
 fn trusted_latest_hashes(node: &mut Node) -> Vec<&Hash> {
-    node.blockchain.forks.trusted.hashes.iter().rev().take(16).collect()
+    node.blockchain.forks.b.hashes.iter().rev().take(16).collect()
 }
 fn trusted_stakers(node: &mut Node) -> usize {
-    node.blockchain.forks.trusted.stakers.len()
+    node.blockchain.forks.b.stakers.len()
 }

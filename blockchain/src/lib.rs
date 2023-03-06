@@ -6,8 +6,8 @@ use std::time::Instant;
 use tofuri_block::BlockA;
 use tofuri_block::BlockB;
 use tofuri_core::*;
-use tofuri_fork::Dynamic;
-use tofuri_fork::Forks;
+use tofuri_fork::ForkA;
+use tofuri_fork::Manager;
 use tofuri_key::Key;
 use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
@@ -24,7 +24,7 @@ use tracing::warn;
 #[derive(Default, Debug, Clone)]
 pub struct Blockchain {
     pub tree: Tree,
-    pub forks: Forks,
+    pub forks: Manager,
     pub sync: Sync,
     pending_transactions: Vec<TransactionA>,
     pending_stakes: Vec<StakeA>,
@@ -37,15 +37,15 @@ impl Blockchain {
         info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(trust_fork_after_blocks);
-        self.forks.trusted.load(db, &hashes_trusted);
-        self.forks.dynamic = Dynamic::from(db, &hashes_dynamic, &self.forks.trusted);
+        self.forks.b.load(db, &hashes_trusted);
+        self.forks.a = ForkA::from(db, &hashes_dynamic, &self.forks.b);
         info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
     }
     pub fn last_seen(&self) -> String {
-        if self.forks.dynamic.latest_block.timestamp == 0 {
+        if self.forks.a.latest_block.timestamp == 0 {
             return "never".to_string();
         }
-        let timestamp = self.forks.dynamic.latest_block.timestamp;
+        let timestamp = self.forks.a.latest_block.timestamp;
         let diff = tofuri_util::timestamp().saturating_sub(timestamp);
         let now = "just now";
         let mut string = tofuri_util::duration_to_string(diff, now);
@@ -55,29 +55,29 @@ impl Blockchain {
         string
     }
     pub fn height(&self) -> usize {
-        self.forks.trusted.hashes.len() + self.forks.dynamic.hashes.len()
+        self.forks.b.hashes.len() + self.forks.a.hashes.len()
     }
     pub fn height_by_hash(&self, hash: &Hash) -> Option<usize> {
-        if let Some(index) = self.forks.dynamic.hashes.iter().position(|a| a == hash) {
-            return Some(self.forks.trusted.hashes.len() + index);
+        if let Some(index) = self.forks.a.hashes.iter().position(|a| a == hash) {
+            return Some(self.forks.b.hashes.len() + index);
         }
-        self.forks.trusted.hashes.iter().position(|a| a == hash)
+        self.forks.b.hashes.iter().position(|a| a == hash)
     }
     pub fn hash_by_height(&self, height: usize) -> Option<Hash> {
-        let len_trusted = self.forks.trusted.hashes.len();
-        let len_dynamic = self.forks.dynamic.hashes.len();
+        let len_trusted = self.forks.b.hashes.len();
+        let len_dynamic = self.forks.a.hashes.len();
         if height >= len_trusted + len_dynamic {
             return None;
         }
         if height < len_trusted {
-            Some(self.forks.trusted.hashes[height])
+            Some(self.forks.b.hashes[height])
         } else {
-            Some(self.forks.dynamic.hashes[height - len_trusted])
+            Some(self.forks.a.hashes[height - len_trusted])
         }
     }
     pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, height: usize) -> Option<BlockB> {
-        let hashes_trusted = &self.forks.trusted.hashes;
-        let hashes_dynamic = &self.forks.dynamic.hashes;
+        let hashes_trusted = &self.forks.b.hashes;
+        let hashes_dynamic = &self.forks.a.hashes;
         if height >= hashes_trusted.len() + hashes_dynamic.len() {
             return None;
         }
@@ -90,19 +90,19 @@ impl Blockchain {
         tofuri_db::block::get_b(db, &hash).ok()
     }
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> BlockA {
-        if self.forks.dynamic.next_staker(timestamp).is_none() {
+        if self.forks.a.next_staker(timestamp).is_none() {
             self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, key).unwrap()];
         }
         let mut transactions: Vec<TransactionA> = self
             .pending_transactions
             .iter()
-            .filter(|a| a.timestamp <= timestamp && !self.forks.dynamic.transaction_in_chain(a))
+            .filter(|a| a.timestamp <= timestamp && !self.forks.a.transaction_in_chain(a))
             .cloned()
             .collect();
         let mut stakes: Vec<StakeA> = self
             .pending_stakes
             .iter()
-            .filter(|a| a.timestamp <= timestamp && !self.forks.dynamic.stake_in_chain(a))
+            .filter(|a| a.timestamp <= timestamp && !self.forks.a.stake_in_chain(a))
             .cloned()
             .collect();
         transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -126,7 +126,7 @@ impl Blockchain {
             }
         }
         let block_a = if let Some(main) = self.tree.main() {
-            BlockA::sign(main.hash, timestamp, transactions, stakes, key, &self.forks.dynamic.latest_block.beta)
+            BlockA::sign(main.hash, timestamp, transactions, stakes, key, &self.forks.a.latest_block.beta)
         } else {
             BlockA::sign(GENESIS_BLOCK_PREVIOUS_HASH, timestamp, transactions, stakes, key, &GENESIS_BLOCK_BETA)
         }
@@ -188,7 +188,7 @@ impl Blockchain {
         if transaction_a.amount + transaction_a.fee > self.balance_pending_min(&transaction_a.input_address) {
             return Err("transaction too expensive".into());
         }
-        Blockchain::validate_transaction(&self.forks.dynamic, &transaction_a, tofuri_util::timestamp() + time_delta)?;
+        Blockchain::validate_transaction(&self.forks.a, &transaction_a, tofuri_util::timestamp() + time_delta)?;
         info!("Transaction {}", hex::encode(transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
         Ok(())
@@ -211,7 +211,7 @@ impl Blockchain {
                 return Err("stake withdraw amount too expensive".into());
             }
         }
-        Blockchain::validate_stake(&self.forks.dynamic, &stake_a, tofuri_util::timestamp() + time_delta)?;
+        Blockchain::validate_stake(&self.forks.a, &stake_a, tofuri_util::timestamp() + time_delta)?;
         info!("Stake {}", hex::encode(stake_a.hash).green());
         self.pending_stakes.push(stake_a);
         Ok(())
@@ -235,7 +235,7 @@ impl Blockchain {
         self.pending_transactions.retain(|a| !tofuri_util::ancient(a.timestamp, timestamp));
         self.pending_stakes.retain(|a| !tofuri_util::ancient(a.timestamp, timestamp));
     }
-    fn validate_transaction(dynamic: &Dynamic, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_transaction(dynamic: &ForkA, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if transaction_a.amount == 0 {
             return Err("transaction amount zero".into());
         }
@@ -262,7 +262,7 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn validate_stake(dynamic: &Dynamic, stake_a: &StakeA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_stake(dynamic: &ForkA, stake_a: &StakeA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if stake_a.amount == 0 {
             return Err("stake amount zero".into());
         }
@@ -345,7 +345,7 @@ impl Blockchain {
         Ok(())
     }
     pub fn balance(&self, address: &AddressBytes) -> u128 {
-        self.forks.dynamic.balance(address)
+        self.forks.a.balance(address)
     }
     pub fn balance_pending_min(&self, address: &AddressBytes) -> u128 {
         let mut balance = self.balance(address);
@@ -382,7 +382,7 @@ impl Blockchain {
         balance
     }
     pub fn staked(&self, address: &AddressBytes) -> u128 {
-        self.forks.dynamic.staked(address)
+        self.forks.a.staked(address)
     }
     pub fn staked_pending_min(&self, address: &AddressBytes) -> u128 {
         let mut staked = self.staked(address);

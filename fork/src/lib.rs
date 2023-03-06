@@ -29,7 +29,7 @@ pub trait Fork {
     fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
 }
-impl Fork for Trusted {
+impl Fork for ForkB {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
         &mut self.hashes
     }
@@ -73,7 +73,7 @@ impl Fork for Trusted {
         load(self, db, hashes)
     }
 }
-impl Fork for Dynamic {
+impl Fork for ForkA {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
         &mut self.hashes
     }
@@ -118,12 +118,12 @@ impl Fork for Dynamic {
     }
 }
 #[derive(Default, Debug, Clone)]
-pub struct Forks {
-    pub dynamic: Dynamic,
-    pub trusted: Trusted,
+pub struct Manager {
+    pub a: ForkA,
+    pub b: ForkB,
 }
 #[derive(Default, Debug, Clone)]
-pub struct Trusted {
+pub struct ForkB {
     pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
@@ -132,7 +132,7 @@ pub struct Trusted {
     map_staked: HashMap<AddressBytes, u128>,
 }
 #[derive(Default, Debug, Clone)]
-pub struct Dynamic {
+pub struct ForkA {
     pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
@@ -140,18 +140,18 @@ pub struct Dynamic {
     map_balance: HashMap<AddressBytes, u128>,
     map_staked: HashMap<AddressBytes, u128>,
 }
-impl Forks {
+impl Manager {
     pub fn dynamic_fork(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
         tree: &Tree,
         trust_fork_after_blocks: usize,
         previous_hash: &Hash,
-    ) -> Result<Dynamic, Box<dyn Error>> {
+    ) -> Result<ForkA, Box<dyn Error>> {
         if previous_hash == &GENESIS_BLOCK_PREVIOUS_HASH {
-            return Ok(Dynamic::default());
+            return Ok(ForkA::default());
         }
-        let first = self.dynamic.hashes.first().unwrap();
+        let first = self.a.hashes.first().unwrap();
         let mut hashes = vec![];
         let mut hash = *previous_hash;
         for _ in 0..trust_fork_after_blocks {
@@ -173,14 +173,14 @@ impl Forks {
             }
         }
         hashes.reverse();
-        Ok(Dynamic::from(db, &hashes, &self.trusted))
+        Ok(ForkA::from(db, &hashes, &self.b))
     }
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[Hash], trust_fork_after_blocks: usize) {
         let start = Instant::now();
-        let hashes_0 = &self.dynamic.hashes;
+        let hashes_0 = &self.a.hashes;
         if hashes_0.len() == trust_fork_after_blocks {
             let block_a = tofuri_db::block::get_a(db, hashes_0.first().unwrap()).unwrap();
-            self.trusted.append_block(
+            self.b.append_block(
                 &block_a,
                 match tofuri_db::block::get_b(db, &block_a.previous_hash) {
                     Ok(block_b) => block_b.timestamp,
@@ -188,11 +188,11 @@ impl Forks {
                 },
             );
         }
-        self.dynamic = Dynamic::from(db, hashes_1, &self.trusted);
+        self.a = ForkA::from(db, hashes_1, &self.b);
         debug!("{} {:?}", "Forks update".cyan(), start.elapsed());
     }
 }
-impl Trusted {
+impl ForkB {
     pub fn append_block(&mut self, block: &BlockA, previous_timestamp: u32) {
         append_block(self, block, previous_timestamp, false)
     }
@@ -200,14 +200,14 @@ impl Trusted {
         load(self, db, hashes)
     }
 }
-impl Dynamic {
+impl ForkA {
     pub fn balance(&self, address: &AddressBytes) -> u128 {
         get_balance(self, address)
     }
     pub fn staked(&self, address: &AddressBytes) -> u128 {
         get_staked(self, address)
     }
-    pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash], trusted: &Trusted) -> Dynamic {
+    pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash], trusted: &ForkB) -> ForkA {
         let mut dynamic = Self {
             hashes: vec![],
             stakers: trusted.stakers.clone(),

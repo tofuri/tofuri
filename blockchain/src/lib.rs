@@ -17,7 +17,6 @@ use tofuri_tree::Tree;
 use tofuri_util::EMPTY_BLOCK_SIZE;
 use tofuri_util::STAKE_SIZE;
 use tofuri_util::TRANSACTION_SIZE;
-use tracing::debug;
 use tracing::info;
 #[derive(Default, Debug, Clone)]
 pub struct Blockchain {
@@ -86,7 +85,6 @@ impl Blockchain {
         } else {
             hashes_dynamic[height - hashes_trusted.len()]
         };
-        debug!("{} {} {}", "Sync".cyan(), height.to_string().yellow(), hex::encode(hash));
         tofuri_db::block::get_b(db, &hash).ok()
     }
     #[tracing::instrument(skip_all, level = "trace")]

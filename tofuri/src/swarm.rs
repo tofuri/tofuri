@@ -197,7 +197,7 @@ fn event_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel
     node.p2p.ratelimit(peer_id, Endpoint::SyncRequest)?;
     let height: usize = bincode::deserialize(&request.0)?;
     let mut vec = vec![];
-    for i in 0..SYNC_BLOCKS_PER_TICK {
+    for i in 0..SYNC_BLOCKS {
         match node.blockchain.sync_block(&node.db, height + i) {
             Some(block_b) => vec.push(block_b),
             None => break,

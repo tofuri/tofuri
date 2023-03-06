@@ -97,7 +97,7 @@ impl RequestResponseCodec for SyncCodec {
         Ok(SyncRequest(read_length_prefixed(io, 8).await?))
     }
     async fn read_response<T: AsyncRead + Unpin + Send>(&mut self, _: &SyncProtocol, io: &mut T) -> io::Result<Self::Response> {
-        Ok(SyncResponse(read_length_prefixed(io, BLOCK_SIZE_LIMIT * SYNC_BLOCKS_PER_TICK).await?))
+        Ok(SyncResponse(read_length_prefixed(io, BLOCK_SIZE_LIMIT * SYNC_BLOCKS).await?))
     }
     async fn write_request<T: AsyncWrite + Unpin + Send>(&mut self, _: &SyncProtocol, io: &mut T, SyncRequest(vec): SyncRequest) -> io::Result<()> {
         write_length_prefixed(io, vec).await?;

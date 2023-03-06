@@ -25,6 +25,7 @@ use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
+use tracing::debug;
 use tracing::error;
 use tracing::info;
 use tracing::warn;
@@ -204,7 +205,10 @@ fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel:
 fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
     node.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
-        node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)?;
+        if let Err(err) = node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust) {
+            debug!(err);
+            break;
+        }
         node.blockchain.save_blocks(&node.db, node.args.trust);
     }
     Ok(())

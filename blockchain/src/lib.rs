@@ -1,7 +1,3 @@
-pub mod state;
-pub mod states;
-use crate::state::Dynamic;
-use crate::states::States;
 use colored::*;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
@@ -12,6 +8,8 @@ use tofuri_block::BlockB;
 use tofuri_blockchain_sync::Sync;
 use tofuri_core::*;
 use tofuri_db as db;
+use tofuri_fork::Dynamic;
+use tofuri_fork::Forks;
 use tofuri_key::Key;
 use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
@@ -27,7 +25,7 @@ use tracing::warn;
 #[derive(Default, Debug, Clone)]
 pub struct Blockchain {
     pub tree: Tree,
-    pub states: States,
+    pub forks: Forks,
     pub sync: Sync,
     pending_transactions: Vec<TransactionA>,
     pending_stakes: Vec<StakeA>,
@@ -40,15 +38,15 @@ impl Blockchain {
         info!("Loaded tree in {}", format!("{:?}", start.elapsed()).yellow());
         let start = Instant::now();
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(trust_fork_after_blocks);
-        self.states.trusted.load(db, &hashes_trusted);
-        self.states.dynamic = Dynamic::from(db, &hashes_dynamic, &self.states.trusted);
+        self.forks.trusted.load(db, &hashes_trusted);
+        self.forks.dynamic = Dynamic::from(db, &hashes_dynamic, &self.forks.trusted);
         info!("Loaded states in {}", format!("{:?}", start.elapsed()).yellow());
     }
     pub fn last_seen(&self) -> String {
-        if self.states.dynamic.latest_block.timestamp == 0 {
+        if self.forks.dynamic.latest_block.timestamp == 0 {
             return "never".to_string();
         }
-        let timestamp = self.states.dynamic.latest_block.timestamp;
+        let timestamp = self.forks.dynamic.latest_block.timestamp;
         let diff = tofuri_util::timestamp().saturating_sub(timestamp);
         let now = "just now";
         let mut string = tofuri_util::duration_to_string(diff, now);
@@ -58,29 +56,29 @@ impl Blockchain {
         string
     }
     pub fn height(&self) -> usize {
-        self.states.trusted.hashes.len() + self.states.dynamic.hashes.len()
+        self.forks.trusted.hashes.len() + self.forks.dynamic.hashes.len()
     }
     pub fn height_by_hash(&self, hash: &Hash) -> Option<usize> {
-        if let Some(index) = self.states.dynamic.hashes.iter().position(|a| a == hash) {
-            return Some(self.states.trusted.hashes.len() + index);
+        if let Some(index) = self.forks.dynamic.hashes.iter().position(|a| a == hash) {
+            return Some(self.forks.trusted.hashes.len() + index);
         }
-        self.states.trusted.hashes.iter().position(|a| a == hash)
+        self.forks.trusted.hashes.iter().position(|a| a == hash)
     }
     pub fn hash_by_height(&self, height: usize) -> Option<Hash> {
-        let len_trusted = self.states.trusted.hashes.len();
-        let len_dynamic = self.states.dynamic.hashes.len();
+        let len_trusted = self.forks.trusted.hashes.len();
+        let len_dynamic = self.forks.dynamic.hashes.len();
         if height >= len_trusted + len_dynamic {
             return None;
         }
         if height < len_trusted {
-            Some(self.states.trusted.hashes[height])
+            Some(self.forks.trusted.hashes[height])
         } else {
-            Some(self.states.dynamic.hashes[height - len_trusted])
+            Some(self.forks.dynamic.hashes[height - len_trusted])
         }
     }
     pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, height: usize) -> Option<BlockB> {
-        let hashes_trusted = &self.states.trusted.hashes;
-        let hashes_dynamic = &self.states.dynamic.hashes;
+        let hashes_trusted = &self.forks.trusted.hashes;
+        let hashes_dynamic = &self.forks.dynamic.hashes;
         if height >= hashes_trusted.len() + hashes_dynamic.len() {
             return None;
         }
@@ -93,19 +91,19 @@ impl Blockchain {
         db::block::get_b(db, &hash).ok()
     }
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> BlockA {
-        if self.states.dynamic.next_staker(timestamp).is_none() {
+        if self.forks.dynamic.next_staker(timestamp).is_none() {
             self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, key).unwrap()];
         }
         let mut transactions: Vec<TransactionA> = self
             .pending_transactions
             .iter()
-            .filter(|a| a.timestamp <= timestamp && !self.states.dynamic.transaction_in_chain(a))
+            .filter(|a| a.timestamp <= timestamp && !self.forks.dynamic.transaction_in_chain(a))
             .cloned()
             .collect();
         let mut stakes: Vec<StakeA> = self
             .pending_stakes
             .iter()
-            .filter(|a| a.timestamp <= timestamp && !self.states.dynamic.stake_in_chain(a))
+            .filter(|a| a.timestamp <= timestamp && !self.forks.dynamic.stake_in_chain(a))
             .cloned()
             .collect();
         transactions.sort_by(|a, b| b.fee.cmp(&a.fee));
@@ -129,7 +127,7 @@ impl Blockchain {
             }
         }
         let block_a = if let Some(main) = self.tree.main() {
-            BlockA::sign(main.hash, timestamp, transactions, stakes, key, &self.states.dynamic.latest_block.beta)
+            BlockA::sign(main.hash, timestamp, transactions, stakes, key, &self.forks.dynamic.latest_block.beta)
         } else {
             BlockA::sign(GENESIS_BLOCK_PREVIOUS_HASH, timestamp, transactions, stakes, key, &GENESIS_BLOCK_BETA)
         }
@@ -146,7 +144,7 @@ impl Blockchain {
                 self.sync.new += 1.0;
             }
         }
-        self.states
+        self.forks
             .update(db, &self.tree.hashes_dynamic(trust_fork_after_blocks), trust_fork_after_blocks);
         let info = format!(
             "{} {} {} {} {}",
@@ -191,7 +189,7 @@ impl Blockchain {
         if transaction_a.amount + transaction_a.fee > self.balance_pending_min(&transaction_a.input_address) {
             return Err("transaction too expensive".into());
         }
-        Blockchain::validate_transaction(&self.states.dynamic, &transaction_a, tofuri_util::timestamp() + time_delta)?;
+        Blockchain::validate_transaction(&self.forks.dynamic, &transaction_a, tofuri_util::timestamp() + time_delta)?;
         info!("Transaction {}", hex::encode(transaction_a.hash).green());
         self.pending_transactions.push(transaction_a);
         Ok(())
@@ -214,7 +212,7 @@ impl Blockchain {
                 return Err("stake withdraw amount too expensive".into());
             }
         }
-        Blockchain::validate_stake(&self.states.dynamic, &stake_a, tofuri_util::timestamp() + time_delta)?;
+        Blockchain::validate_stake(&self.forks.dynamic, &stake_a, tofuri_util::timestamp() + time_delta)?;
         info!("Stake {}", hex::encode(stake_a.hash).green());
         self.pending_stakes.push(stake_a);
         Ok(())
@@ -306,7 +304,7 @@ impl Blockchain {
             return Err("block previous_hash not in tree".into());
         }
         let input_address = block_a.input_address();
-        let dynamic = self.states.dynamic_fork(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
+        let dynamic = self.forks.dynamic_fork(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
         let previous_beta = Key::vrf_proof_to_hash(&dynamic.latest_block.pi).unwrap_or(GENESIS_BLOCK_BETA);
         Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
         if let Some(staker) = dynamic.next_staker(block_a.timestamp) {
@@ -348,7 +346,7 @@ impl Blockchain {
         Ok(())
     }
     pub fn balance(&self, address: &AddressBytes) -> u128 {
-        self.states.dynamic.balance(address)
+        self.forks.dynamic.balance(address)
     }
     pub fn balance_pending_min(&self, address: &AddressBytes) -> u128 {
         let mut balance = self.balance(address);
@@ -385,7 +383,7 @@ impl Blockchain {
         balance
     }
     pub fn staked(&self, address: &AddressBytes) -> u128 {
-        self.states.dynamic.staked(address)
+        self.forks.dynamic.staked(address)
     }
     pub fn staked_pending_min(&self, address: &AddressBytes) -> u128 {
         let mut staked = self.staked(address);

@@ -4371,6 +4371,7 @@ dependencies = [
  "tofuri-blockchain-sync",
  "tofuri-core",
  "tofuri-db",
+ "tofuri-fork",
  "tofuri-int",
  "tofuri-key",
  "tofuri-stake",
@@ -4405,6 +4406,24 @@ dependencies = [
  "tofuri-stake",
  "tofuri-transaction",
  "tofuri-tree",
+]
+
+[[package]]
+name = "tofuri-fork"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "rocksdb",
+ "tofuri-address",
+ "tofuri-block",
+ "tofuri-core",
+ "tofuri-db",
+ "tofuri-int",
+ "tofuri-stake",
+ "tofuri-transaction",
+ "tofuri-tree",
+ "tofuri-util",
+ "tracing",
 ]
 
 [[package]]

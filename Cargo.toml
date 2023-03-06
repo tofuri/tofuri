@@ -11,6 +11,7 @@ members = [
     "blockchain-sync",
     "core",
     "db",
+    "fork",
     "int",
     "key",
     "p2p",

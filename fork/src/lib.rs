@@ -4,22 +4,23 @@ use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::error::Error;
+use std::time::Instant;
 use tofuri_address::address;
 use tofuri_block::BlockA;
 use tofuri_core::*;
-use tofuri_db as db;
 use tofuri_stake::StakeA;
 use tofuri_transaction::TransactionA;
+use tofuri_tree::Tree;
+use tracing::debug;
 use tracing::warn;
-pub type Map = HashMap<AddressBytes, u128>;
-pub trait State {
+pub trait Fork {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;
     fn get_stakers(&self) -> &VecDeque<AddressBytes>;
     fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes>;
-    fn get_map_balance(&self) -> &Map;
-    fn get_map_balance_mut(&mut self) -> &mut Map;
-    fn get_map_staked(&self) -> &Map;
-    fn get_map_staked_mut(&mut self) -> &mut Map;
+    fn get_map_balance(&self) -> &HashMap<AddressBytes, u128>;
+    fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128>;
+    fn get_map_staked(&self) -> &HashMap<AddressBytes, u128>;
+    fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128>;
     fn get_latest_block(&self) -> &BlockA;
     fn get_latest_block_mut(&mut self) -> &mut BlockA;
     fn get_non_ancient_blocks(&self) -> &Vec<BlockA>;
@@ -29,13 +30,18 @@ pub trait State {
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
 }
 #[derive(Default, Debug, Clone)]
+pub struct Forks {
+    pub dynamic: Dynamic,
+    pub trusted: Trusted,
+}
+#[derive(Default, Debug, Clone)]
 pub struct Trusted {
     pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
     non_ancient_blocks: Vec<BlockA>,
-    map_balance: Map,
-    map_staked: Map,
+    map_balance: HashMap<AddressBytes, u128>,
+    map_staked: HashMap<AddressBytes, u128>,
 }
 #[derive(Default, Debug, Clone)]
 pub struct Dynamic {
@@ -43,8 +49,60 @@ pub struct Dynamic {
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
     non_ancient_blocks: Vec<BlockA>,
-    map_balance: Map,
-    map_staked: Map,
+    map_balance: HashMap<AddressBytes, u128>,
+    map_staked: HashMap<AddressBytes, u128>,
+}
+impl Forks {
+    pub fn dynamic_fork(
+        &self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        tree: &Tree,
+        trust_fork_after_blocks: usize,
+        previous_hash: &Hash,
+    ) -> Result<Dynamic, Box<dyn Error>> {
+        if previous_hash == &GENESIS_BLOCK_PREVIOUS_HASH {
+            return Ok(Dynamic::default());
+        }
+        let first = self.dynamic.hashes.first().unwrap();
+        let mut hashes = vec![];
+        let mut hash = *previous_hash;
+        for _ in 0..trust_fork_after_blocks {
+            hashes.push(hash);
+            if first == &hash {
+                break;
+            }
+            match tree.get(&hash) {
+                Some(previous_hash) => hash = *previous_hash,
+                None => break,
+            };
+        }
+        if first != &hash && hash != GENESIS_BLOCK_PREVIOUS_HASH {
+            return Err("not allowed to fork trusted chain".into());
+        }
+        if let Some(hash) = hashes.last() {
+            if hash == &GENESIS_BLOCK_PREVIOUS_HASH {
+                hashes.pop();
+            }
+        }
+        hashes.reverse();
+        Ok(Dynamic::from(db, &hashes, &self.trusted))
+    }
+    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[Hash], trust_fork_after_blocks: usize) {
+        let start = Instant::now();
+        let hashes_0 = &self.dynamic.hashes;
+        if hashes_0.len() == trust_fork_after_blocks {
+            let block_a = tofuri_db::block::get_a(db, hashes_0.first().unwrap()).unwrap();
+            self.trusted.append_block(
+                &block_a,
+                match tofuri_db::block::get_b(db, &block_a.previous_hash) {
+                    Ok(block_b) => block_b.timestamp,
+                    Err(_) => 0,
+                },
+            );
+        }
+        self.dynamic = Dynamic::from(db, hashes_1, &self.trusted);
+        debug!("{} {:?}", "States update".cyan(), start.elapsed());
+    }
 }
 impl Trusted {
     pub fn append_block(&mut self, block: &BlockA, previous_timestamp: u32) {
@@ -135,7 +193,7 @@ impl Dynamic {
         false
     }
 }
-impl State for Trusted {
+impl Fork for Trusted {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
         &mut self.hashes
     }
@@ -145,16 +203,16 @@ impl State for Trusted {
     fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
         &mut self.stakers
     }
-    fn get_map_balance(&self) -> &Map {
+    fn get_map_balance(&self) -> &HashMap<AddressBytes, u128> {
         &self.map_balance
     }
-    fn get_map_balance_mut(&mut self) -> &mut Map {
+    fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.map_balance
     }
-    fn get_map_staked(&self) -> &Map {
+    fn get_map_staked(&self) -> &HashMap<AddressBytes, u128> {
         &self.map_staked
     }
-    fn get_map_staked_mut(&mut self) -> &mut Map {
+    fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.map_staked
     }
     fn get_latest_block(&self) -> &BlockA {
@@ -179,7 +237,7 @@ impl State for Trusted {
         load(self, db, hashes)
     }
 }
-impl State for Dynamic {
+impl Fork for Dynamic {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
         &mut self.hashes
     }
@@ -189,16 +247,16 @@ impl State for Dynamic {
     fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
         &mut self.stakers
     }
-    fn get_map_balance(&self) -> &Map {
+    fn get_map_balance(&self) -> &HashMap<AddressBytes, u128> {
         &self.map_balance
     }
-    fn get_map_balance_mut(&mut self) -> &mut Map {
+    fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.map_balance
     }
-    fn get_map_staked(&self) -> &Map {
+    fn get_map_staked(&self) -> &HashMap<AddressBytes, u128> {
         &self.map_staked
     }
-    fn get_map_staked_mut(&mut self) -> &mut Map {
+    fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.map_staked
     }
     fn get_latest_block(&self) -> &BlockA {
@@ -223,31 +281,31 @@ impl State for Dynamic {
         load(self, db, hashes)
     }
 }
-fn get_balance<T: State>(state: &T, address: &AddressBytes) -> u128 {
+fn get_balance<T: Fork>(state: &T, address: &AddressBytes) -> u128 {
     match state.get_map_balance().get(address) {
         Some(b) => *b,
         None => 0,
     }
 }
-fn get_staked<T: State>(state: &T, address: &AddressBytes) -> u128 {
+fn get_staked<T: Fork>(state: &T, address: &AddressBytes) -> u128 {
     match state.get_map_staked().get(address) {
         Some(b) => *b,
         None => 0,
     }
 }
-fn insert_balance<T: State>(state: &mut T, address: AddressBytes, balance: u128) {
+fn insert_balance<T: Fork>(state: &mut T, address: AddressBytes, balance: u128) {
     match balance {
         0 => state.get_map_balance_mut().remove(&address),
         x => state.get_map_balance_mut().insert(address, x),
     };
 }
-fn insert_staked<T: State>(state: &mut T, address: AddressBytes, staked: u128) {
+fn insert_staked<T: Fork>(state: &mut T, address: AddressBytes, staked: u128) {
     match staked {
         0 => state.get_map_staked_mut().remove(&address),
         x => state.get_map_staked_mut().insert(address, x),
     };
 }
-fn update_stakers<T: State>(state: &mut T, address: AddressBytes) {
+fn update_stakers<T: Fork>(state: &mut T, address: AddressBytes) {
     let staked = get_staked(state, &address);
     let index = state.get_stakers().iter().position(|x| x == &address);
     if index.is_none() && staked >= COIN {
@@ -256,7 +314,7 @@ fn update_stakers<T: State>(state: &mut T, address: AddressBytes) {
         state.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }
-fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
+fn update_0<T: Fork>(state: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
     let stakers = stakers_offline(state, timestamp, previous_timestamp);
     for (index, staker) in stakers.iter().enumerate() {
         let mut staked = get_staked(state, staker);
@@ -275,7 +333,7 @@ fn update_0<T: State>(state: &mut T, timestamp: u32, previous_timestamp: u32, lo
         }
     }
 }
-fn update_1<T: State>(state: &mut T, block: &BlockA) {
+fn update_1<T: Fork>(state: &mut T, block: &BlockA) {
     let input_address = block.input_address();
     let mut balance = get_balance(state, &input_address);
     balance += block.reward();
@@ -286,7 +344,7 @@ fn update_1<T: State>(state: &mut T, block: &BlockA) {
     }
     insert_balance(state, input_address, balance)
 }
-fn update_2<T: State>(state: &mut T, block: &BlockA) {
+fn update_2<T: Fork>(state: &mut T, block: &BlockA) {
     for transaction in block.transactions.iter() {
         let mut balance_input = get_balance(state, &transaction.input_address);
         let mut balance_output = get_balance(state, &transaction.output_address);
@@ -309,41 +367,41 @@ fn update_2<T: State>(state: &mut T, block: &BlockA) {
         insert_staked(state, stake.input_address, staked);
     }
 }
-fn update_3<T: State>(state: &mut T, block: &BlockA) {
+fn update_3<T: Fork>(state: &mut T, block: &BlockA) {
     for stake in block.stakes.iter() {
         update_stakers(state, stake.input_address);
     }
 }
-pub fn update<T: State>(state: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
+pub fn update<T: Fork>(state: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
     update_0(state, block.timestamp, previous_timestamp, loading);
     update_1(state, block);
     update_2(state, block);
     update_3(state, block);
 }
-fn update_non_ancient_blocks<T: State>(state: &mut T, block: &BlockA) {
+fn update_non_ancient_blocks<T: Fork>(state: &mut T, block: &BlockA) {
     while state.get_non_ancient_blocks().first().is_some() && tofuri_util::ancient(state.get_non_ancient_blocks().first().unwrap().timestamp, block.timestamp) {
         (*state.get_non_ancient_blocks_mut()).remove(0);
     }
     (*state.get_non_ancient_blocks_mut()).push(block.clone());
 }
-pub fn append_block<T: State>(state: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
+pub fn append_block<T: Fork>(state: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
     state.get_hashes_mut().push(block.hash);
     update(state, block, previous_timestamp, loading);
     *state.get_latest_block_mut() = block.clone();
     update_non_ancient_blocks(state, block);
 }
-pub fn load<T: State>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
+pub fn load<T: Fork>(state: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
     let mut previous_timestamp = match hashes.first() {
-        Some(hash) => db::block::get_b(db, hash).unwrap().timestamp,
+        Some(hash) => tofuri_db::block::get_b(db, hash).unwrap().timestamp,
         None => 0,
     };
     for hash in hashes.iter() {
-        let block_a = db::block::get_a(db, hash).unwrap();
+        let block_a = tofuri_db::block::get_a(db, hash).unwrap();
         state.append_block(&block_a, previous_timestamp, true);
         previous_timestamp = block_a.timestamp;
     }
 }
-fn stakers_n<T: State>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
+fn stakers_n<T: Fork>(state: &T, n: usize) -> (Vec<AddressBytes>, bool) {
     fn random_n(slice: &[(AddressBytes, u128)], beta: &Beta, n: u128, modulo: u128) -> usize {
         let random = tofuri_util::random(beta, n, modulo);
         let mut counter = 0;
@@ -380,13 +438,13 @@ fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
     let diff = timestamp.saturating_sub(previous_timestamp + 1);
     (diff / BLOCK_TIME) as usize
 }
-pub fn next_staker<T: State>(state: &T, timestamp: u32) -> Option<AddressBytes> {
+pub fn next_staker<T: Fork>(state: &T, timestamp: u32) -> Option<AddressBytes> {
     match stakers_n(state, offline(timestamp, state.get_latest_block().timestamp)) {
         (_, true) => None,
         (x, _) => x.last().copied(),
     }
 }
-fn stakers_offline<T: State>(state: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
+fn stakers_offline<T: Fork>(state: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
     match offline(timestamp, previous_timestamp) {
         0 => vec![],
         n => stakers_n(state, n - 1).0,

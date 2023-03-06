@@ -58,7 +58,7 @@ pub fn grow(node: &mut Node, instant: Instant) -> Instant {
     let timestamp = tofuri_util::timestamp();
     node.blockchain.pending_retain_non_ancient(timestamp);
     node.blockchain.save_blocks(&node.db, node.args.trust);
-    if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.states.dynamic.next_staker(timestamp).is_none() {
+    if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.forks.dynamic.next_staker(timestamp).is_none() {
         if timestamp % 60 == 0 {
             info!(
                 "Waiting for synchronization to start... Currently connected to {} peers.",
@@ -70,12 +70,12 @@ pub fn grow(node: &mut Node, instant: Instant) -> Instant {
     if !node.blockchain.sync.completed {
         return instant;
     }
-    let diff = timestamp.saturating_sub(node.blockchain.states.dynamic.latest_block.timestamp);
+    let diff = timestamp.saturating_sub(node.blockchain.forks.dynamic.latest_block.timestamp);
     #[allow(clippy::modulo_one)]
     if diff == 0 || diff % BLOCK_TIME != 0 {
         return instant;
     }
-    if let Some(staker) = node.blockchain.states.dynamic.next_staker(timestamp) {
+    if let Some(staker) = node.blockchain.forks.dynamic.next_staker(timestamp) {
         if staker != node.key.address_bytes() {
             return instant;
         }

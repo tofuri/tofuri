@@ -1,20 +1,17 @@
 [package]
-name = "tofuri-blockchain"
+name = "tofuri-fork"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Tofuri blockchain"
+description = "Tofuri fork"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 tofuri-address = { version = "0.1", path = "../address" }
 tofuri-int = { version = "0.1", path = "../int" }
 tofuri-block = { version = "0.1", path = "../block" }
-tofuri-blockchain-sync = { version = "0.1", path = "../blockchain-sync" }
 tofuri-core = { version = "0.1", path = "../core" }
 tofuri-db = { version = "0.1", path = "../db" }
-tofuri-fork = { version = "0.1", path = "../fork" }
-tofuri-key = { version = "0.1", path = "../key" }
 tofuri-stake = { version = "0.1", path = "../stake" }
 tofuri-transaction = { version = "0.1", path = "../transaction" }
 tofuri-tree = { version = "0.1", path = "../tree" }
@@ -22,4 +19,3 @@ tofuri-util = { version = "0.1", path = "../util" }
 rocksdb = "0.19"
 colored = "2.0"
 tracing = "0.1"
-hex = "0.4"

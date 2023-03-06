@@ -23,8 +23,8 @@ use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    tracing_subscriber::fmt::init();
     let mut args = Args::parse();
-    tofuri_logger::init(args.debug);
     info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {

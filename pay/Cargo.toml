@@ -16,7 +16,6 @@ tofuri-api-core = { version = "0.1", path = "../api-core" }
 tofuri-pay-core = { version = "0.1", path = "../pay-core" }
 tofuri-pay-db = { version = "0.1", path = "../pay-db" }
 tofuri-key = { version = "0.1", path = "../key" }
-tofuri-logger = { version = "0.1", path = "../logger" }
 tofuri-transaction = { version = "0.1", path = "../transaction" }
 tofuri-wallet = { version = "0.1", path = "../wallet" }
 tofuri-util = { version = "0.1", path = "../util" }
@@ -35,3 +34,4 @@ chrono = "0.4"
 tokio = { version = "1.23", features = ["full"] }
 axum = "0.6"
 tower-http = { version = "0.3", features = ["cors"] }
+tracing-subscriber = "0.3"

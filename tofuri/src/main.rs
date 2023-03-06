@@ -25,8 +25,8 @@ use tokio::net::TcpListener;
 use tokio::time::interval_at;
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
     let mut args = tofuri::Args::parse();
-    tofuri_logger::init(args.debug);
     info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {

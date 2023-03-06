@@ -11,22 +11,26 @@ use tokio::time::Instant;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn dial_known(node: &mut Node, instant: Instant) -> Instant {
     let vec = node.p2p.known.clone().into_iter().collect();
     dial(node, vec, true);
     instant
 }
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn dial_unknown(node: &mut Node, instant: Instant) -> Instant {
     let vec = node.p2p.unknown.drain().collect();
     dial(node, vec, false);
     instant
 }
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn clear(node: &mut Node, instant: Instant) -> Instant {
     node.blockchain.sync.handler();
     node.p2p.ratelimit.reset();
     node.p2p.filter.clear();
     instant
 }
+#[tracing::instrument(skip_all, level = "debug")]
 fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
     for mut multiaddr in vec {
         if node.p2p.connections.contains_key(&multiaddr::ip(&multiaddr).expect("multiaddr to include ip")) {
@@ -47,6 +51,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>, known: bool) {
         let _ = node.p2p.swarm.dial(multiaddr);
     }
 }
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn share(node: &mut Node, instant: Instant) -> Instant {
     let vec: Vec<&Multiaddr> = node.p2p.connections.keys().collect();
     if let Err(err) = node.p2p.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap()) {
@@ -54,6 +59,7 @@ pub fn share(node: &mut Node, instant: Instant) -> Instant {
     }
     instant
 }
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn grow(node: &mut Node, instant: Instant) -> Instant {
     let timestamp = tofuri_util::timestamp();
     node.blockchain.pending_retain_non_ancient(timestamp);
@@ -86,6 +92,7 @@ pub fn grow(node: &mut Node, instant: Instant) -> Instant {
     }
     instant
 }
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn sync_request(node: &mut Node, instant: Instant) -> Instant {
     if let Some(peer_id) = node.p2p.swarm.connected_peers().choose(&mut thread_rng()).cloned() {
         node.p2p

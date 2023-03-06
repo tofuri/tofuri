@@ -36,9 +36,9 @@ type HandlerErr = EitherError<
     EitherError<EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<io::Error>>,
     ConnectionHandlerUpgrErr<io::Error>,
 >;
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) -> Instant {
     let instant = Instant::now();
-    debug!("{:?}", event);
     match event {
         SwarmEvent::Dialing(_) => {}
         SwarmEvent::IncomingConnectionError { .. } => {}
@@ -65,18 +65,18 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) -> Instan
             message, propagation_source, ..
         })) => {
             if let Err(err) = event_gossipsub_message(node, message, propagation_source) {
-                error!("GossipsubEvent::Message {}", err)
+                error!(err)
             }
         }
         SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
             RequestResponseMessage::Request { request, channel, .. } => {
                 if let Err(err) = event_request(node, peer, request, channel) {
-                    error!("RequestResponseMessage::Request {}", err)
+                    error!(err)
                 }
             }
             RequestResponseMessage::Response { response, .. } => {
                 if let Err(err) = event_response(node, peer, response) {
-                    error!("RequestResponseMessage::Response {}", err)
+                    error!(err)
                 }
             }
         },
@@ -87,6 +87,7 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) -> Instan
     };
     instant
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn event_connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
     if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
         if let Some(multiaddr) = multiaddr::ip_port(&address) {
@@ -99,6 +100,7 @@ fn event_connection_established(node: &mut Node, peer_id: PeerId, endpoint: Conn
         }
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn event_connection_established_save(node: &mut Node, peer_id: PeerId, num_established: NonZeroU32, multiaddr: Multiaddr) {
     info!(
         "Connection {} {} {}",
@@ -123,6 +125,7 @@ fn event_connection_established_save(node: &mut Node, peer_id: PeerId, num_estab
         }
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn event_connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_established: u32) {
     if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
         if let Some(multiaddr) = multiaddr::ip_port(&address) {
@@ -135,6 +138,7 @@ fn event_connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_establ
         }
     }
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn event_connection_closed_save(node: &mut Node, num_established: u32, multiaddr: Multiaddr) {
     info!(
         "Connection {} {} {}",
@@ -145,6 +149,7 @@ fn event_connection_closed_save(node: &mut Node, num_established: u32, multiaddr
     node.p2p.connections.remove(&multiaddr);
     let _ = node.p2p.swarm.dial(multiaddr);
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn event_gossipsub_message(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
     match message.topic.as_str() {
         "block" => {
@@ -187,6 +192,7 @@ fn event_gossipsub_message(node: &mut Node, message: GossipsubMessage, propagati
     };
     Ok(())
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn event_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
     node.p2p.ratelimit(peer_id, Endpoint::SyncRequest)?;
     let height: usize = bincode::deserialize(&request.0)?;
@@ -209,12 +215,13 @@ fn event_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel
     };
     Ok(())
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn event_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
     node.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
     for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
         match node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust) {
             Ok(()) => node.blockchain.save_blocks(&node.db, node.args.trust),
-            Err(err) => debug!("response_handler {}", err),
+            Err(err) => debug!(err),
         }
     }
     Ok(())

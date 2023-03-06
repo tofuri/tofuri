@@ -39,6 +39,7 @@ pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Er
     };
     instant
 }
+#[tracing::instrument(skip_all, level = "trace")]
 async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type), Box<dyn Error>> {
     let mut buf = [0; 1024];
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buf)).await??;
@@ -85,65 +86,81 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type)
     stream.flush().await?;
     Ok((bytes, request.t))
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn balance(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     Ok(node.blockchain.balance(&address_bytes))
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn balance_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     Ok(node.blockchain.balance_pending_min(&address_bytes))
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn balance_pending_max(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     Ok(node.blockchain.balance_pending_max(&address_bytes))
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn staked(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     Ok(node.blockchain.staked(&address_bytes))
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn staked_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     Ok(node.blockchain.staked_pending_min(&address_bytes))
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn staked_pending_max(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
     Ok(node.blockchain.staked_pending_max(&address_bytes))
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn height(node: &mut Node) -> Result<usize, Box<dyn Error>> {
     Ok(node.blockchain.height())
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
     Ok(node.blockchain.height_by_hash(&hash).ok_or("height_by_hash")?)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn block_latest(node: &mut Node) -> Result<&BlockA, Box<dyn Error>> {
     Ok(&node.blockchain.forks.a.latest_block)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Box<dyn Error>> {
     let height: usize = bincode::deserialize(bytes)?;
     Ok(node.blockchain.hash_by_height(height).ok_or("hash_by_height")?)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
     db::block::get_a(&node.db, &hash)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<TransactionA, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
     db::transaction::get_a(&node.db, &hash)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<StakeA, Box<dyn Error>> {
     let hash: Hash = bincode::deserialize(bytes)?;
     db::stake::get_a(&node.db, &hash)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn peers(node: &mut Node) -> Result<Vec<&Multiaddr>, Box<dyn Error>> {
     Ok(node.p2p.connections.keys().collect())
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
     let multiaddr: Multiaddr = bincode::deserialize(bytes)?;
     let multiaddr = multiaddr::ip_port(&multiaddr).ok_or("ip_port")?;
     node.p2p.unknown.insert(multiaddr);
     Ok(())
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     let transaction_b: TransactionB = bincode::deserialize(bytes)?;
     let vec = bincode::serialize(&transaction_b).unwrap();
@@ -161,6 +178,7 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> 
     };
     Ok(status)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     let stake_b: StakeB = bincode::deserialize(bytes)?;
     let vec = bincode::serialize(&stake_b).unwrap();
@@ -178,54 +196,71 @@ fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     };
     Ok(status)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn cargo_pkg_name() -> &'static str {
     CARGO_PKG_NAME
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn cargo_pkg_version() -> &'static str {
     CARGO_PKG_VERSION
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn cargo_pkg_repository() -> &'static str {
     CARGO_PKG_REPOSITORY
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn git_hash() -> &'static str {
     GIT_HASH
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn address(node: &mut Node) -> AddressBytes {
     node.key.address_bytes()
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn ticks(node: &mut Node) -> &usize {
     &node.ticks
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn lag(node: &mut Node) -> &f64 {
     &node.lag
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn time() -> i64 {
     chrono::offset::Utc::now().timestamp_millis()
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn tree_size(node: &mut Node) -> usize {
     node.blockchain.tree.size()
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn sync(node: &mut Node) -> &tofuri_sync::Sync {
     &node.blockchain.sync
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn random_queue(node: &mut Node) -> Vec<AddressBytes> {
     node.blockchain.forks.a.stakers_n(8)
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn dynamic_hashes(node: &mut Node) -> usize {
     node.blockchain.forks.a.hashes.len()
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn dynamic_latest_hashes(node: &mut Node) -> Vec<&Hash> {
     node.blockchain.forks.a.hashes.iter().rev().take(16).collect()
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn dynamic_stakers(node: &mut Node) -> usize {
     node.blockchain.forks.a.stakers.len()
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn trusted_hashes(node: &mut Node) -> usize {
     node.blockchain.forks.b.hashes.len()
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn trusted_latest_hashes(node: &mut Node) -> Vec<&Hash> {
     node.blockchain.forks.b.hashes.iter().rev().take(16).collect()
 }
+#[tracing::instrument(skip_all, level = "trace")]
 fn trusted_stakers(node: &mut Node) -> usize {
     node.blockchain.forks.b.stakers.len()
 }

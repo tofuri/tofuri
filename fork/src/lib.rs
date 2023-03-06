@@ -30,89 +30,117 @@ pub trait Fork {
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
 }
 impl Fork for ForkA {
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
         &mut self.hashes
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_stakers(&self) -> &VecDeque<AddressBytes> {
         &self.stakers
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
         &mut self.stakers
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_map_balance(&self) -> &HashMap<AddressBytes, u128> {
         &self.map_balance
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.map_balance
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_map_staked(&self) -> &HashMap<AddressBytes, u128> {
         &self.map_staked
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.map_staked
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_latest_block(&self) -> &BlockA {
         &self.latest_block
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_non_ancient_blocks(&self) -> &Vec<BlockA> {
         &self.non_ancient_blocks
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA> {
         &mut self.non_ancient_blocks
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn is_trusted() -> bool {
         false
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool) {
         append_block(self, block, previous_timestamp, loading)
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
     }
 }
 impl Fork for ForkB {
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
         &mut self.hashes
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_stakers(&self) -> &VecDeque<AddressBytes> {
         &self.stakers
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
         &mut self.stakers
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_map_balance(&self) -> &HashMap<AddressBytes, u128> {
         &self.map_balance
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.map_balance
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_map_staked(&self) -> &HashMap<AddressBytes, u128> {
         &self.map_staked
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
         &mut self.map_staked
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_latest_block(&self) -> &BlockA {
         &self.latest_block
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_non_ancient_blocks(&self) -> &Vec<BlockA> {
         &self.non_ancient_blocks
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA> {
         &mut self.non_ancient_blocks
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn is_trusted() -> bool {
         true
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool) {
         append_block(self, block, previous_timestamp, loading)
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
     }
@@ -141,6 +169,7 @@ pub struct ForkB {
     map_staked: HashMap<AddressBytes, u128>,
 }
 impl Manager {
+    #[tracing::instrument(skip_all, level = "debug")]
     pub fn dynamic_fork(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
@@ -175,6 +204,7 @@ impl Manager {
         hashes.reverse();
         Ok(ForkA::from(db, &hashes, &self.b))
     }
+    #[tracing::instrument(skip_all, level = "debug")]
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[Hash], trust_fork_after_blocks: usize) {
         let start = Instant::now();
         let hashes_0 = &self.a.hashes;
@@ -193,9 +223,11 @@ impl Manager {
     }
 }
 impl ForkA {
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn balance(&self, address: &AddressBytes) -> u128 {
         get_balance(self, address)
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn staked(&self, address: &AddressBytes) -> u128 {
         get_staked(self, address)
     }
@@ -212,15 +244,19 @@ impl ForkA {
         dynamic.load(db, hashes);
         dynamic
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn next_staker(&self, timestamp: u32) -> Option<AddressBytes> {
         next_staker(self, timestamp)
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn stakers_offline(&self, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
         stakers_offline(self, timestamp, previous_timestamp)
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn stakers_n(&self, n: usize) -> Vec<AddressBytes> {
         stakers_n(self, n).0
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn check_overflow(&self, transactions: &Vec<TransactionA>, stakes: &Vec<StakeA>) -> Result<(), Box<dyn Error>> {
         let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
         let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
@@ -257,6 +293,7 @@ impl ForkA {
         }
         Ok(())
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn transaction_in_chain(&self, transaction_a: &TransactionA) -> bool {
         for block in self.non_ancient_blocks.iter() {
             if block.transactions.iter().any(|a| a.hash == transaction_a.hash) {
@@ -265,6 +302,7 @@ impl ForkA {
         }
         false
     }
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn stake_in_chain(&self, stake_a: &StakeA) -> bool {
         for block in self.non_ancient_blocks.iter() {
             if block.stakes.iter().any(|a| a.hash == stake_a.hash) {
@@ -275,6 +313,7 @@ impl ForkA {
     }
 }
 impl ForkB {
+    #[tracing::instrument(skip_all, level = "debug")]
     pub fn append_block(&mut self, block: &BlockA, previous_timestamp: u32) {
         append_block(self, block, previous_timestamp, false)
     }

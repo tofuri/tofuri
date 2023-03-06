@@ -2,15 +2,15 @@ use crate::Node;
 use colored::*;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
-use log::debug;
-use log::error;
-use log::info;
 use rand::prelude::*;
 use tofuri_core::*;
 use tofuri_p2p::behaviour::SyncRequest;
 use tofuri_p2p::multiaddr;
 use tofuri_util;
 use tokio::time::Instant;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
 pub fn dial_known(node: &mut Node, instant: Instant) -> Instant {
     let vec = node.p2p.known.clone().into_iter().collect();
     dial(node, vec, true);

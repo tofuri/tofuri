@@ -1,7 +1,6 @@
 pub mod router;
 use clap::Parser;
 use colored::*;
-use log::info;
 use reqwest::Client;
 use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
@@ -16,6 +15,7 @@ use tofuri_key::Key;
 use tofuri_pay_core::Charge;
 use tofuri_pay_core::ChargeStatus;
 use tofuri_pay_core::Payment;
+use tracing::info;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");

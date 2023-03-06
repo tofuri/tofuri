@@ -1,5 +1,4 @@
 use colored::Colorize;
-use log::warn;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
@@ -11,6 +10,7 @@ use tofuri_core::*;
 use tofuri_db as db;
 use tofuri_stake::StakeA;
 use tofuri_transaction::TransactionA;
+use tracing::warn;
 pub type Map = HashMap<AddressBytes, u128>;
 pub trait State {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;

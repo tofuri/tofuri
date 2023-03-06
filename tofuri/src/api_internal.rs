@@ -4,8 +4,6 @@ use crate::CARGO_PKG_REPOSITORY;
 use crate::CARGO_PKG_VERSION;
 use colored::*;
 use libp2p::Multiaddr;
-use log::error;
-use log::info;
 use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
@@ -60,6 +58,8 @@ use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tokio::time::Instant;
+use tracing::error;
+use tracing::info;
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) -> Instant {
     let instant = Instant::now();
     if let Err(err) = &res {

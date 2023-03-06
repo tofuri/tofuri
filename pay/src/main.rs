@@ -2,9 +2,6 @@ use axum::routing::get;
 use axum::Router;
 use clap::Parser;
 use colored::*;
-use log::error;
-use log::info;
-use log::warn;
 use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -21,6 +18,9 @@ use tofuri_pay::CARGO_PKG_REPOSITORY;
 use tofuri_pay::CARGO_PKG_VERSION;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
+use tracing::error;
+use tracing::info;
+use tracing::warn;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt::init();

@@ -1,7 +1,6 @@
 use crate::state::Dynamic;
 use crate::state::Trusted;
 use colored::*;
-use log::debug;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::error::Error;
@@ -9,6 +8,7 @@ use std::time::Instant;
 use tofuri_core::*;
 use tofuri_db as db;
 use tofuri_tree::Tree;
+use tracing::debug;
 #[derive(Default, Debug, Clone)]
 pub struct States {
     pub dynamic: Dynamic,

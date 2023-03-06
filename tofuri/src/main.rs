@@ -2,9 +2,6 @@ use clap::Parser;
 use colored::*;
 use libp2p::futures::StreamExt;
 use libp2p::Multiaddr;
-use log::debug;
-use log::info;
-use log::warn;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
@@ -23,6 +20,9 @@ use tofuri_p2p::multiaddr;
 use tofuri_p2p::P2p;
 use tokio::net::TcpListener;
 use tokio::time::interval_at;
+use tracing::debug;
+use tracing::info;
+use tracing::warn;
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();

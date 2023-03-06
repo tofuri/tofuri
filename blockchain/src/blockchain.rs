@@ -2,9 +2,6 @@ use crate::state::Dynamic;
 use crate::states::States;
 use crate::sync::Sync;
 use colored::*;
-use log::debug;
-use log::info;
-use log::warn;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::error::Error;
@@ -22,6 +19,9 @@ use tofuri_tree::Tree;
 use tofuri_util::EMPTY_BLOCK_SIZE;
 use tofuri_util::STAKE_SIZE;
 use tofuri_util::TRANSACTION_SIZE;
+use tracing::debug;
+use tracing::info;
+use tracing::warn;
 #[derive(Default, Debug, Clone)]
 pub struct Blockchain {
     pub tree: Tree,

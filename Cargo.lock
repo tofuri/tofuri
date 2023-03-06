@@ -4244,7 +4244,6 @@ dependencies = [
  "colored",
  "hex",
  "libp2p",
- "log",
  "rand 0.8.5",
  "rocksdb",
  "serde",
@@ -4266,6 +4265,7 @@ dependencies = [
  "tofuri-util",
  "tofuri-wallet",
  "tokio",
+ "tracing",
  "tracing-subscriber",
  "void",
 ]
@@ -4365,7 +4365,6 @@ dependencies = [
  "colored",
  "hex",
  "lazy_static",
- "log",
  "rocksdb",
  "serde",
  "tofuri-address",
@@ -4378,6 +4377,7 @@ dependencies = [
  "tofuri-transaction",
  "tofuri-tree",
  "tofuri-util",
+ "tracing",
 ]
 
 [[package]]
@@ -4440,7 +4440,6 @@ dependencies = [
  "colored",
  "hex",
  "lazy_static",
- "log",
  "regex",
  "reqwest",
  "rocksdb",
@@ -4458,6 +4457,7 @@ dependencies = [
  "tofuri-wallet",
  "tokio",
  "tower-http",
+ "tracing",
  "tracing-subscriber",
 ]
 
@@ -4521,13 +4521,13 @@ dependencies = [
  "chrono",
  "colored",
  "lazy_static",
- "log",
  "sha2 0.10.6",
  "tofuri-block",
  "tofuri-core",
  "tofuri-stake",
  "tofuri-transaction",
  "tokio",
+ "tracing",
  "uint",
 ]
 
@@ -4545,7 +4545,6 @@ dependencies = [
  "hex",
  "inquire",
  "lazy_static",
- "log",
  "rand 0.8.5",
  "reqwest",
  "tofuri-address",
@@ -4558,6 +4557,7 @@ dependencies = [
  "tofuri-transaction",
  "tofuri-util",
  "tokio",
+ "tracing",
  "zxcvbn",
 ]
 

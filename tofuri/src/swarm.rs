@@ -13,10 +13,6 @@ use libp2p::swarm::ConnectionHandlerUpgrErr;
 use libp2p::swarm::SwarmEvent;
 use libp2p::Multiaddr;
 use libp2p::PeerId;
-use log::debug;
-use log::error;
-use log::info;
-use log::warn;
 use std::error::Error;
 use std::io;
 use std::num::NonZeroU32;
@@ -31,6 +27,10 @@ use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
 use tokio::time::Instant;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
+use tracing::warn;
 use void::Void;
 type HandlerErr = EitherError<
     EitherError<EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<io::Error>>,

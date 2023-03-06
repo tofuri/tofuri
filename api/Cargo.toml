@@ -9,7 +9,7 @@ repository = "https://github.com/tofuri/tofuri"
 [dependencies]
 tofuri-address = { version = "0.1", path = "../address" }
 tofuri-core = { version = "0.1", path = "../core" }
-tofuri-api-internal = { version = "0.1", path = "../api-internal" }
+tofuri-rpc = { version = "0.1", path = "../rpc" }
 tofuri-api-core = { version = "0.1", path = "../api-core" }
 tofuri-api-util = { version = "0.1", path = "../api-util" }
 tofuri-block = { version = "0.1", path = "../block" }

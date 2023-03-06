@@ -1,9 +1,9 @@
 use multiaddr::Multiaddr;
 use std::error::Error;
-use tofuri_api_internal_core::Data;
-use tofuri_api_internal_core::Request;
 use tofuri_block::BlockA;
 use tofuri_core::*;
+use tofuri_rpc_core::Data;
+use tofuri_rpc_core::Request;
 use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
 use tofuri_sync::Sync;

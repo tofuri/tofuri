@@ -5,8 +5,8 @@ use libp2p::Multiaddr;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
-use tofuri::api_internal;
 use tofuri::interval;
+use tofuri::rpc;
 use tofuri::swarm;
 use tofuri::Node;
 use tofuri::CARGO_PKG_NAME;
@@ -117,7 +117,7 @@ async fn main() {
             instant = interval_e.tick() => interval::dial_unknown(&mut node, instant),
             instant = interval_f.tick() => interval::clear(&mut node, instant),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
-            res = listener.accept() => api_internal::accept(&mut node, res).await
+            res = listener.accept() => rpc::accept(&mut node, res).await
         };
         let elapsed = instant.elapsed();
         node.lag = elapsed.as_micros() as f64 / 1_000_f64;

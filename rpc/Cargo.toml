@@ -1,14 +1,14 @@
 [package]
-name = "tofuri-api-internal"
+name = "tofuri-rpc"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Tofuri internal API"
+description = "Tofuri RPC"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 tofuri-core = { version = "0.1", path = "../core" }
-tofuri-api-internal-core = { version = "0.1", path = "../api-internal-core" }
+tofuri-rpc-core = { version = "0.1", path = "../rpc-core" }
 tofuri-block = { version = "0.1", path = "../block" }
 tofuri-sync = { version = "0.1", path = "../sync" }
 tofuri-transaction = { version = "0.1", path = "../transaction" }

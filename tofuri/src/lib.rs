@@ -1,5 +1,5 @@
-pub mod api_internal;
 pub mod interval;
+pub mod rpc;
 pub mod swarm;
 use clap::Parser;
 use rocksdb::DBWithThreadMode;

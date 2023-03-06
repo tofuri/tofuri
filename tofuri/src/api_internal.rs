@@ -244,7 +244,7 @@ fn time() -> i64 {
 fn tree_size(node: &mut Node) -> usize {
     node.blockchain.tree.size()
 }
-fn sync(node: &mut Node) -> &tofuri_blockchain_sync::Sync {
+fn sync(node: &mut Node) -> &tofuri_sync::Sync {
     &node.blockchain.sync
 }
 fn random_queue(node: &mut Node) -> Vec<AddressBytes> {

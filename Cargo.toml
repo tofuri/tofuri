@@ -8,7 +8,7 @@ members = [
     "api-util",
     "block",
     "blockchain",
-    "blockchain-sync",
+    "sync",
     "core",
     "db",
     "fork",

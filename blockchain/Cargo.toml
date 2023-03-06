@@ -10,7 +10,7 @@ repository = "https://github.com/tofuri/tofuri"
 tofuri-address = { version = "0.1", path = "../address" }
 tofuri-int = { version = "0.1", path = "../int" }
 tofuri-block = { version = "0.1", path = "../block" }
-tofuri-blockchain-sync = { version = "0.1", path = "../blockchain-sync" }
+tofuri-sync = { version = "0.1", path = "../sync" }
 tofuri-core = { version = "0.1", path = "../core" }
 tofuri-db = { version = "0.1", path = "../db" }
 tofuri-fork = { version = "0.1", path = "../fork" }

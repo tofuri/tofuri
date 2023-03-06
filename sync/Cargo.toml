@@ -1,9 +1,9 @@
 [package]
-name = "tofuri-blockchain-sync"
+name = "tofuri-sync"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Tofuri blockchain sync"
+description = "Tofuri sync"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]

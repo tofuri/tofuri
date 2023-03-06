@@ -12,42 +12,8 @@ use tofuri_block::BlockA;
 use tofuri_core::*;
 use tofuri_db as db;
 use tofuri_p2p::multiaddr;
-use tofuri_rpc_core::Data;
-use tofuri_rpc_core::Data::Address;
-use tofuri_rpc_core::Data::Balance;
-use tofuri_rpc_core::Data::BalancePendingMax;
-use tofuri_rpc_core::Data::BalancePendingMin;
-use tofuri_rpc_core::Data::BlockByHash;
-use tofuri_rpc_core::Data::BlockLatest;
-use tofuri_rpc_core::Data::CargoPkgName;
-use tofuri_rpc_core::Data::CargoPkgRepository;
-use tofuri_rpc_core::Data::CargoPkgVersion;
-use tofuri_rpc_core::Data::DynamicHashes;
-use tofuri_rpc_core::Data::DynamicLatestHashes;
-use tofuri_rpc_core::Data::DynamicStakers;
-use tofuri_rpc_core::Data::GitHash;
-use tofuri_rpc_core::Data::HashByHeight;
-use tofuri_rpc_core::Data::Height;
-use tofuri_rpc_core::Data::HeightByHash;
-use tofuri_rpc_core::Data::Lag;
-use tofuri_rpc_core::Data::Peer;
-use tofuri_rpc_core::Data::Peers;
-use tofuri_rpc_core::Data::RandomQueue;
-use tofuri_rpc_core::Data::Stake;
-use tofuri_rpc_core::Data::StakeByHash;
-use tofuri_rpc_core::Data::Staked;
-use tofuri_rpc_core::Data::StakedPendingMax;
-use tofuri_rpc_core::Data::StakedPendingMin;
-use tofuri_rpc_core::Data::Sync;
-use tofuri_rpc_core::Data::Ticks;
-use tofuri_rpc_core::Data::Time;
-use tofuri_rpc_core::Data::Transaction;
-use tofuri_rpc_core::Data::TransactionByHash;
-use tofuri_rpc_core::Data::TreeSize;
-use tofuri_rpc_core::Data::TrustedHashes;
-use tofuri_rpc_core::Data::TrustedLatestHashes;
-use tofuri_rpc_core::Data::TrustedStakers;
 use tofuri_rpc_core::Request;
+use tofuri_rpc_core::Type;
 use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionA;
@@ -60,69 +26,64 @@ use tokio::time::timeout;
 use tokio::time::Instant;
 use tracing::error;
 use tracing::info;
+#[tracing::instrument(skip_all, level = "debug")]
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) -> Instant {
     let instant = Instant::now();
     if let Err(err) = &res {
-        error!("{} {}", "API".cyan(), err);
+        error!("{}", err.to_string().red());
     }
     let (stream, socket_addr) = res.unwrap();
     match request(node, stream).await {
-        Ok((bytes, data)) => info!(
-            "{} {} {} {:?}",
-            "API".cyan(),
-            socket_addr.to_string().magenta(),
-            bytes.to_string().yellow(),
-            data
-        ),
-        Err(err) => error!("{} {} {}", "API".cyan(), socket_addr.to_string().magenta(), err),
+        Ok((bytes, t)) => info!(socket_addr = socket_addr.to_string(), bytes, "{}", format!("{:?}", t).magenta()),
+        Err(err) => error!(socket_addr = socket_addr.to_string(), "{}", err.to_string().red()),
     };
     instant
 }
-async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Data), Box<dyn Error>> {
+async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type), Box<dyn Error>> {
     let mut buf = [0; 1024];
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buf)).await??;
     let slice = &buf[..bytes];
     let request: Request = bincode::deserialize(slice)?;
     stream
-        .write_all(&match request.data {
-            Balance => bincode::serialize(&balance(node, &request.vec)?),
-            BalancePendingMin => bincode::serialize(&balance_pending_min(node, &request.vec)?),
-            BalancePendingMax => bincode::serialize(&balance_pending_max(node, &request.vec)?),
-            Staked => bincode::serialize(&staked(node, &request.vec)?),
-            StakedPendingMin => bincode::serialize(&staked_pending_min(node, &request.vec)?),
-            StakedPendingMax => bincode::serialize(&staked_pending_max(node, &request.vec)?),
-            Height => bincode::serialize(&height(node)?),
-            HeightByHash => bincode::serialize(&height_by_hash(node, &request.vec)?),
-            BlockLatest => bincode::serialize(block_latest(node)?),
-            HashByHeight => bincode::serialize(&hash_by_height(node, &request.vec)?),
-            BlockByHash => bincode::serialize(&block_by_hash(node, &request.vec)?),
-            TransactionByHash => bincode::serialize(&transaction_by_hash(node, &request.vec)?),
-            StakeByHash => bincode::serialize(&stake_by_hash(node, &request.vec)?),
-            Peers => bincode::serialize(&peers(node)?),
-            Peer => bincode::serialize(&peer(node, &request.vec)?),
-            Transaction => bincode::serialize(&transaction(node, &request.vec)?),
-            Stake => bincode::serialize(&stake(node, &request.vec)?),
-            CargoPkgName => bincode::serialize(cargo_pkg_name()),
-            CargoPkgVersion => bincode::serialize(cargo_pkg_version()),
-            CargoPkgRepository => bincode::serialize(cargo_pkg_repository()),
-            GitHash => bincode::serialize(git_hash()),
-            Address => bincode::serialize(&address(node)),
-            Ticks => bincode::serialize(ticks(node)),
-            Lag => bincode::serialize(lag(node)),
-            Time => bincode::serialize(&time()),
-            TreeSize => bincode::serialize(&tree_size(node)),
-            Sync => bincode::serialize(sync(node)),
-            RandomQueue => bincode::serialize(&random_queue(node)),
-            DynamicHashes => bincode::serialize(&dynamic_hashes(node)),
-            DynamicLatestHashes => bincode::serialize(&dynamic_latest_hashes(node)),
-            DynamicStakers => bincode::serialize(&dynamic_stakers(node)),
-            TrustedHashes => bincode::serialize(&trusted_hashes(node)),
-            TrustedLatestHashes => bincode::serialize(&trusted_latest_hashes(node)),
-            TrustedStakers => bincode::serialize(&trusted_stakers(node)),
+        .write_all(&match request.t {
+            Type::Balance => bincode::serialize(&balance(node, &request.v)?),
+            Type::BalancePendingMin => bincode::serialize(&balance_pending_min(node, &request.v)?),
+            Type::BalancePendingMax => bincode::serialize(&balance_pending_max(node, &request.v)?),
+            Type::Staked => bincode::serialize(&staked(node, &request.v)?),
+            Type::StakedPendingMin => bincode::serialize(&staked_pending_min(node, &request.v)?),
+            Type::StakedPendingMax => bincode::serialize(&staked_pending_max(node, &request.v)?),
+            Type::Height => bincode::serialize(&height(node)?),
+            Type::HeightByHash => bincode::serialize(&height_by_hash(node, &request.v)?),
+            Type::BlockLatest => bincode::serialize(block_latest(node)?),
+            Type::HashByHeight => bincode::serialize(&hash_by_height(node, &request.v)?),
+            Type::BlockByHash => bincode::serialize(&block_by_hash(node, &request.v)?),
+            Type::TransactionByHash => bincode::serialize(&transaction_by_hash(node, &request.v)?),
+            Type::StakeByHash => bincode::serialize(&stake_by_hash(node, &request.v)?),
+            Type::Peers => bincode::serialize(&peers(node)?),
+            Type::Peer => bincode::serialize(&peer(node, &request.v)?),
+            Type::Transaction => bincode::serialize(&transaction(node, &request.v)?),
+            Type::Stake => bincode::serialize(&stake(node, &request.v)?),
+            Type::CargoPkgName => bincode::serialize(cargo_pkg_name()),
+            Type::CargoPkgVersion => bincode::serialize(cargo_pkg_version()),
+            Type::CargoPkgRepository => bincode::serialize(cargo_pkg_repository()),
+            Type::GitHash => bincode::serialize(git_hash()),
+            Type::Address => bincode::serialize(&address(node)),
+            Type::Ticks => bincode::serialize(ticks(node)),
+            Type::Lag => bincode::serialize(lag(node)),
+            Type::Time => bincode::serialize(&time()),
+            Type::TreeSize => bincode::serialize(&tree_size(node)),
+            Type::Sync => bincode::serialize(sync(node)),
+            Type::RandomQueue => bincode::serialize(&random_queue(node)),
+            Type::DynamicHashes => bincode::serialize(&dynamic_hashes(node)),
+            Type::DynamicLatestHashes => bincode::serialize(&dynamic_latest_hashes(node)),
+            Type::DynamicStakers => bincode::serialize(&dynamic_stakers(node)),
+            Type::TrustedHashes => bincode::serialize(&trusted_hashes(node)),
+            Type::TrustedLatestHashes => bincode::serialize(&trusted_latest_hashes(node)),
+            Type::TrustedStakers => bincode::serialize(&trusted_stakers(node)),
         }?)
         .await?;
     stream.flush().await?;
-    Ok((bytes, request.data))
+    Ok((bytes, request.t))
 }
 fn balance(node: &mut Node, bytes: &[u8]) -> Result<u128, Box<dyn Error>> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes)?;
@@ -185,10 +146,10 @@ fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
 }
 fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     let transaction_b: TransactionB = bincode::deserialize(bytes)?;
-    let data = bincode::serialize(&transaction_b).unwrap();
+    let vec = bincode::serialize(&transaction_b).unwrap();
     let status = match node.blockchain.pending_transactions_push(transaction_b, node.args.time_delta) {
         Ok(()) => {
-            if let Err(err) = node.p2p.gossipsub_publish("transaction", data) {
+            if let Err(err) = node.p2p.gossipsub_publish("transaction", vec) {
                 error!("{}", err);
             }
             "success".to_string()
@@ -202,10 +163,10 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> 
 }
 fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     let stake_b: StakeB = bincode::deserialize(bytes)?;
-    let data = bincode::serialize(&stake_b).unwrap();
+    let vec = bincode::serialize(&stake_b).unwrap();
     let status = match node.blockchain.pending_stakes_push(stake_b, node.args.time_delta) {
         Ok(()) => {
-            if let Err(err) = node.p2p.gossipsub_publish("stake", data) {
+            if let Err(err) = node.p2p.gossipsub_publish("stake", vec) {
                 error!("{}", err);
             }
             "success".to_string()

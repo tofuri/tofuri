@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Data {
+pub enum Type {
     Balance,
     BalancePendingMin,
     BalancePendingMax,
@@ -39,6 +39,6 @@ pub enum Data {
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Request {
-    pub data: Data,
-    pub vec: Vec<u8>,
+    pub t: Type,
+    pub v: Vec<u8>,
 }

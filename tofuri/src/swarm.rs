@@ -26,7 +26,6 @@ use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
-use tokio::time::Instant;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -37,8 +36,7 @@ type HandlerErr = EitherError<
     ConnectionHandlerUpgrErr<io::Error>,
 >;
 #[tracing::instrument(skip_all, level = "trace")]
-pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) -> Instant {
-    let instant = Instant::now();
+pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
     match event {
         SwarmEvent::Dialing(_) => {}
         SwarmEvent::IncomingConnectionError { .. } => {}
@@ -85,7 +83,6 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) -> Instan
         SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::ResponseSent { .. })) => {}
         _ => {}
     };
-    instant
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn event_connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {

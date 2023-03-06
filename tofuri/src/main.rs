@@ -20,7 +20,6 @@ use tofuri_p2p::multiaddr;
 use tofuri_p2p::P2p;
 use tokio::net::TcpListener;
 use tokio::time::interval_at;
-use tracing::debug;
 use tracing::info;
 use tracing::metadata::LevelFilter;
 use tracing::warn;
@@ -117,18 +116,16 @@ async fn main() {
     let mut interval_e = interval_at(start, Duration::from_secs(5));
     let mut interval_f = interval_at(start, Duration::from_secs(1));
     loop {
-        let instant = tokio::select! {
-            instant = interval_a.tick() => interval::grow(&mut node, instant),
-            instant = interval_b.tick() => interval::sync_request(&mut node, instant),
-            instant = interval_c.tick() => interval::share(&mut node, instant),
-            instant = interval_d.tick() => interval::dial_known(&mut node, instant),
-            instant = interval_e.tick() => interval::dial_unknown(&mut node, instant),
-            instant = interval_f.tick() => interval::clear(&mut node, instant),
+        node.ticks += 1;
+        tokio::select! {
+            _ = interval_a.tick() => interval::grow(&mut node),
+            _ = interval_b.tick() => interval::sync_request(&mut node),
+            _ = interval_c.tick() => interval::share(&mut node),
+            _ = interval_d.tick() => interval::dial_known(&mut node),
+            _ = interval_e.tick() => interval::dial_unknown(&mut node),
+            _ = interval_f.tick() => interval::clear(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
             res = listener.accept() => rpc::accept(&mut node, res).await
-        };
-        let elapsed = instant.elapsed();
-        node.ticks += 1;
-        debug!("{} {} {}", "Tick".cyan(), node.ticks, format!("{elapsed:?}").yellow());
+        }
     }
 }

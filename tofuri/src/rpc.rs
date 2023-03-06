@@ -23,12 +23,10 @@ use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
-use tokio::time::Instant;
 use tracing::error;
 use tracing::info;
 #[tracing::instrument(skip_all, level = "debug")]
-pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) -> Instant {
-    let instant = Instant::now();
+pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
     if let Err(err) = &res {
         error!("{}", err.to_string().red());
     }
@@ -37,7 +35,6 @@ pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Er
         Ok((bytes, t)) => info!(socket_addr = socket_addr.to_string(), bytes, "{}", format!("{:?}", t).magenta()),
         Err(err) => error!(socket_addr = socket_addr.to_string(), "{}", err.to_string().red()),
     };
-    instant
 }
 #[tracing::instrument(skip_all, level = "trace")]
 async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type), Box<dyn Error>> {

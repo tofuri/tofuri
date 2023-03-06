@@ -101,7 +101,7 @@ fn connection_established_save(node: &mut Node, peer_id: PeerId, num_established
     info!(multiaddr = multiaddr.to_string(), num_established, "Connection established");
     let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
     if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
-        warn!("Ratelimited {}", multiaddr.to_string().magenta());
+        warn!(multiaddr = multiaddr.to_string(), "Ratelimited");
         let _ = node.p2p.swarm.disconnect_peer_id(peer_id);
     }
     node.p2p.known.insert(multiaddr.clone());

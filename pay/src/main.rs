@@ -93,7 +93,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         info!("{:?}", vec);
                     }
                 }
-                Err(err) => error!("{}", err),
+                Err(err) => error!(err),
             }
         }
     });

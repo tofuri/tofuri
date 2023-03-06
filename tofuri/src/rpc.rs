@@ -33,7 +33,7 @@ pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Er
     let (stream, socket_addr) = res.unwrap();
     match request(node, stream).await {
         Ok((bytes, t)) => info!(socket_addr = socket_addr.to_string(), bytes, "{}", format!("{:?}", t).magenta()),
-        Err(err) => error!(socket_addr = socket_addr.to_string(), "{}", err.to_string().red()),
+        Err(err) => error!(err, socket_addr = socket_addr.to_string()),
     };
 }
 #[tracing::instrument(skip_all, level = "trace")]
@@ -163,12 +163,12 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> 
     let status = match node.blockchain.pending_transactions_push(transaction_b, node.args.time_delta) {
         Ok(()) => {
             if let Err(err) = node.p2p.gossipsub_publish("transaction", vec) {
-                error!("{}", err);
+                error!(err);
             }
             "success".to_string()
         }
         Err(err) => {
-            error!("{}", err);
+            error!(err);
             err.to_string()
         }
     };
@@ -181,12 +181,12 @@ fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Box<dyn Error>> {
     let status = match node.blockchain.pending_stakes_push(stake_b, node.args.time_delta) {
         Ok(()) => {
             if let Err(err) = node.p2p.gossipsub_publish("stake", vec) {
-                error!("{}", err);
+                error!(err);
             }
             "success".to_string()
         }
         Err(err) => {
-            error!("{}", err);
+            error!(err);
             err.to_string()
         }
     };

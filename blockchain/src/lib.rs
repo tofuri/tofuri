@@ -134,36 +134,25 @@ impl Blockchain {
         self.save_block(db, &block_a, true, trust_fork_after_blocks);
         block_a
     }
-    fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forged: bool, trust_fork_after_blocks: usize) {
+    fn save_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, forger: bool, trust_fork_after_blocks: usize) {
         tofuri_db::block::put(block_a, db).unwrap();
         let fork = self.tree.insert(block_a.hash, block_a.previous_hash, block_a.timestamp).unwrap();
         self.tree.sort_branches();
         if let Some(main) = self.tree.main() {
-            if block_a.hash == main.hash && !forged {
+            if block_a.hash == main.hash && !forger {
                 self.sync.new += 1.0;
             }
         }
         self.forks
             .update(db, &self.tree.hashes_dynamic(trust_fork_after_blocks), trust_fork_after_blocks);
-        let info = format!(
-            "{} {} {} {} {}",
-            if forged { "Forged".magenta() } else { "Accept".green() },
-            self.height().to_string().yellow(),
-            hex::encode(block_a.hash),
-            match block_a.transactions.len() {
-                0 => "0".red(),
-                x => x.to_string().green(),
-            },
-            match block_a.stakes.len() {
-                0 => "0".red(),
-                x => x.to_string().green(),
-            }
+        info!(
+            forger,
+            height = self.height(),
+            fork,
+            hash = hex::encode(block_a.hash),
+            transactions = block_a.transactions.len(),
+            stakes = block_a.stakes.len()
         );
-        if fork {
-            warn!("{} {}", "Fork".red(), info);
-        } else {
-            info!("{}", info);
-        }
     }
     pub fn save_blocks(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         let timestamp = tofuri_util::timestamp();

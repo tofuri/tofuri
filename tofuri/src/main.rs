@@ -13,7 +13,7 @@ use tofuri::CARGO_PKG_NAME;
 use tofuri::CARGO_PKG_REPOSITORY;
 use tofuri::CARGO_PKG_VERSION;
 use tofuri_address::address;
-use tofuri_blockchain::blockchain::Blockchain;
+use tofuri_blockchain::Blockchain;
 use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_p2p::multiaddr;

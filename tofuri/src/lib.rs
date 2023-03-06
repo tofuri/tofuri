@@ -4,7 +4,7 @@ pub mod swarm;
 use clap::Parser;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
-use tofuri_blockchain::blockchain::Blockchain;
+use tofuri_blockchain::Blockchain;
 use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;

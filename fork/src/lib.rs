@@ -319,13 +319,7 @@ fn update_0<T: Fork>(fork: &mut T, timestamp: u32, previous_timestamp: u32, load
         insert_staked(fork, *staker, staked);
         update_stakers(fork, *staker);
         if !loading && !T::is_trusted() {
-            warn!(
-                "{} {} {}{}",
-                "Slashed".red(),
-                address::encode(staker).green(),
-                "-".yellow(),
-                tofuri_int::to_string(penalty).yellow()
-            );
+            warn!(address = address::encode(staker), penalty, "Slashed");
         }
     }
 }

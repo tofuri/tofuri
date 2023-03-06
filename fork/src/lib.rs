@@ -4,14 +4,12 @@ use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::error::Error;
-use std::time::Instant;
 use tofuri_address::address;
 use tofuri_block::BlockA;
 use tofuri_core::*;
 use tofuri_stake::StakeA;
 use tofuri_transaction::TransactionA;
 use tofuri_tree::Tree;
-use tracing::debug;
 use tracing::warn;
 pub trait Fork {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;
@@ -178,7 +176,6 @@ impl Manager {
     }
     #[tracing::instrument(skip_all, level = "debug")]
     pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[Hash], trust_fork_after_blocks: usize) {
-        let start = Instant::now();
         let hashes_0 = &self.a.hashes;
         if hashes_0.len() == trust_fork_after_blocks {
             let block_a = tofuri_db::block::get_a(db, hashes_0.first().unwrap()).unwrap();
@@ -191,7 +188,6 @@ impl Manager {
             );
         }
         self.a = ForkA::from(db, hashes_1, &self.b);
-        debug!("{} {:?}", "Forks update".cyan(), start.elapsed());
     }
 }
 impl ForkA {

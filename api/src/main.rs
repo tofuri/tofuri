@@ -16,10 +16,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.api == API {
-            args.api = DEV_API.to_string();
+            args.api = API_DEV.to_string();
         }
         if args.rpc == RPC {
-            args.rpc = DEV_RPC.to_string();
+            args.rpc = RPC_DEV.to_string();
         }
     }
     let addr: SocketAddr = args.api.parse().unwrap();

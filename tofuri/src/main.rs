@@ -37,16 +37,16 @@ async fn main() {
     println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {
-            args.tempdb = DEV_TEMP_DB;
+            args.tempdb = TEMP_DB_DEV;
         }
         if args.tempkey == TEMP_KEY {
-            args.tempkey = DEV_TEMP_KEY;
+            args.tempkey = TEMP_KEY_DEV;
         }
         if args.rpc == RPC {
-            args.rpc = DEV_RPC.to_string();
+            args.rpc = RPC_DEV.to_string();
         }
         if args.host == HOST {
-            args.host = DEV_HOST.to_string();
+            args.host = HOST_DEV.to_string();
         }
     }
     println!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());

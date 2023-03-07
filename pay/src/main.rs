@@ -36,16 +36,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {
-            args.tempdb = DEV_TEMP_DB;
+            args.tempdb = TEMP_DB_DEV;
         }
         if args.tempkey == TEMP_KEY {
-            args.tempkey = DEV_TEMP_KEY;
+            args.tempkey = TEMP_KEY_DEV;
         }
         if args.api == HTTP_API {
-            args.api = DEV_HTTP_API.to_string();
+            args.api = HTTP_API_DEV.to_string();
         }
         if args.pay_api == PAY_API {
-            args.pay_api = DEV_PAY_API.to_string();
+            args.pay_api = PAY_API_DEV.to_string();
         }
     }
     println!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());

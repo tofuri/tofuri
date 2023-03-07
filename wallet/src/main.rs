@@ -11,7 +11,7 @@ async fn main() {
     let mut args = tofuri_wallet::Args::parse();
     println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev && args.api == HTTP_API {
-        args.api = DEV_HTTP_API.to_string();
+        args.api = HTTP_API_DEV.to_string();
     }
     let mut wallet = Wallet::new(args);
     loop {

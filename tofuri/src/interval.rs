@@ -46,6 +46,9 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>) {
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn share(node: &mut Node) {
     let vec: Vec<&Multiaddr> = node.p2p.connections.keys().collect();
+    if vec.is_empty() {
+        return;
+    }
     info!(connections = vec.len(), "Share");
     if let Err(err) = node.p2p.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap()) {
         error!(err);

@@ -25,7 +25,7 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tracing::error;
 use tracing::info;
-#[tracing::instrument(skip_all, level = "trace")]
+#[tracing::instrument(skip_all, level = "debug")]
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
     if let Err(err) = &res {
         error!("{}", err.to_string().red());

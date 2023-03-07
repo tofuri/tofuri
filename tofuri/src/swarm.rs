@@ -34,7 +34,7 @@ type HandlerErr = EitherError<
     EitherError<EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<io::Error>>,
     ConnectionHandlerUpgrErr<io::Error>,
 >;
-#[tracing::instrument(skip_all, level = "trace")]
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
     match event {
         SwarmEvent::Dialing(_) => {}

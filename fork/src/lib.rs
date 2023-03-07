@@ -320,10 +320,10 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, lo
         insert_staked(fork, input_address, COIN);
         update_stakers(fork, input_address);
         if !loading && !T::is_stable() {
-            warn!(amount = tofuri_int::to_string(COIN), address = address::encode(&input_address), "Minted")
+            warn!(address = address::encode(&input_address), "Minted")
         }
         if loading {
-            debug!(amount = tofuri_int::to_string(COIN), address = address::encode(&input_address), "Minted")
+            debug!(address = address::encode(&input_address), "Minted")
         }
     }
 }

@@ -9,6 +9,7 @@ use tofuri_core::*;
 use tofuri_stake::StakeA;
 use tofuri_transaction::TransactionA;
 use tofuri_tree::Tree;
+use tracing::debug;
 use tracing::warn;
 pub trait Fork {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;
@@ -319,7 +320,10 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, lo
         insert_staked(fork, input_address, COIN);
         update_stakers(fork, input_address);
         if !loading && !T::is_stable() {
-            warn!(amount = tofuri_int::to_string(COIN), address = address::encode(&input_address), "Minted",)
+            warn!(amount = tofuri_int::to_string(COIN), address = address::encode(&input_address), "Minted")
+        }
+        if loading {
+            debug!(amount = tofuri_int::to_string(COIN), address = address::encode(&input_address), "Minted")
         }
     }
 }

@@ -32,11 +32,14 @@ impl Blockchain {
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         tofuri_db::tree::reload(&mut self.tree, db);
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(trust_fork_after_blocks);
+        info!(
+            height = if let Some(main) = self.tree.main() { main.height } else { 0 },
+            last_seen = self.last_seen(),
+            hashes_trusted = hashes_trusted.len(),
+            hashes_dynamic = hashes_dynamic.len()
+        );
         self.forks.b.load(db, &hashes_trusted);
         self.forks.a = ForkA::from(db, &hashes_dynamic, &self.forks.b);
-        let height = if let Some(main) = self.tree.main() { main.height } else { 0 };
-        let last_seen = self.last_seen();
-        info!(height, last_seen);
     }
     pub fn last_seen(&self) -> String {
         if self.forks.a.latest_block.timestamp == 0 {

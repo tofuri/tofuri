@@ -1,5 +1,4 @@
 use crate::Node;
-use colored::*;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
 use rand::prelude::*;
@@ -55,12 +54,7 @@ pub fn grow(node: &mut Node) {
     node.blockchain.pending_retain_non_ancient(timestamp);
     node.blockchain.save_blocks(&node.db, node.args.trust);
     if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.forks.a.next_staker(timestamp).is_none() {
-        if timestamp % 60 == 0 {
-            info!(
-                "Waiting for synchronization to start... Currently connected to {} peers.",
-                node.p2p.connections.len().to_string().yellow()
-            );
-        }
+        info!(connections = node.p2p.connections.len(), "Idling");
         node.blockchain.sync.completed = false;
     }
     if !node.blockchain.sync.completed {

@@ -57,7 +57,7 @@ pub fn grow(node: &mut Node) {
     node.blockchain.pending_retain_non_ancient(timestamp);
     node.blockchain.save_blocks(&node.db, node.args.trust);
     if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.forks.a.next_staker(timestamp).is_none() {
-        info!(connections = node.p2p.connections.len(), "Idling");
+        info!("Idling");
         node.blockchain.sync.completed = false;
     }
     if !node.blockchain.sync.completed {

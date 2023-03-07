@@ -24,7 +24,6 @@ pub trait Fork {
     fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA>;
     fn is_stable() -> bool;
     fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool);
-    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
 }
 impl Fork for Stable {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
@@ -66,9 +65,6 @@ impl Fork for Stable {
     fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
         append_block(self, block_a, previous_timestamp, loading)
     }
-    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
-        load(self, db, hashes, true)
-    }
 }
 impl Fork for Unstable {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
@@ -109,9 +105,6 @@ impl Fork for Unstable {
     }
     fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
         append_block(self, block_a, previous_timestamp, loading)
-    }
-    fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
-        load(self, db, hashes, false)
     }
 }
 #[derive(Default, Debug, Clone)]
@@ -192,7 +185,7 @@ impl Stable {
         append_block(self, block_a, previous_timestamp, false)
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
-        load(self, db, hashes, false)
+        load(self, db, hashes)
     }
 }
 impl Unstable {
@@ -205,7 +198,7 @@ impl Unstable {
             latest_block: BlockA::default(),
             non_ancient_blocks: stable.non_ancient_blocks.clone(),
         };
-        unstable.load(db, hashes);
+        load(&mut unstable, db, hashes);
         unstable
     }
     pub fn check_overflow(&self, transactions: &Vec<TransactionA>, stakes: &Vec<StakeA>) -> Result<(), Box<dyn Error>> {
@@ -382,14 +375,14 @@ pub fn append_block<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp:
     fork.get_hashes_mut().push(block_a.hash);
     *fork.get_latest_block_mut() = block_a.clone();
 }
-pub fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash], loading: bool) {
+pub fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
     let mut previous_timestamp = match hashes.first() {
         Some(hash) => tofuri_db::block::get_b(db, hash).unwrap().timestamp,
         None => 0,
     };
     for hash in hashes.iter() {
         let block_a = tofuri_db::block::get_a(db, hash).unwrap();
-        fork.append_block(&block_a, previous_timestamp, loading);
+        fork.append_block(&block_a, previous_timestamp, T::is_stable());
         previous_timestamp = block_a.timestamp;
     }
 }

@@ -18,6 +18,7 @@ use tofuri_util::EMPTY_BLOCK_SIZE;
 use tofuri_util::STAKE_SIZE;
 use tofuri_util::TRANSACTION_SIZE;
 use tracing::info;
+use tracing::warn;
 #[derive(Default, Debug, Clone)]
 pub struct Blockchain {
     pub tree: Tree,
@@ -91,6 +92,7 @@ impl Blockchain {
     }
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> BlockA {
         if self.forks.unstable.next_staker(timestamp).is_none() {
+            warn!("No stakers");
             self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, key).unwrap()];
         }
         let mut transactions: Vec<TransactionA> = self

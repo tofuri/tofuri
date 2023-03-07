@@ -6,6 +6,7 @@ use tofuri_core::*;
 use tofuri_p2p::behaviour::SyncRequest;
 use tofuri_p2p::multiaddr;
 use tofuri_util;
+use tracing::debug;
 use tracing::error;
 use tracing::info;
 #[tracing::instrument(skip_all, level = "debug")]
@@ -32,6 +33,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>) {
         }
         let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
         if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
+            debug!(multiaddr = multiaddr.to_string(), "Dial skipped");
             continue;
         }
         info!(multiaddr = multiaddr.to_string(), "Dial");

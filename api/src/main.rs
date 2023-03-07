@@ -18,8 +18,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         if args.api == API {
             args.api = DEV_API.to_string();
         }
-        if args.api_internal == API_INTERNAL {
-            args.api_internal = DEV_API_INTERNAL.to_string();
+        if args.rpc == RPC {
+            args.rpc = DEV_RPC.to_string();
         }
     }
     let addr: SocketAddr = args.api.parse().unwrap();

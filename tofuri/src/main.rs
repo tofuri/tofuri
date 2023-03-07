@@ -42,8 +42,8 @@ async fn main() {
         if args.tempkey == TEMP_KEY {
             args.tempkey = DEV_TEMP_KEY;
         }
-        if args.api_internal == API_INTERNAL {
-            args.api_internal = DEV_API_INTERNAL.to_string();
+        if args.rpc == RPC {
+            args.rpc = DEV_RPC.to_string();
         }
         if args.host == HOST {
             args.host = DEV_HOST.to_string();
@@ -59,7 +59,7 @@ async fn main() {
     println!("{} {}", "--wallet".cyan(), args.wallet.magenta());
     println!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
     println!("{} {}", "--peer".cyan(), args.peer.magenta());
-    println!("{} {}", "--bind-api".cyan(), args.api_internal.magenta());
+    println!("{} {}", "--rpc".cyan(), args.rpc.magenta());
     println!("{} {}", "--host".cyan(), args.host.magenta());
     println!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
     if args.dev {
@@ -93,7 +93,7 @@ async fn main() {
     let multiaddr: Multiaddr = node.args.host.parse().unwrap();
     info!(multiaddr = multiaddr.to_string(), "P2P");
     node.p2p.swarm.listen_on(multiaddr).unwrap();
-    let listener = TcpListener::bind(&node.args.api_internal).await.unwrap();
+    let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
     info!(local_addr = listener.local_addr().unwrap().to_string(), "RPC");
     let start = tofuri_util::interval_at_start();
     let mut interval_a = interval_at(start, Duration::from_secs(1));

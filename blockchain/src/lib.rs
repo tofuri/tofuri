@@ -91,10 +91,6 @@ impl Blockchain {
         tofuri_db::block::get_b(db, &hash).ok()
     }
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> BlockA {
-        if self.forks.unstable.next_staker(timestamp).is_none() {
-            warn!("No stakers");
-            self.pending_stakes = vec![StakeA::sign(true, 0, 0, timestamp, key).unwrap()];
-        }
         let mut transactions: Vec<TransactionA> = self
             .pending_transactions
             .iter()
@@ -305,27 +301,6 @@ impl Blockchain {
             if block_a.timestamp != unstable.latest_block.timestamp + BLOCK_TIME {
                 return Err("block timestamp".into());
             }
-        } else {
-            if !block_a.transactions.is_empty() {
-                return Err("block mint transactions".into());
-            }
-            if block_a.stakes.len() != 1 {
-                return Err("block mint stakes".into());
-            }
-            let stake_a = block_a.stakes.first().unwrap();
-            if stake_a.amount != 0 {
-                return Err("stake mint amount not zero".into());
-            }
-            if stake_a.fee != 0 {
-                return Err("stake mint fee not zero".into());
-            }
-            if !stake_a.deposit {
-                return Err("stake mint deposit".into());
-            }
-            if stake_a.timestamp != block_a.timestamp {
-                return Err("stake mint timestamp".into());
-            }
-            return Ok(());
         }
         for stake_a in block_a.stakes.iter() {
             Blockchain::validate_stake(&unstable, stake_a, block_a.timestamp)?;

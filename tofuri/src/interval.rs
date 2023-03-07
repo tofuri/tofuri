@@ -9,6 +9,7 @@ use tofuri_util;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
+use tracing::warn;
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn dial_known(node: &mut Node) {
     let vec = node.p2p.known.clone().into_iter().collect();
@@ -75,6 +76,8 @@ pub fn grow(node: &mut Node) {
         if staker != node.key.address_bytes() {
             return;
         }
+    } else {
+        warn!("No stakers");
     }
     let block_a = node.blockchain.forge_block(&node.db, &node.key, timestamp, node.args.trust);
     if let Err(err) = node.p2p.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap()) {

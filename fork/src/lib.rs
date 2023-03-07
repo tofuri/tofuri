@@ -25,6 +25,7 @@ pub trait Fork {
     fn is_stable() -> bool;
     fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
+    fn next_staker(&self, timestamp: u32) -> Option<AddressBytes>;
 }
 impl Fork for Stable {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
@@ -69,6 +70,9 @@ impl Fork for Stable {
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
     }
+    fn next_staker(&self, timestamp: u32) -> Option<AddressBytes> {
+        next_staker(self, timestamp)
+    }
 }
 impl Fork for Unstable {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
@@ -112,6 +116,9 @@ impl Fork for Unstable {
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
+    }
+    fn next_staker(&self, timestamp: u32) -> Option<AddressBytes> {
+        next_staker(self, timestamp)
     }
 }
 #[derive(Default, Debug, Clone)]
@@ -326,11 +333,6 @@ fn update_1<T: Fork>(fork: &mut T, block: &BlockA) {
     let input_address = block.input_address();
     let mut balance = get_balance(fork, &input_address);
     balance += block.reward();
-    if let Some(stake) = block.stakes.first() {
-        if stake.fee == 0 {
-            insert_staked(fork, input_address, COIN)
-        }
-    }
     insert_balance(fork, input_address, balance)
 }
 fn update_2<T: Fork>(fork: &mut T, block: &BlockA) {
@@ -359,6 +361,12 @@ fn update_2<T: Fork>(fork: &mut T, block: &BlockA) {
 fn update_3<T: Fork>(fork: &mut T, block: &BlockA) {
     for stake in block.stakes.iter() {
         update_stakers(fork, stake.input_address);
+    }
+    if fork.next_staker(block.timestamp).is_none() {
+        let input_address = block.input_address();
+        insert_staked(fork, input_address, COIN);
+        update_stakers(fork, input_address);
+        warn!(address = address::encode(&input_address), amount = COIN, "Minted")
     }
 }
 pub fn update<T: Fork>(fork: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {

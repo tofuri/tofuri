@@ -156,31 +156,31 @@ pub async fn random_queue(State(args): State<Args>) -> impl IntoResponse {
     let random_queue: Vec<String> = random_queue.iter().map(address::encode).collect();
     Json(random_queue)
 }
-pub async fn dynamic_hashes(State(args): State<Args>) -> impl IntoResponse {
-    let dynamic_hashes = tofuri_rpc::dynamic_hashes(&args.api_internal).await.unwrap();
-    Json(dynamic_hashes)
+pub async fn unstable_hashes(State(args): State<Args>) -> impl IntoResponse {
+    let unstable_hashes = tofuri_rpc::unstable_hashes(&args.api_internal).await.unwrap();
+    Json(unstable_hashes)
 }
-pub async fn dynamic_latest_hashes(State(args): State<Args>) -> impl IntoResponse {
-    let dynamic_latest_hashes = tofuri_rpc::dynamic_latest_hashes(&args.api_internal).await.unwrap();
-    let dynamic_latest_hashes: Vec<String> = dynamic_latest_hashes.iter().map(hex::encode).collect();
-    Json(dynamic_latest_hashes)
+pub async fn unstable_latest_hashes(State(args): State<Args>) -> impl IntoResponse {
+    let unstable_latest_hashes = tofuri_rpc::unstable_latest_hashes(&args.api_internal).await.unwrap();
+    let unstable_latest_hashes: Vec<String> = unstable_latest_hashes.iter().map(hex::encode).collect();
+    Json(unstable_latest_hashes)
 }
-pub async fn dynamic_stakers(State(args): State<Args>) -> impl IntoResponse {
-    let dynamic_stakers = tofuri_rpc::dynamic_stakers(&args.api_internal).await.unwrap();
-    Json(dynamic_stakers)
+pub async fn unstable_stakers(State(args): State<Args>) -> impl IntoResponse {
+    let unstable_stakers = tofuri_rpc::unstable_stakers(&args.api_internal).await.unwrap();
+    Json(unstable_stakers)
 }
-pub async fn trusted_hashes(State(args): State<Args>) -> impl IntoResponse {
-    let trusted_hashes = tofuri_rpc::trusted_hashes(&args.api_internal).await.unwrap();
-    Json(trusted_hashes)
+pub async fn stable_hashes(State(args): State<Args>) -> impl IntoResponse {
+    let stable_hashes = tofuri_rpc::stable_hashes(&args.api_internal).await.unwrap();
+    Json(stable_hashes)
 }
-pub async fn trusted_latest_hashes(State(args): State<Args>) -> impl IntoResponse {
-    let trusted_latest_hashes = tofuri_rpc::trusted_latest_hashes(&args.api_internal).await.unwrap();
-    let trusted_latest_hashes: Vec<String> = trusted_latest_hashes.iter().map(hex::encode).collect();
-    Json(trusted_latest_hashes)
+pub async fn stable_latest_hashes(State(args): State<Args>) -> impl IntoResponse {
+    let stable_latest_hashes = tofuri_rpc::stable_latest_hashes(&args.api_internal).await.unwrap();
+    let stable_latest_hashes: Vec<String> = stable_latest_hashes.iter().map(hex::encode).collect();
+    Json(stable_latest_hashes)
 }
-pub async fn trusted_stakers(State(args): State<Args>) -> impl IntoResponse {
-    let trusted_stakers = tofuri_rpc::trusted_stakers(&args.api_internal).await.unwrap();
-    Json(trusted_stakers)
+pub async fn stable_stakers(State(args): State<Args>) -> impl IntoResponse {
+    let stable_stakers = tofuri_rpc::stable_stakers(&args.api_internal).await.unwrap();
+    Json(stable_stakers)
 }
 pub async fn sync_remaining(State(args): State<Args>) -> impl IntoResponse {
     let sync = tofuri_rpc::sync(&args.api_internal).await.unwrap();

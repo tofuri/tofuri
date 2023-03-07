@@ -56,19 +56,19 @@ pub fn grow(node: &mut Node) {
     let timestamp = tofuri_util::timestamp();
     node.blockchain.pending_retain_non_ancient(timestamp);
     node.blockchain.save_blocks(&node.db, node.args.trust);
-    if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.forks.a.next_staker(timestamp).is_none() {
+    if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.forks.unstable.next_staker(timestamp).is_none() {
         info!("Idling");
         node.blockchain.sync.completed = false;
     }
     if !node.blockchain.sync.completed {
         return;
     }
-    let diff = timestamp.saturating_sub(node.blockchain.forks.a.latest_block.timestamp);
+    let diff = timestamp.saturating_sub(node.blockchain.forks.unstable.latest_block.timestamp);
     #[allow(clippy::modulo_one)]
     if diff == 0 || diff % BLOCK_TIME != 0 {
         return;
     }
-    if let Some(staker) = node.blockchain.forks.a.next_staker(timestamp) {
+    if let Some(staker) = node.blockchain.forks.unstable.next_staker(timestamp) {
         if staker != node.key.address_bytes() {
             return;
         }

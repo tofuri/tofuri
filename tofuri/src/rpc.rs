@@ -71,12 +71,12 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type)
             Type::TreeSize => bincode::serialize(&tree_size(node)),
             Type::Sync => bincode::serialize(sync(node)),
             Type::RandomQueue => bincode::serialize(&random_queue(node)),
-            Type::DynamicHashes => bincode::serialize(&dynamic_hashes(node)),
-            Type::DynamicLatestHashes => bincode::serialize(&dynamic_latest_hashes(node)),
-            Type::DynamicStakers => bincode::serialize(&dynamic_stakers(node)),
-            Type::TrustedHashes => bincode::serialize(&trusted_hashes(node)),
-            Type::TrustedLatestHashes => bincode::serialize(&trusted_latest_hashes(node)),
-            Type::TrustedStakers => bincode::serialize(&trusted_stakers(node)),
+            Type::UnstableHashes => bincode::serialize(&unstable_hashes(node)),
+            Type::UnstableLatestHashes => bincode::serialize(&unstable_latest_hashes(node)),
+            Type::UnstableStakers => bincode::serialize(&unstable_stakers(node)),
+            Type::StableHashes => bincode::serialize(&stable_hashes(node)),
+            Type::StableLatestHashes => bincode::serialize(&stable_latest_hashes(node)),
+            Type::StableStakers => bincode::serialize(&stable_stakers(node)),
         }?)
         .await?;
     stream.flush().await?;
@@ -123,7 +123,7 @@ fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Box<dyn Error>
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn block_latest(node: &mut Node) -> Result<&BlockA, Box<dyn Error>> {
-    Ok(&node.blockchain.forks.a.latest_block)
+    Ok(&node.blockchain.forks.unstable.latest_block)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Box<dyn Error>> {
@@ -230,29 +230,29 @@ fn sync(node: &mut Node) -> &tofuri_sync::Sync {
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn random_queue(node: &mut Node) -> Vec<AddressBytes> {
-    node.blockchain.forks.a.stakers_n(8)
+    node.blockchain.forks.unstable.stakers_n(8)
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn dynamic_hashes(node: &mut Node) -> usize {
-    node.blockchain.forks.a.hashes.len()
+fn unstable_hashes(node: &mut Node) -> usize {
+    node.blockchain.forks.unstable.hashes.len()
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn dynamic_latest_hashes(node: &mut Node) -> Vec<&Hash> {
-    node.blockchain.forks.a.hashes.iter().rev().take(16).collect()
+fn unstable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
+    node.blockchain.forks.unstable.hashes.iter().rev().take(16).collect()
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn dynamic_stakers(node: &mut Node) -> usize {
-    node.blockchain.forks.a.stakers.len()
+fn unstable_stakers(node: &mut Node) -> usize {
+    node.blockchain.forks.unstable.stakers.len()
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn trusted_hashes(node: &mut Node) -> usize {
-    node.blockchain.forks.b.hashes.len()
+fn stable_hashes(node: &mut Node) -> usize {
+    node.blockchain.forks.stable.hashes.len()
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn trusted_latest_hashes(node: &mut Node) -> Vec<&Hash> {
-    node.blockchain.forks.b.hashes.iter().rev().take(16).collect()
+fn stable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
+    node.blockchain.forks.stable.hashes.iter().rev().take(16).collect()
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn trusted_stakers(node: &mut Node) -> usize {
-    node.blockchain.forks.b.stakers.len()
+fn stable_stakers(node: &mut Node) -> usize {
+    node.blockchain.forks.stable.stakers.len()
 }

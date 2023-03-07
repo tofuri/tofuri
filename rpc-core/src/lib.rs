@@ -29,12 +29,12 @@ pub enum Type {
     TreeSize,
     Sync,
     RandomQueue,
-    DynamicHashes,
-    DynamicLatestHashes,
-    DynamicStakers,
-    TrustedHashes,
-    TrustedLatestHashes,
-    TrustedStakers,
+    UnstableHashes,
+    UnstableLatestHashes,
+    UnstableStakers,
+    StableHashes,
+    StableLatestHashes,
+    StableStakers,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Request {

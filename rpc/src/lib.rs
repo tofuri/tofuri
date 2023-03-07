@@ -122,21 +122,21 @@ pub async fn sync(addr: &str) -> Result<Sync, Box<dyn Error>> {
 pub async fn random_queue(addr: &str) -> Result<Vec<AddressBytes>, Box<dyn Error>> {
     Ok(bincode::deserialize(&request(Type::RandomQueue, addr, None).await?)?)
 }
-pub async fn dynamic_hashes(addr: &str) -> Result<usize, Box<dyn Error>> {
-    Ok(bincode::deserialize(&request(Type::DynamicHashes, addr, None).await?)?)
+pub async fn unstable_hashes(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&request(Type::UnstableHashes, addr, None).await?)?)
 }
-pub async fn dynamic_latest_hashes(addr: &str) -> Result<Vec<Hash>, Box<dyn Error>> {
-    Ok(bincode::deserialize(&request(Type::DynamicLatestHashes, addr, None).await?)?)
+pub async fn unstable_latest_hashes(addr: &str) -> Result<Vec<Hash>, Box<dyn Error>> {
+    Ok(bincode::deserialize(&request(Type::UnstableLatestHashes, addr, None).await?)?)
 }
-pub async fn dynamic_stakers(addr: &str) -> Result<usize, Box<dyn Error>> {
-    Ok(bincode::deserialize(&request(Type::DynamicStakers, addr, None).await?)?)
+pub async fn unstable_stakers(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&request(Type::UnstableStakers, addr, None).await?)?)
 }
-pub async fn trusted_hashes(addr: &str) -> Result<usize, Box<dyn Error>> {
-    Ok(bincode::deserialize(&request(Type::TrustedHashes, addr, None).await?)?)
+pub async fn stable_hashes(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&request(Type::StableHashes, addr, None).await?)?)
 }
-pub async fn trusted_latest_hashes(addr: &str) -> Result<Vec<Hash>, Box<dyn Error>> {
-    Ok(bincode::deserialize(&request(Type::TrustedLatestHashes, addr, None).await?)?)
+pub async fn stable_latest_hashes(addr: &str) -> Result<Vec<Hash>, Box<dyn Error>> {
+    Ok(bincode::deserialize(&request(Type::StableLatestHashes, addr, None).await?)?)
 }
-pub async fn trusted_stakers(addr: &str) -> Result<usize, Box<dyn Error>> {
-    Ok(bincode::deserialize(&request(Type::TrustedStakers, addr, None).await?)?)
+pub async fn stable_stakers(addr: &str) -> Result<usize, Box<dyn Error>> {
+    Ok(bincode::deserialize(&request(Type::StableStakers, addr, None).await?)?)
 }

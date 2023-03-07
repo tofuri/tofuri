@@ -24,31 +24,31 @@ impl Tree {
     pub fn size(&self) -> usize {
         self.hashes.len()
     }
-    pub fn hashes(&self, trust_fork_after_blocks: usize) -> (Vec<Hash>, Vec<Hash>) {
-        let mut trusted = vec![];
+    pub fn stable_and_unstable_hashes(&self, trust_fork_after_blocks: usize) -> (Vec<Hash>, Vec<Hash>) {
+        let mut stable_hashes = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.hash;
             loop {
-                trusted.push(hash);
+                stable_hashes.push(hash);
                 match self.get(&hash) {
                     Some(previous_hash) => hash = *previous_hash,
                     None => break,
                 };
             }
         }
-        if let Some(hash) = trusted.last() {
+        if let Some(hash) = stable_hashes.last() {
             if hash != &GENESIS_BLOCK_PREVIOUS_HASH {
                 panic!("broken chain")
             }
-            trusted.pop();
+            stable_hashes.pop();
         }
-        trusted.reverse();
-        let len = trusted.len();
+        stable_hashes.reverse();
+        let len = stable_hashes.len();
         let start = if len < trust_fork_after_blocks { 0 } else { len - trust_fork_after_blocks };
-        let dynamic = trusted.drain(start..len).collect();
-        (trusted, dynamic)
+        let unstable_hashes = stable_hashes.drain(start..len).collect();
+        (stable_hashes, unstable_hashes)
     }
-    pub fn hashes_dynamic(&self, trust_fork_after_blocks: usize) -> Vec<Hash> {
+    pub fn unstable_hashes(&self, trust_fork_after_blocks: usize) -> Vec<Hash> {
         let mut vec = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.hash;

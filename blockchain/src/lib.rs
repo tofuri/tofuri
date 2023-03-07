@@ -28,12 +28,15 @@ pub struct Blockchain {
     pending_blocks: Vec<BlockA>,
 }
 impl Blockchain {
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip_all, level = "debug")]
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         tofuri_db::tree::reload(&mut self.tree, db);
         let (hashes_trusted, hashes_dynamic) = self.tree.hashes(trust_fork_after_blocks);
         self.forks.b.load(db, &hashes_trusted);
         self.forks.a = ForkA::from(db, &hashes_dynamic, &self.forks.b);
+        let height = if let Some(main) = self.tree.main() { main.height } else { 0 };
+        let last_seen = self.last_seen();
+        info!(height, last_seen);
     }
     pub fn last_seen(&self) -> String {
         if self.forks.a.latest_block.timestamp == 0 {

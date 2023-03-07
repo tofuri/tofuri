@@ -18,7 +18,6 @@ use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::P2p;
-use tofuri_tree::Branch;
 use tokio::net::TcpListener;
 use tokio::time::interval_at;
 use tracing::info;
@@ -91,19 +90,6 @@ async fn main() {
     let blockchain = Blockchain::default();
     let mut node = Node::new(db, key, args, p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust);
-    info!(
-        height = node
-            .blockchain
-            .tree
-            .main()
-            .unwrap_or(&Branch {
-                height: 0,
-                hash: [0; 32],
-                timestamp: 0
-            })
-            .height,
-    );
-    info!(last_seen = node.blockchain.last_seen());
     let multiaddr: Multiaddr = node.args.host.parse().unwrap();
     info!(multiaddr = multiaddr.to_string(), "P2P");
     node.p2p.swarm.listen_on(multiaddr).unwrap();

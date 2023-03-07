@@ -36,7 +36,8 @@ impl Blockchain {
             height = if let Some(main) = self.tree.main() { main.height } else { 0 },
             last_seen = self.last_seen(),
             hashes_trusted = hashes_trusted.len(),
-            hashes_dynamic = hashes_dynamic.len()
+            hashes_dynamic = hashes_dynamic.len(),
+            tree_size = self.tree.size(),
         );
         self.forks.b.load(db, &hashes_trusted);
         self.forks.a = ForkA::from(db, &hashes_dynamic, &self.forks.b);

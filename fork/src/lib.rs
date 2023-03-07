@@ -23,9 +23,8 @@ pub trait Fork {
     fn get_non_ancient_blocks(&self) -> &Vec<BlockA>;
     fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA>;
     fn is_stable() -> bool;
-    fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool);
+    fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool);
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]);
-    fn next_staker(&self, timestamp: u32) -> Option<AddressBytes>;
 }
 impl Fork for Stable {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
@@ -64,14 +63,11 @@ impl Fork for Stable {
     fn is_stable() -> bool {
         true
     }
-    fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool) {
-        append_block(self, block, previous_timestamp, loading)
+    fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
+        append_block(self, block_a, previous_timestamp, loading)
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
-        load(self, db, hashes)
-    }
-    fn next_staker(&self, timestamp: u32) -> Option<AddressBytes> {
-        next_staker(self, timestamp)
+        load(self, db, hashes, true)
     }
 }
 impl Fork for Unstable {
@@ -111,14 +107,11 @@ impl Fork for Unstable {
     fn is_stable() -> bool {
         false
     }
-    fn append_block(&mut self, block: &BlockA, previous_timestamp: u32, loading: bool) {
-        append_block(self, block, previous_timestamp, loading)
+    fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
+        append_block(self, block_a, previous_timestamp, loading)
     }
     fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
-        load(self, db, hashes)
-    }
-    fn next_staker(&self, timestamp: u32) -> Option<AddressBytes> {
-        next_staker(self, timestamp)
+        load(self, db, hashes, false)
     }
 }
 #[derive(Default, Debug, Clone)]
@@ -195,11 +188,11 @@ impl Manager {
     }
 }
 impl Stable {
-    pub fn append_block(&mut self, block: &BlockA, previous_timestamp: u32) {
-        append_block(self, block, previous_timestamp, false)
+    pub fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32) {
+        append_block(self, block_a, previous_timestamp, false)
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
-        load(self, db, hashes)
+        load(self, db, hashes, false)
     }
 }
 impl Unstable {
@@ -252,16 +245,16 @@ impl Unstable {
         Ok(())
     }
     pub fn transaction_in_chain(&self, transaction_a: &TransactionA) -> bool {
-        for block in self.non_ancient_blocks.iter() {
-            if block.transactions.iter().any(|a| a.hash == transaction_a.hash) {
+        for block_a in self.non_ancient_blocks.iter() {
+            if block_a.transactions.iter().any(|a| a.hash == transaction_a.hash) {
                 return true;
             }
         }
         false
     }
     pub fn stake_in_chain(&self, stake_a: &StakeA) -> bool {
-        for block in self.non_ancient_blocks.iter() {
-            if block.stakes.iter().any(|a| a.hash == stake_a.hash) {
+        for block_a in self.non_ancient_blocks.iter() {
+            if block_a.stakes.iter().any(|a| a.hash == stake_a.hash) {
                 return true;
             }
         }
@@ -316,8 +309,8 @@ fn update_stakers<T: Fork>(fork: &mut T, address: AddressBytes) {
         fork.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }
-fn update_0<T: Fork>(fork: &mut T, timestamp: u32, previous_timestamp: u32, loading: bool) {
-    let stakers = stakers_offline(fork, timestamp, previous_timestamp);
+fn update_0<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
+    let stakers = stakers_offline(fork, block_a.timestamp, previous_timestamp);
     for (index, staker) in stakers.iter().enumerate() {
         let mut staked = get_staked(fork, staker);
         let penalty = tofuri_util::penalty(index + 1);
@@ -325,18 +318,26 @@ fn update_0<T: Fork>(fork: &mut T, timestamp: u32, previous_timestamp: u32, load
         insert_staked(fork, *staker, staked);
         update_stakers(fork, *staker);
         if !loading && !T::is_stable() {
-            warn!(address = address::encode(staker), penalty, "Slashed");
+            warn!(amount = tofuri_int::to_string(penalty), address = address::encode(staker), "Slashed");
+        }
+    }
+    if stakers_n(fork, offline(block_a.timestamp, previous_timestamp)).1 {
+        let input_address = block_a.input_address();
+        insert_staked(fork, input_address, COIN);
+        update_stakers(fork, input_address);
+        if !loading && !T::is_stable() {
+            warn!(amount = tofuri_int::to_string(COIN), address = address::encode(&input_address), "Minted",)
         }
     }
 }
-fn update_1<T: Fork>(fork: &mut T, block: &BlockA) {
-    let input_address = block.input_address();
+fn update_1<T: Fork>(fork: &mut T, block_a: &BlockA) {
+    let input_address = block_a.input_address();
     let mut balance = get_balance(fork, &input_address);
-    balance += block.reward();
+    balance += block_a.reward();
     insert_balance(fork, input_address, balance)
 }
-fn update_2<T: Fork>(fork: &mut T, block: &BlockA) {
-    for transaction in block.transactions.iter() {
+fn update_2<T: Fork>(fork: &mut T, block_a: &BlockA) {
+    for transaction in block_a.transactions.iter() {
         let mut balance_input = get_balance(fork, &transaction.input_address);
         let mut balance_output = get_balance(fork, &transaction.output_address);
         balance_input -= transaction.amount + transaction.fee;
@@ -344,7 +345,7 @@ fn update_2<T: Fork>(fork: &mut T, block: &BlockA) {
         insert_balance(fork, transaction.input_address, balance_input);
         insert_balance(fork, transaction.output_address, balance_output);
     }
-    for stake in block.stakes.iter() {
+    for stake in block_a.stakes.iter() {
         let mut balance = get_balance(fork, &stake.input_address);
         let mut staked = get_staked(fork, &stake.input_address);
         if stake.deposit {
@@ -358,43 +359,37 @@ fn update_2<T: Fork>(fork: &mut T, block: &BlockA) {
         insert_staked(fork, stake.input_address, staked);
     }
 }
-fn update_3<T: Fork>(fork: &mut T, block: &BlockA) {
-    for stake in block.stakes.iter() {
+fn update_3<T: Fork>(fork: &mut T, block_a: &BlockA) {
+    for stake in block_a.stakes.iter() {
         update_stakers(fork, stake.input_address);
     }
-    if fork.next_staker(block.timestamp).is_none() {
-        let input_address = block.input_address();
-        insert_staked(fork, input_address, COIN);
-        update_stakers(fork, input_address);
-        warn!(address = address::encode(&input_address), amount = COIN, "Minted")
-    }
 }
-pub fn update<T: Fork>(fork: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
-    update_0(fork, block.timestamp, previous_timestamp, loading);
-    update_1(fork, block);
-    update_2(fork, block);
-    update_3(fork, block);
+pub fn update<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
+    update_0(fork, block_a, previous_timestamp, loading);
+    update_1(fork, block_a);
+    update_2(fork, block_a);
+    update_3(fork, block_a);
 }
-fn update_non_ancient_blocks<T: Fork>(fork: &mut T, block: &BlockA) {
-    while fork.get_non_ancient_blocks().first().is_some() && tofuri_util::ancient(fork.get_non_ancient_blocks().first().unwrap().timestamp, block.timestamp) {
+fn update_non_ancient_blocks<T: Fork>(fork: &mut T, block_a: &BlockA) {
+    while fork.get_non_ancient_blocks().first().is_some() && tofuri_util::ancient(fork.get_non_ancient_blocks().first().unwrap().timestamp, block_a.timestamp) {
         (*fork.get_non_ancient_blocks_mut()).remove(0);
     }
-    (*fork.get_non_ancient_blocks_mut()).push(block.clone());
+    (*fork.get_non_ancient_blocks_mut()).push(block_a.clone());
 }
-pub fn append_block<T: Fork>(fork: &mut T, block: &BlockA, previous_timestamp: u32, loading: bool) {
-    fork.get_hashes_mut().push(block.hash);
-    update(fork, block, previous_timestamp, loading);
-    *fork.get_latest_block_mut() = block.clone();
-    update_non_ancient_blocks(fork, block);
+pub fn append_block<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
+    update(fork, block_a, previous_timestamp, loading);
+    update_non_ancient_blocks(fork, block_a);
+    fork.get_hashes_mut().push(block_a.hash);
+    *fork.get_latest_block_mut() = block_a.clone();
 }
-pub fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
+pub fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash], loading: bool) {
     let mut previous_timestamp = match hashes.first() {
         Some(hash) => tofuri_db::block::get_b(db, hash).unwrap().timestamp,
         None => 0,
     };
     for hash in hashes.iter() {
         let block_a = tofuri_db::block::get_a(db, hash).unwrap();
-        fork.append_block(&block_a, previous_timestamp, true);
+        fork.append_block(&block_a, previous_timestamp, loading);
         previous_timestamp = block_a.timestamp;
     }
 }

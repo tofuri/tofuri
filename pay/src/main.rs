@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
     let mut args = Args::parse();
-    println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = TEMP_DB_DEV;
@@ -48,16 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             args.pay_api = PAY_API_DEV.to_string();
         }
     }
-    println!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
-    println!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
-    println!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
-    println!("{} {}", "--confirmations".cyan(), args.confirmations.to_string().magenta());
-    println!("{} {}", "--expires".cyan(), args.expires.to_string().magenta());
-    println!("{} {}", "--wallet".cyan(), args.wallet.magenta());
-    println!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
-    println!("{} {}", "--api".cyan(), args.api.magenta());
-    println!("{} {}", "--pay_api".cyan(), args.pay_api.magenta());
-    println!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
+    info!("{:#?}", args);
     if args.dev {
         warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
     }

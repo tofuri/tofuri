@@ -34,7 +34,7 @@ async fn main() {
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
     let mut args = tofuri::Args::parse();
-    println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = TEMP_DB_DEV;
@@ -49,19 +49,7 @@ async fn main() {
             args.host = HOST_DEV.to_string();
         }
     }
-    println!("{} {}", "--debug".cyan(), args.debug.to_string().magenta());
-    println!("{} {}", "--tempdb".cyan(), args.tempdb.to_string().magenta());
-    println!("{} {}", "--tempkey".cyan(), args.tempkey.to_string().magenta());
-    println!("{} {}", "--mint".cyan(), args.mint.to_string().magenta());
-    println!("{} {}", "--trust".cyan(), args.trust.to_string().magenta());
-    println!("{} {}", "--time-delta".cyan(), args.time_delta.to_string().magenta());
-    println!("{} {}", "--max-established".cyan(), format!("{:?}", args.max_established).magenta());
-    println!("{} {}", "--wallet".cyan(), args.wallet.magenta());
-    println!("{} {}", "--passphrase".cyan(), "*".repeat(args.passphrase.len()).magenta());
-    println!("{} {}", "--peer".cyan(), args.peer.magenta());
-    println!("{} {}", "--rpc".cyan(), args.rpc.magenta());
-    println!("{} {}", "--host".cyan(), args.host.magenta());
-    println!("{} {}", "--dev".cyan(), args.dev.to_string().magenta());
+    info!("{:#?}", args);
     if args.dev {
         warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
     }

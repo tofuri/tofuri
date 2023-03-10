@@ -10,9 +10,11 @@ pub struct Args {
     /// API Endpoint
     #[clap(long, value_parser, default_value = API)]
     pub api: String,
+
     /// API Internal Endpoint
     #[clap(long, value_parser, default_value = RPC)]
     pub rpc: String,
+
     /// Development mode
     #[clap(long, value_parser, default_value_t = false)]
     pub dev: bool,

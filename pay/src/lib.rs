@@ -22,30 +22,39 @@ pub struct Args {
     /// Log path to source file
     #[clap(short, long, value_parser, default_value_t = false)]
     pub debug: bool,
+
     /// Store blockchain in a temporary database
     #[clap(long, value_parser, default_value_t = false)]
     pub tempdb: bool,
+
     /// Use temporary random keypair
     #[clap(long, value_parser, default_value_t = false)]
     pub tempkey: bool,
+
     /// Confirmations needed
     #[clap(long, value_parser, default_value = "10")]
     pub confirmations: usize,
+
     /// Charge expires after seconds
     #[clap(long, value_parser, default_value = "60")]
     pub expires: u32,
+
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,
+
     /// Passphrase to wallet
     #[clap(long, value_parser, default_value = "")]
     pub passphrase: String,
+
     /// API Endpoint
     #[clap(long, value_parser, default_value = HTTP_API)]
     pub api: String,
+
     /// Pay API Endpoint
     #[clap(long, value_parser, default_value = PAY_API)]
     pub pay_api: String,
+
     /// Development mode
     #[clap(long, value_parser, default_value_t = false)]
     pub dev: bool,

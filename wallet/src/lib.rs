@@ -45,6 +45,7 @@ pub struct Args {
     /// API Endpoint
     #[clap(long, value_parser, default_value = HTTP_API)]
     pub api: String,
+
     /// Development mode
     #[clap(long, value_parser, default_value_t = false)]
     pub dev: bool,

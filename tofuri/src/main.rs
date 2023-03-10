@@ -76,7 +76,7 @@ async fn main() {
     }
     let p2p = P2p::new(args.max_established, args.timeout, known).await.unwrap();
     let blockchain = Blockchain::default();
-    let mut node = Node::new(db, key, args, p2p, blockchain);
+    let mut node = Node::new(db, key, args.clone(), p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust);
     let multiaddr: Multiaddr = node.args.host.parse().unwrap();
     info!(multiaddr = multiaddr.to_string(), "P2P");
@@ -84,12 +84,12 @@ async fn main() {
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
     info!(local_addr = listener.local_addr().unwrap().to_string(), "RPC");
     let start = tofuri_util::interval_at_start();
-    let mut interval_a = interval_at(start, Duration::from_secs(1));
-    let mut interval_b = interval_at(start, Duration::from_millis(200));
-    let mut interval_c = interval_at(start, Duration::from_secs(10));
-    let mut interval_d = interval_at(start, Duration::from_secs(60));
-    let mut interval_e = interval_at(start, Duration::from_secs(5));
-    let mut interval_f = interval_at(start, Duration::from_secs(1));
+    let mut interval_a = interval_at(start, Duration::from_millis(args.interval_a));
+    let mut interval_b = interval_at(start, Duration::from_millis(args.interval_b));
+    let mut interval_c = interval_at(start, Duration::from_millis(args.interval_c));
+    let mut interval_d = interval_at(start, Duration::from_millis(args.interval_d));
+    let mut interval_e = interval_at(start, Duration::from_millis(args.interval_e));
+    let mut interval_f = interval_at(start, Duration::from_millis(args.interval_f));
     loop {
         node.ticks += 1;
         tokio::select! {

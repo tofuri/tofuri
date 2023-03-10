@@ -37,43 +37,80 @@ pub struct Args {
     /// Log path to source file
     #[clap(short, long, value_parser, default_value_t = false)]
     pub debug: bool,
+
     /// Store blockchain in a temporary database
     #[clap(long, value_parser, default_value_t = TEMP_DB)]
     pub tempdb: bool,
+
     /// Use temporary random keypair
     #[clap(long, value_parser, default_value_t = TEMP_KEY)]
     pub tempkey: bool,
+
     /// Generate genesis block
     #[clap(long, value_parser, default_value_t = false)]
     pub mint: bool,
+
     /// Trust fork after blocks
     #[clap(long, value_parser, default_value = "2")]
     pub trust: usize,
+
     /// Allow timestamps from the future
     #[clap(long, value_parser, default_value = "1")]
     pub time_delta: u32,
+
     /// Swarm connection limits
     #[clap(long, value_parser)]
     pub max_established: Option<u32>,
+
     /// Wallet filename
     #[clap(long, value_parser, default_value = "")]
     pub wallet: String,
+
     /// Passphrase to wallet
     #[clap(long, value_parser, default_value = "")]
     pub passphrase: String,
+
     /// Multiaddr to dial
     #[clap(short, long, value_parser, default_value = "")]
     pub peer: String,
+
     /// TCP socket address to bind to
     #[clap(long, value_parser, default_value = RPC)]
     pub rpc: String,
+
     /// Multiaddr to listen on
     #[clap(short, long, value_parser, default_value = HOST)]
     pub host: String,
+
     /// Development mode
     #[clap(long, value_parser, default_value_t = false)]
     pub dev: bool,
+
     /// Timeout
     #[clap(long, value_parser, default_value = "300")]
     pub timeout: u64,
+
+    /// Grow
+    #[clap(long, value_parser, default_value = "1000")]
+    pub interval_a: u64,
+
+    /// Sync request
+    #[clap(long, value_parser, default_value = "1000")]
+    pub interval_b: u64,
+
+    /// Share
+    #[clap(long, value_parser, default_value = "60000")]
+    pub interval_c: u64,
+
+    /// Dial known
+    #[clap(long, value_parser, default_value = "60000")]
+    pub interval_d: u64,
+
+    /// Dial unknown
+    #[clap(long, value_parser, default_value = "60000")]
+    pub interval_e: u64,
+
+    /// Clear
+    #[clap(long, value_parser, default_value = "1000")]
+    pub interval_f: u64,
 }

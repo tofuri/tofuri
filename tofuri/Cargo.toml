@@ -24,7 +24,7 @@ tofuri-transaction = { version = "0.1", path = "../transaction" }
 tofuri-tree = { version = "0.1", path = "../tree" }
 tofuri-util = { version = "0.1", path = "../util" }
 tofuri-wallet = { version = "0.1", path = "../wallet" }
-rocksdb = "0.19"
+rocksdb = "0.20"
 colored = "2.0"
 bincode = "1.3"
 tracing = "0.1"

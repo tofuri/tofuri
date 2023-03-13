@@ -9,5 +9,5 @@ repository = "https://github.com/tofuri/tofuri"
 [dependencies]
 tofuri-key = { version = "0.1", path = "../key" }
 tofuri-pay-core = { version = "0.1", path = "../pay-core" }
-rocksdb = "0.19"
+rocksdb = "0.20"
 bincode = "1.3"

@@ -19,7 +19,7 @@ tofuri-stake = { version = "0.1", path = "../stake" }
 tofuri-transaction = { version = "0.1", path = "../transaction" }
 tofuri-tree = { version = "0.1", path = "../tree" }
 tofuri-util = { version = "0.1", path = "../util" }
-rocksdb = "0.19"
+rocksdb = "0.20"
 colored = "2.0"
 tracing = "0.1"
 hex = "0.4"

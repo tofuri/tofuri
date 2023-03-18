@@ -24,5 +24,11 @@ cargo run --bin tofuri
 #### Debian-based Linux Distributions
 
 ```bash
-apt install git cmake clang libssl-dev pkg-config protobuf-compiler
+apt install cmake clang libssl-dev pkg-config protobuf-compiler
+```
+
+#### Arch-based Linux Distributions
+
+```bash
+pacman -S cmake clang protobuf
 ```

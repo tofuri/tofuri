@@ -20,6 +20,7 @@ use tofuri_p2p::multiaddr;
 use tofuri_p2p::P2p;
 use tokio::net::TcpListener;
 use tokio::time::interval_at;
+use tokio::time::MissedTickBehavior::Skip;
 use tracing::info;
 use tracing::metadata::LevelFilter;
 use tracing::warn;
@@ -90,6 +91,12 @@ async fn main() {
     let mut interval_d = interval_at(start, Duration::from_millis(args.interval_d));
     let mut interval_e = interval_at(start, Duration::from_millis(args.interval_e));
     let mut interval_f = interval_at(start, Duration::from_millis(args.interval_f));
+    interval_a.set_missed_tick_behavior(Skip);
+    interval_b.set_missed_tick_behavior(Skip);
+    interval_c.set_missed_tick_behavior(Skip);
+    interval_d.set_missed_tick_behavior(Skip);
+    interval_e.set_missed_tick_behavior(Skip);
+    interval_f.set_missed_tick_behavior(Skip);
     loop {
         node.ticks += 1;
         tokio::select! {

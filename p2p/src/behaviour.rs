@@ -35,7 +35,7 @@ impl Behaviour {
             identify: identify::Behaviour::new(identify::Config::new(PROTOCOL_VERSION.to_string(), local_key.public())),
             gossipsub: Gossipsub::new(
                 MessageAuthenticity::Signed(local_key.clone()),
-                GossipsubConfigBuilder::default().max_transmit_size(BLOCK_SIZE_LIMIT).build()?,
+                GossipsubConfigBuilder::default().max_transmit_size(MAX_TRANSMIT_SIZE).build()?,
             )?,
             autonat: autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default()),
             request_response: RequestResponse::new(SyncCodec(), std::iter::once((SyncProtocol(), ProtocolSupport::Full)), Default::default()),
@@ -97,7 +97,7 @@ impl RequestResponseCodec for SyncCodec {
         Ok(SyncRequest(read_length_prefixed(io, 8).await?))
     }
     async fn read_response<T: AsyncRead + Unpin + Send>(&mut self, _: &SyncProtocol, io: &mut T) -> io::Result<Self::Response> {
-        Ok(SyncResponse(read_length_prefixed(io, BLOCK_SIZE_LIMIT * SYNC_BLOCKS).await?))
+        Ok(SyncResponse(read_length_prefixed(io, MAX_TRANSMIT_SIZE).await?))
     }
     async fn write_request<T: AsyncWrite + Unpin + Send>(&mut self, _: &SyncProtocol, io: &mut T, SyncRequest(vec): SyncRequest) -> io::Result<()> {
         write_length_prefixed(io, vec).await?;

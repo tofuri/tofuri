@@ -2,7 +2,6 @@ use crate::Node;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
 use rand::prelude::*;
-use tofuri_core::*;
 use tofuri_p2p::behaviour::SyncRequest;
 use tofuri_p2p::multiaddr;
 use tofuri_util;
@@ -67,9 +66,7 @@ pub fn grow(node: &mut Node) {
     if !node.blockchain.sync.completed {
         return;
     }
-    let diff = timestamp.saturating_sub(node.blockchain.forks.unstable.latest_block.timestamp);
-    #[allow(clippy::modulo_one)]
-    if diff == 0 || diff % BLOCK_TIME != 0 {
+    if !tofuri_util::timestamp_valid(timestamp, node.blockchain.forks.unstable.latest_block.timestamp) {
         return;
     }
     if let Some(staker) = node.blockchain.forks.unstable.next_staker(timestamp) {

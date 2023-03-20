@@ -72,6 +72,9 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
 pub fn ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
     ANCIENT_TIME + timestamp < latest_block_timestamp
 }
+pub fn timestamp_valid(timestamp: u32, latest_block_timestamp: u32) -> bool {
+    !(timestamp.saturating_sub(latest_block_timestamp) == 0 || timestamp % BLOCK_TIME != 0)
+}
 pub fn interval_at_start() -> Instant {
     Instant::now() + Duration::from_nanos(1_000_000_000 - chrono::offset::Utc::now().timestamp_subsec_nanos() as u64)
 }

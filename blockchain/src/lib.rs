@@ -292,14 +292,14 @@ impl Blockchain {
         }
         let input_address = block_a.input_address();
         let unstable = self.forks.unstable(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
+        if !tofuri_util::timestamp_valid(timestamp, unstable.latest_block.timestamp) {
+            return Err("block timestamp".into());
+        }
         let previous_beta = Key::vrf_proof_to_hash(&unstable.latest_block.pi).unwrap_or(GENESIS_BLOCK_BETA);
         Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
         if let Some(staker) = unstable.next_staker(block_a.timestamp) {
             if staker != input_address {
                 return Err("block staker address".into());
-            }
-            if block_a.timestamp != unstable.latest_block.timestamp + BLOCK_TIME {
-                return Err("block timestamp".into());
             }
         }
         for stake_a in block_a.stakes.iter() {

@@ -220,8 +220,8 @@ impl Blockchain {
         Ok(())
     }
     pub fn pending_retain_non_ancient(&mut self, timestamp: u32) {
-        self.pending_transactions.retain(|a| !tofuri_util::ancient(a.timestamp, timestamp));
-        self.pending_stakes.retain(|a| !tofuri_util::ancient(a.timestamp, timestamp));
+        self.pending_transactions.retain(|a| !tofuri_util::timestamp_ancient(a.timestamp, timestamp));
+        self.pending_stakes.retain(|a| !tofuri_util::timestamp_ancient(a.timestamp, timestamp));
     }
     fn validate_transaction(unstable: &Unstable, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Box<dyn Error>> {
         if transaction_a.amount == 0 {
@@ -242,7 +242,7 @@ impl Blockchain {
         if transaction_a.timestamp > timestamp {
             return Err("transaction timestamp future".into());
         }
-        if tofuri_util::ancient(transaction_a.timestamp, unstable.latest_block.timestamp) {
+        if tofuri_util::timestamp_ancient(transaction_a.timestamp, unstable.latest_block.timestamp) {
             return Err("transaction timestamp ancient".into());
         }
         if unstable.transaction_in_chain(transaction_a) {
@@ -266,7 +266,7 @@ impl Blockchain {
         if stake_a.timestamp > timestamp {
             return Err("stake timestamp future".into());
         }
-        if tofuri_util::ancient(stake_a.timestamp, unstable.latest_block.timestamp) {
+        if tofuri_util::timestamp_ancient(stake_a.timestamp, unstable.latest_block.timestamp) {
             return Err("stake timestamp ancient".into());
         }
         if unstable.stake_in_chain(stake_a) {

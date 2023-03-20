@@ -368,7 +368,9 @@ pub fn update<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, 
     update_3(fork, block_a);
 }
 fn update_non_ancient_blocks<T: Fork>(fork: &mut T, block_a: &BlockA) {
-    while fork.get_non_ancient_blocks().first().is_some() && tofuri_util::ancient(fork.get_non_ancient_blocks().first().unwrap().timestamp, block_a.timestamp) {
+    while fork.get_non_ancient_blocks().first().is_some()
+        && tofuri_util::timestamp_ancient(fork.get_non_ancient_blocks().first().unwrap().timestamp, block_a.timestamp)
+    {
         (*fork.get_non_ancient_blocks_mut()).remove(0);
     }
     (*fork.get_non_ancient_blocks_mut()).push(block_a.clone());

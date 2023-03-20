@@ -69,7 +69,7 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
     }
     string
 }
-pub fn ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
+pub fn timestamp_ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
     ANCIENT_TIME + timestamp < latest_block_timestamp
 }
 pub fn timestamp_valid(timestamp: u32, latest_block_timestamp: u32) -> bool {

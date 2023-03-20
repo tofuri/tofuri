@@ -19,7 +19,6 @@ use tofuri_key::Key;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::P2p;
 use tokio::net::TcpListener;
-use tokio::time::MissedTickBehavior::Skip;
 use tracing::info;
 use tracing::metadata::LevelFilter;
 use tracing::warn;
@@ -89,12 +88,6 @@ async fn main() {
     let mut interval_dial_known = tofuri_util::interval_at(Duration::from_secs(INTERVAL_DIAL_KNOWN));
     let mut interval_dial_unknown = tofuri_util::interval_at(Duration::from_secs(INTERVAL_DIAL_UNKNOWN));
     let mut interval_sync_request = tofuri_util::interval_at(Duration::from_secs(INTERVAL_SYNC_REQUEST));
-    interval_grow.set_missed_tick_behavior(Skip);
-    interval_clear.set_missed_tick_behavior(Skip);
-    interval_share.set_missed_tick_behavior(Skip);
-    interval_dial_known.set_missed_tick_behavior(Skip);
-    interval_dial_unknown.set_missed_tick_behavior(Skip);
-    interval_sync_request.set_missed_tick_behavior(Skip);
     loop {
         node.ticks += 1;
         tokio::select! {

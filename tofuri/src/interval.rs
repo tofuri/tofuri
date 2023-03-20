@@ -59,7 +59,7 @@ pub fn share(node: &mut Node) {
 pub fn grow(node: &mut Node) {
     let timestamp = tofuri_util::timestamp();
     let timestamp = timestamp - (timestamp % BLOCK_TIME);
-    node.blockchain.pending_retain_non_ancient(timestamp);
+    node.blockchain.pending_retain(timestamp);
     node.blockchain.save_blocks(&node.db, node.args.trust);
     if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.forks.unstable.next_staker(timestamp).is_none() {
         info!("Idling");

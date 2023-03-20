@@ -70,8 +70,8 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
     }
     string
 }
-pub fn timestamp_ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
-    ANCIENT_TIME + timestamp < latest_block_timestamp
+pub fn elapsed(timestamp: u32, latest_block_timestamp: u32) -> bool {
+    ELAPSED + timestamp < latest_block_timestamp
 }
 pub fn duration_until_next_tick(duration: Duration) -> Duration {
     let nanos = duration.as_nanos() as u64;

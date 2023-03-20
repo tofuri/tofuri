@@ -21,8 +21,8 @@ pub trait Fork {
     fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128>;
     fn get_latest_block(&self) -> &BlockA;
     fn get_latest_block_mut(&mut self) -> &mut BlockA;
-    fn get_non_ancient_blocks(&self) -> &Vec<BlockA>;
-    fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA>;
+    fn get_latest_blocks(&self) -> &Vec<BlockA>;
+    fn get_latest_blocks_mut(&mut self) -> &mut Vec<BlockA>;
     fn is_stable() -> bool;
     fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool);
 }
@@ -54,11 +54,11 @@ impl Fork for Stable {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
-    fn get_non_ancient_blocks(&self) -> &Vec<BlockA> {
-        &self.non_ancient_blocks
+    fn get_latest_blocks(&self) -> &Vec<BlockA> {
+        &self.latest_blocks
     }
-    fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA> {
-        &mut self.non_ancient_blocks
+    fn get_latest_blocks_mut(&mut self) -> &mut Vec<BlockA> {
+        &mut self.latest_blocks
     }
     fn is_stable() -> bool {
         true
@@ -95,11 +95,11 @@ impl Fork for Unstable {
     fn get_latest_block_mut(&mut self) -> &mut BlockA {
         &mut self.latest_block
     }
-    fn get_non_ancient_blocks(&self) -> &Vec<BlockA> {
-        &self.non_ancient_blocks
+    fn get_latest_blocks(&self) -> &Vec<BlockA> {
+        &self.latest_blocks
     }
-    fn get_non_ancient_blocks_mut(&mut self) -> &mut Vec<BlockA> {
-        &mut self.non_ancient_blocks
+    fn get_latest_blocks_mut(&mut self) -> &mut Vec<BlockA> {
+        &mut self.latest_blocks
     }
     fn is_stable() -> bool {
         false
@@ -118,7 +118,7 @@ pub struct Stable {
     pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
-    non_ancient_blocks: Vec<BlockA>,
+    latest_blocks: Vec<BlockA>,
     map_balance: HashMap<AddressBytes, u128>,
     map_staked: HashMap<AddressBytes, u128>,
 }
@@ -127,7 +127,7 @@ pub struct Unstable {
     pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
     pub stakers: VecDeque<AddressBytes>,
-    non_ancient_blocks: Vec<BlockA>,
+    latest_blocks: Vec<BlockA>,
     map_balance: HashMap<AddressBytes, u128>,
     map_staked: HashMap<AddressBytes, u128>,
 }
@@ -197,7 +197,7 @@ impl Unstable {
             map_balance: stable.map_balance.clone(),
             map_staked: stable.map_staked.clone(),
             latest_block: BlockA::default(),
-            non_ancient_blocks: stable.non_ancient_blocks.clone(),
+            latest_blocks: stable.latest_blocks.clone(),
         };
         load(&mut unstable, db, hashes);
         unstable
@@ -239,7 +239,7 @@ impl Unstable {
         Ok(())
     }
     pub fn transaction_in_chain(&self, transaction_a: &TransactionA) -> bool {
-        for block_a in self.non_ancient_blocks.iter() {
+        for block_a in self.latest_blocks.iter() {
             if block_a.transactions.iter().any(|a| a.hash == transaction_a.hash) {
                 return true;
             }
@@ -247,7 +247,7 @@ impl Unstable {
         false
     }
     pub fn stake_in_chain(&self, stake_a: &StakeA) -> bool {
-        for block_a in self.non_ancient_blocks.iter() {
+        for block_a in self.latest_blocks.iter() {
             if block_a.stakes.iter().any(|a| a.hash == stake_a.hash) {
                 return true;
             }
@@ -367,17 +367,15 @@ pub fn update<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, 
     update_2(fork, block_a);
     update_3(fork, block_a);
 }
-fn update_non_ancient_blocks<T: Fork>(fork: &mut T, block_a: &BlockA) {
-    while fork.get_non_ancient_blocks().first().is_some()
-        && tofuri_util::timestamp_ancient(fork.get_non_ancient_blocks().first().unwrap().timestamp, block_a.timestamp)
-    {
-        (*fork.get_non_ancient_blocks_mut()).remove(0);
+fn update_latest_blocks<T: Fork>(fork: &mut T, block_a: &BlockA) {
+    while fork.get_latest_blocks().first().is_some() && tofuri_util::elapsed(fork.get_latest_blocks().first().unwrap().timestamp, block_a.timestamp) {
+        (*fork.get_latest_blocks_mut()).remove(0);
     }
-    (*fork.get_non_ancient_blocks_mut()).push(block_a.clone());
+    (*fork.get_latest_blocks_mut()).push(block_a.clone());
 }
 pub fn append_block<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
     update(fork, block_a, previous_timestamp, loading);
-    update_non_ancient_blocks(fork, block_a);
+    update_latest_blocks(fork, block_a);
     fork.get_hashes_mut().push(block_a.hash);
     *fork.get_latest_block_mut() = block_a.clone();
 }

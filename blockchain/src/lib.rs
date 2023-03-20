@@ -61,32 +61,33 @@ impl Blockchain {
     }
     pub fn height_by_hash(&self, hash: &Hash) -> Option<usize> {
         if let Some(index) = self.forks.unstable.hashes.iter().position(|a| a == hash) {
-            return Some(self.forks.stable.hashes.len() + index);
+            return Some(self.forks.stable.hashes.len() + index + 1);
         }
-        self.forks.stable.hashes.iter().position(|a| a == hash)
+        if let Some(index) = self.forks.stable.hashes.iter().position(|a| a == hash) {
+            return Some(index + 1);
+        }
+        None
     }
     pub fn hash_by_height(&self, height: usize) -> Option<Hash> {
-        let len_stable = self.forks.stable.hashes.len();
-        let len_unstable = self.forks.unstable.hashes.len();
-        if height >= len_stable + len_unstable {
+        if height > self.height() {
             return None;
         }
-        if height < len_stable {
-            Some(self.forks.stable.hashes[height])
+        let index = height.saturating_sub(1);
+        if index < self.forks.stable.hashes.len() {
+            Some(self.forks.stable.hashes[index])
         } else {
-            Some(self.forks.unstable.hashes[height - len_stable])
+            Some(self.forks.unstable.hashes[index - self.forks.stable.hashes.len()])
         }
     }
     pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, height: usize) -> Option<BlockB> {
-        let stable_hashes = &self.forks.stable.hashes;
-        let unstable_hashes = &self.forks.unstable.hashes;
-        if height >= stable_hashes.len() + unstable_hashes.len() {
+        if height > self.height() {
             return None;
         }
-        let hash = if height < stable_hashes.len() {
-            stable_hashes[height]
+        let index = height.saturating_sub(1);
+        let hash = if index < self.forks.stable.hashes.len() {
+            self.forks.stable.hashes[index]
         } else {
-            unstable_hashes[height - stable_hashes.len()]
+            self.forks.unstable.hashes[index - self.forks.stable.hashes.len()]
         };
         tofuri_db::block::get_b(db, &hash).ok()
     }

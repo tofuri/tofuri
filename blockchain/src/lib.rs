@@ -6,6 +6,7 @@ use tofuri_block::BlockA;
 use tofuri_block::BlockB;
 use tofuri_core::*;
 use tofuri_fork::Manager;
+use tofuri_fork::Stable;
 use tofuri_fork::Unstable;
 use tofuri_key::Key;
 use tofuri_stake::StakeA;
@@ -32,7 +33,7 @@ impl Blockchain {
     #[tracing::instrument(skip_all, level = "debug")]
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
         tofuri_db::tree::reload(&mut self.tree, db);
-        let (stable_hashes, unstable_hashes) = self.tree.stable_and_unstable_hashes(trust_fork_after_blocks);
+        let (mut stable_hashes, unstable_hashes) = self.tree.stable_and_unstable_hashes(trust_fork_after_blocks);
         info!(
             height = if let Some(main) = self.tree.main() { main.height } else { 0 },
             last_seen = self.last_seen(),
@@ -40,6 +41,10 @@ impl Blockchain {
             unstable_hashes = unstable_hashes.len(),
             tree_size = self.tree.size(),
         );
+        if let Ok(checkpoint) = tofuri_db::checkpoint::get(db) {
+            info!(checkpoint.height);
+            self.forks.stable = Stable::from_checkpoint(stable_hashes.drain(..checkpoint.height).collect(), checkpoint);
+        }
         self.forks.stable.load(db, &stable_hashes);
         self.forks.unstable = Unstable::from(db, &unstable_hashes, &self.forks.stable);
     }

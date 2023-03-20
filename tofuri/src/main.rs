@@ -88,6 +88,7 @@ async fn main() {
     let mut interval_dial_known = tofuri_util::interval_at(Duration::from_secs(INTERVAL_DIAL_KNOWN));
     let mut interval_dial_unknown = tofuri_util::interval_at(Duration::from_secs(INTERVAL_DIAL_UNKNOWN));
     let mut interval_sync_request = tofuri_util::interval_at(Duration::from_secs(INTERVAL_SYNC_REQUEST));
+    let mut interval_checkpoint = tofuri_util::interval_at(Duration::from_secs(INTERVAL_CHECKPOINT));
     loop {
         node.ticks += 1;
         tokio::select! {
@@ -97,6 +98,7 @@ async fn main() {
             _ = interval_dial_known.tick() => interval::dial_known(&mut node),
             _ = interval_dial_unknown.tick() => interval::dial_unknown(&mut node),
             _ = interval_sync_request.tick() => interval::sync_request(&mut node),
+            _ = interval_checkpoint.tick() => interval::checkpoint(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
             res = listener.accept() => rpc::accept(&mut node, res).await
         }

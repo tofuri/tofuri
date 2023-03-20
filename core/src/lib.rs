@@ -50,3 +50,4 @@ pub const INTERVAL_SHARE: u64 = 30;
 pub const INTERVAL_DIAL_KNOWN: u64 = 30;
 pub const INTERVAL_DIAL_UNKNOWN: u64 = 30;
 pub const INTERVAL_SYNC_REQUEST: u64 = 1;
+pub const INTERVAL_CHECKPOINT: u64 = 600;

@@ -10,6 +10,7 @@ repository = "https://github.com/tofuri/tofuri"
 tofuri-address = { version = "0.1", path = "../address" }
 tofuri-int = { version = "0.1", path = "../int" }
 tofuri-block = { version = "0.1", path = "../block" }
+tofuri-checkpoint = { version = "0.1", path = "../checkpoint" }
 tofuri-core = { version = "0.1", path = "../core" }
 tofuri-db = { version = "0.1", path = "../db" }
 tofuri-stake = { version = "0.1", path = "../stake" }

@@ -90,3 +90,9 @@ pub fn sync_request(node: &mut Node) {
             .send_request(&peer_id, SyncRequest(bincode::serialize(&(node.blockchain.height())).unwrap()));
     }
 }
+#[tracing::instrument(skip_all, level = "debug")]
+pub fn checkpoint(node: &mut Node) {
+    let checkpoint = node.blockchain.forks.stable.checkpoint();
+    tofuri_db::checkpoint::put(&node.db, &checkpoint).unwrap();
+    info!(checkpoint.height);
+}

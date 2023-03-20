@@ -1,0 +1,12 @@
+[package]
+name = "tofuri-checkpoint"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0"
+description = "Tofuri checkpoint"
+repository = "https://github.com/tofuri/tofuri"
+
+[dependencies]
+tofuri-block = { version = "0.1", path = "../block" }
+tofuri-core = { version = "0.1", path = "../core" }
+serde = { version = "1.0", features = ["derive"] }

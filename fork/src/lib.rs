@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 use std::error::Error;
 use tofuri_address::address;
 use tofuri_block::BlockA;
+use tofuri_checkpoint::Checkpoint;
 use tofuri_core::*;
 use tofuri_stake::StakeA;
 use tofuri_transaction::TransactionA;
@@ -187,6 +188,26 @@ impl Stable {
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
         load(self, db, hashes)
+    }
+    pub fn checkpoint(&self) -> Checkpoint {
+        Checkpoint {
+            height: self.hashes.len(),
+            latest_block: self.latest_block.clone(),
+            stakers: self.stakers.clone(),
+            latest_blocks: self.latest_blocks.clone(),
+            map_balance: self.map_balance.clone(),
+            map_staked: self.map_staked.clone(),
+        }
+    }
+    pub fn from_checkpoint(hashes: Vec<[u8; 32]>, checkpoint: Checkpoint) -> Stable {
+        Stable {
+            latest_block: checkpoint.latest_block,
+            hashes,
+            stakers: checkpoint.stakers,
+            latest_blocks: checkpoint.latest_blocks,
+            map_balance: checkpoint.map_balance,
+            map_staked: checkpoint.map_staked,
+        }
     }
 }
 impl Unstable {

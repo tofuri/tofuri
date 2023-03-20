@@ -4390,6 +4390,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tofuri-checkpoint"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "tofuri-block",
+ "tofuri-core",
+]
+
+[[package]]
 name = "tofuri-core"
 version = "0.1.1"
 
@@ -4400,6 +4409,7 @@ dependencies = [
  "bincode",
  "rocksdb",
  "tofuri-block",
+ "tofuri-checkpoint",
  "tofuri-core",
  "tofuri-int",
  "tofuri-stake",
@@ -4415,6 +4425,7 @@ dependencies = [
  "rocksdb",
  "tofuri-address",
  "tofuri-block",
+ "tofuri-checkpoint",
  "tofuri-core",
  "tofuri-db",
  "tofuri-int",

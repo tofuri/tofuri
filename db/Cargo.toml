@@ -9,6 +9,7 @@ repository = "https://github.com/tofuri/tofuri"
 [dependencies]
 tofuri-int = { version = "0.1", path = "../int" }
 tofuri-block = { version = "0.1", path = "../block" }
+tofuri-checkpoint = { version = "0.1", path = "../checkpoint" }
 tofuri-core = { version = "0.1", path = "../core" }
 tofuri-stake = { version = "0.1", path = "../stake" }
 tofuri-transaction = { version = "0.1", path = "../transaction" }

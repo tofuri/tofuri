@@ -14,7 +14,8 @@ fn descriptors() -> Vec<ColumnFamilyDescriptor> {
         ColumnFamilyDescriptor::new("peers", options.clone()),
         ColumnFamilyDescriptor::new("input addresses", options.clone()),
         ColumnFamilyDescriptor::new("input public keys", options.clone()),
-        ColumnFamilyDescriptor::new("betas", options),
+        ColumnFamilyDescriptor::new("betas", options.clone()),
+        ColumnFamilyDescriptor::new("checkpoint", options),
     ]
 }
 pub fn open(path: impl AsRef<Path>) -> DBWithThreadMode<SingleThreaded> {
@@ -43,6 +44,9 @@ pub fn input_public_keys(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily
 }
 pub fn betas(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("betas").unwrap()
+}
+pub fn checkpoint(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
+    db.cf_handle("checkpoint").unwrap()
 }
 pub mod block {
     use super::beta;
@@ -302,5 +306,20 @@ pub mod beta {
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, block_hash: &[u8]) -> Result<Beta, Box<dyn Error>> {
         let beta = db.get_cf(super::betas(db), block_hash)?.ok_or("beta not found")?;
         Ok(beta.try_into().unwrap())
+    }
+}
+pub mod checkpoint {
+    use rocksdb::DBWithThreadMode;
+    use rocksdb::SingleThreaded;
+    use std::error::Error;
+    use tofuri_checkpoint::Checkpoint;
+    #[tracing::instrument(skip_all, level = "trace")]
+    pub fn put(db: &DBWithThreadMode<SingleThreaded>, checkpoint: &Checkpoint) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::checkpoint(db), [], bincode::serialize(checkpoint)?)?;
+        Ok(())
+    }
+    #[tracing::instrument(skip_all, level = "trace")]
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>) -> Result<Checkpoint, Box<dyn Error>> {
+        Ok(bincode::deserialize(&db.get_cf(super::checkpoint(db), [])?.ok_or("checkpoint not found")?)?)
     }
 }

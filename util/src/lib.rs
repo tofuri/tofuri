@@ -73,9 +73,6 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
 pub fn timestamp_ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
     ANCIENT_TIME + timestamp < latest_block_timestamp
 }
-pub fn timestamp_valid(timestamp: u32, latest_block_timestamp: u32) -> bool {
-    !(timestamp.saturating_sub(latest_block_timestamp) == 0 || timestamp % BLOCK_TIME != 0)
-}
 pub fn duration_until_next_tick(duration: Duration) -> Duration {
     let nanos = duration.as_nanos() as u64;
     Duration::from_nanos(nanos - chrono::offset::Utc::now().timestamp_nanos() as u64 % nanos)

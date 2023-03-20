@@ -8,6 +8,7 @@ use tofuri_core::*;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
 use tokio::time::Instant;
+use tokio::time::Interval;
 use uint::construct_uint;
 pub const GIT_HASH: &str = env!("GIT_HASH");
 lazy_static! {
@@ -75,8 +76,13 @@ pub fn timestamp_ancient(timestamp: u32, latest_block_timestamp: u32) -> bool {
 pub fn timestamp_valid(timestamp: u32, latest_block_timestamp: u32) -> bool {
     !(timestamp.saturating_sub(latest_block_timestamp) == 0 || timestamp % BLOCK_TIME != 0)
 }
-pub fn interval_at_start() -> Instant {
-    Instant::now() + Duration::from_nanos(1_000_000_000 - chrono::offset::Utc::now().timestamp_subsec_nanos() as u64)
+pub fn duration_until_next_tick(duration: Duration) -> Duration {
+    let nanos = duration.as_nanos() as u64;
+    Duration::from_nanos(nanos - chrono::offset::Utc::now().timestamp_nanos() as u64 % nanos)
+}
+pub fn interval_at(duration: Duration) -> Interval {
+    let start = Instant::now() + duration_until_next_tick(duration);
+    tokio::time::interval_at(start, duration)
 }
 pub fn build(cargo_pkg_name: &str, cargo_pkg_version: &str, cargo_pkg_repository: &str) -> String {
     format!(

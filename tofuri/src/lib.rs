@@ -90,10 +90,6 @@ pub struct Args {
     #[clap(long, value_parser, default_value = "300")]
     pub timeout: u64,
 
-    /// Grow
-    #[clap(long, value_parser, default_value = "1000")]
-    pub interval_a: u64,
-
     /// Sync request
     #[clap(long, value_parser, default_value = "1000")]
     pub interval_b: u64,

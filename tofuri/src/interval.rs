@@ -2,6 +2,7 @@ use crate::Node;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
 use rand::prelude::*;
+use tofuri_core::*;
 use tofuri_p2p::behaviour::SyncRequest;
 use tofuri_p2p::multiaddr;
 use tofuri_util;
@@ -57,6 +58,7 @@ pub fn share(node: &mut Node) {
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn grow(node: &mut Node) {
     let timestamp = tofuri_util::timestamp();
+    let timestamp = timestamp - (timestamp % BLOCK_TIME);
     node.blockchain.pending_retain_non_ancient(timestamp);
     node.blockchain.save_blocks(&node.db, node.args.trust);
     if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.forks.unstable.next_staker(timestamp).is_none() {
@@ -64,9 +66,6 @@ pub fn grow(node: &mut Node) {
         node.blockchain.sync.completed = false;
     }
     if !node.blockchain.sync.completed {
-        return;
-    }
-    if !tofuri_util::timestamp_valid(timestamp, node.blockchain.forks.unstable.latest_block.timestamp) {
         return;
     }
     if let Some(staker) = node.blockchain.forks.unstable.next_staker(timestamp) {

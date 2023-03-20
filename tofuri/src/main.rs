@@ -83,27 +83,27 @@ async fn main() {
     node.p2p.swarm.listen_on(multiaddr).unwrap();
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
     info!(local_addr = listener.local_addr().unwrap().to_string(), "RPC");
-    let mut interval_a = tofuri_util::interval_at(Duration::from_secs(BLOCK_TIME as u64));
-    let mut interval_b = tofuri_util::interval_at(Duration::from_millis(args.interval_b));
-    let mut interval_c = tofuri_util::interval_at(Duration::from_millis(args.interval_c));
-    let mut interval_d = tofuri_util::interval_at(Duration::from_millis(args.interval_d));
-    let mut interval_e = tofuri_util::interval_at(Duration::from_millis(args.interval_e));
-    let mut interval_f = tofuri_util::interval_at(Duration::from_millis(args.interval_f));
-    interval_a.set_missed_tick_behavior(Skip);
-    interval_b.set_missed_tick_behavior(Skip);
-    interval_c.set_missed_tick_behavior(Skip);
-    interval_d.set_missed_tick_behavior(Skip);
-    interval_e.set_missed_tick_behavior(Skip);
-    interval_f.set_missed_tick_behavior(Skip);
+    let mut interval_grow = tofuri_util::interval_at(Duration::from_secs(INTERVAL_GROW));
+    let mut interval_clear = tofuri_util::interval_at(Duration::from_secs(INTERVAL_CLEAR));
+    let mut interval_share = tofuri_util::interval_at(Duration::from_secs(INTERVAL_SHARE));
+    let mut interval_dial_known = tofuri_util::interval_at(Duration::from_secs(INTERVAL_DIAL_KNOWN));
+    let mut interval_dial_unknown = tofuri_util::interval_at(Duration::from_secs(INTERVAL_DIAL_UNKNOWN));
+    let mut interval_sync_request = tofuri_util::interval_at(Duration::from_secs(INTERVAL_SYNC_REQUEST));
+    interval_grow.set_missed_tick_behavior(Skip);
+    interval_clear.set_missed_tick_behavior(Skip);
+    interval_share.set_missed_tick_behavior(Skip);
+    interval_dial_known.set_missed_tick_behavior(Skip);
+    interval_dial_unknown.set_missed_tick_behavior(Skip);
+    interval_sync_request.set_missed_tick_behavior(Skip);
     loop {
         node.ticks += 1;
         tokio::select! {
-            _ = interval_a.tick() => interval::grow(&mut node),
-            _ = interval_b.tick() => interval::sync_request(&mut node),
-            _ = interval_c.tick() => interval::share(&mut node),
-            _ = interval_d.tick() => interval::dial_known(&mut node),
-            _ = interval_e.tick() => interval::dial_unknown(&mut node),
-            _ = interval_f.tick() => interval::clear(&mut node),
+            _ = interval_grow.tick() => interval::grow(&mut node),
+            _ = interval_clear.tick() => interval::clear(&mut node),
+            _ = interval_share.tick() => interval::share(&mut node),
+            _ = interval_dial_known.tick() => interval::dial_known(&mut node),
+            _ = interval_dial_unknown.tick() => interval::dial_unknown(&mut node),
+            _ = interval_sync_request.tick() => interval::sync_request(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
             res = listener.accept() => rpc::accept(&mut node, res).await
         }

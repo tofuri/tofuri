@@ -89,24 +89,4 @@ pub struct Args {
     /// Timeout
     #[clap(long, value_parser, default_value = "300")]
     pub timeout: u64,
-
-    /// Sync request
-    #[clap(long, value_parser, default_value = "1000")]
-    pub interval_b: u64,
-
-    /// Share
-    #[clap(long, value_parser, default_value = "60000")]
-    pub interval_c: u64,
-
-    /// Dial known
-    #[clap(long, value_parser, default_value = "60000")]
-    pub interval_d: u64,
-
-    /// Dial unknown
-    #[clap(long, value_parser, default_value = "60000")]
-    pub interval_e: u64,
-
-    /// Clear
-    #[clap(long, value_parser, default_value = "1000")]
-    pub interval_f: u64,
 }

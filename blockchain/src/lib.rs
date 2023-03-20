@@ -292,7 +292,7 @@ impl Blockchain {
         }
         let input_address = block_a.input_address();
         let unstable = self.forks.unstable(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
-        if !tofuri_util::timestamp_valid(timestamp, unstable.latest_block.timestamp) {
+        if timestamp.saturating_sub(unstable.latest_block.timestamp) == 0 || timestamp % BLOCK_TIME != 0 {
             return Err("block timestamp".into());
         }
         let previous_beta = Key::vrf_proof_to_hash(&unstable.latest_block.pi).unwrap_or(GENESIS_BLOCK_BETA);

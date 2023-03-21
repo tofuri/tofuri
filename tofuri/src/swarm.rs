@@ -68,11 +68,11 @@ fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedP
     }
     node.p2p.known.insert(ip_addr);
     let _ = db::peer::put(&ip_addr, &node.db);
-    if let Some((previous_peer_id, _)) = node.p2p.connections.iter().find(|x| x.1 == &ip_addr) {
-        if previous_peer_id != &peer_id {
-            let _ = node.p2p.swarm.disconnect_peer_id(*previous_peer_id);
-        }
-    }
+    // if let Some((previous_peer_id, _)) = node.p2p.connections.iter().find(|x| x.1 == &ip_addr) {
+    // if previous_peer_id != &peer_id {
+    // let _ = node.p2p.swarm.disconnect_peer_id(*previous_peer_id);
+    // }
+    // }
     node.p2p.connections.insert(peer_id, ip_addr);
     info!(ip_addr = ip_addr.to_string(), num_established, "Connection established");
     Ok(())

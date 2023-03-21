@@ -113,10 +113,10 @@ impl Blockchain {
         while *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * transactions.len() + *STAKE_SIZE * stakes.len() > BLOCK_SIZE_LIMIT {
             match (transactions.last(), stakes.last()) {
                 (Some(_), None) => {
-                    stakes.pop();
+                    transactions.pop();
                 }
                 (None, Some(_)) => {
-                    transactions.pop();
+                    stakes.pop();
                 }
                 (Some(transaction), Some(stake)) => {
                     if transaction.fee < stake.fee {

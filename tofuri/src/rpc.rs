@@ -3,7 +3,6 @@ use crate::CARGO_PKG_NAME;
 use crate::CARGO_PKG_REPOSITORY;
 use crate::CARGO_PKG_VERSION;
 use colored::*;
-use libp2p::Multiaddr;
 use std::error::Error;
 use std::io;
 use std::net::IpAddr;
@@ -12,7 +11,6 @@ use std::time::Duration;
 use tofuri_block::BlockA;
 use tofuri_core::*;
 use tofuri_db as db;
-use tofuri_p2p::multiaddr;
 use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
 use tofuri_stake::StakeA;
@@ -152,8 +150,7 @@ fn peers(node: &mut Node) -> Result<Vec<&IpAddr>, Box<dyn Error>> {
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
-    let multiaddr: Multiaddr = bincode::deserialize(bytes)?;
-    let ip_addr = multiaddr::to_ip_addr(&multiaddr).ok_or("ip_addr")?;
+    let ip_addr = bincode::deserialize(bytes)?;
     node.p2p.unknown.insert(ip_addr);
     Ok(())
 }

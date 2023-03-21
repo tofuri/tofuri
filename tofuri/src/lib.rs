@@ -70,7 +70,7 @@ pub struct Args {
     #[clap(long, value_parser, default_value = "")]
     pub passphrase: String,
 
-    /// Multiaddr to dial
+    /// IpAddr to dial
     #[clap(short, long, value_parser, default_value = "")]
     pub peer: String,
 

@@ -47,7 +47,7 @@ impl Ratelimit {
             }
             Endpoint::Peers => {
                 a[3] += 1;
-                a[3] > RATELIMIT_IP_ADDR
+                a[3] > RATELIMIT_PEERS
             }
             Endpoint::SyncRequest => {
                 a[4] += 1;
@@ -70,7 +70,7 @@ impl Ratelimit {
             a[0] = a[0].saturating_sub(RATELIMIT_BLOCK);
             a[1] = a[1].saturating_sub(RATELIMIT_TRANSACTION);
             a[2] = a[2].saturating_sub(RATELIMIT_STAKE);
-            a[3] = a[3].saturating_sub(RATELIMIT_IP_ADDR);
+            a[3] = a[3].saturating_sub(RATELIMIT_PEERS);
             a[4] = a[4].saturating_sub(RATELIMIT_SYNC_REQUEST);
             a[5] = a[5].saturating_sub(RATELIMIT_SYNC_RESPONSE);
         }

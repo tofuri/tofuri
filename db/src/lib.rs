@@ -245,17 +245,18 @@ pub mod peer {
     use rocksdb::IteratorMode;
     use rocksdb::SingleThreaded;
     use std::error::Error;
+    use std::net::IpAddr;
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn put(peer: &str, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::peers(db), peer, [])?;
+    pub fn put(ip_addr: &IpAddr, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+        db.put_cf(super::peers(db), bincode::serialize(ip_addr).unwrap(), [])?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "debug")]
-    pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Vec<String> {
-        let mut peers: Vec<String> = vec![];
+    pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Vec<IpAddr> {
+        let mut peers: Vec<IpAddr> = vec![];
         for res in db.iterator_cf(super::peers(db), IteratorMode::Start) {
             let (peer, _) = res.unwrap();
-            peers.push(std::str::from_utf8(&peer).unwrap().to_string());
+            peers.push(bincode::deserialize(&peer).unwrap());
         }
         peers
     }

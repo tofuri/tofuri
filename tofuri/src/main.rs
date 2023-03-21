@@ -16,7 +16,6 @@ use tofuri_address::address;
 use tofuri_blockchain::Blockchain;
 use tofuri_core::*;
 use tofuri_key::Key;
-use tofuri_p2p::multiaddr;
 use tofuri_p2p::P2p;
 use tokio::net::TcpListener;
 use tracing::info;
@@ -64,14 +63,12 @@ async fn main() {
     };
     let db = tofuri_db::open(path);
     let mut known = HashSet::new();
-    if let Some(multiaddr) = multiaddr::ip_port(&args.peer.parse::<Multiaddr>().unwrap()) {
-        known.insert(multiaddr);
+    if let Ok(ip_addr) = args.peer.parse() {
+        known.insert(ip_addr);
     }
     let peers = tofuri_db::peer::get_all(&db);
-    for peer in peers {
-        if let Some(multiaddr) = multiaddr::ip_port(&peer.parse::<Multiaddr>().unwrap()) {
-            known.insert(multiaddr);
-        }
+    for ip_addr in peers {
+        known.insert(ip_addr);
     }
     let p2p = P2p::new(args.max_established, args.timeout, known).await.unwrap();
     let blockchain = Blockchain::default();

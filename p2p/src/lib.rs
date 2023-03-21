@@ -11,7 +11,6 @@ use libp2p::noise;
 use libp2p::swarm::ConnectionLimits;
 use libp2p::swarm::SwarmBuilder;
 use libp2p::tcp;
-use libp2p::Multiaddr;
 use libp2p::PeerId;
 use libp2p::Swarm;
 use libp2p::Transport;
@@ -22,19 +21,19 @@ use sha2::Sha256;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
+use std::net::IpAddr;
 use std::time::Duration;
 use tofuri_core::*;
-use tracing::warn;
 pub struct P2p {
     pub swarm: Swarm<Behaviour>,
     pub filter: HashSet<Hash>,
-    pub connections: HashMap<Multiaddr, PeerId>,
+    pub connections: HashMap<PeerId, IpAddr>,
     pub ratelimit: Ratelimit,
-    pub unknown: HashSet<Multiaddr>,
-    pub known: HashSet<Multiaddr>,
+    pub unknown: HashSet<IpAddr>,
+    pub known: HashSet<IpAddr>,
 }
 impl P2p {
-    pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<Multiaddr>) -> Result<P2p, Box<dyn Error>> {
+    pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<IpAddr>) -> Result<P2p, Box<dyn Error>> {
         Ok(P2p {
             swarm: swarm(max_established, timeout).await?,
             filter: HashSet::new(),
@@ -45,14 +44,10 @@ impl P2p {
         })
     }
     pub fn ratelimit(&mut self, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Box<dyn Error>> {
-        if let Some((multiaddr, _)) = self.connections.iter().find(|x| x.1 == &peer_id) {
-            let addr = multiaddr::ip_addr(multiaddr).expect("multiaddr to include ip");
-            if self.ratelimit.add(addr, endpoint) {
-                let _ = self.swarm.disconnect_peer_id(peer_id);
-                return Err("ratelimited".into());
-            }
-        } else {
-            warn!("ratelimit peer_id not found");
+        let ip_addr = self.connections.get(&peer_id).unwrap();
+        if self.ratelimit.add(*ip_addr, endpoint) {
+            let _ = self.swarm.disconnect_peer_id(peer_id);
+            return Err("ratelimited".into());
         }
         Ok(())
     }
@@ -91,7 +86,7 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
         IdentTopic::new("block"),
         IdentTopic::new("stake"),
         IdentTopic::new("transaction"),
-        IdentTopic::new("multiaddr"),
+        IdentTopic::new("ip_addr"),
     ]
     .iter()
     {

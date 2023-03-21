@@ -1,7 +1,6 @@
 use crate::Node;
-use libp2p::multiaddr::Protocol;
-use libp2p::Multiaddr;
 use rand::prelude::*;
+use std::net::IpAddr;
 use tofuri_core::*;
 use tofuri_p2p::behaviour::SyncRequest;
 use tofuri_p2p::multiaddr;
@@ -27,31 +26,27 @@ pub fn clear(node: &mut Node) {
     node.p2p.filter.clear();
 }
 #[tracing::instrument(skip_all, level = "debug")]
-fn dial(node: &mut Node, vec: Vec<Multiaddr>) {
-    for mut multiaddr in vec {
-        if node.p2p.connections.contains_key(&multiaddr::ip(&multiaddr).expect("multiaddr to include ip")) {
+fn dial(node: &mut Node, vec: Vec<IpAddr>) {
+    for ip_addr in vec {
+        if node.p2p.connections.iter().any(|x| x.1 == &ip_addr) {
             continue;
         }
-        let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
-        if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
-            debug!(multiaddr = multiaddr.to_string(), "Dial skipped");
+        if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&ip_addr).1) {
+            debug!(ip_addr = ip_addr.to_string(), "Dial skipped");
             continue;
         }
-        debug!(multiaddr = multiaddr.to_string(), "Dial");
-        if !multiaddr::has_port(&multiaddr) {
-            multiaddr.push(Protocol::Tcp(9333));
-        }
-        let _ = node.p2p.swarm.dial(multiaddr);
+        debug!(ip_addr = ip_addr.to_string(), "Dial");
+        let _ = node.p2p.swarm.dial(multiaddr::from_ip_addr(&ip_addr));
     }
 }
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn share(node: &mut Node) {
-    let vec: Vec<&Multiaddr> = node.p2p.connections.keys().collect();
+    let vec: Vec<&IpAddr> = node.p2p.connections.values().collect();
     if vec.is_empty() {
         return;
     }
     debug!(connections = vec.len(), "Share");
-    if let Err(err) = node.p2p.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap()) {
+    if let Err(err) = node.p2p.gossipsub_publish("ip_addr", bincode::serialize(&vec).unwrap()) {
         error!(err);
     }
 }

@@ -10,10 +10,10 @@ use libp2p::request_response::RequestResponseMessage;
 use libp2p::request_response::ResponseChannel;
 use libp2p::swarm::ConnectionHandlerUpgrErr;
 use libp2p::swarm::SwarmEvent;
-use libp2p::Multiaddr;
 use libp2p::PeerId;
 use std::error::Error;
 use std::io;
+use std::net::IpAddr;
 use std::num::NonZeroU32;
 use tofuri_block::BlockB;
 use tofuri_core::*;
@@ -42,7 +42,7 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
             num_established,
             ..
         } => connection_established(node, peer_id, endpoint, num_established),
-        SwarmEvent::ConnectionClosed { endpoint, num_established, .. } => connection_closed(node, endpoint, num_established),
+        SwarmEvent::ConnectionClosed { peer_id, num_established, .. } => connection_closed(node, peer_id, num_established),
         SwarmEvent::Behaviour(OutEvent::Mdns(event)) => mdns(node, event),
         SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
             message, propagation_source, ..
@@ -58,40 +58,29 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) -> Result<(), Box<dyn Error>> {
-    if let Some(multiaddr) = match endpoint {
-        ConnectedPoint::Dialer { address, .. } => multiaddr::ip_port(&address),
-        ConnectedPoint::Listener { send_back_addr, .. } => multiaddr::ip(&send_back_addr),
-    } {
-        info!(multiaddr = multiaddr.to_string(), num_established, "Connection established");
-        let addr = multiaddr::ip_addr(&multiaddr).expect("multiaddr to include ip");
-        if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&addr).1) {
-            warn!(multiaddr = multiaddr.to_string(), "Ratelimited");
-            let _ = node.p2p.swarm.disconnect_peer_id(peer_id);
-        }
-        node.p2p.known.insert(multiaddr.clone());
-        let _ = db::peer::put(&multiaddr.to_string(), &node.db);
-        if let Some(previous_peer_id) = node
-            .p2p
-            .connections
-            .insert(multiaddr::ip(&multiaddr).expect("multiaddr to include ip"), peer_id)
-        {
-            if previous_peer_id != peer_id {
-                let _ = node.p2p.swarm.disconnect_peer_id(previous_peer_id);
-            }
+    let ip_addr = match endpoint {
+        ConnectedPoint::Dialer { address, .. } => multiaddr::to_ip_addr(&address).unwrap(),
+        ConnectedPoint::Listener { send_back_addr, .. } => multiaddr::to_ip_addr(&send_back_addr).unwrap(),
+    };
+    if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&ip_addr).1) {
+        warn!(ip_addr = ip_addr.to_string(), "Ratelimited");
+        let _ = node.p2p.swarm.disconnect_peer_id(peer_id);
+    }
+    node.p2p.known.insert(ip_addr);
+    let _ = db::peer::put(&ip_addr, &node.db);
+    if let Some((previous_peer_id, _)) = node.p2p.connections.iter().find(|x| x.1 == &ip_addr) {
+        if previous_peer_id != &peer_id {
+            let _ = node.p2p.swarm.disconnect_peer_id(*previous_peer_id);
         }
     }
+    node.p2p.connections.insert(peer_id, ip_addr);
+    info!(ip_addr = ip_addr.to_string(), num_established, "Connection established");
     Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_established: u32) -> Result<(), Box<dyn Error>> {
-    if let Some(multiaddr) = match endpoint {
-        ConnectedPoint::Dialer { address, .. } => multiaddr::ip_port(&address),
-        ConnectedPoint::Listener { send_back_addr, .. } => multiaddr::ip(&send_back_addr),
-    } {
-        info!(multiaddr = multiaddr.to_string(), num_established, "Connection closed");
-        node.p2p.connections.remove(&multiaddr);
-        let _ = node.p2p.swarm.dial(multiaddr);
-    }
+fn connection_closed(node: &mut Node, peer_id: PeerId, num_established: u32) -> Result<(), Box<dyn Error>> {
+    let ip_addr = node.p2p.connections.remove(&peer_id).unwrap();
+    info!(ip_addr = ip_addr.to_string(), num_established, "Connection closed");
     Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
@@ -99,9 +88,8 @@ fn mdns(node: &mut Node, event: mdns::Event) -> Result<(), Box<dyn Error>> {
     match event {
         mdns::Event::Discovered(iter) => {
             for (_, multiaddr) in iter {
-                if let Some(multiaddr) = multiaddr::ip_port(&multiaddr) {
-                    node.p2p.unknown.insert(multiaddr);
-                }
+                let ip_addr = multiaddr::to_ip_addr(&multiaddr).unwrap();
+                node.p2p.unknown.insert(ip_addr);
             }
         }
         _ => {}
@@ -136,15 +124,13 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, propagation_sou
             let stake_b: StakeB = bincode::deserialize(&message.data)?;
             node.blockchain.pending_stakes_push(stake_b, node.args.time_delta)?;
         }
-        "multiaddr" => {
-            node.p2p.ratelimit(propagation_source, Endpoint::Multiaddr)?;
+        "ip_addr" => {
+            node.p2p.ratelimit(propagation_source, Endpoint::IpAddr)?;
             if node.p2p.filter(&message.data) {
-                return Err("filter multiaddr".into());
+                return Err("filter ip_addr".into());
             }
-            for multiaddr in bincode::deserialize::<Vec<Multiaddr>>(&message.data)? {
-                if let Some(multiaddr) = multiaddr::ip_port(&multiaddr) {
-                    node.p2p.unknown.insert(multiaddr);
-                }
+            for ip_addr in bincode::deserialize::<Vec<IpAddr>>(&message.data)? {
+                node.p2p.unknown.insert(ip_addr);
             }
         }
         _ => {}

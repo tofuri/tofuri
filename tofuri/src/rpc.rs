@@ -6,6 +6,7 @@ use colored::*;
 use libp2p::Multiaddr;
 use std::error::Error;
 use std::io;
+use std::net::IpAddr;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tofuri_block::BlockA;
@@ -146,14 +147,14 @@ fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<StakeA, Box<dyn Error>
     db::stake::get_a(&node.db, &hash)
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn peers(node: &mut Node) -> Result<Vec<&Multiaddr>, Box<dyn Error>> {
-    Ok(node.p2p.connections.keys().collect())
+fn peers(node: &mut Node) -> Result<Vec<&IpAddr>, Box<dyn Error>> {
+    Ok(node.p2p.connections.values().collect())
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Box<dyn Error>> {
     let multiaddr: Multiaddr = bincode::deserialize(bytes)?;
-    let multiaddr = multiaddr::ip_port(&multiaddr).ok_or("ip_port")?;
-    node.p2p.unknown.insert(multiaddr);
+    let ip_addr = multiaddr::to_ip_addr(&multiaddr).ok_or("ip_addr")?;
+    node.p2p.unknown.insert(ip_addr);
     Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]

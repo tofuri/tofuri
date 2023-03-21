@@ -82,6 +82,9 @@ pub fn grow(node: &mut Node) {
 }
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn sync_request(node: &mut Node) {
+    if node.blockchain.forks.unstable.latest_block.timestamp >= tofuri_util::timestamp() - BLOCK_TIME {
+        return;
+    }
     if let Some(peer_id) = node.p2p.swarm.connected_peers().choose(&mut thread_rng()).cloned() {
         node.p2p
             .swarm

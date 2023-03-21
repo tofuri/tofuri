@@ -91,7 +91,7 @@ pub async fn peers(State(args): State<Args>) -> impl IntoResponse {
     let peers = tofuri_rpc::peers(&args.rpc).await.unwrap();
     Json(peers)
 }
-pub async fn peer_ip_addr(State(args): State<Args>, Path(ip_addr): Path<String>) -> impl IntoResponse {
+pub async fn peer(State(args): State<Args>, Path(ip_addr): Path<String>) -> impl IntoResponse {
     tofuri_rpc::peer(&args.rpc, &ip_addr.parse().unwrap()).await.unwrap();
     Json(true)
 }

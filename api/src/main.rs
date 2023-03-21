@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/transaction/:hash", get(router::transaction_by_hash))
         .route("/stake/:hash", get(router::stake_by_hash))
         .route("/peers", get(router::peers))
-        .route("/peer/:ip_addr", get(router::peer_ip_addr))
+        .route("/peer/:ip_addr", get(router::peer))
         .route("/transaction", post(router::transaction))
         .route("/stake", post(router::stake))
         .route("/cargo_pkg_name", get(router::cargo_pkg_name))

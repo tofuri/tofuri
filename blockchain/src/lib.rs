@@ -84,11 +84,10 @@ impl Blockchain {
             Some(self.forks.unstable.hashes[index - self.forks.stable.hashes.len()])
         }
     }
-    pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, height: usize) -> Option<BlockB> {
-        if height > self.height() {
+    pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, index: usize) -> Option<BlockB> {
+        if index >= self.height() {
             return None;
         }
-        let index = height.saturating_sub(1);
         let hash = if index < self.forks.stable.hashes.len() {
             self.forks.stable.hashes[index]
         } else {

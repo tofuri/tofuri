@@ -46,7 +46,7 @@ pub fn share(node: &mut Node) {
         return;
     }
     debug!(connections = vec.len(), "Share");
-    if let Err(err) = node.p2p.gossipsub_publish("ip_addr", bincode::serialize(&vec).unwrap()) {
+    if let Err(err) = node.p2p.gossipsub_publish("peers", bincode::serialize(&vec).unwrap()) {
         error!(err);
     }
 }

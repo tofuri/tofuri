@@ -124,10 +124,10 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, propagation_sou
             let stake_b: StakeB = bincode::deserialize(&message.data)?;
             node.blockchain.pending_stakes_push(stake_b, node.args.time_delta)?;
         }
-        "ip_addr" => {
-            node.p2p.ratelimit(propagation_source, Endpoint::IpAddr)?;
+        "peers" => {
+            node.p2p.ratelimit(propagation_source, Endpoint::Peers)?;
             if node.p2p.filter(&message.data) {
-                return Err("filter ip_addr".into());
+                return Err("filter peers".into());
             }
             for ip_addr in bincode::deserialize::<Vec<IpAddr>>(&message.data)? {
                 node.p2p.unknown.insert(ip_addr);

@@ -86,7 +86,7 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
         IdentTopic::new("block"),
         IdentTopic::new("stake"),
         IdentTopic::new("transaction"),
-        IdentTopic::new("ip_addr"),
+        IdentTopic::new("peers"),
     ]
     .iter()
     {

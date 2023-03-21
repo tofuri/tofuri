@@ -5,7 +5,7 @@ pub enum Endpoint {
     Block,
     Transaction,
     Stake,
-    IpAddr,
+    Peers,
     SyncRequest,
     SyncResponse,
 }
@@ -45,7 +45,7 @@ impl Ratelimit {
                 a[2] += 1;
                 a[2] > RATELIMIT_STAKE
             }
-            Endpoint::IpAddr => {
+            Endpoint::Peers => {
                 a[3] += 1;
                 a[3] > RATELIMIT_IP_ADDR
             }

@@ -297,7 +297,7 @@ impl Blockchain {
         }
         let input_address = block_a.input_address();
         let unstable = self.forks.unstable(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
-        if timestamp.saturating_sub(unstable.latest_block.timestamp) == 0 || timestamp % BLOCK_TIME != 0 {
+        if block_a.timestamp.saturating_sub(unstable.latest_block.timestamp) == 0 || block_a.timestamp % BLOCK_TIME != 0 {
             return Err("block timestamp".into());
         }
         let previous_beta = Key::vrf_proof_to_hash(&unstable.latest_block.pi).unwrap_or(GENESIS_BLOCK_BETA);

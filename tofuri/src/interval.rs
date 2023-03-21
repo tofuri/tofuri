@@ -37,7 +37,7 @@ fn dial(node: &mut Node, vec: Vec<Multiaddr>) {
             debug!(multiaddr = multiaddr.to_string(), "Dial skipped");
             continue;
         }
-        info!(multiaddr = multiaddr.to_string(), "Dial");
+        debug!(multiaddr = multiaddr.to_string(), "Dial");
         if !multiaddr::has_port(&multiaddr) {
             multiaddr.push(Protocol::Tcp(9333));
         }
@@ -50,7 +50,7 @@ pub fn share(node: &mut Node) {
     if vec.is_empty() {
         return;
     }
-    info!(connections = vec.len(), "Share");
+    debug!(connections = vec.len(), "Share");
     if let Err(err) = node.p2p.gossipsub_publish("multiaddr", bincode::serialize(&vec).unwrap()) {
         error!(err);
     }

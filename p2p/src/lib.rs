@@ -24,6 +24,7 @@ use std::collections::HashSet;
 use std::error::Error;
 use std::time::Duration;
 use tofuri_core::*;
+use tracing::warn;
 pub struct P2p {
     pub swarm: Swarm<Behaviour>,
     pub filter: HashSet<Hash>,
@@ -44,11 +45,14 @@ impl P2p {
         })
     }
     pub fn ratelimit(&mut self, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Box<dyn Error>> {
-        let (multiaddr, _) = self.connections.iter().find(|x| x.1 == &peer_id).unwrap();
-        let addr = multiaddr::ip_addr(multiaddr).expect("multiaddr to include ip");
-        if self.ratelimit.add(addr, endpoint) {
-            let _ = self.swarm.disconnect_peer_id(peer_id);
-            return Err("ratelimited".into());
+        if let Some((multiaddr, _)) = self.connections.iter().find(|x| x.1 == &peer_id) {
+            let addr = multiaddr::ip_addr(multiaddr).expect("multiaddr to include ip");
+            if self.ratelimit.add(addr, endpoint) {
+                let _ = self.swarm.disconnect_peer_id(peer_id);
+                return Err("ratelimited".into());
+            }
+        } else {
+            warn!("ratelimit peer_id not found");
         }
         Ok(())
     }

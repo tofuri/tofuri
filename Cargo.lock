@@ -4465,6 +4465,7 @@ dependencies = [
  "tofuri-core",
  "tofuri-util",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

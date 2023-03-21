@@ -92,3 +92,11 @@ pub fn build(cargo_pkg_name: &str, cargo_pkg_version: &str, cargo_pkg_repository
         GIT_HASH.magenta()
     )
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_block_size_limit() {
+        assert_eq!(BLOCK_SIZE_LIMIT, *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * 600);
+    }
+}

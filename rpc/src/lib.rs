@@ -1,5 +1,5 @@
-use multiaddr::Multiaddr;
 use std::error::Error;
+use std::net::IpAddr;
 use tofuri_block::BlockA;
 use tofuri_core::*;
 use tofuri_rpc_core::Request;
@@ -78,11 +78,11 @@ pub async fn transaction_by_hash(addr: &str, hash: &Hash) -> Result<TransactionA
 pub async fn stake_by_hash(addr: &str, hash: &Hash) -> Result<StakeA, Box<dyn Error>> {
     Ok(bincode::deserialize(&request(Type::StakeByHash, addr, Some(bincode::serialize(hash)?)).await?)?)
 }
-pub async fn peers(addr: &str) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
+pub async fn peers(addr: &str) -> Result<Vec<IpAddr>, Box<dyn Error>> {
     Ok(bincode::deserialize(&request(Type::Peers, addr, None).await?)?)
 }
-pub async fn peer(addr: &str, multiaddr: &Multiaddr) -> Result<(), Box<dyn Error>> {
-    Ok(bincode::deserialize(&request(Type::Peer, addr, Some(bincode::serialize(multiaddr)?)).await?)?)
+pub async fn peer(addr: &str, ip_addr: &IpAddr) -> Result<(), Box<dyn Error>> {
+    Ok(bincode::deserialize(&request(Type::Peer, addr, Some(bincode::serialize(ip_addr)?)).await?)?)
 }
 pub async fn transaction(addr: &str, transaction_b: &TransactionB) -> Result<String, Box<dyn Error>> {
     Ok(bincode::deserialize(

@@ -3,7 +3,6 @@ use axum::extract::Path;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::Json;
-use multiaddr::Multiaddr;
 use tofuri_address::address;
 use tofuri_api_core::Root;
 use tofuri_api_core::Stake;
@@ -92,16 +91,8 @@ pub async fn peers(State(args): State<Args>) -> impl IntoResponse {
     let peers = tofuri_rpc::peers(&args.rpc).await.unwrap();
     Json(peers)
 }
-pub async fn peer_multiaddr_ip_port(State(args): State<Args>, Path((a, b, c, d)): Path<(String, String, String, String)>) -> impl IntoResponse {
-    let string = format!("/{a}/{b}/{c}/{d}");
-    let multiaddr: Multiaddr = string.parse().unwrap();
-    tofuri_rpc::peer(&args.rpc, &multiaddr).await.unwrap();
-    Json(true)
-}
-pub async fn peer_multiaddr_ip(State(args): State<Args>, Path((a, b)): Path<(String, String)>) -> impl IntoResponse {
-    let string = format!("/{a}/{b}");
-    let multiaddr: Multiaddr = string.parse().unwrap();
-    tofuri_rpc::peer(&args.rpc, &multiaddr).await.unwrap();
+pub async fn peer_ip_addr(State(args): State<Args>, Path(ip_addr): Path<String>) -> impl IntoResponse {
+    tofuri_rpc::peer(&args.rpc, &ip_addr.parse().unwrap()).await.unwrap();
     Json(true)
 }
 pub async fn transaction(State(args): State<Args>, Json(transaction): Json<Transaction>) -> impl IntoResponse {

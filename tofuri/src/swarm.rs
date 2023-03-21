@@ -58,14 +58,16 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) -> Result<(), Box<dyn Error>> {
-    if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-        if let Some(multiaddr) = multiaddr::ip_port(&address) {
-            connection_established_save(node, peer_id, num_established, multiaddr);
+    match endpoint {
+        ConnectedPoint::Dialer { address, .. } => {
+            if let Some(multiaddr) = multiaddr::ip_port(&address) {
+                connection_established_save(node, peer_id, num_established, multiaddr);
+            }
         }
-    }
-    if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-        if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
-            connection_established_save(node, peer_id, num_established, multiaddr);
+        ConnectedPoint::Listener { send_back_addr, .. } => {
+            if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
+                connection_established_save(node, peer_id, num_established, multiaddr);
+            }
         }
     }
     Ok(())
@@ -92,14 +94,16 @@ fn connection_established_save(node: &mut Node, peer_id: PeerId, num_established
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_established: u32) -> Result<(), Box<dyn Error>> {
-    if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
-        if let Some(multiaddr) = multiaddr::ip_port(&address) {
-            connection_closed_save(node, num_established, multiaddr);
+    match endpoint {
+        ConnectedPoint::Dialer { address, .. } => {
+            if let Some(multiaddr) = multiaddr::ip_port(&address) {
+                connection_closed_save(node, num_established, multiaddr);
+            }
         }
-    }
-    if let ConnectedPoint::Listener { send_back_addr, .. } = endpoint {
-        if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
-            connection_closed_save(node, num_established, multiaddr);
+        ConnectedPoint::Listener { send_back_addr, .. } => {
+            if let Some(multiaddr) = multiaddr::ip(&send_back_addr) {
+                connection_closed_save(node, num_established, multiaddr);
+            }
         }
     }
     Ok(())

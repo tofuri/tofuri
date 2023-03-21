@@ -35,55 +35,29 @@ type HandlerErr = EitherError<
 >;
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
-    match event {
-        SwarmEvent::Dialing(_) => {}
-        SwarmEvent::IncomingConnectionError { .. } => {}
-        SwarmEvent::IncomingConnection { .. } => {}
+    if let Err(err) = match event {
         SwarmEvent::ConnectionEstablished {
             peer_id,
             endpoint,
             num_established,
             ..
-        } => {
-            connection_established(node, peer_id, endpoint, num_established);
-        }
-        SwarmEvent::ConnectionClosed { endpoint, num_established, .. } => {
-            connection_closed(node, endpoint, num_established);
-        }
-        SwarmEvent::Behaviour(OutEvent::Mdns(mdns::Event::Discovered(list))) => {
-            for (_, multiaddr) in list {
-                if let Some(multiaddr) = multiaddr::ip_port(&multiaddr) {
-                    node.p2p.unknown.insert(multiaddr);
-                }
-            }
-        }
+        } => connection_established(node, peer_id, endpoint, num_established),
+        SwarmEvent::ConnectionClosed { endpoint, num_established, .. } => connection_closed(node, endpoint, num_established),
+        SwarmEvent::Behaviour(OutEvent::Mdns(event)) => mdns(node, event),
         SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
             message, propagation_source, ..
-        })) => {
-            if let Err(err) = gossipsub_message(node, message, propagation_source) {
-                error!(err)
-            }
-        }
+        })) => gossipsub_message(node, message, propagation_source),
         SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
-            RequestResponseMessage::Request { request, channel, .. } => {
-                if let Err(err) = sync_request(node, peer, request, channel) {
-                    error!(err)
-                }
-            }
-            RequestResponseMessage::Response { response, .. } => {
-                if let Err(err) = sync_response(node, peer, response) {
-                    error!(err)
-                }
-            }
+            RequestResponseMessage::Request { request, channel, .. } => sync_request(node, peer, request, channel),
+            RequestResponseMessage::Response { response, .. } => sync_response(node, peer, response),
         },
-        SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::InboundFailure { .. })) => {}
-        SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::OutboundFailure { .. })) => {}
-        SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::ResponseSent { .. })) => {}
-        _ => {}
-    };
+        _ => Ok(()),
+    } {
+        error!(err)
+    }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
+fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) -> Result<(), Box<dyn Error>> {
     if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
         if let Some(multiaddr) = multiaddr::ip_port(&address) {
             connection_established_save(node, peer_id, num_established, multiaddr);
@@ -94,6 +68,7 @@ fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedP
             connection_established_save(node, peer_id, num_established, multiaddr);
         }
     }
+    Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn connection_established_save(node: &mut Node, peer_id: PeerId, num_established: NonZeroU32, multiaddr: Multiaddr) {
@@ -116,7 +91,7 @@ fn connection_established_save(node: &mut Node, peer_id: PeerId, num_established
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_established: u32) {
+fn connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_established: u32) -> Result<(), Box<dyn Error>> {
     if let ConnectedPoint::Dialer { address, .. } = endpoint.clone() {
         if let Some(multiaddr) = multiaddr::ip_port(&address) {
             connection_closed_save(node, num_established, multiaddr);
@@ -127,12 +102,27 @@ fn connection_closed(node: &mut Node, endpoint: ConnectedPoint, num_established:
             connection_closed_save(node, num_established, multiaddr);
         }
     }
+    Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn connection_closed_save(node: &mut Node, num_established: u32, multiaddr: Multiaddr) {
     info!(multiaddr = multiaddr.to_string(), num_established, "Connection closed");
     node.p2p.connections.remove(&multiaddr);
     let _ = node.p2p.swarm.dial(multiaddr);
+}
+#[tracing::instrument(skip_all, level = "trace")]
+fn mdns(node: &mut Node, event: mdns::Event) -> Result<(), Box<dyn Error>> {
+    match event {
+        mdns::Event::Discovered(iter) => {
+            for (_, multiaddr) in iter {
+                if let Some(multiaddr) = multiaddr::ip_port(&multiaddr) {
+                    node.p2p.unknown.insert(multiaddr);
+                }
+            }
+        }
+        _ => {}
+    }
+    Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn gossipsub_message(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {

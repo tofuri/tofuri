@@ -79,7 +79,7 @@ pub mod block {
             stake::put(stake_a, db)?;
         }
         let key = block_a.hash;
-        let value = bincode::serialize(&block_a.b().c()).unwrap();
+        let value = bincode::serialize(&block_a.b().c()).map_err(Error::Bincode)?;
         db.put_cf(super::blocks(db), key, value).map_err(Error::RocksDB)?;
         Ok(())
     }
@@ -136,7 +136,7 @@ pub mod transaction {
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn put(transaction_a: &TransactionA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         let key = transaction_a.hash;
-        let value = bincode::serialize(&transaction_a.b()).unwrap();
+        let value = bincode::serialize(&transaction_a.b()).map_err(Error::Bincode)?;
         db.put_cf(super::transactions(db), key, value).map_err(Error::RocksDB)?;
         Ok(())
     }
@@ -173,7 +173,7 @@ pub mod stake {
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn put(stake_a: &StakeA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         let key = stake_a.hash;
-        let value = bincode::serialize(&stake_a.b()).unwrap();
+        let value = bincode::serialize(&stake_a.b()).map_err(Error::Bincode)?;
         db.put_cf(super::stakes(db), key, value).map_err(Error::RocksDB)?;
         Ok(())
     }
@@ -211,7 +211,7 @@ pub mod tree {
         tree.clear();
         let mut map: HashMap<Hash, Vec<(Hash, u32)>> = HashMap::new();
         for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
-            let (hash, bytes) = res.unwrap();
+            let (hash, bytes) = res.map_err(Error::RocksDB)?;
             let hash = hash.to_vec().try_into().unwrap();
             let block_metadata: BlockC = bincode::deserialize(&bytes).map_err(Error::Bincode)?;
             match map.get(&block_metadata.previous_hash) {
@@ -271,14 +271,15 @@ pub mod peer {
     use std::net::IpAddr;
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn put(ip_addr: &IpAddr, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
-        db.put_cf(super::peers(db), bincode::serialize(ip_addr).unwrap(), []).map_err(Error::RocksDB)?;
+        db.put_cf(super::peers(db), bincode::serialize(ip_addr).map_err(Error::Bincode)?, [])
+            .map_err(Error::RocksDB)?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "debug")]
     pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Result<Vec<IpAddr>, Error> {
         let mut peers: Vec<IpAddr> = vec![];
         for res in db.iterator_cf(super::peers(db), IteratorMode::Start) {
-            let (peer, _) = res.unwrap();
+            let (peer, _) = res.map_err(Error::RocksDB)?;
             peers.push(bincode::deserialize(&peer).map_err(Error::Bincode)?);
         }
         Ok(peers)
@@ -345,7 +346,7 @@ pub mod checkpoint {
     use tofuri_checkpoint::Checkpoint;
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn put(db: &DBWithThreadMode<SingleThreaded>, checkpoint: &Checkpoint) -> Result<(), Error> {
-        db.put_cf(super::checkpoint(db), [], bincode::serialize(checkpoint).unwrap())
+        db.put_cf(super::checkpoint(db), [], bincode::serialize(checkpoint).map_err(Error::Bincode)?)
             .map_err(Error::RocksDB)?;
         Ok(())
     }

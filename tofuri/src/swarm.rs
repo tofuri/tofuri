@@ -33,7 +33,6 @@ pub enum Error {
     Blockchain(tofuri_blockchain::Error),
     Bincode(bincode::Error),
     P2p(tofuri_p2p::Error),
-    Elapsed(tokio::time::error::Elapsed),
     FilterBlock,
     FilterTransaction,
     FilterStake,

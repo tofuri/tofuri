@@ -80,8 +80,7 @@ pub mod block {
         }
         let key = block_a.hash;
         let value = bincode::serialize(&block_a.b().c()).map_err(Error::Bincode)?;
-        db.put_cf(super::blocks(db), key, value).map_err(Error::RocksDB)?;
-        Ok(())
+        db.put_cf(super::blocks(db), key, value).map_err(Error::RocksDB)
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Error> {
@@ -139,8 +138,7 @@ pub mod transaction {
     pub fn put(transaction_a: &TransactionA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         let key = transaction_a.hash;
         let value = bincode::serialize(&transaction_a.b()).map_err(Error::Bincode)?;
-        db.put_cf(super::transactions(db), key, value).map_err(Error::RocksDB)?;
-        Ok(())
+        db.put_cf(super::transactions(db), key, value).map_err(Error::RocksDB)
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionA, Error> {
@@ -175,8 +173,7 @@ pub mod stake {
     pub fn put(stake_a: &StakeA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         let key = stake_a.hash;
         let value = bincode::serialize(&stake_a.b()).map_err(Error::Bincode)?;
-        db.put_cf(super::stakes(db), key, value).map_err(Error::RocksDB)?;
-        Ok(())
+        db.put_cf(super::stakes(db), key, value).map_err(Error::RocksDB)
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeA, Error> {
@@ -274,8 +271,7 @@ pub mod peer {
     pub fn put(ip_addr: &IpAddr, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         let key = bincode::serialize(ip_addr).map_err(Error::Bincode)?;
         let value = [];
-        db.put_cf(super::peers(db), key, value).map_err(Error::RocksDB)?;
-        Ok(())
+        db.put_cf(super::peers(db), key, value).map_err(Error::RocksDB)
     }
     #[tracing::instrument(skip_all, level = "debug")]
     pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Result<Vec<IpAddr>, Error> {
@@ -296,8 +292,7 @@ pub mod input_address {
     pub fn put(hash: &[u8], input_address: &AddressBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         let key = hash;
         let value = input_address;
-        db.put_cf(super::input_addresses(db), key, value).map_err(Error::RocksDB)?;
-        Ok(())
+        db.put_cf(super::input_addresses(db), key, value).map_err(Error::RocksDB)
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<AddressBytes, Error> {
@@ -317,8 +312,7 @@ pub mod input_public_key {
     pub fn put(hash: &[u8], input_public_key: &PublicKeyBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         let key = hash;
         let value = input_public_key;
-        db.put_cf(super::input_public_keys(db), key, value).map_err(Error::RocksDB)?;
-        Ok(())
+        db.put_cf(super::input_public_keys(db), key, value).map_err(Error::RocksDB)
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<PublicKeyBytes, Error> {
@@ -338,8 +332,7 @@ pub mod beta {
     pub fn put(block_hash: &[u8], beta: &Beta, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         let key = block_hash;
         let value = beta;
-        db.put_cf(super::betas(db), key, value).map_err(Error::RocksDB)?;
-        Ok(())
+        db.put_cf(super::betas(db), key, value).map_err(Error::RocksDB)
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, block_hash: &[u8]) -> Result<Beta, Error> {
@@ -357,8 +350,7 @@ pub mod checkpoint {
     pub fn put(db: &DBWithThreadMode<SingleThreaded>, checkpoint: &Checkpoint) -> Result<(), Error> {
         let key = [];
         let value = bincode::serialize(checkpoint).map_err(Error::Bincode)?;
-        db.put_cf(super::checkpoint(db), key, value).map_err(Error::RocksDB)?;
-        Ok(())
+        db.put_cf(super::checkpoint(db), key, value).map_err(Error::RocksDB)
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get(db: &DBWithThreadMode<SingleThreaded>) -> Result<Checkpoint, Error> {

@@ -11,6 +11,7 @@ pub enum Error {
     Transaction(tofuri_transaction::Error),
     Stake(tofuri_stake::Error),
     RocksDB(rocksdb::Error),
+    Bincode(bincode::Error),
     BlockNotFound,
     TransactionNotFound,
     StakeNotFound,
@@ -119,7 +120,7 @@ pub mod block {
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get_c(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockC, Error> {
-        Ok(bincode::deserialize(&db.get_cf(super::blocks(db), hash).map_err(Error::RocksDB)?.ok_or(Error::BlockNotFound)?).unwrap())
+        Ok(bincode::deserialize(&db.get_cf(super::blocks(db), hash).map_err(Error::RocksDB)?.ok_or(Error::BlockNotFound)?).map_err(Error::Bincode)?)
     }
     #[test]
     fn test_serialize_len() {
@@ -155,7 +156,7 @@ pub mod transaction {
                 .map_err(Error::RocksDB)?
                 .ok_or(Error::TransactionNotFound)?,
         )
-        .unwrap();
+        .map_err(Error::Bincode)?;
         Ok(transaction_b)
     }
     #[test]
@@ -187,7 +188,8 @@ pub mod stake {
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Error> {
-        let stake_b: StakeB = bincode::deserialize(&db.get_cf(super::stakes(db), hash).map_err(Error::RocksDB)?.ok_or(Error::StakeNotFound)?).unwrap();
+        let stake_b: StakeB =
+            bincode::deserialize(&db.get_cf(super::stakes(db), hash).map_err(Error::RocksDB)?.ok_or(Error::StakeNotFound)?).map_err(Error::Bincode)?;
         Ok(stake_b)
     }
     #[test]
@@ -196,6 +198,7 @@ pub mod stake {
     }
 }
 pub mod tree {
+    use super::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::IteratorMode;
     use rocksdb::SingleThreaded;
@@ -204,13 +207,13 @@ pub mod tree {
     use tofuri_core::*;
     use tofuri_tree::Tree;
     #[tracing::instrument(skip_all, level = "debug")]
-    pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) {
+    pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         tree.clear();
         let mut map: HashMap<Hash, Vec<(Hash, u32)>> = HashMap::new();
         for res in db.iterator_cf(super::blocks(db), IteratorMode::Start) {
             let (hash, bytes) = res.unwrap();
             let hash = hash.to_vec().try_into().unwrap();
-            let block_metadata: BlockC = bincode::deserialize(&bytes).unwrap();
+            let block_metadata: BlockC = bincode::deserialize(&bytes).map_err(Error::Bincode)?;
             match map.get(&block_metadata.previous_hash) {
                 Some(vec) => {
                     let mut vec = vec.clone();
@@ -223,7 +226,7 @@ pub mod tree {
             };
         }
         if map.is_empty() {
-            return;
+            return Ok(());
         }
         let previous_hash = GENESIS_BLOCK_PREVIOUS_HASH;
         let mut previous_hashes = vec![previous_hash];
@@ -257,6 +260,7 @@ pub mod tree {
             tree.insert(hash, previous_hash, timestamp);
         }
         tree.sort_branches();
+        Ok(())
     }
 }
 pub mod peer {
@@ -271,13 +275,13 @@ pub mod peer {
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "debug")]
-    pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Vec<IpAddr> {
+    pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Result<Vec<IpAddr>, Error> {
         let mut peers: Vec<IpAddr> = vec![];
         for res in db.iterator_cf(super::peers(db), IteratorMode::Start) {
             let (peer, _) = res.unwrap();
-            peers.push(bincode::deserialize(&peer).unwrap());
+            peers.push(bincode::deserialize(&peer).map_err(Error::Bincode)?);
         }
-        peers
+        Ok(peers)
     }
 }
 pub mod input_address {
@@ -347,6 +351,6 @@ pub mod checkpoint {
     }
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn get(db: &DBWithThreadMode<SingleThreaded>) -> Result<Checkpoint, Error> {
-        Ok(bincode::deserialize(&db.get_cf(super::checkpoint(db), []).map_err(Error::RocksDB)?.ok_or(Error::CheckpointNotFound)?).unwrap())
+        Ok(bincode::deserialize(&db.get_cf(super::checkpoint(db), []).map_err(Error::RocksDB)?.ok_or(Error::CheckpointNotFound)?).map_err(Error::Bincode)?)
     }
 }

@@ -69,8 +69,8 @@ pub struct Blockchain {
 }
 impl Blockchain {
     #[tracing::instrument(skip_all, level = "debug")]
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) {
-        tofuri_db::tree::reload(&mut self.tree, db);
+    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) -> Result<(), Error> {
+        tofuri_db::tree::reload(&mut self.tree, db).map_err(Error::DB)?;
         let (mut stable_hashes, unstable_hashes) = self.tree.stable_and_unstable_hashes(trust_fork_after_blocks);
         info!(
             height = if let Some(main) = self.tree.main() { main.height } else { 0 },
@@ -85,6 +85,7 @@ impl Blockchain {
         }
         self.forks.stable.load(db, &stable_hashes);
         self.forks.unstable = Unstable::from(db, &unstable_hashes, &self.forks.stable);
+        Ok(())
     }
     pub fn last_seen(&self) -> String {
         if self.forks.unstable.latest_block.timestamp == 0 {

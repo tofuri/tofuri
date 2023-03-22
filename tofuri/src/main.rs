@@ -66,14 +66,14 @@ async fn main() {
     if let Ok(ip_addr) = args.peer.parse() {
         known.insert(ip_addr);
     }
-    let peers = tofuri_db::peer::get_all(&db);
+    let peers = tofuri_db::peer::get_all(&db).unwrap();
     for ip_addr in peers {
         known.insert(ip_addr);
     }
     let p2p = P2p::new(args.max_established, args.timeout, known).await.unwrap();
     let blockchain = Blockchain::default();
     let mut node = Node::new(db, key, args.clone(), p2p, blockchain);
-    node.blockchain.load(&node.db, node.args.trust);
+    node.blockchain.load(&node.db, node.args.trust).unwrap();
     let multiaddr: Multiaddr = node.args.host.parse().unwrap();
     info!(multiaddr = multiaddr.to_string(), "P2P");
     node.p2p.swarm.listen_on(multiaddr).unwrap();

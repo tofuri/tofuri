@@ -73,7 +73,7 @@ async fn main() {
         .layer(cors)
         .with_state(pay.clone());
     tokio::spawn(async move {
-        pay.lock().await.load();
+        pay.lock().await.load().unwrap();
         let mut interval = tokio::time::interval(Duration::from_secs(1));
         loop {
             interval.tick().await;

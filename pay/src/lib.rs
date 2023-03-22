@@ -15,6 +15,11 @@ use tofuri_pay_core::Payment;
 #[derive(Debug)]
 pub enum Error {
     Reqwest(reqwest::Error),
+    RocksDB(rocksdb::Error),
+    DB(tofuri_pay_db::Error),
+    Bincode(bincode::Error),
+    Int(tofuri_int::Error),
+    TryFromSliceError(core::array::TryFromSliceError),
 }
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -94,7 +99,7 @@ impl Pay {
         self.charges.get(hash).map(|x| x.payment(&self.key))
     }
     pub fn withdraw() {}
-    pub fn charge(&mut self, amount: u128) -> Payment {
+    pub fn charge(&mut self, amount: u128) -> Result<Payment, Error> {
         let charge = Charge {
             amount,
             timestamp: tofuri_util::timestamp(),
@@ -102,10 +107,10 @@ impl Pay {
             subkey_n: self.subkey_n,
         };
         let payment = charge.payment(&self.key);
-        tofuri_pay_db::charge::put(&self.db, &self.key, &charge).unwrap();
+        tofuri_pay_db::charge::put(&self.db, &self.key, &charge).map_err(Error::DB)?;
         self.charges.insert(charge.address_bytes(&self.key), charge);
         self.subkey_n += 1;
-        payment
+        Ok(payment)
     }
     pub async fn check(&mut self) -> Result<Vec<Payment>, Error> {
         self.update_chain().await?;
@@ -136,7 +141,7 @@ impl Pay {
                         Some(a) => *a,
                         None => 0,
                     };
-                    map.insert(address, amount + tofuri_int::from_str(&transaction.amount).unwrap());
+                    map.insert(address, amount + tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?);
                 }
             }
         }
@@ -152,11 +157,11 @@ impl Pay {
             };
             if res {
                 charge.status = ChargeStatus::Completed;
-                tofuri_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
+                tofuri_pay_db::charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
                 charges.push(charge);
             } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < tofuri_util::timestamp() - self.args.expires {
                 charge.status = ChargeStatus::Expired;
-                tofuri_pay_db::charge::put(&self.db, &self.key, charge).unwrap();
+                tofuri_pay_db::charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
             }
         }
         let mut payments = vec![];
@@ -237,15 +242,16 @@ impl Pay {
         Ok(())
     }
     #[tracing::instrument(skip_all)]
-    pub fn load(&mut self) {
+    pub fn load(&mut self) -> Result<(), Error> {
         for res in self.db.iterator_cf(tofuri_pay_db::charges(&self.db), IteratorMode::Start) {
             self.subkey_n += 1;
-            let (hash, bytes) = res.unwrap();
+            let (hash, bytes) = res.map_err(Error::RocksDB)?;
             let hash = hash.to_vec().try_into().unwrap();
-            let charge: Charge = bincode::deserialize(&bytes).unwrap();
+            let charge: Charge = bincode::deserialize(&bytes).map_err(Error::Bincode)?;
             if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) {
                 self.charges.insert(hash, charge);
             }
         }
+        Ok(())
     }
 }

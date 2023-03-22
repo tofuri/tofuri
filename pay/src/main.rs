@@ -2,7 +2,6 @@ use axum::routing::get;
 use axum::Router;
 use clap::Parser;
 use colored::*;
-use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -27,7 +26,7 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() {
     tracing_subscriber::registry()
         .with(EnvFilter::builder().with_default_directive(LevelFilter::INFO.into()).from_env_lossy())
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
@@ -84,10 +83,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         info!("{:?}", vec);
                     }
                 }
-                Err(err) => error!(err),
+                Err(err) => error!("{:?}", err),
             }
         }
     });
     axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();
-    Ok(())
 }

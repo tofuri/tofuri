@@ -5,7 +5,6 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
-use std::error::Error;
 use tofuri_api_core::Block;
 use tofuri_api_core::Transaction;
 use tofuri_core::*;
@@ -13,6 +12,10 @@ use tofuri_key::Key;
 use tofuri_pay_core::Charge;
 use tofuri_pay_core::ChargeStatus;
 use tofuri_pay_core::Payment;
+#[derive(Debug)]
+pub enum Error {
+    Reqwest(reqwest::Error),
+}
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
@@ -104,7 +107,7 @@ impl Pay {
         self.subkey_n += 1;
         payment
     }
-    pub async fn check(&mut self) -> Result<Vec<Payment>, Box<dyn Error>> {
+    pub async fn check(&mut self) -> Result<Vec<Payment>, Error> {
         self.update_chain().await?;
         let mut transactions = vec![];
         for (i, block) in self.chain.iter().rev().enumerate() {
@@ -116,9 +119,11 @@ impl Pay {
                     .client
                     .get(format!("{}/transaction/{}", &self.args.api, &hash))
                     .send()
-                    .await?
+                    .await
+                    .map_err(Error::Reqwest)?
                     .json()
-                    .await?;
+                    .await
+                    .map_err(Error::Reqwest)?;
                 transactions.push(transaction);
             }
         }
@@ -160,8 +165,16 @@ impl Pay {
         }
         Ok(payments)
     }
-    async fn update_chain(&mut self) -> Result<(), Box<dyn Error>> {
-        let latest_block: Block = self.client.get(format!("{}/block", &self.args.api)).send().await?.json().await?;
+    async fn update_chain(&mut self) -> Result<(), Error> {
+        let latest_block: Block = self
+            .client
+            .get(format!("{}/block", &self.args.api))
+            .send()
+            .await
+            .map_err(Error::Reqwest)?
+            .json()
+            .await
+            .map_err(Error::Reqwest)?;
         if match self.chain.last() {
             Some(block) => block.hash == latest_block.hash,
             None => false,
@@ -184,17 +197,28 @@ impl Pay {
         }
         Ok(())
     }
-    async fn reload_chain(&mut self) -> Result<(), Box<dyn Error>> {
+    async fn reload_chain(&mut self) -> Result<(), Error> {
         let mut chain = vec![];
-        let mut previous_hash = self.client.get(format!("{}/block", &self.args.api)).send().await?.json::<Block>().await?.hash;
+        let mut previous_hash = self
+            .client
+            .get(format!("{}/block", &self.args.api))
+            .send()
+            .await
+            .map_err(Error::Reqwest)?
+            .json::<Block>()
+            .await
+            .map_err(Error::Reqwest)?
+            .hash;
         loop {
             let block: Block = self
                 .client
                 .get(format!("{}/block/{}", &self.args.api, &previous_hash))
                 .send()
-                .await?
+                .await
+                .map_err(Error::Reqwest)?
                 .json()
-                .await?;
+                .await
+                .map_err(Error::Reqwest)?;
             if let Some(latest_block) = self.chain.last() {
                 if latest_block.hash == block.previous_hash {
                     self.chain.append(&mut chain);

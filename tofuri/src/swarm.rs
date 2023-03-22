@@ -149,18 +149,19 @@ fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel:
     let mut vec = vec![];
     loop {
         let block_b = node.blockchain.sync_block(&node.db, height + vec.len()).map_err(Error::Blockchain)?;
-        size += bincode::serialize(&block_b).unwrap().len();
+        size += bincode::serialize(&block_b).map_err(Error::Bincode)?.len();
         if size > MAX_TRANSMIT_SIZE {
             break;
         }
         vec.push(block_b);
     }
+    let vec = bincode::serialize(&vec).map_err(Error::Bincode)?;
     if node
         .p2p
         .swarm
         .behaviour_mut()
         .request_response
-        .send_response(channel, SyncResponse(bincode::serialize(&vec).unwrap()))
+        .send_response(channel, SyncResponse(vec))
         .is_err()
     {
         return Err(Error::P2pRequestHandlerConnectionClosed);

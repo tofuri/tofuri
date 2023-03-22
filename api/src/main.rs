@@ -2,7 +2,6 @@ use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
 use clap::Parser;
-use std::error::Error;
 use std::net::SocketAddr;
 use tofuri_api::router;
 use tofuri_api::CARGO_PKG_NAME;
@@ -11,7 +10,7 @@ use tofuri_api::CARGO_PKG_VERSION;
 use tofuri_core::*;
 use tower_http::cors::CorsLayer;
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() {
     let mut args = tofuri_api::Args::parse();
     println!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
     if args.dev {
@@ -63,5 +62,4 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .layer(cors)
         .with_state(args);
     axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();
-    Ok(())
 }

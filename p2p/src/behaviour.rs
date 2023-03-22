@@ -16,9 +16,12 @@ use libp2p::request_response::RequestResponse;
 use libp2p::request_response::RequestResponseCodec;
 use libp2p::request_response::RequestResponseEvent;
 use libp2p::swarm::NetworkBehaviour;
-use std::error::Error;
 use tofuri_core::*;
 use tokio::io;
+#[derive(Debug)]
+pub enum Error {
+    Io(io::Error),
+}
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "OutEvent")]
 pub struct Behaviour {
@@ -29,14 +32,15 @@ pub struct Behaviour {
     pub request_response: RequestResponse<SyncCodec>,
 }
 impl Behaviour {
-    pub async fn new(local_key: identity::Keypair) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(local_key: identity::Keypair) -> Result<Self, Error> {
         Ok(Self {
-            mdns: mdns::tokio::Behaviour::new(mdns::Config::default())?,
+            mdns: mdns::tokio::Behaviour::new(mdns::Config::default()).map_err(Error::Io)?,
             identify: identify::Behaviour::new(identify::Config::new(PROTOCOL_VERSION.to_string(), local_key.public())),
             gossipsub: Gossipsub::new(
                 MessageAuthenticity::Signed(local_key.clone()),
-                GossipsubConfigBuilder::default().max_transmit_size(MAX_TRANSMIT_SIZE).build()?,
-            )?,
+                GossipsubConfigBuilder::default().max_transmit_size(MAX_TRANSMIT_SIZE).build().unwrap(),
+            )
+            .unwrap(),
             autonat: autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default()),
             request_response: RequestResponse::new(SyncCodec(), std::iter::once((SyncProtocol(), ProtocolSupport::Full)), Default::default()),
         })

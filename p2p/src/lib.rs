@@ -4,6 +4,7 @@ pub mod ratelimit;
 use behaviour::Behaviour;
 use libp2p::core::upgrade;
 use libp2p::gossipsub::error::PublishError;
+use libp2p::gossipsub::error::SubscriptionError;
 use libp2p::gossipsub::IdentTopic;
 use libp2p::gossipsub::TopicHash;
 use libp2p::identity;
@@ -27,6 +28,8 @@ use tofuri_core::*;
 #[derive(Debug)]
 pub enum Error {
     PublishError(PublishError),
+    Behaviour(behaviour::Error),
+    SubscriptionError(SubscriptionError),
     Ratelimited,
     Filter,
 }
@@ -89,7 +92,7 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
         .multiplex(mplex::MplexConfig::new())
         .timeout(Duration::from_millis(timeout))
         .boxed();
-    let mut behaviour = Behaviour::new(local_key).await.unwrap();
+    let mut behaviour = Behaviour::new(local_key).await.map_err(Error::Behaviour)?;
     for ident_topic in [
         IdentTopic::new("block"),
         IdentTopic::new("stake"),
@@ -98,7 +101,7 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
     ]
     .iter()
     {
-        behaviour.gossipsub.subscribe(ident_topic).unwrap();
+        behaviour.gossipsub.subscribe(ident_topic).map_err(Error::SubscriptionError)?;
     }
     let mut limits = ConnectionLimits::default();
     limits = limits.with_max_established_per_peer(Some(1));

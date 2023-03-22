@@ -1,5 +1,4 @@
-use crate::filenames;
-use crate::Error;
+use crate::util;
 use colored::*;
 use inquire::validator::Validation;
 use inquire::Confirm;
@@ -13,12 +12,19 @@ use std::process;
 use tofuri_address::address;
 use tofuri_core::*;
 use tofuri_key::Key;
+#[derive(Debug)]
+pub enum Error {
+    Util(util::Error),
+    Address(tofuri_address::Error),
+    Key(tofuri_key::Error),
+    Io(std::io::Error),
+}
 lazy_static! {
     pub static ref GENERATE: String = "Generate".green().to_string();
     pub static ref IMPORT: String = "Import".magenta().to_string();
 }
 pub fn select() -> Result<String, Error> {
-    let mut filenames = filenames()?;
+    let mut filenames = util::filenames().map_err(Error::Util)?;
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());
     let filename = Select::new(">>", filenames.to_vec()).prompt().unwrap_or_else(|err| {
@@ -28,7 +34,7 @@ pub fn select() -> Result<String, Error> {
     Ok(filename)
 }
 pub fn name() -> Result<String, Error> {
-    let filenames = filenames()?;
+    let filenames = util::filenames().map_err(Error::Util)?;
     Ok(Password::new("Name:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Full)

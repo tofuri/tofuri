@@ -1,4 +1,3 @@
-use crate::Error;
 use crate::Node;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::core::either::EitherError;
@@ -29,6 +28,18 @@ use tracing::error;
 use tracing::info;
 use tracing::warn;
 use void::Void;
+#[derive(Debug)]
+pub enum Error {
+    Blockchain(tofuri_blockchain::Error),
+    Bincode(bincode::Error),
+    P2p(tofuri_p2p::Error),
+    Elapsed(tokio::time::error::Elapsed),
+    FilterBlock,
+    FilterTransaction,
+    FilterStake,
+    FilterPeers,
+    P2pRequestHandlerConnectionClosed,
+}
 type HandlerErr = EitherError<
     EitherError<EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<io::Error>>,
     ConnectionHandlerUpgrErr<io::Error>,

@@ -1,4 +1,5 @@
 pub mod inquire;
+pub mod util;
 use crate::inquire::GENERATE;
 use crate::inquire::IMPORT;
 use ::inquire::Confirm;
@@ -15,8 +16,6 @@ use colored::*;
 use crossterm::event;
 use crossterm::terminal;
 use reqwest::Client;
-use std::fs::create_dir_all;
-use std::fs::read_dir;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -42,8 +41,8 @@ pub type Ciphertext = [u8; 48];
 pub enum Error {
     Key(tofuri_key::Error),
     Reqwest(reqwest::Error),
-    Address(tofuri_address::Error),
     Io(std::io::Error),
+    Inquire(inquire::Error),
     InvalidPassphrase,
 }
 #[derive(Parser, Debug, Clone)]
@@ -375,16 +374,13 @@ pub fn decrypt(salt: &Salt, nonce: &Nonce, ciphertext: &Ciphertext, passphrase: 
         Err(_) => Err(Error::InvalidPassphrase),
     }
 }
-pub fn default_path() -> &'static Path {
-    Path::new("./tofuri-wallet")
-}
 pub fn save(filename: &str, key: &Key) -> Result<(), Error> {
     let (salt, nonce, ciphertext) = encrypt(key)?;
     let mut bytes = [0; 92];
     bytes[0..32].copy_from_slice(&salt);
     bytes[32..44].copy_from_slice(&nonce);
     bytes[44..92].copy_from_slice(&ciphertext);
-    let mut path = default_path().join(filename);
+    let mut path = util::default_path().join(filename);
     path.set_extension(EXTENSION);
     let mut file = File::create(path).unwrap();
     file.write_all(hex::encode(bytes).as_bytes()).unwrap();
@@ -410,7 +406,7 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         process::exit(0);
     }
     if !filename.is_empty() && !passphrase.is_empty() {
-        let mut path = default_path().join(filename);
+        let mut path = util::default_path().join(filename);
         path.set_extension(EXTENSION);
         let bytes = match read_exact(path) {
             Ok(x) => x,
@@ -427,22 +423,22 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
             }
         };
     }
-    let mut filename = crate::inquire::select()?;
+    let mut filename = crate::inquire::select().map_err(Error::Inquire)?;
     if filename.as_str() == *GENERATE {
         let key = Key::generate();
         if !inquire::save() {
             return Ok(([0; 32], [0; 12], [0; 48], key));
         }
-        filename = inquire::name()?;
+        filename = inquire::name().map_err(Error::Inquire)?;
         save(&filename, &key)?;
     } else if filename.as_str() == *IMPORT {
-        let key = inquire::import()?;
+        let key = inquire::import().map_err(Error::Inquire)?;
         if !inquire::save() {
             return Ok(([0; 32], [0; 12], [0; 48], key));
         }
         save(&filename, &key)?;
     };
-    let mut path = default_path().join(filename);
+    let mut path = util::default_path().join(filename);
     path.set_extension(EXTENSION);
     clear();
     println!("{}", path.to_string_lossy().green());
@@ -461,17 +457,6 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
             println!("{}", INCORRECT.red());
         }
     }
-}
-pub fn filenames() -> Result<Vec<String>, Error> {
-    let path = default_path();
-    if !path.exists() {
-        create_dir_all(path).unwrap();
-    }
-    let mut filenames: Vec<String> = vec![];
-    for entry in read_dir(path).unwrap() {
-        filenames.push(entry.map_err(Error::Io)?.path().file_name().unwrap().to_string_lossy().into_owned());
-    }
-    Ok(filenames)
 }
 pub fn press_any_key_to_continue() {
     println!("{}", "Press any key to continue...".magenta().italic());

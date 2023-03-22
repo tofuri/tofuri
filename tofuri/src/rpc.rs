@@ -1,4 +1,3 @@
-use crate::Error;
 use crate::Node;
 use crate::CARGO_PKG_NAME;
 use crate::CARGO_PKG_REPOSITORY;
@@ -24,6 +23,14 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tracing::error;
 use tracing::info;
+#[derive(Debug)]
+pub enum Error {
+    Blockchain(tofuri_blockchain::Error),
+    DB(tofuri_db::Error),
+    Bincode(bincode::Error),
+    Io(std::io::Error),
+    Elapsed(tokio::time::error::Elapsed),
+}
 #[tracing::instrument(skip_all, level = "debug")]
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
     if let Err(err) = &res {

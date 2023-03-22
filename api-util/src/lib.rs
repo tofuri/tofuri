@@ -1,4 +1,3 @@
-use std::error::Error;
 use tofuri_address::address;
 use tofuri_api_core::Block;
 use tofuri_api_core::Stake;
@@ -8,6 +7,13 @@ use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
+#[derive(Debug)]
+pub enum Error {
+    Hex(hex::FromHexError),
+    Address(tofuri_address::Error),
+    Int(tofuri_int::Error),
+    TryFromSliceError(core::array::TryFromSliceError),
+}
 pub fn block(block_a: &BlockA) -> Block {
     Block {
         hash: hex::encode(block_a.hash),
@@ -43,21 +49,29 @@ pub fn stake(stake_a: &StakeA) -> Stake {
         hash: hex::encode(stake_a.hash),
     }
 }
-pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Box<dyn Error>> {
+pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
     Ok(TransactionB {
-        output_address: address::decode(&transaction.output_address)?,
-        amount: tofuri_int::to_be_bytes(tofuri_int::from_str(&transaction.amount)?),
-        fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&transaction.fee)?),
+        output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
+        amount: tofuri_int::to_be_bytes(tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?),
+        fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&transaction.fee).map_err(Error::Int)?),
         timestamp: transaction.timestamp,
-        signature: hex::decode(&transaction.signature)?.as_slice().try_into()?,
+        signature: hex::decode(&transaction.signature)
+            .map_err(Error::Hex)?
+            .as_slice()
+            .try_into()
+            .map_err(Error::TryFromSliceError)?,
     })
 }
-pub fn stake_b(stake: &Stake) -> Result<StakeB, Box<dyn Error>> {
+pub fn stake_b(stake: &Stake) -> Result<StakeB, Error> {
     Ok(StakeB {
-        amount: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.amount)?),
-        fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.fee)?),
+        amount: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.amount).map_err(Error::Int)?),
+        fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.fee).map_err(Error::Int)?),
         deposit: stake.deposit,
         timestamp: stake.timestamp,
-        signature: hex::decode(&stake.signature)?.as_slice().try_into()?,
+        signature: hex::decode(&stake.signature)
+            .map_err(Error::Hex)?
+            .as_slice()
+            .try_into()
+            .map_err(Error::TryFromSliceError)?,
     })
 }

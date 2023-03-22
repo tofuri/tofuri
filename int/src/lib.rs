@@ -1,5 +1,9 @@
-use std::error::Error;
+use std::num::ParseIntError;
 use tofuri_core::*;
+#[derive(Debug)]
+pub enum Error {
+    FromStr(ParseIntError),
+}
 pub fn to_be_bytes(uint: u128) -> AmountBytes {
     if uint == 0 {
         return [0; AMOUNT_BYTES];
@@ -57,7 +61,7 @@ pub fn to_string(uint: u128) -> String {
     }
     string
 }
-pub fn from_str(str: &str) -> Result<u128, Box<dyn Error>> {
+pub fn from_str(str: &str) -> Result<u128, Error> {
     let (mut string, diff) = match str.split_once('.') {
         Some((a, b)) => {
             let mut string = a.to_string();
@@ -67,7 +71,7 @@ pub fn from_str(str: &str) -> Result<u128, Box<dyn Error>> {
         None => (str.to_string(), DECIMAL_PLACES),
     };
     string.push_str(&"0".repeat(diff));
-    Ok(string.parse()?)
+    Ok(string.parse().map_err(Error::FromStr)?)
 }
 #[cfg(test)]
 mod tests {

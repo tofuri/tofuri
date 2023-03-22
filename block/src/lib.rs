@@ -5,13 +5,18 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
-use std::error::Error;
 use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
+#[derive(Debug)]
+pub enum Error {
+    Key(tofuri_key::Error),
+    Transaction(tofuri_transaction::Error),
+    Stake(tofuri_stake::Error),
+}
 pub trait Block {
     fn get_previous_hash(&self) -> &Hash;
     fn get_merkle_root_transaction(&self) -> MerkleRoot;
@@ -20,7 +25,7 @@ pub trait Block {
     fn get_pi(&self) -> &Pi;
     fn hash(&self) -> Hash;
     fn hash_input(&self) -> [u8; 181];
-    fn beta(&self) -> Result<Beta, Box<dyn Error>>;
+    fn beta(&self) -> Result<Beta, Error>;
 }
 impl Block for BlockA {
     fn get_previous_hash(&self) -> &Hash {
@@ -44,7 +49,7 @@ impl Block for BlockA {
     fn hash_input(&self) -> [u8; 181] {
         hash_input(self)
     }
-    fn beta(&self) -> Result<Beta, Box<dyn Error>> {
+    fn beta(&self) -> Result<Beta, Error> {
         beta(self)
     }
 }
@@ -70,7 +75,7 @@ impl Block for BlockB {
     fn hash_input(&self) -> [u8; 181] {
         hash_input(self)
     }
-    fn beta(&self) -> Result<Beta, Box<dyn Error>> {
+    fn beta(&self) -> Result<Beta, Error> {
         beta(self)
     }
 }
@@ -129,8 +134,8 @@ impl BlockA {
         stakes: Vec<StakeA>,
         key: &Key,
         previous_beta: &[u8],
-    ) -> Result<BlockA, Box<dyn Error>> {
-        let pi = key.vrf_prove(previous_beta).ok_or("failed to generate proof")?;
+    ) -> Result<BlockA, Error> {
+        let pi = key.vrf_prove(previous_beta).map_err(Error::Key)?;
         let mut block_a = BlockA {
             hash: [0; 32],
             previous_hash,
@@ -144,7 +149,7 @@ impl BlockA {
         };
         block_a.beta = block_a.beta()?;
         block_a.hash = block_a.hash();
-        block_a.signature = key.sign(&block_a.hash)?;
+        block_a.signature = key.sign(&block_a.hash).map_err(Error::Key)?;
         block_a.input_public_key = key.public_key_bytes();
         Ok(block_a)
     }
@@ -172,14 +177,14 @@ impl BlockA {
     }
 }
 impl BlockB {
-    pub fn a(&self) -> Result<BlockA, Box<dyn Error>> {
+    pub fn a(&self) -> Result<BlockA, Error> {
         let mut transactions = vec![];
         let mut stakes = vec![];
         for transaction in self.transactions.iter() {
-            transactions.push(transaction.a(None)?)
+            transactions.push(transaction.a(None).map_err(Error::Transaction)?)
         }
         for stake in self.stakes.iter() {
-            stakes.push(stake.a(None)?);
+            stakes.push(stake.a(None).map_err(Error::Stake)?);
         }
         Ok(BlockA {
             hash: self.hash(),
@@ -209,8 +214,8 @@ impl BlockB {
     fn stake_hashes(&self) -> Vec<Hash> {
         self.stakes.iter().map(|x| x.hash()).collect()
     }
-    fn input_public_key(&self) -> Result<PublicKeyBytes, Box<dyn Error>> {
-        Key::recover(&self.hash(), &self.signature)
+    fn input_public_key(&self) -> Result<PublicKeyBytes, Error> {
+        Key::recover(&self.hash(), &self.signature).map_err(Error::Key)
     }
 }
 impl BlockC {
@@ -220,7 +225,7 @@ impl BlockC {
         stakes: Vec<StakeA>,
         beta: Option<[u8; 32]>,
         input_public_key: Option<PublicKeyBytes>,
-    ) -> Result<BlockA, Box<dyn Error>> {
+    ) -> Result<BlockA, Error> {
         let block_b = self.b(transactions.iter().map(|x| x.b()).collect(), stakes.iter().map(|x| x.b()).collect());
         let beta = beta.unwrap_or(block_b.beta()?);
         let input_public_key = input_public_key.unwrap_or(block_b.input_public_key()?);
@@ -315,8 +320,8 @@ fn merkle_root(hashes: &[Hash]) -> MerkleRoot {
     }
     <ExCBMT<[u8; 32], Hasher>>::build_merkle_root(hashes)
 }
-fn beta<T: Block>(block: &T) -> Result<Beta, Box<dyn Error>> {
-    Key::vrf_proof_to_hash(block.get_pi()).ok_or("invalid beta".into())
+fn beta<T: Block>(block: &T) -> Result<Beta, Error> {
+    Key::vrf_proof_to_hash(block.get_pi()).map_err(Error::Key)
 }
 #[cfg(test)]
 mod tests {

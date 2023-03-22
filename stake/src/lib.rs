@@ -3,9 +3,12 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
-use std::error::Error;
 use tofuri_core::*;
 use tofuri_key::Key;
+#[derive(Debug)]
+pub enum Error {
+    Key(tofuri_key::Error),
+}
 pub trait Stake {
     fn get_timestamp(&self) -> u32;
     fn get_deposit(&self) -> bool;
@@ -80,7 +83,7 @@ impl StakeA {
     pub fn hash(&self) -> Hash {
         hash(self)
     }
-    pub fn sign(deposit: bool, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<StakeA, Box<dyn Error>> {
+    pub fn sign(deposit: bool, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<StakeA, Error> {
         let mut stake_a = StakeA {
             amount: tofuri_int::floor(amount),
             fee: tofuri_int::floor(fee),
@@ -91,13 +94,13 @@ impl StakeA {
             hash: [0; 32],
         };
         stake_a.hash = stake_a.hash();
-        stake_a.signature = key.sign(&stake_a.hash)?;
+        stake_a.signature = key.sign(&stake_a.hash).map_err(Error::Key)?;
         stake_a.input_address = key.address_bytes();
         Ok(stake_a)
     }
 }
 impl StakeB {
-    pub fn a(&self, input_address: Option<AddressBytes>) -> Result<StakeA, Box<dyn Error>> {
+    pub fn a(&self, input_address: Option<AddressBytes>) -> Result<StakeA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
         Ok(StakeA {
             amount: tofuri_int::from_be_slice(&self.amount),
@@ -112,11 +115,11 @@ impl StakeB {
     pub fn hash(&self) -> Hash {
         hash(self)
     }
-    fn input_address(&self) -> Result<AddressBytes, Box<dyn Error>> {
+    fn input_address(&self) -> Result<AddressBytes, Error> {
         Ok(Key::address(&self.input_public_key()?))
     }
-    fn input_public_key(&self) -> Result<PublicKeyBytes, Box<dyn Error>> {
-        Key::recover(&self.hash(), &self.signature)
+    fn input_public_key(&self) -> Result<PublicKeyBytes, Error> {
+        Key::recover(&self.hash(), &self.signature).map_err(Error::Key)
     }
 }
 fn hash<T: Stake>(stake: &T) -> Hash {

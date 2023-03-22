@@ -1,7 +1,6 @@
 use colored::*;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
-use std::error::Error;
 use tofuri_block::BlockA;
 use tofuri_block::BlockB;
 use tofuri_core::*;
@@ -20,6 +19,45 @@ use tofuri_util::STAKE_SIZE;
 use tofuri_util::TRANSACTION_SIZE;
 use tracing::info;
 use tracing::warn;
+#[derive(Debug)]
+pub enum Error {
+    Block(tofuri_block::Error),
+    Transaction(tofuri_transaction::Error),
+    Stake(tofuri_stake::Error),
+    DB(tofuri_db::Error),
+    Key(tofuri_key::Error),
+    Fork(tofuri_fork::Error),
+    BlockPending,
+    BlockHashInTree,
+    BlockTimestampFuture,
+    BlockPreviousHashNotInTree,
+    BlockTimestamp,
+    BlockStakerAddress,
+    TransactionPending,
+    TransactionTooExpensive,
+    TransactionAmountZero,
+    TransactionFeeZero,
+    TransactionAmountFloor,
+    TransactionFeeFloor,
+    TransactionInputOutput,
+    TransactionTimestampFuture,
+    TransactionTimestamp,
+    TransactionInChain,
+    StakePending,
+    StakeDepositTooExpensive,
+    StakeWithdrawFeeTooExpensive,
+    StakeWithdrawAmountTooExpensive,
+    StakeAmountZero,
+    StakeFeeZero,
+    StakeAmountFloor,
+    StakeFeeFloor,
+    StakeTimestampFuture,
+    StakeTimestamp,
+    StakeInChain,
+    HeightByHash,
+    HashByHeight,
+    SyncBlock,
+}
 #[derive(Default, Debug, Clone)]
 pub struct Blockchain {
     pub tree: Tree,
@@ -64,36 +102,36 @@ impl Blockchain {
     pub fn height(&self) -> usize {
         self.forks.stable.hashes.len() + self.forks.unstable.hashes.len()
     }
-    pub fn height_by_hash(&self, hash: &Hash) -> Option<usize> {
+    pub fn height_by_hash(&self, hash: &Hash) -> Result<usize, Error> {
         if let Some(index) = self.forks.unstable.hashes.iter().position(|a| a == hash) {
-            return Some(self.forks.stable.hashes.len() + index + 1);
+            return Ok(self.forks.stable.hashes.len() + index + 1);
         }
         if let Some(index) = self.forks.stable.hashes.iter().position(|a| a == hash) {
-            return Some(index + 1);
+            return Ok(index + 1);
         }
-        None
+        Err(Error::HeightByHash)
     }
-    pub fn hash_by_height(&self, height: usize) -> Option<Hash> {
+    pub fn hash_by_height(&self, height: usize) -> Result<Hash, Error> {
         if height > self.height() {
-            return None;
+            return Err(Error::HashByHeight);
         }
         let index = height.saturating_sub(1);
         if index < self.forks.stable.hashes.len() {
-            Some(self.forks.stable.hashes[index])
+            Ok(self.forks.stable.hashes[index])
         } else {
-            Some(self.forks.unstable.hashes[index - self.forks.stable.hashes.len()])
+            Ok(self.forks.unstable.hashes[index - self.forks.stable.hashes.len()])
         }
     }
-    pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, index: usize) -> Option<BlockB> {
+    pub fn sync_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, index: usize) -> Result<BlockB, Error> {
         if index >= self.height() {
-            return None;
+            return Err(Error::SyncBlock);
         }
         let hash = if index < self.forks.stable.hashes.len() {
             self.forks.stable.hashes[index]
         } else {
             self.forks.unstable.hashes[index - self.forks.stable.hashes.len()]
         };
-        tofuri_db::block::get_b(db, &hash).ok()
+        tofuri_db::block::get_b(db, &hash).map_err(Error::DB)
     }
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> BlockA {
         let mut transactions: Vec<TransactionA> = self
@@ -173,35 +211,35 @@ impl Blockchain {
             self.save_block(db, &block_a, false, trust_fork_after_blocks);
         }
     }
-    pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, time_delta: u32) -> Result<(), Box<dyn Error>> {
-        let transaction_a = transaction_b.a(None)?;
+    pub fn pending_transactions_push(&mut self, transaction_b: TransactionB, time_delta: u32) -> Result<(), Error> {
+        let transaction_a = transaction_b.a(None).map_err(Error::Transaction)?;
         if self.pending_transactions.iter().any(|x| x.hash == transaction_a.hash) {
-            return Err("transaction pending".into());
+            return Err(Error::TransactionPending);
         }
         if transaction_a.amount + transaction_a.fee > self.balance_pending_min(&transaction_a.input_address) {
-            return Err("transaction too expensive".into());
+            return Err(Error::TransactionTooExpensive);
         }
         Blockchain::validate_transaction(&self.forks.unstable, &transaction_a, tofuri_util::timestamp() + time_delta)?;
         info!(hash = hex::encode(transaction_a.hash), "Transaction");
         self.pending_transactions.push(transaction_a);
         Ok(())
     }
-    pub fn pending_stakes_push(&mut self, stake_b: StakeB, time_delta: u32) -> Result<(), Box<dyn Error>> {
-        let stake_a = stake_b.a(None)?;
+    pub fn pending_stakes_push(&mut self, stake_b: StakeB, time_delta: u32) -> Result<(), Error> {
+        let stake_a = stake_b.a(None).map_err(Error::Stake)?;
         if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
-            return Err("stake pending".into());
+            return Err(Error::StakePending);
         }
         let balance_pending_min = self.balance_pending_min(&stake_a.input_address);
         if stake_a.deposit {
             if stake_a.amount + stake_a.fee > balance_pending_min {
-                return Err("stake deposit too expensive".into());
+                return Err(Error::StakeDepositTooExpensive);
             }
         } else {
             if stake_a.fee > balance_pending_min {
-                return Err("stake withdraw fee too expensive".into());
+                return Err(Error::StakeWithdrawFeeTooExpensive);
             }
             if stake_a.amount > self.staked_pending_min(&stake_a.input_address) {
-                return Err("stake withdraw amount too expensive".into());
+                return Err(Error::StakeWithdrawAmountTooExpensive);
             }
         }
         Blockchain::validate_stake(&self.forks.unstable, &stake_a, tofuri_util::timestamp() + time_delta)?;
@@ -215,10 +253,10 @@ impl Blockchain {
         block_b: BlockB,
         time_delta: u32,
         trust_fork_after_blocks: usize,
-    ) -> Result<(), Box<dyn Error>> {
-        let block_a = block_b.a()?;
+    ) -> Result<(), Error> {
+        let block_a = block_b.a().map_err(Error::Block)?;
         if self.pending_blocks.iter().any(|a| a.hash == block_a.hash) {
-            return Err("block pending".into());
+            return Err(Error::BlockPending);
         }
         self.validate_block(db, &block_a, tofuri_util::timestamp() + time_delta, trust_fork_after_blocks)?;
         self.pending_blocks.push(block_a);
@@ -228,83 +266,80 @@ impl Blockchain {
         self.pending_transactions.retain(|a| !tofuri_util::elapsed(a.timestamp, timestamp));
         self.pending_stakes.retain(|a| !tofuri_util::elapsed(a.timestamp, timestamp));
     }
-    fn validate_transaction(unstable: &Unstable, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_transaction(unstable: &Unstable, transaction_a: &TransactionA, timestamp: u32) -> Result<(), Error> {
         if transaction_a.amount == 0 {
-            return Err("transaction amount zero".into());
+            return Err(Error::TransactionAmountZero);
         }
         if transaction_a.fee == 0 {
-            return Err("transaction fee zero".into());
+            return Err(Error::TransactionFeeZero);
         }
         if transaction_a.amount != tofuri_int::floor(transaction_a.amount) {
-            return Err("transaction amount floor".into());
+            return Err(Error::TransactionAmountFloor);
         }
         if transaction_a.fee != tofuri_int::floor(transaction_a.fee) {
-            return Err("transaction fee floor".into());
+            return Err(Error::TransactionFeeFloor);
         }
         if transaction_a.input_address == transaction_a.output_address {
-            return Err("transaction input output".into());
+            return Err(Error::TransactionInputOutput);
         }
         if transaction_a.timestamp > timestamp {
-            return Err("transaction timestamp future".into());
+            return Err(Error::TransactionTimestampFuture);
         }
         if tofuri_util::elapsed(transaction_a.timestamp, unstable.latest_block.timestamp) {
-            return Err("transaction timestamp".into());
+            return Err(Error::TransactionTimestamp);
         }
         if unstable.transaction_in_chain(transaction_a) {
-            return Err("transaction in chain".into());
+            return Err(Error::TransactionInChain);
         }
         Ok(())
     }
-    fn validate_stake(unstable: &Unstable, stake_a: &StakeA, timestamp: u32) -> Result<(), Box<dyn Error>> {
+    fn validate_stake(unstable: &Unstable, stake_a: &StakeA, timestamp: u32) -> Result<(), Error> {
         if stake_a.amount == 0 {
-            return Err("stake amount zero".into());
+            return Err(Error::StakeAmountZero);
         }
         if stake_a.fee == 0 {
-            return Err("stake fee zero".into());
+            return Err(Error::StakeFeeZero);
         }
         if stake_a.amount != tofuri_int::floor(stake_a.amount) {
-            return Err("stake amount floor".into());
+            return Err(Error::StakeAmountFloor);
         }
         if stake_a.fee != tofuri_int::floor(stake_a.fee) {
-            return Err("stake fee floor".into());
+            return Err(Error::StakeFeeFloor);
         }
         if stake_a.timestamp > timestamp {
-            return Err("stake timestamp future".into());
+            return Err(Error::StakeTimestampFuture);
         }
         if tofuri_util::elapsed(stake_a.timestamp, unstable.latest_block.timestamp) {
-            return Err("stake timestamp".into());
+            return Err(Error::StakeTimestamp);
         }
         if unstable.stake_in_chain(stake_a) {
-            return Err("stake in chain".into());
+            return Err(Error::StakeInChain);
         }
         Ok(())
     }
-    pub fn validate_block(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        block_a: &BlockA,
-        timestamp: u32,
-        trust_fork_after_blocks: usize,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn validate_block(&self, db: &DBWithThreadMode<SingleThreaded>, block_a: &BlockA, timestamp: u32, trust_fork_after_blocks: usize) -> Result<(), Error> {
         if self.tree.get(&block_a.hash).is_some() {
-            return Err("block hash in tree".into());
+            return Err(Error::BlockHashInTree);
         }
         if block_a.timestamp > timestamp {
-            return Err("block timestamp future".into());
+            return Err(Error::BlockTimestampFuture);
         }
         if block_a.previous_hash != GENESIS_BLOCK_PREVIOUS_HASH && self.tree.get(&block_a.previous_hash).is_none() {
-            return Err("block previous_hash not in tree".into());
+            return Err(Error::BlockPreviousHashNotInTree);
         }
         let input_address = block_a.input_address();
-        let unstable = self.forks.unstable(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)?;
+        let unstable = self
+            .forks
+            .unstable(db, &self.tree, trust_fork_after_blocks, &block_a.previous_hash)
+            .map_err(Error::Fork)?;
         if block_a.timestamp.saturating_sub(unstable.latest_block.timestamp) == 0 || block_a.timestamp % BLOCK_TIME != 0 {
-            return Err("block timestamp".into());
+            return Err(Error::BlockTimestamp);
         }
         let previous_beta = Key::vrf_proof_to_hash(&unstable.latest_block.pi).unwrap_or(GENESIS_BLOCK_BETA);
-        Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).ok_or("invalid proof")?;
+        Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta).map_err(Error::Key)?;
         if let Some(staker) = unstable.next_staker(block_a.timestamp) {
             if staker != input_address {
-                return Err("block staker address".into());
+                return Err(Error::BlockStakerAddress);
             }
         }
         for stake_a in block_a.stakes.iter() {
@@ -313,7 +348,7 @@ impl Blockchain {
         for transaction_a in block_a.transactions.iter() {
             Blockchain::validate_transaction(&unstable, transaction_a, block_a.timestamp)?;
         }
-        unstable.check_overflow(&block_a.transactions, &block_a.stakes)?;
+        unstable.check_overflow(&block_a.transactions, &block_a.stakes).map_err(Error::Fork)?;
         Ok(())
     }
     pub fn balance(&self, address: &AddressBytes) -> u128 {

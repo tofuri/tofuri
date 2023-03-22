@@ -1,4 +1,5 @@
 use crate::filenames;
+use crate::Error;
 use colored::*;
 use inquire::validator::Validation;
 use inquire::Confirm;
@@ -7,7 +8,6 @@ use inquire::Password;
 use inquire::PasswordDisplayMode;
 use inquire::Select;
 use lazy_static::lazy_static;
-use std::error::Error;
 use std::path::PathBuf;
 use std::process;
 use tofuri_address::address;
@@ -17,7 +17,7 @@ lazy_static! {
     pub static ref GENERATE: String = "Generate".green().to_string();
     pub static ref IMPORT: String = "Import".magenta().to_string();
 }
-pub fn select() -> Result<String, Box<dyn Error>> {
+pub fn select() -> Result<String, Error> {
     let mut filenames = filenames()?;
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());
@@ -27,7 +27,7 @@ pub fn select() -> Result<String, Box<dyn Error>> {
     });
     Ok(filename)
 }
-pub fn name() -> Result<String, Box<dyn Error>> {
+pub fn name() -> Result<String, Error> {
     let filenames = filenames()?;
     Ok(Password::new("Name:")
         .with_display_toggle_enabled()
@@ -120,7 +120,7 @@ pub fn new_passphrase() -> String {
             process::exit(0)
         })
 }
-pub fn import() -> Result<Key, Box<dyn Error>> {
+pub fn import() -> Result<Key, Error> {
     let secret = Password::new("Enter secret key:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
@@ -134,7 +134,7 @@ pub fn import() -> Result<Key, Box<dyn Error>> {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    Key::from_slice(&tofuri_address::secret::decode(&secret)?)
+    Key::from_slice(&tofuri_address::secret::decode(&secret).map_err(Error::Address)?).map_err(Error::Key)
 }
 pub fn send() -> bool {
     match Confirm::new("Send?").prompt() {

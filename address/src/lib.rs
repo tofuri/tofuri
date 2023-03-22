@@ -1,7 +1,16 @@
 use sha2::Digest;
 use sha2::Sha256;
-use std::error::Error;
 use tofuri_core::*;
+#[derive(Debug)]
+pub enum Error {
+    Hex(hex::FromHexError),
+    InvalidAddress,
+    InvalidAddressChecksum,
+    AddressChecksumMismatch,
+    InvalidSecretKey,
+    InvalidSecretKeyChecksum,
+    SecretKeyChecksumMismatch,
+}
 pub fn checksum(bytes: &[u8]) -> [u8; 4] {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
@@ -15,13 +24,13 @@ pub mod address {
     pub fn encode(address: &AddressBytes) -> String {
         [PREFIX_ADDRESS, &hex::encode(address), &hex::encode(checksum(address))].concat()
     }
-    pub fn decode(str: &str) -> Result<AddressBytes, Box<dyn Error>> {
-        let decoded = hex::decode(str.replacen(PREFIX_ADDRESS, "", 1))?;
-        let address_bytes: AddressBytes = decoded.get(0..20).ok_or("invalid address")?.try_into().unwrap();
-        if checksum(&address_bytes) == decoded.get(20..).ok_or("invalid address checksum")? {
+    pub fn decode(str: &str) -> Result<AddressBytes, Error> {
+        let decoded = hex::decode(str.replacen(PREFIX_ADDRESS, "", 1)).map_err(Error::Hex)?;
+        let address_bytes: AddressBytes = decoded.get(0..20).ok_or(Error::InvalidAddress)?.try_into().unwrap();
+        if checksum(&address_bytes) == decoded.get(20..).ok_or(Error::InvalidAddressChecksum)? {
             Ok(address_bytes)
         } else {
-            Err("checksum mismatch".into())
+            Err(Error::AddressChecksumMismatch)
         }
     }
     #[cfg(test)]
@@ -42,13 +51,13 @@ pub mod secret {
     pub fn encode(secret_key: &SecretKeyBytes) -> String {
         [PREFIX_SECRET_KEY, &hex::encode(secret_key), &hex::encode(checksum(secret_key))].concat()
     }
-    pub fn decode(str: &str) -> Result<SecretKeyBytes, Box<dyn Error>> {
-        let decoded = hex::decode(str.replacen(PREFIX_SECRET_KEY, "", 1))?;
-        let secret_key_bytes: SecretKeyBytes = decoded.get(0..32).ok_or("invalid secret key")?.try_into().unwrap();
-        if checksum(&secret_key_bytes) == decoded.get(32..).ok_or("invalid secret key checksum")? {
+    pub fn decode(str: &str) -> Result<SecretKeyBytes, Error> {
+        let decoded = hex::decode(str.replacen(PREFIX_SECRET_KEY, "", 1)).map_err(Error::Hex)?;
+        let secret_key_bytes: SecretKeyBytes = decoded.get(0..32).ok_or(Error::InvalidSecretKey)?.try_into().unwrap();
+        if checksum(&secret_key_bytes) == decoded.get(32..).ok_or(Error::InvalidSecretKeyChecksum)? {
             Ok(secret_key_bytes)
         } else {
-            Err("checksum mismatch".into())
+            Err(Error::SecretKeyChecksumMismatch)
         }
     }
     #[cfg(test)]

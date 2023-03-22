@@ -5,6 +5,20 @@ use rocksdb::Options;
 use rocksdb::SingleThreaded;
 use rocksdb::DB;
 use std::path::Path;
+#[derive(Debug)]
+pub enum Error {
+    Block(tofuri_block::Error),
+    Transaction(tofuri_transaction::Error),
+    Stake(tofuri_stake::Error),
+    RocksDB(rocksdb::Error),
+    BlockNotFound,
+    TransactionNotFound,
+    StakeNotFound,
+    InputAddressNotFound,
+    InputPublicKeyNotFound,
+    BetaNotFound,
+    CheckpointNotFound,
+}
 fn descriptors() -> Vec<ColumnFamilyDescriptor> {
     let options = Options::default();
     vec![
@@ -49,29 +63,27 @@ pub fn checkpoint(db: &DBWithThreadMode<SingleThreaded>) -> &ColumnFamily {
     db.cf_handle("checkpoint").unwrap()
 }
 pub mod block {
-    use super::beta;
-    use super::input_public_key;
-    use super::stake;
-    use super::transaction;
+    use super::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
-    use std::error::Error;
     use tofuri_block::BlockA;
     use tofuri_block::BlockB;
     use tofuri_block::BlockC;
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn put(block_a: &BlockA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
+    pub fn put(block_a: &BlockA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
         for transaction_a in block_a.transactions.iter() {
             transaction::put(transaction_a, db)?;
         }
         for stake_a in block_a.stakes.iter() {
             stake::put(stake_a, db)?;
         }
-        db.put_cf(super::blocks(db), block_a.hash, bincode::serialize(&block_a.b().c())?)?;
+        let key = block_a.hash;
+        let value = bincode::serialize(&block_a.b().c()).unwrap();
+        db.put_cf(super::blocks(db), key, value).map_err(Error::RocksDB)?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Box<dyn Error>> {
+    pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Error> {
         let block_c = get_c(db, hash)?;
         let mut transactions = vec![];
         let mut stakes = vec![];
@@ -83,7 +95,7 @@ pub mod block {
         }
         let beta = beta::get(db, hash).ok();
         let input_public_key = input_public_key::get(db, hash).ok();
-        let block_a = block_c.a(transactions, stakes, beta, input_public_key)?;
+        let block_a = block_c.a(transactions, stakes, beta, input_public_key).map_err(Error::Block)?;
         if beta.is_none() {
             beta::put(hash, &block_a.beta, db)?;
         }
@@ -93,7 +105,7 @@ pub mod block {
         Ok(block_a)
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockB, Box<dyn Error>> {
+    pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockB, Error> {
         let block_c = get_c(db, hash)?;
         let mut transactions = vec![];
         for hash in block_c.transaction_hashes.iter() {
@@ -106,8 +118,8 @@ pub mod block {
         Ok(block_c.b(transactions, stakes))
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get_c(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockC, Box<dyn Error>> {
-        Ok(bincode::deserialize(&db.get_cf(super::blocks(db), hash)?.ok_or("block not found")?)?)
+    pub fn get_c(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockC, Error> {
+        Ok(bincode::deserialize(&db.get_cf(super::blocks(db), hash).map_err(Error::RocksDB)?.ok_or(Error::BlockNotFound)?).unwrap())
     }
     #[test]
     fn test_serialize_len() {
@@ -115,29 +127,35 @@ pub mod block {
     }
 }
 pub mod transaction {
-    use super::input_address;
+    use super::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
-    use std::error::Error;
     use tofuri_transaction::TransactionA;
     use tofuri_transaction::TransactionB;
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn put(transaction_a: &TransactionA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::transactions(db), transaction_a.hash, bincode::serialize(&transaction_a.b())?)?;
+    pub fn put(transaction_a: &TransactionA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
+        let key = transaction_a.hash;
+        let value = bincode::serialize(&transaction_a.b()).unwrap();
+        db.put_cf(super::transactions(db), key, value).map_err(Error::RocksDB)?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionA, Box<dyn Error>> {
+    pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionA, Error> {
         let input_address = input_address::get(db, hash).ok();
-        let transaction_a = get_b(db, hash)?.a(input_address)?;
+        let transaction_a = get_b(db, hash)?.a(input_address).map_err(Error::Transaction)?;
         if input_address.is_none() {
             input_address::put(hash, &transaction_a.input_address, db)?;
         }
         Ok(transaction_a)
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionB, Box<dyn Error>> {
-        let transaction_b: TransactionB = bincode::deserialize(&db.get_cf(super::transactions(db), hash)?.ok_or("transaction not found")?)?;
+    pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionB, Error> {
+        let transaction_b: TransactionB = bincode::deserialize(
+            &db.get_cf(super::transactions(db), hash)
+                .map_err(Error::RocksDB)?
+                .ok_or(Error::TransactionNotFound)?,
+        )
+        .unwrap();
         Ok(transaction_b)
     }
     #[test]
@@ -146,29 +164,30 @@ pub mod transaction {
     }
 }
 pub mod stake {
-    use super::input_address;
+    use super::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
-    use std::error::Error;
     use tofuri_stake::StakeA;
     use tofuri_stake::StakeB;
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn put(stake_a: &StakeA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::stakes(db), stake_a.hash, bincode::serialize(&stake_a.b())?)?;
+    pub fn put(stake_a: &StakeA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
+        let key = stake_a.hash;
+        let value = bincode::serialize(&stake_a.b()).unwrap();
+        db.put_cf(super::stakes(db), key, value).map_err(Error::RocksDB)?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeA, Box<dyn Error>> {
+    pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeA, Error> {
         let input_address = input_address::get(db, hash).ok();
-        let stake_a = get_b(db, hash)?.a(input_address)?;
+        let stake_a = get_b(db, hash)?.a(input_address).map_err(Error::Stake)?;
         if input_address.is_none() {
             input_address::put(hash, &stake_a.input_address, db)?;
         }
         Ok(stake_a)
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Box<dyn Error>> {
-        let stake_b: StakeB = bincode::deserialize(&db.get_cf(super::stakes(db), hash)?.ok_or("stake not found")?)?;
+    pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Error> {
+        let stake_b: StakeB = bincode::deserialize(&db.get_cf(super::stakes(db), hash).map_err(Error::RocksDB)?.ok_or(Error::StakeNotFound)?).unwrap();
         Ok(stake_b)
     }
     #[test]
@@ -241,14 +260,14 @@ pub mod tree {
     }
 }
 pub mod peer {
+    use super::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::IteratorMode;
     use rocksdb::SingleThreaded;
-    use std::error::Error;
     use std::net::IpAddr;
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn put(ip_addr: &IpAddr, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::peers(db), bincode::serialize(ip_addr).unwrap(), [])?;
+    pub fn put(ip_addr: &IpAddr, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
+        db.put_cf(super::peers(db), bincode::serialize(ip_addr).unwrap(), []).map_err(Error::RocksDB)?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "debug")]
@@ -262,65 +281,72 @@ pub mod peer {
     }
 }
 pub mod input_address {
+    use super::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
-    use std::error::Error;
     use tofuri_core::*;
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn put(hash: &[u8], input_address: &AddressBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::input_addresses(db), hash, input_address)?;
+    pub fn put(hash: &[u8], input_address: &AddressBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
+        db.put_cf(super::input_addresses(db), hash, input_address).map_err(Error::RocksDB)?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<AddressBytes, Box<dyn Error>> {
-        let input_address = db.get_cf(super::input_addresses(db), hash)?.ok_or("input address not found")?;
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<AddressBytes, Error> {
+        let input_address = db
+            .get_cf(super::input_addresses(db), hash)
+            .map_err(Error::RocksDB)?
+            .ok_or(Error::InputAddressNotFound)?;
         Ok(input_address.try_into().unwrap())
     }
 }
 pub mod input_public_key {
+    use super::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
-    use std::error::Error;
     use tofuri_core::*;
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn put(hash: &[u8], input_public_key: &PublicKeyBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::input_public_keys(db), hash, input_public_key)?;
+    pub fn put(hash: &[u8], input_public_key: &PublicKeyBytes, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
+        db.put_cf(super::input_public_keys(db), hash, input_public_key).map_err(Error::RocksDB)?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<PublicKeyBytes, Box<dyn Error>> {
-        let input_public_key = db.get_cf(super::input_public_keys(db), hash)?.ok_or("input public key not found")?;
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<PublicKeyBytes, Error> {
+        let input_public_key = db
+            .get_cf(super::input_public_keys(db), hash)
+            .map_err(Error::RocksDB)?
+            .ok_or(Error::InputPublicKeyNotFound)?;
         Ok(input_public_key.try_into().unwrap())
     }
 }
 pub mod beta {
+    use super::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
-    use std::error::Error;
     use tofuri_core::*;
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn put(block_hash: &[u8], beta: &Beta, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::betas(db), block_hash, beta)?;
+    pub fn put(block_hash: &[u8], beta: &Beta, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
+        db.put_cf(super::betas(db), block_hash, beta).map_err(Error::RocksDB)?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>, block_hash: &[u8]) -> Result<Beta, Box<dyn Error>> {
-        let beta = db.get_cf(super::betas(db), block_hash)?.ok_or("beta not found")?;
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>, block_hash: &[u8]) -> Result<Beta, Error> {
+        let beta = db.get_cf(super::betas(db), block_hash).map_err(Error::RocksDB)?.ok_or(Error::BetaNotFound)?;
         Ok(beta.try_into().unwrap())
     }
 }
 pub mod checkpoint {
+    use super::*;
     use rocksdb::DBWithThreadMode;
     use rocksdb::SingleThreaded;
-    use std::error::Error;
     use tofuri_checkpoint::Checkpoint;
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn put(db: &DBWithThreadMode<SingleThreaded>, checkpoint: &Checkpoint) -> Result<(), Box<dyn Error>> {
-        db.put_cf(super::checkpoint(db), [], bincode::serialize(checkpoint)?)?;
+    pub fn put(db: &DBWithThreadMode<SingleThreaded>, checkpoint: &Checkpoint) -> Result<(), Error> {
+        db.put_cf(super::checkpoint(db), [], bincode::serialize(checkpoint).unwrap())
+            .map_err(Error::RocksDB)?;
         Ok(())
     }
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn get(db: &DBWithThreadMode<SingleThreaded>) -> Result<Checkpoint, Box<dyn Error>> {
-        Ok(bincode::deserialize(&db.get_cf(super::checkpoint(db), [])?.ok_or("checkpoint not found")?)?)
+    pub fn get(db: &DBWithThreadMode<SingleThreaded>) -> Result<Checkpoint, Error> {
+        Ok(bincode::deserialize(&db.get_cf(super::checkpoint(db), []).map_err(Error::RocksDB)?.ok_or(Error::CheckpointNotFound)?).unwrap())
     }
 }

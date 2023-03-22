@@ -3,6 +3,7 @@ pub mod multiaddr;
 pub mod ratelimit;
 use behaviour::Behaviour;
 use libp2p::core::upgrade;
+use libp2p::gossipsub::error::PublishError;
 use libp2p::gossipsub::IdentTopic;
 use libp2p::gossipsub::TopicHash;
 use libp2p::identity;
@@ -20,10 +21,15 @@ use sha2::Digest;
 use sha2::Sha256;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::error::Error;
 use std::net::IpAddr;
 use std::time::Duration;
 use tofuri_core::*;
+#[derive(Debug)]
+pub enum Error {
+    PublishError(PublishError),
+    Ratelimited,
+    Filter,
+}
 pub struct P2p {
     pub swarm: Swarm<Behaviour>,
     pub filter: HashSet<Hash>,
@@ -33,7 +39,7 @@ pub struct P2p {
     pub known: HashSet<IpAddr>,
 }
 impl P2p {
-    pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<IpAddr>) -> Result<P2p, Box<dyn Error>> {
+    pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<IpAddr>) -> Result<P2p, Error> {
         Ok(P2p {
             swarm: swarm(max_established, timeout).await?,
             filter: HashSet::new(),
@@ -43,11 +49,11 @@ impl P2p {
             known,
         })
     }
-    pub fn ratelimit(&mut self, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Box<dyn Error>> {
+    pub fn ratelimit(&mut self, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Error> {
         let ip_addr = self.connections.get(&peer_id).unwrap();
         if self.ratelimit.add(*ip_addr, endpoint) {
             let _ = self.swarm.disconnect_peer_id(peer_id);
-            return Err("ratelimited".into());
+            return Err(Error::Ratelimited);
         }
         Ok(())
     }
@@ -59,20 +65,22 @@ impl P2p {
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
     }
-    pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+    pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) -> Result<(), Error> {
         if !self.gossipsub_has_mesh_peers(topic) {
             return Ok(());
         }
         if self.filter(&data) {
-            return Err(format!("gossipsub_publish filter {topic}").into());
+            return Err(Error::Filter);
         }
-        if let Err(err) = self.swarm.behaviour_mut().gossipsub.publish(IdentTopic::new(topic), data) {
-            return Err(err.into());
-        }
+        self.swarm
+            .behaviour_mut()
+            .gossipsub
+            .publish(IdentTopic::new(topic), data)
+            .map_err(Error::PublishError)?;
         Ok(())
     }
 }
-async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Box<dyn Error>> {
+async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behaviour>, Error> {
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
     let transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true))
@@ -81,7 +89,7 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
         .multiplex(mplex::MplexConfig::new())
         .timeout(Duration::from_millis(timeout))
         .boxed();
-    let mut behaviour = Behaviour::new(local_key).await?;
+    let mut behaviour = Behaviour::new(local_key).await.unwrap();
     for ident_topic in [
         IdentTopic::new("block"),
         IdentTopic::new("stake"),
@@ -90,7 +98,7 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
     ]
     .iter()
     {
-        behaviour.gossipsub.subscribe(ident_topic)?;
+        behaviour.gossipsub.subscribe(ident_topic).unwrap();
     }
     let mut limits = ConnectionLimits::default();
     limits = limits.with_max_established_per_peer(Some(1));

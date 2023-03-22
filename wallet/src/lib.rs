@@ -15,7 +15,6 @@ use colored::*;
 use crossterm::event;
 use crossterm::terminal;
 use reqwest::Client;
-use std::error::Error;
 use std::fs::create_dir_all;
 use std::fs::read_dir;
 use std::fs::File;
@@ -39,6 +38,14 @@ const INCORRECT: &str = "Incorrect passphrase";
 pub type Salt = [u8; 32];
 pub type Nonce = [u8; 12];
 pub type Ciphertext = [u8; 48];
+#[derive(Debug)]
+pub enum Error {
+    Key(tofuri_key::Error),
+    Reqwest(reqwest::Error),
+    Address(tofuri_address::Error),
+    Io(std::io::Error),
+    InvalidPassphrase,
+}
 #[derive(Parser, Debug, Clone)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
@@ -87,19 +94,19 @@ impl Wallet {
             }
             "Search" => {
                 if let Err(err) = self.search().await {
-                    println!("{}", err.to_string().red());
+                    println!("{:?}", err);
                 }
                 true
             }
             "Height" => {
                 if let Err(err) = self.height().await {
-                    println!("{}", err.to_string().red());
+                    println!("{:?}", err);
                 }
                 true
             }
             "API" => {
                 if let Err(err) = self.api().await {
-                    println!("{}", err.to_string().red());
+                    println!("{:?}", err);
                 }
                 true
             }
@@ -109,19 +116,19 @@ impl Wallet {
             }
             "Balance" => {
                 if let Err(err) = self.balance().await {
-                    println!("{}", err.to_string().red());
+                    println!("{:?}", err);
                 }
                 true
             }
             "Send" => {
                 if let Err(err) = self.transaction().await {
-                    println!("{}", err.to_string().red());
+                    println!("{:?}", err);
                 }
                 true
             }
             "Stake" => {
                 if let Err(err) = self.stake().await {
-                    println!("{}", err.to_string().red());
+                    println!("{:?}", err);
                 }
                 true
             }
@@ -145,24 +152,56 @@ impl Wallet {
         self.ciphertext = ciphertext;
         self.key = Some(key);
     }
-    async fn api(&self) -> Result<(), Box<dyn Error>> {
-        let root: Root = self.client.get(&self.args.api).send().await?.json().await?;
+    async fn api(&self) -> Result<(), Error> {
+        let root: Root = self
+            .client
+            .get(&self.args.api)
+            .send()
+            .await
+            .map_err(Error::Reqwest)?
+            .json()
+            .await
+            .map_err(Error::Reqwest)?;
         println!("{root:#?}");
         Ok(())
     }
-    async fn balance(&self) -> Result<(), Box<dyn Error>> {
+    async fn balance(&self) -> Result<(), Error> {
         let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
-        let balance: String = self.client.get(format!("{}/balance/{}", self.args.api, address)).send().await?.json().await?;
-        let staked: String = self.client.get(format!("{}/staked/{}", self.args.api, address)).send().await?.json().await?;
+        let balance: String = self
+            .client
+            .get(format!("{}/balance/{}", self.args.api, address))
+            .send()
+            .await
+            .map_err(Error::Reqwest)?
+            .json()
+            .await
+            .map_err(Error::Reqwest)?;
+        let staked: String = self
+            .client
+            .get(format!("{}/staked/{}", self.args.api, address))
+            .send()
+            .await
+            .map_err(Error::Reqwest)?
+            .json()
+            .await
+            .map_err(Error::Reqwest)?;
         println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.yellow());
         Ok(())
     }
-    async fn height(&self) -> Result<(), Box<dyn Error>> {
-        let height: usize = self.client.get(format!("{}/height", self.args.api)).send().await?.json().await?;
+    async fn height(&self) -> Result<(), Error> {
+        let height: usize = self
+            .client
+            .get(format!("{}/height", self.args.api))
+            .send()
+            .await
+            .map_err(Error::Reqwest)?
+            .json()
+            .await
+            .map_err(Error::Reqwest)?;
         println!("Latest block height is {}.", height.to_string().yellow());
         Ok(())
     }
-    async fn transaction(&self) -> Result<(), Box<dyn Error>> {
+    async fn transaction(&self) -> Result<(), Error> {
         let address = inquire::address();
         let amount = inquire::amount();
         let fee = inquire::fee();
@@ -189,13 +228,15 @@ impl Wallet {
             .post(format!("{}/transaction", self.args.api))
             .json(&tofuri_api_util::transaction(&transaction_a))
             .send()
-            .await?
+            .await
+            .map_err(Error::Reqwest)?
             .json()
-            .await?;
+            .await
+            .map_err(Error::Reqwest)?;
         println!("{}", if res == "success" { res.green() } else { res.red() });
         Ok(())
     }
-    async fn stake(&self) -> Result<(), Box<dyn Error>> {
+    async fn stake(&self) -> Result<(), Error> {
         let deposit = inquire::deposit();
         let amount = inquire::amount();
         let fee = inquire::fee();
@@ -210,40 +251,58 @@ impl Wallet {
             .post(format!("{}/stake", self.args.api))
             .json(&tofuri_api_util::stake(&stake_a))
             .send()
-            .await?
+            .await
+            .map_err(Error::Reqwest)?
             .json()
-            .await?;
+            .await
+            .map_err(Error::Reqwest)?;
         println!("{}", if res == "success" { res.green() } else { res.red() });
         Ok(())
     }
-    async fn search(&self) -> Result<(), Box<dyn Error>> {
+    async fn search(&self) -> Result<(), Error> {
         let search = inquire::search();
         if address::decode(&search).is_ok() {
-            let balance: String = self.client.get(format!("{}/balance/{}", self.args.api, search)).send().await?.json().await?;
-            let staked: String = self.client.get(format!("{}/staked/{}", self.args.api, search)).send().await?.json().await?;
+            let balance: String = self
+                .client
+                .get(format!("{}/balance/{}", self.args.api, search))
+                .send()
+                .await
+                .map_err(Error::Reqwest)?
+                .json()
+                .await
+                .map_err(Error::Reqwest)?;
+            let staked: String = self
+                .client
+                .get(format!("{}/staked/{}", self.args.api, search))
+                .send()
+                .await
+                .map_err(Error::Reqwest)?
+                .json()
+                .await
+                .map_err(Error::Reqwest)?;
             println!("Address found\nAccount balance: {}, staked: {}", balance.to_string().yellow(), staked.yellow());
             return Ok(());
         } else if search.len() == 64 {
             if let Ok(res) = self.client.get(format!("{}/block/{}", self.args.api, search)).send().await {
-                let block: Block = res.json().await?;
+                let block: Block = res.json().await.map_err(Error::Reqwest)?;
                 println!("Block found\n{block:?}");
                 return Ok(());
             }
             if let Ok(res) = self.client.get(format!("{}/transaction/{}", self.args.api, search)).send().await {
-                let transaction: Transaction = res.json().await?;
+                let transaction: Transaction = res.json().await.map_err(Error::Reqwest)?;
                 println!("Transaction found\n{transaction:?}");
                 return Ok(());
             }
             if let Ok(res) = self.client.get(format!("{}/stake/{}", self.args.api, search)).send().await {
-                let stake: Stake = res.json().await?;
+                let stake: Stake = res.json().await.map_err(Error::Reqwest)?;
                 println!("Stake found\n{stake:?}");
                 return Ok(());
             }
         } else if search.parse::<usize>().is_ok() {
             if let Ok(res) = self.client.get(format!("{}/hash/{}", self.args.api, search)).send().await {
-                let hash: String = res.json().await?;
+                let hash: String = res.json().await.map_err(Error::Reqwest)?;
                 if let Ok(res) = self.client.get(format!("{}/block/{}", self.args.api, hash)).send().await {
-                    let block: Block = res.json().await?;
+                    let block: Block = res.json().await.map_err(Error::Reqwest)?;
                     println!("Block found\n{block:?}");
                     return Ok(());
                 }
@@ -291,35 +350,35 @@ pub fn argon2_key_derivation(password: &[u8], salt: &[u8; 32]) -> Hash {
     ctx.hash_password_into(password, salt, &mut bytes).unwrap();
     bytes
 }
-pub fn encrypt(key: &Key) -> Result<(Salt, Nonce, Ciphertext), Box<dyn Error>> {
+pub fn encrypt(key: &Key) -> Result<(Salt, Nonce, Ciphertext), Error> {
     let passphrase = crate::inquire::new_passphrase();
     let salt: Salt = rand::random();
     let cipher_key = argon2_key_derivation(passphrase.as_bytes(), &salt);
-    let cipher = ChaCha20Poly1305::new_from_slice(&cipher_key)?;
+    let cipher = ChaCha20Poly1305::new_from_slice(&cipher_key).unwrap();
     let nonce: Nonce = rand::random();
     let ciphertext: Ciphertext = cipher
-        .encrypt(&nonce.try_into()?, key.secret_key_bytes().as_slice())
+        .encrypt(&nonce.try_into().unwrap(), key.secret_key_bytes().as_slice())
         .unwrap()
         .try_into()
         .unwrap();
     Ok((salt, nonce, ciphertext))
 }
-pub fn decrypt(salt: &Salt, nonce: &Nonce, ciphertext: &Ciphertext, passphrase: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+pub fn decrypt(salt: &Salt, nonce: &Nonce, ciphertext: &Ciphertext, passphrase: &str) -> Result<Vec<u8>, Error> {
     let passphrase = match passphrase {
         "" => crate::inquire::passphrase(),
         _ => passphrase.to_string(),
     };
     let key = argon2_key_derivation(passphrase.as_bytes(), salt);
-    let cipher = ChaCha20Poly1305::new_from_slice(&key)?;
+    let cipher = ChaCha20Poly1305::new_from_slice(&key).unwrap();
     match cipher.decrypt(nonce.into(), ciphertext.as_slice()) {
         Ok(plaintext) => Ok(plaintext),
-        Err(_) => Err("invalid passphrase".into()),
+        Err(_) => Err(Error::InvalidPassphrase),
     }
 }
 pub fn default_path() -> &'static Path {
     Path::new("./tofuri-wallet")
 }
-pub fn save(filename: &str, key: &Key) -> Result<(), Box<dyn Error>> {
+pub fn save(filename: &str, key: &Key) -> Result<(), Error> {
     let (salt, nonce, ciphertext) = encrypt(key)?;
     let mut bytes = [0; 92];
     bytes[0..32].copy_from_slice(&salt);
@@ -327,23 +386,23 @@ pub fn save(filename: &str, key: &Key) -> Result<(), Box<dyn Error>> {
     bytes[44..92].copy_from_slice(&ciphertext);
     let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
-    let mut file = File::create(path)?;
-    file.write_all(hex::encode(bytes).as_bytes())?;
+    let mut file = File::create(path).unwrap();
+    file.write_all(hex::encode(bytes).as_bytes()).unwrap();
     Ok(())
 }
-pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Box<dyn Error>> {
-    fn read_exact(path: impl AsRef<Path>) -> Result<[u8; 92], Box<dyn Error>> {
-        let mut file = File::open(path)?;
+pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
+    fn read_exact(path: impl AsRef<Path>) -> Result<[u8; 92], Error> {
+        let mut file = File::open(path).unwrap();
         let mut bytes = [0; 184];
-        file.read_exact(&mut bytes)?;
+        file.read_exact(&mut bytes).unwrap();
         let vec = hex::decode(bytes).unwrap();
         Ok(vec.try_into().unwrap())
     }
-    fn attempt(slice: &[u8], passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Box<dyn Error>> {
-        let salt: Salt = slice[0..32].try_into()?;
-        let nonce: Nonce = slice[32..44].try_into()?;
-        let ciphertext: Ciphertext = slice[44..92].try_into()?;
-        let key = Key::from_slice(decrypt(&salt, &nonce, &ciphertext, passphrase)?.as_slice().try_into()?)?;
+    fn attempt(slice: &[u8], passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
+        let salt: Salt = slice[0..32].try_into().unwrap();
+        let nonce: Nonce = slice[32..44].try_into().unwrap();
+        let ciphertext: Ciphertext = slice[44..92].try_into().unwrap();
+        let key = Key::from_slice(decrypt(&salt, &nonce, &ciphertext, passphrase)?.as_slice().try_into().unwrap()).map_err(Error::Key)?;
         Ok((salt, nonce, ciphertext, key))
     }
     if filename.is_empty() ^ passphrase.is_empty() {
@@ -356,7 +415,7 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         let bytes = match read_exact(path) {
             Ok(x) => x,
             Err(err) => {
-                println!("{}", err.to_string().red());
+                println!("{:?}", err);
                 process::exit(0);
             }
         };
@@ -390,7 +449,7 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
     let bytes = match read_exact(path) {
         Ok(x) => x,
         Err(err) => {
-            println!("{}", err.to_string().red());
+            println!("{:?}", err);
             process::exit(0);
         }
     };
@@ -403,14 +462,14 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         }
     }
 }
-pub fn filenames() -> Result<Vec<String>, Box<dyn Error>> {
+pub fn filenames() -> Result<Vec<String>, Error> {
     let path = default_path();
     if !path.exists() {
-        create_dir_all(path)?;
+        create_dir_all(path).unwrap();
     }
     let mut filenames: Vec<String> = vec![];
-    for entry in read_dir(path)? {
-        filenames.push(entry?.path().file_name().unwrap().to_string_lossy().into_owned());
+    for entry in read_dir(path).unwrap() {
+        filenames.push(entry.map_err(Error::Io)?.path().file_name().unwrap().to_string_lossy().into_owned());
     }
     Ok(filenames)
 }

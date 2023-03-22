@@ -2,7 +2,6 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use std::error::Error;
 use tofuri_address::address;
 use tofuri_block::BlockA;
 use tofuri_checkpoint::Checkpoint;
@@ -12,6 +11,11 @@ use tofuri_transaction::TransactionA;
 use tofuri_tree::Tree;
 use tracing::debug;
 use tracing::warn;
+#[derive(Debug)]
+pub enum Error {
+    NotAllowedToForkStableChain,
+    Overflow,
+}
 pub trait Fork {
     fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;
     fn get_stakers(&self) -> &VecDeque<AddressBytes>;
@@ -139,7 +143,7 @@ impl Manager {
         tree: &Tree,
         trust_fork_after_blocks: usize,
         previous_hash: &Hash,
-    ) -> Result<Unstable, Box<dyn Error>> {
+    ) -> Result<Unstable, Error> {
         if previous_hash == &GENESIS_BLOCK_PREVIOUS_HASH {
             return Ok(Unstable::default());
         }
@@ -157,7 +161,7 @@ impl Manager {
             };
         }
         if first != &hash && hash != GENESIS_BLOCK_PREVIOUS_HASH {
-            return Err("not allowed to fork stable chain".into());
+            return Err(Error::NotAllowedToForkStableChain);
         }
         if let Some(hash) = hashes.last() {
             if hash == &GENESIS_BLOCK_PREVIOUS_HASH {
@@ -223,7 +227,7 @@ impl Unstable {
         load(&mut unstable, db, hashes);
         unstable
     }
-    pub fn check_overflow(&self, transactions: &Vec<TransactionA>, stakes: &Vec<StakeA>) -> Result<(), Box<dyn Error>> {
+    pub fn check_overflow(&self, transactions: &Vec<TransactionA>, stakes: &Vec<StakeA>) -> Result<(), Error> {
         let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
         let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
         for transaction_a in transactions {
@@ -233,7 +237,7 @@ impl Unstable {
             } else {
                 self.balance(&k)
             };
-            balance = balance.checked_sub(transaction_a.amount + transaction_a.fee).ok_or("overflow")?;
+            balance = balance.checked_sub(transaction_a.amount + transaction_a.fee).ok_or(Error::Overflow)?;
             map_balance.insert(k, balance);
         }
         for stake_a in stakes {
@@ -249,10 +253,10 @@ impl Unstable {
                 self.staked(&k)
             };
             if stake_a.deposit {
-                balance = balance.checked_sub(stake_a.amount + stake_a.fee).ok_or("overflow")?;
+                balance = balance.checked_sub(stake_a.amount + stake_a.fee).ok_or(Error::Overflow)?;
             } else {
-                balance = balance.checked_sub(stake_a.fee).ok_or("overflow")?;
-                staked = staked.checked_sub(stake_a.amount).ok_or("overflow")?;
+                balance = balance.checked_sub(stake_a.fee).ok_or(Error::Overflow)?;
+                staked = staked.checked_sub(stake_a.amount).ok_or(Error::Overflow)?;
             }
             map_balance.insert(k, balance);
             map_staked.insert(k, staked);

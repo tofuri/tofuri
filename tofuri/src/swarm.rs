@@ -1,3 +1,4 @@
+use crate::Error;
 use crate::Node;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::core::either::EitherError;
@@ -11,7 +12,6 @@ use libp2p::request_response::ResponseChannel;
 use libp2p::swarm::ConnectionHandlerUpgrErr;
 use libp2p::swarm::SwarmEvent;
 use libp2p::PeerId;
-use std::error::Error;
 use std::io;
 use std::net::IpAddr;
 use std::num::NonZeroU32;
@@ -53,11 +53,11 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
         },
         _ => Ok(()),
     } {
-        error!(err)
+        error!("{:?}", err)
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) -> Result<(), Box<dyn Error>> {
+fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) -> Result<(), Error> {
     let ip_addr = match endpoint {
         ConnectedPoint::Dialer { address, .. } => multiaddr::to_ip_addr(&address).unwrap(),
         ConnectedPoint::Listener { send_back_addr, .. } => multiaddr::to_ip_addr(&send_back_addr).unwrap(),
@@ -78,13 +78,13 @@ fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedP
     Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn connection_closed(node: &mut Node, peer_id: PeerId, num_established: u32) -> Result<(), Box<dyn Error>> {
+fn connection_closed(node: &mut Node, peer_id: PeerId, num_established: u32) -> Result<(), Error> {
     let ip_addr = node.p2p.connections.remove(&peer_id).unwrap();
     info!(ip_addr = ip_addr.to_string(), num_established, "Connection closed");
     Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn mdns(node: &mut Node, event: mdns::Event) -> Result<(), Box<dyn Error>> {
+fn mdns(node: &mut Node, event: mdns::Event) -> Result<(), Error> {
     match event {
         mdns::Event::Discovered(iter) => {
             for (_, multiaddr) in iter {
@@ -97,39 +97,43 @@ fn mdns(node: &mut Node, event: mdns::Event) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn gossipsub_message(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Box<dyn std::error::Error>> {
+fn gossipsub_message(node: &mut Node, message: GossipsubMessage, propagation_source: PeerId) -> Result<(), Error> {
     match message.topic.as_str() {
         "block" => {
-            node.p2p.ratelimit(propagation_source, Endpoint::Block)?;
+            node.p2p.ratelimit(propagation_source, Endpoint::Block).map_err(Error::P2p)?;
             if node.p2p.filter(&message.data) {
-                return Err("filter block".into());
+                return Err(Error::FilterBlock);
             }
-            let block_b: BlockB = bincode::deserialize(&message.data)?;
-            node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)?;
+            let block_b: BlockB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+            node.blockchain
+                .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)
+                .map_err(Error::Blockchain)?;
             node.blockchain.save_blocks(&node.db, node.args.trust);
         }
         "transaction" => {
-            node.p2p.ratelimit(propagation_source, Endpoint::Transaction)?;
+            node.p2p.ratelimit(propagation_source, Endpoint::Transaction).map_err(Error::P2p)?;
             if node.p2p.filter(&message.data) {
-                return Err("filter transaction".into());
+                return Err(Error::FilterTransaction);
             }
-            let transaction_b: TransactionB = bincode::deserialize(&message.data)?;
-            node.blockchain.pending_transactions_push(transaction_b, node.args.time_delta)?;
+            let transaction_b: TransactionB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+            node.blockchain
+                .pending_transactions_push(transaction_b, node.args.time_delta)
+                .map_err(Error::Blockchain)?;
         }
         "stake" => {
-            node.p2p.ratelimit(propagation_source, Endpoint::Stake)?;
+            node.p2p.ratelimit(propagation_source, Endpoint::Stake).map_err(Error::P2p)?;
             if node.p2p.filter(&message.data) {
-                return Err("filter stake".into());
+                return Err(Error::FilterStake);
             }
-            let stake_b: StakeB = bincode::deserialize(&message.data)?;
-            node.blockchain.pending_stakes_push(stake_b, node.args.time_delta)?;
+            let stake_b: StakeB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+            node.blockchain.pending_stakes_push(stake_b, node.args.time_delta).map_err(Error::Blockchain)?;
         }
         "peers" => {
-            node.p2p.ratelimit(propagation_source, Endpoint::Peers)?;
+            node.p2p.ratelimit(propagation_source, Endpoint::Peers).map_err(Error::P2p)?;
             if node.p2p.filter(&message.data) {
-                return Err("filter peers".into());
+                return Err(Error::FilterPeers);
             }
-            for ip_addr in bincode::deserialize::<Vec<IpAddr>>(&message.data)? {
+            for ip_addr in bincode::deserialize::<Vec<IpAddr>>(&message.data).map_err(Error::Bincode)? {
                 node.p2p.unknown.insert(ip_addr);
             }
         }
@@ -138,22 +142,18 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, propagation_sou
     Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Box<dyn Error>> {
-    node.p2p.ratelimit(peer_id, Endpoint::SyncRequest)?;
-    let height: usize = bincode::deserialize(&request.0)?;
+fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Error> {
+    node.p2p.ratelimit(peer_id, Endpoint::SyncRequest).map_err(Error::P2p)?;
+    let height: usize = bincode::deserialize(&request.0).map_err(Error::Bincode)?;
     let mut size = 0;
     let mut vec = vec![];
     loop {
-        match node.blockchain.sync_block(&node.db, height + vec.len()) {
-            Some(block_b) => {
-                size += bincode::serialize(&block_b).unwrap().len();
-                if size > MAX_TRANSMIT_SIZE {
-                    break;
-                }
-                vec.push(block_b);
-            }
-            None => break,
+        let block_b = node.blockchain.sync_block(&node.db, height + vec.len()).map_err(Error::Blockchain)?;
+        size += bincode::serialize(&block_b).unwrap().len();
+        if size > MAX_TRANSMIT_SIZE {
+            break;
         }
+        vec.push(block_b);
     }
     if node
         .p2p
@@ -163,16 +163,16 @@ fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel:
         .send_response(channel, SyncResponse(bincode::serialize(&vec).unwrap()))
         .is_err()
     {
-        return Err("p2p request handler connection closed".into());
+        return Err(Error::P2pRequestHandlerConnectionClosed);
     };
     Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) -> Result<(), Box<dyn Error>> {
-    node.p2p.ratelimit(peer_id, Endpoint::SyncResponse)?;
-    for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0)? {
+fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) -> Result<(), Error> {
+    node.p2p.ratelimit(peer_id, Endpoint::SyncResponse).map_err(Error::P2p)?;
+    for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0).map_err(Error::Bincode)? {
         if let Err(err) = node.blockchain.pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust) {
-            error!(err);
+            error!("{:?}", err);
             break;
         }
         node.blockchain.save_blocks(&node.db, node.args.trust);

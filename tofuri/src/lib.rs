@@ -11,6 +11,20 @@ use tofuri_p2p::P2p;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
+#[derive(Debug)]
+pub enum Error {
+    Blockchain(tofuri_blockchain::Error),
+    DB(tofuri_db::Error),
+    Bincode(bincode::Error),
+    P2p(tofuri_p2p::Error),
+    Io(std::io::Error),
+    Elapsed(tokio::time::error::Elapsed),
+    FilterBlock,
+    FilterTransaction,
+    FilterStake,
+    FilterPeers,
+    P2pRequestHandlerConnectionClosed,
+}
 pub struct Node {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,

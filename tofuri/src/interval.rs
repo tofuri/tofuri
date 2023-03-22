@@ -47,7 +47,7 @@ pub fn share(node: &mut Node) {
     }
     debug!(connections = vec.len(), "Share");
     if let Err(err) = node.p2p.gossipsub_publish("peers", bincode::serialize(&vec).unwrap()) {
-        error!(err);
+        error!("{:?}", err);
     }
 }
 #[tracing::instrument(skip_all, level = "debug")]
@@ -72,7 +72,7 @@ pub fn grow(node: &mut Node) {
     }
     let block_a = node.blockchain.forge_block(&node.db, &node.key, timestamp, node.args.trust);
     if let Err(err) = node.p2p.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap()) {
-        error!(err);
+        error!("{:?}", err);
     }
 }
 #[tracing::instrument(skip_all, level = "debug")]

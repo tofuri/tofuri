@@ -3,9 +3,12 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
-use std::error::Error;
 use tofuri_core::*;
 use tofuri_key::Key;
+#[derive(Debug)]
+pub enum Error {
+    Key(tofuri_key::Error),
+}
 pub trait Transaction {
     fn get_output_address(&self) -> &AddressBytes;
     fn get_timestamp(&self) -> u32;
@@ -87,7 +90,7 @@ impl TransactionA {
     pub fn hash(&self) -> Hash {
         hash(self)
     }
-    pub fn sign(public_key_output: AddressBytes, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<TransactionA, Box<dyn Error>> {
+    pub fn sign(public_key_output: AddressBytes, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<TransactionA, Error> {
         let mut transaction_a = TransactionA {
             input_address: [0; 20],
             output_address: public_key_output,
@@ -98,13 +101,13 @@ impl TransactionA {
             signature: [0; 64],
         };
         transaction_a.hash = transaction_a.hash();
-        transaction_a.signature = key.sign(&transaction_a.hash)?;
+        transaction_a.signature = key.sign(&transaction_a.hash).map_err(Error::Key)?;
         transaction_a.input_address = key.address_bytes();
         Ok(transaction_a)
     }
 }
 impl TransactionB {
-    pub fn a(&self, input_address: Option<AddressBytes>) -> Result<TransactionA, Box<dyn Error>> {
+    pub fn a(&self, input_address: Option<AddressBytes>) -> Result<TransactionA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
         Ok(TransactionA {
             output_address: self.output_address,
@@ -119,11 +122,11 @@ impl TransactionB {
     pub fn hash(&self) -> Hash {
         hash(self)
     }
-    fn input_address(&self) -> Result<AddressBytes, Box<dyn Error>> {
+    fn input_address(&self) -> Result<AddressBytes, Error> {
         Ok(Key::address(&self.input_public_key()?))
     }
-    fn input_public_key(&self) -> Result<PublicKeyBytes, Box<dyn Error>> {
-        Key::recover(&self.hash(), &self.signature)
+    fn input_public_key(&self) -> Result<PublicKeyBytes, Error> {
+        Key::recover(&self.hash(), &self.signature).map_err(Error::Key)
     }
 }
 fn hash<T: Transaction>(transaction: &T) -> Hash {

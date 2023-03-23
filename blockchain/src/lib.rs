@@ -24,7 +24,8 @@ pub enum Error {
     Block(tofuri_block::Error),
     Transaction(tofuri_transaction::Error),
     Stake(tofuri_stake::Error),
-    DB(tofuri_db::Error),
+    DBTree(tofuri_db::tree::Error),
+    DBBlock(tofuri_db::block::Error),
     Key(tofuri_key::Error),
     Fork(tofuri_fork::Error),
     BlockPending,
@@ -70,7 +71,7 @@ pub struct Blockchain {
 impl Blockchain {
     #[tracing::instrument(skip_all, level = "debug")]
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, trust_fork_after_blocks: usize) -> Result<(), Error> {
-        tofuri_db::tree::reload(&mut self.tree, db).map_err(Error::DB)?;
+        tofuri_db::tree::reload(&mut self.tree, db).map_err(Error::DBTree)?;
         let (mut stable_hashes, unstable_hashes) = self.tree.stable_and_unstable_hashes(trust_fork_after_blocks);
         info!(
             height = if let Some(main) = self.tree.main() { main.height } else { 0 },
@@ -132,7 +133,7 @@ impl Blockchain {
         } else {
             self.forks.unstable.hashes[index - self.forks.stable.hashes.len()]
         };
-        tofuri_db::block::get_b(db, &hash).map_err(Error::DB)
+        tofuri_db::block::get_b(db, &hash).map_err(Error::DBBlock)
     }
     pub fn forge_block(&mut self, db: &DBWithThreadMode<SingleThreaded>, key: &Key, timestamp: u32, trust_fork_after_blocks: usize) -> BlockA {
         let mut transactions: Vec<TransactionA> = self

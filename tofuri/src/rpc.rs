@@ -26,7 +26,9 @@ use tracing::info;
 #[derive(Debug)]
 pub enum Error {
     Blockchain(tofuri_blockchain::Error),
-    DB(tofuri_db::Error),
+    DBBlock(tofuri_db::block::Error),
+    DBTransaction(tofuri_db::transaction::Error),
+    DBStake(tofuri_db::stake::Error),
     Bincode(bincode::Error),
     Io(std::io::Error),
     Elapsed(tokio::time::error::Elapsed),
@@ -143,17 +145,17 @@ fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Error> {
 #[tracing::instrument(skip_all, level = "trace")]
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Error> {
     let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    db::block::get_a(&node.db, &hash).map_err(Error::DB)
+    db::block::get_a(&node.db, &hash).map_err(Error::DBBlock)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<TransactionA, Error> {
     let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    db::transaction::get_a(&node.db, &hash).map_err(Error::DB)
+    db::transaction::get_a(&node.db, &hash).map_err(Error::DBTransaction)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<StakeA, Error> {
     let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    db::stake::get_a(&node.db, &hash).map_err(Error::DB)
+    db::stake::get_a(&node.db, &hash).map_err(Error::DBStake)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn peers(node: &mut Node) -> Result<Vec<&IpAddr>, Error> {

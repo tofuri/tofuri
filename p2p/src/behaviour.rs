@@ -38,7 +38,11 @@ impl Behaviour {
             identify: identify::Behaviour::new(identify::Config::new(PROTOCOL_VERSION.to_string(), local_key.public())),
             gossipsub: Gossipsub::new(
                 MessageAuthenticity::Signed(local_key.clone()),
-                GossipsubConfigBuilder::default().max_transmit_size(MAX_TRANSMIT_SIZE).build().unwrap(),
+                GossipsubConfigBuilder::default()
+                    .max_transmit_size(MAX_TRANSMIT_SIZE)
+                    .validate_messages()
+                    .build()
+                    .unwrap(),
             )
             .unwrap(),
             autonat: autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default()),

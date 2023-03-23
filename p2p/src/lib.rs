@@ -1,6 +1,5 @@
 pub mod behaviour;
 pub mod multiaddr;
-pub mod ratelimit;
 use behaviour::Behaviour;
 use libp2p::core::upgrade;
 use libp2p::gossipsub::error::PublishError;
@@ -16,8 +15,6 @@ use libp2p::tcp;
 use libp2p::PeerId;
 use libp2p::Swarm;
 use libp2p::Transport;
-use ratelimit::Endpoint;
-use ratelimit::Ratelimit;
 use sha2::Digest;
 use sha2::Sha256;
 use std::collections::HashMap;
@@ -30,14 +27,12 @@ pub enum Error {
     PublishError(PublishError),
     Behaviour(behaviour::Error),
     SubscriptionError(SubscriptionError),
-    Ratelimited,
     Filter,
 }
 pub struct P2p {
     pub swarm: Swarm<Behaviour>,
     pub filter: HashSet<Hash>,
     pub connections: HashMap<PeerId, IpAddr>,
-    pub ratelimit: Ratelimit,
     pub unknown: HashSet<IpAddr>,
     pub known: HashSet<IpAddr>,
 }
@@ -47,18 +42,9 @@ impl P2p {
             swarm: swarm(max_established, timeout).await?,
             filter: HashSet::new(),
             connections: HashMap::new(),
-            ratelimit: Ratelimit::default(),
             unknown: HashSet::new(),
             known,
         })
-    }
-    pub fn ratelimit(&mut self, peer_id: PeerId, endpoint: Endpoint) -> Result<(), Error> {
-        let ip_addr = self.connections.get(&peer_id).unwrap();
-        if self.ratelimit.add(*ip_addr, endpoint) {
-            let _ = self.swarm.disconnect_peer_id(peer_id);
-            return Err(Error::Ratelimited);
-        }
-        Ok(())
     }
     pub fn filter(&mut self, data: &[u8]) -> bool {
         let mut hasher = Sha256::new();

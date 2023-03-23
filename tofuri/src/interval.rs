@@ -22,17 +22,12 @@ pub fn dial_unknown(node: &mut Node) {
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn clear(node: &mut Node) {
     node.blockchain.sync.handler();
-    node.p2p.ratelimit.reset();
     node.p2p.filter.clear();
 }
 #[tracing::instrument(skip_all, level = "debug")]
 fn dial(node: &mut Node, vec: Vec<IpAddr>) {
     for ip_addr in vec {
         if node.p2p.connections.iter().any(|x| x.1 == &ip_addr) {
-            continue;
-        }
-        if node.p2p.ratelimit.is_ratelimited(&node.p2p.ratelimit.get(&ip_addr).1) {
-            debug!(ip_addr = ip_addr.to_string(), "Dial skipped");
             continue;
         }
         debug!(ip_addr = ip_addr.to_string(), "Dial");

@@ -30,8 +30,8 @@ pub enum Error {
     Fork(tofuri_fork::Error),
     BlockPending,
     BlockHashInTree,
-    BlockTimestampFuture,
     BlockPreviousHashNotInTree,
+    BlockTimestampFuture,
     BlockTimestamp,
     BlockStakerAddress,
     TransactionPending,
@@ -323,11 +323,11 @@ impl Blockchain {
         if self.tree.get(&block_a.hash).is_some() {
             return Err(Error::BlockHashInTree);
         }
-        if block_a.timestamp > timestamp {
-            return Err(Error::BlockTimestampFuture);
-        }
         if block_a.previous_hash != GENESIS_BLOCK_PREVIOUS_HASH && self.tree.get(&block_a.previous_hash).is_none() {
             return Err(Error::BlockPreviousHashNotInTree);
+        }
+        if block_a.timestamp > timestamp {
+            return Err(Error::BlockTimestampFuture);
         }
         let input_address = block_a.input_address();
         let unstable = self

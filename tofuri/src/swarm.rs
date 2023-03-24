@@ -120,9 +120,9 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
                 node.blockchain.pending_stakes_push(stake_b, node.args.time_delta).map_err(Error::Blockchain)?;
             }
             "peers" => {
-                match message.source {
+                match &message.source {
                     Some(peer_id) => {
-                        if node.p2p.peers(&peer_id) {
+                        if node.p2p.peers(peer_id) {
                             return Err(Error::Peers);
                         }
                     }

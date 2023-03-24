@@ -2,7 +2,6 @@ use crate::Node;
 use crate::CARGO_PKG_NAME;
 use crate::CARGO_PKG_REPOSITORY;
 use crate::CARGO_PKG_VERSION;
-use colored::*;
 use std::io;
 use std::net::IpAddr;
 use std::net::SocketAddr;
@@ -35,14 +34,13 @@ pub enum Error {
 }
 #[tracing::instrument(skip_all, level = "debug")]
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
-    if let Err(err) = &res {
-        error!("{}", err.to_string().red());
+    match res {
+        Ok((stream, socket_addr)) => match request(node, stream).await {
+            Ok((bytes, t)) => info!(socket_addr = socket_addr.to_string(), bytes, "{:?}", t),
+            Err(err) => error!(socket_addr = socket_addr.to_string(), "{:?}", err),
+        },
+        Err(err) => error!("{:?}", err),
     }
-    let (stream, socket_addr) = res.unwrap();
-    match request(node, stream).await {
-        Ok((bytes, t)) => info!(socket_addr = socket_addr.to_string(), bytes, "{}", format!("{:?}", t).magenta()),
-        Err(err) => error!(socket_addr = socket_addr.to_string(), "{:?}", err),
-    };
 }
 #[tracing::instrument(skip_all, level = "trace")]
 async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type), Error> {

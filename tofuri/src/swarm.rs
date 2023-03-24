@@ -53,7 +53,7 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
         })) => gossipsub_message(node, message, message_id, propagation_source),
         SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
             RequestResponseMessage::Request { request, channel, .. } => sync_request(node, peer, request, channel),
-            RequestResponseMessage::Response { response, .. } => sync_response(node, peer, response),
+            RequestResponseMessage::Response { response, .. } => sync_response(node, response),
         },
         _ => {}
     }
@@ -158,7 +158,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) {
-    if node.p2p.sync_request(&peer_id) {
+    if node.p2p.request(&peer_id) {
         return;
     }
     #[derive(Debug)]
@@ -192,12 +192,12 @@ fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel:
         Ok(()) => debug!("Sync request processed"),
         Err(err) => {
             error!("{:?}", err);
-            node.p2p.sync_timeout(&peer_id);
+            node.p2p.timeout(&peer_id);
         }
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) {
+fn sync_response(node: &mut Node, response: SyncResponse) {
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
@@ -216,7 +216,6 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) {
         Ok(()) => debug!("Sync response processed"),
         Err(err) => {
             error!("{:?}", err);
-            node.p2p.sync_timeout(&peer_id);
         }
     }
 }

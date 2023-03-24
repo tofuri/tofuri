@@ -46,24 +46,24 @@ impl P2p {
             known,
         })
     }
-    pub fn sync_timeout(&mut self, peer_id: &PeerId) {
+    pub fn timeout(&mut self, peer_id: &PeerId) {
         let ip_addr = self.connections.get(peer_id).unwrap();
         self.timeouts.insert(*ip_addr, tofuri_util::timestamp());
     }
-    pub fn has_sync_timeout(&self, peer_id: &PeerId) -> bool {
+    pub fn has_timeout(&self, peer_id: &PeerId) -> bool {
         let ip_addr = self.connections.get(peer_id).unwrap();
         let timestamp = self.timeouts.get(ip_addr).unwrap_or(&0);
         tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
     }
-    pub fn sync_request(&mut self, peer_id: &PeerId) -> bool {
+    pub fn request(&mut self, peer_id: &PeerId) -> bool {
         let ip_addr = self.connections.get(peer_id).unwrap();
         let mut requests = *self.requests.get(ip_addr).unwrap_or(&0);
         requests += 1;
         self.requests.insert(*ip_addr, requests);
-        if requests > P2P_SYNC_REQUESTS_PER_SECOND {
-            self.sync_timeout(peer_id);
+        if requests > P2P_REQUESTS {
+            self.timeout(peer_id);
         }
-        self.has_sync_timeout(peer_id)
+        self.has_timeout(peer_id)
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0

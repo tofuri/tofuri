@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::net::IpAddr;
 use std::time::Duration;
+use tofuri_core::*;
 #[derive(Debug)]
 pub enum Error {
     PublishError(PublishError),
@@ -46,6 +47,11 @@ impl P2p {
     pub fn timeout(&mut self, peer_id: &PeerId) {
         let ip_addr = self.connections.get(peer_id).unwrap();
         self.timeouts.insert(*ip_addr, tofuri_util::timestamp());
+    }
+    pub fn has_timeout(&self, peer_id: &PeerId) -> bool {
+        let ip_addr = self.connections.get(peer_id).unwrap();
+        let timestamp = self.timeouts.get(ip_addr).unwrap_or(&0);
+        tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0

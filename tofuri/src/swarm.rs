@@ -159,6 +159,9 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) {
+    if node.p2p.has_timeout(&peer_id) {
+        return;
+    }
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
@@ -196,6 +199,9 @@ fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel:
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) {
+    if node.p2p.has_timeout(&peer_id) {
+        return;
+    }
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),

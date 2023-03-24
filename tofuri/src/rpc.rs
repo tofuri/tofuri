@@ -162,7 +162,7 @@ fn peers(node: &mut Node) -> Result<Vec<&IpAddr>, Error> {
 #[tracing::instrument(skip_all, level = "trace")]
 fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Error> {
     let ip_addr = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    node.p2p.unknown.insert(ip_addr);
+    node.p2p.connections_unknown.insert(ip_addr);
     Ok(())
 }
 #[tracing::instrument(skip_all, level = "trace")]

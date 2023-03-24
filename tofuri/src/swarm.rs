@@ -64,7 +64,7 @@ fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedP
         ConnectedPoint::Dialer { address, .. } => multiaddr::to_ip_addr(&address).unwrap(),
         ConnectedPoint::Listener { send_back_addr, .. } => multiaddr::to_ip_addr(&send_back_addr).unwrap(),
     };
-    node.p2p.known.insert(ip_addr);
+    node.p2p.connections_known.insert(ip_addr);
     let _ = db::peer::put(&ip_addr, &node.db);
     // if let Some((previous_peer_id, _)) = node.p2p.connections.iter().find(|x| x.1 == &ip_addr) {
     // if previous_peer_id != &peer_id {
@@ -85,7 +85,7 @@ fn mdns(node: &mut Node, event: mdns::Event) {
         mdns::Event::Discovered(iter) => {
             for (_, multiaddr) in iter {
                 let ip_addr = multiaddr::to_ip_addr(&multiaddr).unwrap();
-                node.p2p.unknown.insert(ip_addr);
+                node.p2p.connections_unknown.insert(ip_addr);
             }
         }
         _ => {}
@@ -122,14 +122,14 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
             "peers" => {
                 match &message.source {
                     Some(peer_id) => {
-                        if node.p2p.peers(peer_id) {
+                        if node.p2p.gossipsub_message_peers_counter(peer_id) {
                             return Err(Error::Peers);
                         }
                     }
                     None => return Err(Error::MessageSource),
                 }
                 for ip_addr in bincode::deserialize::<Vec<IpAddr>>(&message.data).map_err(Error::Bincode)? {
-                    node.p2p.unknown.insert(ip_addr);
+                    node.p2p.connections_unknown.insert(ip_addr);
                 }
             }
             _ => {}
@@ -168,7 +168,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) {
-    if node.p2p.request(&peer_id) {
+    if node.p2p.request_counter(&peer_id) {
         return;
     }
     #[derive(Debug)]
@@ -207,7 +207,7 @@ fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel:
         Ok(()) => debug!("Sync request processed"),
         Err(err) => {
             error!("{:?}", err);
-            node.p2p.timeout(&peer_id);
+            node.p2p.request_timeout(&peer_id);
         }
     }
 }

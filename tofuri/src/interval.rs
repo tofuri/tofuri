@@ -11,19 +11,19 @@ use tracing::info;
 use tracing::warn;
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn dial_known(node: &mut Node) {
-    let vec = node.p2p.known.clone().into_iter().collect();
+    let vec = node.p2p.connections_known.clone().into_iter().collect();
     dial(node, vec);
 }
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn dial_unknown(node: &mut Node) {
-    let vec = node.p2p.unknown.drain().collect();
+    let vec = node.p2p.connections_unknown.drain().collect();
     dial(node, vec);
 }
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn clear(node: &mut Node) {
     node.blockchain.sync.handler();
-    node.p2p.requests.clear();
-    node.p2p.peers.clear();
+    node.p2p.request_counter.clear();
+    node.p2p.gossipsub_message_peers_counter.clear();
 }
 #[tracing::instrument(skip_all, level = "debug")]
 fn dial(node: &mut Node, vec: Vec<IpAddr>) {

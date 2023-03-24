@@ -30,22 +30,22 @@ pub enum Error {
 pub struct P2p {
     pub swarm: Swarm<Behaviour>,
     pub connections: HashMap<PeerId, IpAddr>,
-    pub timeouts: HashMap<IpAddr, u32>,
-    pub requests: HashMap<IpAddr, usize>,
-    pub peers: HashMap<IpAddr, usize>,
-    pub unknown: HashSet<IpAddr>,
-    pub known: HashSet<IpAddr>,
+    pub connections_unknown: HashSet<IpAddr>,
+    pub connections_known: HashSet<IpAddr>,
+    pub request_timeouts: HashMap<IpAddr, u32>,
+    pub request_counter: HashMap<IpAddr, usize>,
+    pub gossipsub_message_peers_counter: HashMap<IpAddr, usize>,
 }
 impl P2p {
     pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<IpAddr>) -> Result<P2p, Error> {
         Ok(P2p {
             swarm: swarm(max_established, timeout).await?,
             connections: HashMap::new(),
-            timeouts: HashMap::new(),
-            requests: HashMap::new(),
-            peers: HashMap::new(),
-            unknown: HashSet::new(),
-            known,
+            connections_unknown: HashSet::new(),
+            connections_known: known,
+            request_timeouts: HashMap::new(),
+            request_counter: HashMap::new(),
+            gossipsub_message_peers_counter: HashMap::new(),
         })
     }
     fn get_ip_addr(&self, peer_id: &PeerId) -> Option<IpAddr> {
@@ -56,30 +56,30 @@ impl P2p {
             None
         }
     }
-    pub fn timeout(&mut self, peer_id: &PeerId) {
+    pub fn request_timeout(&mut self, peer_id: &PeerId) {
         if let Some(ip_addr) = self.get_ip_addr(peer_id) {
-            self.timeouts.insert(ip_addr, tofuri_util::timestamp());
+            self.request_timeouts.insert(ip_addr, tofuri_util::timestamp());
         }
     }
-    pub fn request(&mut self, peer_id: &PeerId) -> bool {
+    pub fn request_counter(&mut self, peer_id: &PeerId) -> bool {
         if let Some(ip_addr) = self.get_ip_addr(peer_id) {
-            let mut requests = *self.requests.get(&ip_addr).unwrap_or(&0);
+            let mut requests = *self.request_counter.get(&ip_addr).unwrap_or(&0);
             requests += 1;
-            self.requests.insert(ip_addr, requests);
+            self.request_counter.insert(ip_addr, requests);
             if requests > P2P_REQUESTS {
-                self.timeout(peer_id);
+                self.request_timeout(peer_id);
             }
-            let timestamp = self.timeouts.get(&ip_addr).unwrap_or(&0);
+            let timestamp = self.request_timeouts.get(&ip_addr).unwrap_or(&0);
             tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
         } else {
             true
         }
     }
-    pub fn peers(&mut self, peer_id: &PeerId) -> bool {
+    pub fn gossipsub_message_peers_counter(&mut self, peer_id: &PeerId) -> bool {
         if let Some(ip_addr) = self.get_ip_addr(peer_id) {
-            let mut peers = *self.peers.get(&ip_addr).unwrap_or(&0);
+            let mut peers = *self.gossipsub_message_peers_counter.get(&ip_addr).unwrap_or(&0);
             peers += 1;
-            self.peers.insert(ip_addr, peers);
+            self.gossipsub_message_peers_counter.insert(ip_addr, peers);
             peers > P2P_PEERS
         } else {
             true

@@ -57,33 +57,38 @@ impl P2p {
         }
     }
     pub fn request_timeout(&mut self, peer_id: &PeerId) {
-        if let Some(ip_addr) = self.get_ip_addr(peer_id) {
-            self.request_timeouts.insert(ip_addr, tofuri_util::timestamp());
+        let opt = self.get_ip_addr(peer_id);
+        if opt.is_none() {
+            return;
         }
+        let ip_addr = opt.unwrap();
+        self.request_timeouts.insert(ip_addr, tofuri_util::timestamp());
     }
     pub fn request_counter(&mut self, peer_id: &PeerId) -> bool {
-        if let Some(ip_addr) = self.get_ip_addr(peer_id) {
-            let mut requests = *self.request_counter.get(&ip_addr).unwrap_or(&0);
-            requests += 1;
-            self.request_counter.insert(ip_addr, requests);
-            if requests > P2P_REQUESTS {
-                self.request_timeout(peer_id);
-            }
-            let timestamp = self.request_timeouts.get(&ip_addr).unwrap_or(&0);
-            tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
-        } else {
-            true
+        let opt = self.get_ip_addr(peer_id);
+        if opt.is_none() {
+            return true;
         }
+        let ip_addr = opt.unwrap();
+        let mut requests = *self.request_counter.get(&ip_addr).unwrap_or(&0);
+        requests += 1;
+        self.request_counter.insert(ip_addr, requests);
+        if requests > P2P_REQUESTS {
+            self.request_timeout(peer_id);
+        }
+        let timestamp = self.request_timeouts.get(&ip_addr).unwrap_or(&0);
+        tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
     }
     pub fn gossipsub_message_peers_counter(&mut self, peer_id: &PeerId) -> bool {
-        if let Some(ip_addr) = self.get_ip_addr(peer_id) {
-            let mut peers = *self.gossipsub_message_peers_counter.get(&ip_addr).unwrap_or(&0);
-            peers += 1;
-            self.gossipsub_message_peers_counter.insert(ip_addr, peers);
-            peers > P2P_PEERS
-        } else {
-            true
+        let opt = self.get_ip_addr(peer_id);
+        if opt.is_none() {
+            return true;
         }
+        let ip_addr = opt.unwrap();
+        let mut peers = *self.gossipsub_message_peers_counter.get(&ip_addr).unwrap_or(&0);
+        peers += 1;
+        self.gossipsub_message_peers_counter.insert(ip_addr, peers);
+        peers > P2P_PEERS
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0

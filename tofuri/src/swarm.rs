@@ -100,7 +100,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
         MessageSource,
         Peers,
     }
-    fn inner(node: &mut Node, message: GossipsubMessage) -> Result<(), Error> {
+    fn inner(node: &mut Node, message: &GossipsubMessage, propagation_source: &PeerId) -> Result<(), Error> {
         match message.topic.as_str() {
             "block" => {
                 let block_b: BlockB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
@@ -121,8 +121,8 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
             }
             "peers" => {
                 match &message.source {
-                    Some(peer_id) => {
-                        if node.p2p.gossipsub_message_peers_counter(peer_id) {
+                    Some(source) => {
+                        if node.p2p.gossipsub_message_peers_counter(source) || node.p2p.gossipsub_message_peers_counter(propagation_source) {
                             return Err(Error::Peers);
                         }
                     }
@@ -136,7 +136,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
         };
         Ok(())
     }
-    match match inner(node, message) {
+    match match inner(node, &message, &propagation_source) {
         Ok(()) => {
             debug!("Gossipsub message processed");
             node.p2p

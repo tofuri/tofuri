@@ -122,7 +122,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
             "peers" => {
                 match &message.source {
                     Some(source) => {
-                        if node.p2p.gossipsub_message_peers_counter(source) || node.p2p.gossipsub_message_peers_counter(propagation_source) {
+                        if node.p2p.gossipsub_message_counter_peers(source) || node.p2p.gossipsub_message_counter_peers(propagation_source) {
                             return Err(Error::Peers);
                         }
                     }

@@ -23,7 +23,7 @@ pub fn dial_unknown(node: &mut Node) {
 pub fn clear(node: &mut Node) {
     node.blockchain.sync.handler();
     node.p2p.request_counter.clear();
-    node.p2p.gossipsub_message_peers_counter.clear();
+    node.p2p.gossipsub_message_counter_peers.clear();
 }
 #[tracing::instrument(skip_all, level = "debug")]
 fn dial(node: &mut Node, vec: Vec<IpAddr>) {

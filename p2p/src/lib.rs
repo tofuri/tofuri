@@ -34,7 +34,10 @@ pub struct P2p {
     pub connections_known: HashSet<IpAddr>,
     pub request_timeouts: HashMap<IpAddr, u32>,
     pub request_counter: HashMap<IpAddr, usize>,
-    pub gossipsub_message_peers_counter: HashMap<IpAddr, usize>,
+    pub gossipsub_message_counter_blocks: HashMap<IpAddr, usize>,
+    pub gossipsub_message_counter_transactions: HashMap<IpAddr, usize>,
+    pub gossipsub_message_counter_stakes: HashMap<IpAddr, usize>,
+    pub gossipsub_message_counter_peers: HashMap<IpAddr, usize>,
 }
 impl P2p {
     pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<IpAddr>) -> Result<P2p, Error> {
@@ -45,7 +48,10 @@ impl P2p {
             connections_known: known,
             request_timeouts: HashMap::new(),
             request_counter: HashMap::new(),
-            gossipsub_message_peers_counter: HashMap::new(),
+            gossipsub_message_counter_blocks: HashMap::new(),
+            gossipsub_message_counter_transactions: HashMap::new(),
+            gossipsub_message_counter_stakes: HashMap::new(),
+            gossipsub_message_counter_peers: HashMap::new(),
         })
     }
     fn get_ip_addr(&self, peer_id: &PeerId) -> Option<IpAddr> {
@@ -79,16 +85,28 @@ impl P2p {
         let timestamp = self.request_timeouts.get(&ip_addr).unwrap_or(&0);
         tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
     }
-    pub fn gossipsub_message_peers_counter(&mut self, peer_id: &PeerId) -> bool {
-        let opt = self.get_ip_addr(peer_id);
-        if opt.is_none() {
+    fn gossipsub_message_counter(connections: &HashMap<PeerId, IpAddr>, map: &mut HashMap<IpAddr, usize>, limit: usize, peer_id: &PeerId) -> bool {
+        let option_ip_addr = connections.get(peer_id);
+        if option_ip_addr.is_none() {
             return true;
         }
-        let ip_addr = opt.unwrap();
-        let mut peers = *self.gossipsub_message_peers_counter.get(&ip_addr).unwrap_or(&0);
-        peers += 1;
-        self.gossipsub_message_peers_counter.insert(ip_addr, peers);
-        peers > P2P_PEERS
+        let ip_addr = option_ip_addr.unwrap();
+        let mut counter = *map.get(&ip_addr).unwrap_or(&0);
+        counter += 1;
+        map.insert(*ip_addr, counter);
+        counter > limit
+    }
+    pub fn gossipsub_message_counter_blocks(&mut self, peer_id: &PeerId) -> bool {
+        P2p::gossipsub_message_counter(&self.connections, &mut self.gossipsub_message_counter_blocks, P2P_BLOCKS, peer_id)
+    }
+    pub fn gossipsub_message_counter_transactions(&mut self, peer_id: &PeerId) -> bool {
+        P2p::gossipsub_message_counter(&self.connections, &mut self.gossipsub_message_counter_transactions, P2P_TRANSACTIONS, peer_id)
+    }
+    pub fn gossipsub_message_counter_stakes(&mut self, peer_id: &PeerId) -> bool {
+        P2p::gossipsub_message_counter(&self.connections, &mut self.gossipsub_message_counter_stakes, P2P_STAKES, peer_id)
+    }
+    pub fn gossipsub_message_counter_peers(&mut self, peer_id: &PeerId) -> bool {
+        P2p::gossipsub_message_counter(&self.connections, &mut self.gossipsub_message_counter_peers, P2P_PEERS, peer_id)
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0

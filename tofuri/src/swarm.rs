@@ -51,9 +51,9 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
             propagation_source,
             ..
         })) => gossipsub_message(node, message, message_id, propagation_source),
-        SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, .. })) => match message {
-            RequestResponseMessage::Request { request, channel, .. } => sync_request(node, request, channel),
-            RequestResponseMessage::Response { response, .. } => sync_response(node, response),
+        SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
+            RequestResponseMessage::Request { request, channel, .. } => sync_request(node, peer, request, channel),
+            RequestResponseMessage::Response { response, .. } => sync_response(node, peer, response),
         },
         _ => {}
     }
@@ -161,7 +161,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn sync_request(node: &mut Node, request: SyncRequest, channel: ResponseChannel<SyncResponse>) {
+fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) {
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
@@ -191,11 +191,14 @@ fn sync_request(node: &mut Node, request: SyncRequest, channel: ResponseChannel<
     }
     match inner(node, request, channel) {
         Ok(()) => debug!("Sync request processed"),
-        Err(err) => error!("{:?}", err),
+        Err(err) => {
+            error!("{:?}", err);
+            node.p2p.timeout(&peer_id);
+        }
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn sync_response(node: &mut Node, response: SyncResponse) {
+fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) {
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
@@ -212,6 +215,9 @@ fn sync_response(node: &mut Node, response: SyncResponse) {
     }
     match inner(node, response) {
         Ok(()) => debug!("Sync response processed"),
-        Err(err) => error!("{:?}", err),
+        Err(err) => {
+            error!("{:?}", err);
+            node.p2p.timeout(&peer_id);
+        }
     }
 }

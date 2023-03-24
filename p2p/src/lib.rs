@@ -33,6 +33,7 @@ pub struct P2p {
     pub swarm: Swarm<Behaviour>,
     pub filter: HashSet<Hash>,
     pub connections: HashMap<PeerId, IpAddr>,
+    pub timeouts: HashMap<IpAddr, u32>,
     pub unknown: HashSet<IpAddr>,
     pub known: HashSet<IpAddr>,
 }
@@ -42,9 +43,14 @@ impl P2p {
             swarm: swarm(max_established, timeout).await?,
             filter: HashSet::new(),
             connections: HashMap::new(),
+            timeouts: HashMap::new(),
             unknown: HashSet::new(),
             known,
         })
+    }
+    pub fn timeout(&mut self, peer_id: &PeerId) {
+        let ip_addr = self.connections.get(peer_id).unwrap();
+        self.timeouts.insert(*ip_addr, tofuri_util::timestamp());
     }
     pub fn filter(&mut self, data: &[u8]) -> bool {
         let mut hasher = Sha256::new();

@@ -97,6 +97,8 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
     enum Error {
         Bincode(bincode::Error),
         Blockchain(tofuri_blockchain::Error),
+        MessageSource,
+        Peers,
     }
     fn inner(node: &mut Node, message: GossipsubMessage) -> Result<(), Error> {
         match message.topic.as_str() {
@@ -118,6 +120,14 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
                 node.blockchain.pending_stakes_push(stake_b, node.args.time_delta).map_err(Error::Blockchain)?;
             }
             "peers" => {
+                match message.source {
+                    Some(peer_id) => {
+                        if node.p2p.peers(&peer_id) {
+                            return Err(Error::Peers);
+                        }
+                    }
+                    None => return Err(Error::MessageSource),
+                }
                 for ip_addr in bincode::deserialize::<Vec<IpAddr>>(&message.data).map_err(Error::Bincode)? {
                     node.p2p.unknown.insert(ip_addr);
                 }

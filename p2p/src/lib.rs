@@ -32,6 +32,7 @@ pub struct P2p {
     pub connections: HashMap<PeerId, IpAddr>,
     pub timeouts: HashMap<IpAddr, u32>,
     pub requests: HashMap<IpAddr, usize>,
+    pub peers: HashMap<IpAddr, usize>,
     pub unknown: HashSet<IpAddr>,
     pub known: HashSet<IpAddr>,
 }
@@ -42,6 +43,7 @@ impl P2p {
             connections: HashMap::new(),
             timeouts: HashMap::new(),
             requests: HashMap::new(),
+            peers: HashMap::new(),
             unknown: HashSet::new(),
             known,
         })
@@ -64,6 +66,13 @@ impl P2p {
             self.timeout(peer_id);
         }
         self.has_timeout(peer_id)
+    }
+    pub fn peers(&mut self, peer_id: &PeerId) -> bool {
+        let ip_addr = self.connections.get(peer_id).unwrap();
+        let mut peers = *self.peers.get(ip_addr).unwrap_or(&0);
+        peers += 1;
+        self.peers.insert(*ip_addr, peers);
+        peers > P2P_PEERS
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0

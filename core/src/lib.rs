@@ -46,3 +46,4 @@ pub const INTERVAL_SYNC_REQUEST: u64 = 1;
 pub const INTERVAL_CHECKPOINT: u64 = 600;
 pub const P2P_TIMEOUT: u32 = 3600;
 pub const P2P_REQUESTS: usize = 2;
+pub const P2P_PEERS: usize = 1;

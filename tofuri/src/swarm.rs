@@ -126,9 +126,6 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
         };
         Ok(())
     }
-    if node.p2p.filter(&message.data) {
-        return;
-    }
     match match inner(node, message) {
         Ok(()) => {
             debug!("Gossipsub message processed");

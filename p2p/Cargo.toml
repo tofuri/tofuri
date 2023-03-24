@@ -13,5 +13,4 @@ libp2p = { version = "0.50", features = ["mplex","noise","tcp","request-response
 tokio = "1.24"
 async-trait = "0.1"
 futures = "0.3"
-sha2 = "0.10"
 tracing = "0.1"

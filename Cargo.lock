@@ -4431,7 +4431,6 @@ dependencies = [
  "async-trait",
  "futures",
  "libp2p",
- "sha2 0.10.6",
  "tofuri-core",
  "tofuri-util",
  "tokio",

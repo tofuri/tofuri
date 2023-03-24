@@ -15,13 +15,10 @@ use libp2p::tcp;
 use libp2p::PeerId;
 use libp2p::Swarm;
 use libp2p::Transport;
-use sha2::Digest;
-use sha2::Sha256;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::net::IpAddr;
 use std::time::Duration;
-use tofuri_core::*;
 #[derive(Debug)]
 pub enum Error {
     PublishError(PublishError),
@@ -31,7 +28,6 @@ pub enum Error {
 }
 pub struct P2p {
     pub swarm: Swarm<Behaviour>,
-    pub filter: HashSet<Hash>,
     pub connections: HashMap<PeerId, IpAddr>,
     pub timeouts: HashMap<IpAddr, u32>,
     pub unknown: HashSet<IpAddr>,
@@ -41,7 +37,6 @@ impl P2p {
     pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<IpAddr>) -> Result<P2p, Error> {
         Ok(P2p {
             swarm: swarm(max_established, timeout).await?,
-            filter: HashSet::new(),
             connections: HashMap::new(),
             timeouts: HashMap::new(),
             unknown: HashSet::new(),
@@ -52,20 +47,12 @@ impl P2p {
         let ip_addr = self.connections.get(peer_id).unwrap();
         self.timeouts.insert(*ip_addr, tofuri_util::timestamp());
     }
-    pub fn filter(&mut self, data: &[u8]) -> bool {
-        let mut hasher = Sha256::new();
-        hasher.update(data);
-        !self.filter.insert(hasher.finalize().into())
-    }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
     }
     pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) -> Result<(), Error> {
         if !self.gossipsub_has_mesh_peers(topic) {
             return Ok(());
-        }
-        if self.filter(&data) {
-            return Err(Error::Filter);
         }
         self.swarm
             .behaviour_mut()

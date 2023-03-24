@@ -182,7 +182,12 @@ fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel:
         let mut size = 0;
         let mut vec = vec![];
         loop {
-            let block_b = node.blockchain.sync_block(&node.db, height + vec.len()).map_err(Error::Blockchain)?;
+            let index = height + vec.len();
+            let res = node.blockchain.sync_block(&node.db, index);
+            if let Err(tofuri_blockchain::Error::SyncBlock) = res {
+                break;
+            }
+            let block_b = res.map_err(Error::Blockchain)?;
             size += bincode::serialize(&block_b).map_err(Error::Bincode)?.len();
             if size > MAX_TRANSMIT_SIZE {
                 break;

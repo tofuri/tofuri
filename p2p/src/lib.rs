@@ -26,7 +26,6 @@ pub enum Error {
     PublishError(PublishError),
     Behaviour(behaviour::Error),
     SubscriptionError(SubscriptionError),
-    Filter,
 }
 pub struct P2p {
     pub swarm: Swarm<Behaviour>,

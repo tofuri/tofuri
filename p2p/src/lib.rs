@@ -20,6 +20,7 @@ use std::collections::HashSet;
 use std::net::IpAddr;
 use std::time::Duration;
 use tofuri_core::*;
+use tracing::log::warn;
 #[derive(Debug)]
 pub enum Error {
     PublishError(PublishError),
@@ -48,24 +49,32 @@ impl P2p {
             known,
         })
     }
-    pub fn timeout(&mut self, peer_id: &PeerId) {
-        let ip_addr = self.connections.get(peer_id).unwrap();
-        self.timeouts.insert(*ip_addr, tofuri_util::timestamp());
+    fn get_ip_addr(&self, peer_id: &PeerId) -> Option<IpAddr> {
+        if let Some(ip_addr) = self.connections.get(peer_id).cloned() {
+            Some(ip_addr)
+        } else {
+            warn!("Peer {} not found in connections", peer_id);
+            None
+        }
     }
-    pub fn has_timeout(&self, peer_id: &PeerId) -> bool {
-        let ip_addr = self.connections.get(peer_id).unwrap();
-        let timestamp = self.timeouts.get(ip_addr).unwrap_or(&0);
-        tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
+    pub fn timeout(&mut self, peer_id: &PeerId) {
+        if let Some(ip_addr) = self.get_ip_addr(peer_id) {
+            self.timeouts.insert(ip_addr, tofuri_util::timestamp());
+        }
     }
     pub fn request(&mut self, peer_id: &PeerId) -> bool {
-        let ip_addr = self.connections.get(peer_id).unwrap();
-        let mut requests = *self.requests.get(ip_addr).unwrap_or(&0);
-        requests += 1;
-        self.requests.insert(*ip_addr, requests);
-        if requests > P2P_REQUESTS {
-            self.timeout(peer_id);
+        if let Some(ip_addr) = self.get_ip_addr(peer_id) {
+            let mut requests = *self.requests.get(&ip_addr).unwrap_or(&0);
+            requests += 1;
+            self.requests.insert(ip_addr, requests);
+            if requests > P2P_REQUESTS {
+                self.timeout(peer_id);
+            }
+            let timestamp = self.timeouts.get(&ip_addr).unwrap_or(&0);
+            tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
+        } else {
+            true
         }
-        self.has_timeout(peer_id)
     }
     pub fn peers(&mut self, peer_id: &PeerId) -> bool {
         let ip_addr = self.connections.get(peer_id).unwrap();

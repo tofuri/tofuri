@@ -45,3 +45,4 @@ pub const INTERVAL_DIAL_UNKNOWN: u64 = 60;
 pub const INTERVAL_SYNC_REQUEST: u64 = 1;
 pub const INTERVAL_CHECKPOINT: u64 = 600;
 pub const P2P_TIMEOUT: u32 = 3600;
+pub const P2P_SYNC_REQUESTS_PER_SECOND: usize = 2;

@@ -145,7 +145,6 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
             .report_message_validation_result(&message_id, &propagation_source, MessageAcceptance::Ignore),
         Err(err) => {
             error!("{:?}", err);
-            node.p2p.timeout(&propagation_source);
             node.p2p
                 .swarm
                 .behaviour_mut()
@@ -159,7 +158,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) {
-    if node.p2p.has_timeout(&peer_id) {
+    if node.p2p.sync_request(&peer_id) {
         return;
     }
     #[derive(Debug)]
@@ -193,15 +192,12 @@ fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel:
         Ok(()) => debug!("Sync request processed"),
         Err(err) => {
             error!("{:?}", err);
-            node.p2p.timeout(&peer_id);
+            node.p2p.sync_timeout(&peer_id);
         }
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) {
-    if node.p2p.has_timeout(&peer_id) {
-        return;
-    }
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
@@ -220,7 +216,7 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) {
         Ok(()) => debug!("Sync response processed"),
         Err(err) => {
             error!("{:?}", err);
-            node.p2p.timeout(&peer_id);
+            node.p2p.sync_timeout(&peer_id);
         }
     }
 }

@@ -148,6 +148,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
             .report_message_validation_result(&message_id, &propagation_source, MessageAcceptance::Ignore),
         Err(err) => {
             error!("{:?}", err);
+            node.p2p.timeout(&propagation_source);
             node.p2p
                 .swarm
                 .behaviour_mut()

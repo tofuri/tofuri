@@ -395,11 +395,18 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         Ok(vec.try_into().unwrap())
     }
     fn attempt(slice: &[u8], passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
-        let salt: Salt = slice[0..32].try_into().unwrap();
-        let nonce: Nonce = slice[32..44].try_into().unwrap();
-        let ciphertext: Ciphertext = slice[44..92].try_into().unwrap();
-        let key = Key::from_slice(decrypt(&salt, &nonce, &ciphertext, passphrase)?.as_slice().try_into().unwrap()).map_err(Error::Key)?;
-        Ok((salt, nonce, ciphertext, key))
+        fn inner(slice: &[u8], passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
+            let salt: Salt = slice[0..32].try_into().unwrap();
+            let nonce: Nonce = slice[32..44].try_into().unwrap();
+            let ciphertext: Ciphertext = slice[44..92].try_into().unwrap();
+            let key = Key::from_slice(decrypt(&salt, &nonce, &ciphertext, passphrase)?.as_slice().try_into().unwrap()).map_err(Error::Key)?;
+            Ok((salt, nonce, ciphertext, key))
+        }
+        let res = inner(slice, passphrase);
+        if let Err(Error::InvalidPassphrase) = res {
+            println!("{}", INCORRECT.red())
+        }
+        res
     }
     if filename.is_empty() ^ passphrase.is_empty() {
         println!("{}", "To use autodecrypt you must specify both --wallet and --passphrase".red());
@@ -408,20 +415,8 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
     if !filename.is_empty() && !passphrase.is_empty() {
         let mut path = util::default_path().join(filename);
         path.set_extension(EXTENSION);
-        let bytes = match read_exact(path) {
-            Ok(x) => x,
-            Err(err) => {
-                println!("{:?}", err);
-                process::exit(0);
-            }
-        };
-        return match attempt(&bytes, passphrase) {
-            Ok(x) => Ok(x),
-            Err(_) => {
-                println!("{}", INCORRECT.red());
-                process::exit(0);
-            }
-        };
+        let bytes = read_exact(path)?;
+        return attempt(&bytes, &passphrase);
     }
     let mut filename = crate::inquire::select().map_err(Error::Inquire)?;
     if filename.as_str() == *GENERATE {
@@ -442,20 +437,14 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
     path.set_extension(EXTENSION);
     clear();
     println!("{}", path.to_string_lossy().green());
-    let bytes = match read_exact(path) {
-        Ok(x) => x,
-        Err(err) => {
-            println!("{:?}", err);
-            process::exit(0);
-        }
-    };
+    let bytes = read_exact(path)?;
     loop {
         let passphrase = crate::inquire::passphrase();
-        if let Ok((salt, nonce, ciphertext, key)) = attempt(&bytes, &passphrase) {
-            return Ok((salt, nonce, ciphertext, key));
-        } else {
-            println!("{}", INCORRECT.red());
+        let res = attempt(&bytes, &passphrase);
+        if let Err(Error::InvalidPassphrase) = res {
+            continue;
         }
+        return Ok(res?);
     }
 }
 pub fn press_any_key_to_continue() {

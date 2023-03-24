@@ -148,14 +148,13 @@ impl Pay {
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
             let address = tofuri_address::address::encode(&charge.address_bytes(&self.key));
-            let res = {
+            if {
                 let amount = match map.get(&address) {
                     Some(a) => *a,
                     None => 0,
                 };
                 charge.amount < amount
-            };
-            if res {
+            } {
                 charge.status = ChargeStatus::Completed;
                 tofuri_pay_db::charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
                 charges.push(charge);

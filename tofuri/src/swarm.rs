@@ -129,7 +129,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
     if node.p2p.filter(&message.data) {
         return;
     }
-    let res = match inner(node, message) {
+    match match inner(node, message) {
         Ok(()) => {
             debug!("Gossipsub message processed");
             node.p2p
@@ -155,8 +155,7 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
                 .gossipsub
                 .report_message_validation_result(&message_id, &propagation_source, MessageAcceptance::Reject)
         }
-    };
-    match res {
+    } {
         Ok(cache) => debug!(cache, "Message validation result reported"),
         Err(err) => error!("{:?}", err),
     }

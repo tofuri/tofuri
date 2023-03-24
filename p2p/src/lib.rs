@@ -77,11 +77,14 @@ impl P2p {
         }
     }
     pub fn peers(&mut self, peer_id: &PeerId) -> bool {
-        let ip_addr = self.connections.get(peer_id).unwrap();
-        let mut peers = *self.peers.get(ip_addr).unwrap_or(&0);
-        peers += 1;
-        self.peers.insert(*ip_addr, peers);
-        peers > P2P_PEERS
+        if let Some(ip_addr) = self.get_ip_addr(peer_id) {
+            let mut peers = *self.peers.get(&ip_addr).unwrap_or(&0);
+            peers += 1;
+            self.peers.insert(ip_addr, peers);
+            peers > P2P_PEERS
+        } else {
+            true
+        }
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0

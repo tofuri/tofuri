@@ -22,7 +22,7 @@ pub fn dial_unknown(node: &mut Node) {
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn clear(node: &mut Node) {
     node.blockchain.sync.handler();
-    node.p2p.request_counter.clear();
+    node.p2p.request_response_counter.clear();
     node.p2p.gossipsub_message_counter_peers.clear();
 }
 #[tracing::instrument(skip_all, level = "debug")]

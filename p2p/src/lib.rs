@@ -32,8 +32,8 @@ pub struct P2p {
     pub connections: HashMap<PeerId, IpAddr>,
     pub connections_unknown: HashSet<IpAddr>,
     pub connections_known: HashSet<IpAddr>,
-    pub request_timeouts: HashMap<IpAddr, u32>,
-    pub request_counter: HashMap<IpAddr, usize>,
+    pub request_response_timeouts: HashMap<IpAddr, u32>,
+    pub request_response_counter: HashMap<IpAddr, usize>,
     pub gossipsub_message_counter_blocks: HashMap<IpAddr, usize>,
     pub gossipsub_message_counter_transactions: HashMap<IpAddr, usize>,
     pub gossipsub_message_counter_stakes: HashMap<IpAddr, usize>,
@@ -46,8 +46,8 @@ impl P2p {
             connections: HashMap::new(),
             connections_unknown: HashSet::new(),
             connections_known: known,
-            request_timeouts: HashMap::new(),
-            request_counter: HashMap::new(),
+            request_response_timeouts: HashMap::new(),
+            request_response_counter: HashMap::new(),
             gossipsub_message_counter_blocks: HashMap::new(),
             gossipsub_message_counter_transactions: HashMap::new(),
             gossipsub_message_counter_stakes: HashMap::new(),
@@ -62,27 +62,27 @@ impl P2p {
             None
         }
     }
-    pub fn request_timeout(&mut self, peer_id: &PeerId) {
-        let opt = self.get_ip_addr(peer_id);
-        if opt.is_none() {
+    pub fn request_response_timeout(&mut self, peer_id: &PeerId) {
+        let option_ip_addr = self.get_ip_addr(peer_id);
+        if option_ip_addr.is_none() {
             return;
         }
-        let ip_addr = opt.unwrap();
-        self.request_timeouts.insert(ip_addr, tofuri_util::timestamp());
+        let ip_addr = option_ip_addr.unwrap();
+        self.request_response_timeouts.insert(ip_addr, tofuri_util::timestamp());
     }
-    pub fn request_counter(&mut self, peer_id: &PeerId) -> bool {
-        let opt = self.get_ip_addr(peer_id);
-        if opt.is_none() {
+    pub fn request_response_counter(&mut self, peer_id: &PeerId) -> bool {
+        let option_ip_addr = self.get_ip_addr(peer_id);
+        if option_ip_addr.is_none() {
             return true;
         }
-        let ip_addr = opt.unwrap();
-        let mut requests = *self.request_counter.get(&ip_addr).unwrap_or(&0);
+        let ip_addr = option_ip_addr.unwrap();
+        let mut requests = *self.request_response_counter.get(&ip_addr).unwrap_or(&0);
         requests += 1;
-        self.request_counter.insert(ip_addr, requests);
-        if requests > P2P_REQUESTS {
-            self.request_timeout(peer_id);
+        self.request_response_counter.insert(ip_addr, requests);
+        if requests > P2P_REQUEST_RESPONSE {
+            self.request_response_timeout(peer_id);
         }
-        let timestamp = self.request_timeouts.get(&ip_addr).unwrap_or(&0);
+        let timestamp = self.request_response_timeouts.get(&ip_addr).unwrap_or(&0);
         tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
     }
     fn gossipsub_message_counter(connections: &HashMap<PeerId, IpAddr>, map: &mut HashMap<IpAddr, usize>, limit: usize, peer_id: &PeerId) -> bool {

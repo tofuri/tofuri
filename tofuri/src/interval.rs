@@ -23,11 +23,7 @@ pub fn interval_1m(node: &mut Node) {
     grow(node);
     share(node);
     dial_unknown(node);
-    node.p2p.request_response_counter.clear();
-    node.p2p.gossipsub_message_counter_block.clear();
-    node.p2p.gossipsub_message_counter_transaction.clear();
-    node.p2p.gossipsub_message_counter_stake.clear();
-    node.p2p.gossipsub_message_counter_peers.clear();
+    node.p2p.ratelimit.counter.clear();
 }
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn interval_10m(node: &mut Node) {

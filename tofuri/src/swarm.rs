@@ -23,6 +23,7 @@ use tofuri_p2p::behaviour::OutEvent;
 use tofuri_p2p::behaviour::SyncRequest;
 use tofuri_p2p::behaviour::SyncResponse;
 use tofuri_p2p::multiaddr;
+use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
 use tracing::debug;
@@ -128,27 +129,33 @@ fn gossipsub_message(
         Bincode(bincode::Error),
         Blockchain(tofuri_blockchain::Error),
         MessageSource,
-        RatelimitBlock,
-        RatelimitTransaction,
-        RatelimitStake,
-        RatelimitPeers,
+        IpAddr,
+        Ratelimit,
     }
     fn inner(
         node: &mut Node,
         message: &GossipsubMessage,
         propagation_source: &PeerId,
     ) -> Result<(), Error> {
-        if message.source.is_none() {
-            return Err(Error::MessageSource);
+        let source = message.source.as_ref().ok_or(Error::MessageSource)?;
+        let vec_ip_addr = node.p2p.vec_ip_addr(&[source, propagation_source]);
+        if vec_ip_addr.is_empty() {
+            return Err(Error::IpAddr);
         }
-        let source = message.source.as_ref().unwrap();
-        match message.topic.as_str() {
-            "block" => {
-                if node.p2p.gossipsub_message_counter_block(source)
-                    || node.p2p.gossipsub_message_counter_block(propagation_source)
-                {
-                    return Err(Error::RatelimitBlock);
-                }
+        let endpoint = match message.topic.as_str() {
+            "block" => Endpoint::GossipsubMessageBlock,
+            "transaction" => Endpoint::GossipsubMessageTransaction,
+            "stake" => Endpoint::GossipsubMessageStake,
+            "peers" => Endpoint::GossipsubMessagePeers,
+            _ => unreachable!(),
+        };
+        for ip_addr in vec_ip_addr {
+            if node.p2p.ratelimit.counter.add(ip_addr, &endpoint) {
+                return Err(Error::Ratelimit);
+            }
+        }
+        match endpoint {
+            Endpoint::GossipsubMessageBlock => {
                 let block_b: BlockB =
                     bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
@@ -156,46 +163,29 @@ fn gossipsub_message(
                     .map_err(Error::Blockchain)?;
                 node.blockchain.save_blocks(&node.db, node.args.trust);
             }
-            "transaction" => {
-                if node.p2p.gossipsub_message_counter_transaction(source)
-                    || node
-                        .p2p
-                        .gossipsub_message_counter_transaction(propagation_source)
-                {
-                    return Err(Error::RatelimitTransaction);
-                }
+            Endpoint::GossipsubMessageTransaction => {
                 let transaction_b: TransactionB =
                     bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_transactions_push(transaction_b, node.args.time_delta)
                     .map_err(Error::Blockchain)?;
             }
-            "stake" => {
-                if node.p2p.gossipsub_message_counter_stake(source)
-                    || node.p2p.gossipsub_message_counter_stake(propagation_source)
-                {
-                    return Err(Error::RatelimitStake);
-                }
+            Endpoint::GossipsubMessageStake => {
                 let stake_b: StakeB =
                     bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_stakes_push(stake_b, node.args.time_delta)
                     .map_err(Error::Blockchain)?;
             }
-            "peers" => {
-                if node.p2p.gossipsub_message_counter_peers(source)
-                    || node.p2p.gossipsub_message_counter_peers(propagation_source)
-                {
-                    return Err(Error::RatelimitPeers);
-                }
+            Endpoint::GossipsubMessagePeers => {
                 for ip_addr in
                     bincode::deserialize::<Vec<IpAddr>>(&message.data).map_err(Error::Bincode)?
                 {
                     node.p2p.connections_unknown.insert(ip_addr);
                 }
             }
-            _ => {}
-        };
+            _ => unreachable!(),
+        }
         Ok(())
     }
     match match inner(node, &message, &propagation_source) {
@@ -247,7 +237,19 @@ fn sync_request(
     request: SyncRequest,
     channel: ResponseChannel<SyncResponse>,
 ) {
-    if node.p2p.request_response_counter(&peer_id) {
+    let ip_addr = match node.p2p.connections.get(&peer_id) {
+        Some(x) => *x,
+        None => {
+            warn!("Peer {} not found in connections", peer_id);
+            return;
+        }
+    };
+    if node
+        .p2p
+        .ratelimit
+        .counter
+        .add(ip_addr, &Endpoint::RequestResponse)
+    {
         return;
     }
     #[derive(Debug)]
@@ -290,7 +292,10 @@ fn sync_request(
         Ok(()) => debug!("Sync request processed"),
         Err(err) => {
             error!("{:?}", err);
-            node.p2p.request_response_timeout(&peer_id);
+            node.p2p
+                .ratelimit
+                .timeout
+                .insert(ip_addr, Endpoint::RequestResponse);
         }
     }
 }

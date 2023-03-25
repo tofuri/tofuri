@@ -1,5 +1,6 @@
 pub mod behaviour;
 pub mod multiaddr;
+pub mod ratelimit;
 use behaviour::Behaviour;
 use libp2p::core::upgrade;
 use libp2p::gossipsub::error::PublishError;
@@ -15,11 +16,11 @@ use libp2p::tcp;
 use libp2p::PeerId;
 use libp2p::Swarm;
 use libp2p::Transport;
+use ratelimit::Ratelimit;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::net::IpAddr;
 use std::time::Duration;
-use tofuri_core::*;
 use tracing::log::warn;
 #[derive(Debug)]
 pub enum Error {
@@ -32,12 +33,7 @@ pub struct P2p {
     pub connections: HashMap<PeerId, IpAddr>,
     pub connections_unknown: HashSet<IpAddr>,
     pub connections_known: HashSet<IpAddr>,
-    pub request_response_timeouts: HashMap<IpAddr, u32>,
-    pub request_response_counter: HashMap<IpAddr, usize>,
-    pub gossipsub_message_counter_block: HashMap<IpAddr, usize>,
-    pub gossipsub_message_counter_transaction: HashMap<IpAddr, usize>,
-    pub gossipsub_message_counter_stake: HashMap<IpAddr, usize>,
-    pub gossipsub_message_counter_peers: HashMap<IpAddr, usize>,
+    pub ratelimit: Ratelimit,
 }
 impl P2p {
     pub async fn new(
@@ -50,93 +46,22 @@ impl P2p {
             connections: HashMap::new(),
             connections_unknown: HashSet::new(),
             connections_known,
-            request_response_timeouts: HashMap::new(),
-            request_response_counter: HashMap::new(),
-            gossipsub_message_counter_block: HashMap::new(),
-            gossipsub_message_counter_transaction: HashMap::new(),
-            gossipsub_message_counter_stake: HashMap::new(),
-            gossipsub_message_counter_peers: HashMap::new(),
+            ratelimit: Ratelimit::default(),
         })
     }
-    fn get_ip_addr(&self, peer_id: &PeerId) -> Option<IpAddr> {
-        if let Some(ip_addr) = self.connections.get(peer_id).cloned() {
-            Some(ip_addr)
-        } else {
-            warn!("Peer {} not found in connections", peer_id);
-            None
+    pub fn vec_ip_addr(&self, slice_peer_id: &[&PeerId]) -> Vec<IpAddr> {
+        let mut vec = vec![];
+        for peer_id in slice_peer_id {
+            if let Some(ip_addr) = self.connections.get(peer_id).cloned() {
+                if vec.contains(&ip_addr) {
+                    continue;
+                }
+                vec.push(ip_addr);
+            } else {
+                warn!("Peer {} not found in connections", peer_id);
+            }
         }
-    }
-    pub fn request_response_timeout(&mut self, peer_id: &PeerId) {
-        let option_ip_addr = self.get_ip_addr(peer_id);
-        if option_ip_addr.is_none() {
-            return;
-        }
-        let ip_addr = option_ip_addr.unwrap();
-        self.request_response_timeouts
-            .insert(ip_addr, tofuri_util::timestamp());
-    }
-    pub fn request_response_counter(&mut self, peer_id: &PeerId) -> bool {
-        let option_ip_addr = self.get_ip_addr(peer_id);
-        if option_ip_addr.is_none() {
-            return true;
-        }
-        let ip_addr = option_ip_addr.unwrap();
-        let mut counter = *self.request_response_counter.get(&ip_addr).unwrap_or(&0);
-        counter += 1;
-        self.request_response_counter.insert(ip_addr, counter);
-        if counter > P2P_REQUEST_RESPONSE {
-            self.request_response_timeout(peer_id);
-        }
-        let timestamp = self.request_response_timeouts.get(&ip_addr).unwrap_or(&0);
-        tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
-    }
-    fn gossipsub_message_counter(
-        connections: &HashMap<PeerId, IpAddr>,
-        map: &mut HashMap<IpAddr, usize>,
-        limit: usize,
-        peer_id: &PeerId,
-    ) -> bool {
-        let option_ip_addr = connections.get(peer_id);
-        if option_ip_addr.is_none() {
-            return true;
-        }
-        let ip_addr = option_ip_addr.unwrap();
-        let mut counter = *map.get(ip_addr).unwrap_or(&0);
-        counter += 1;
-        map.insert(*ip_addr, counter);
-        counter > limit
-    }
-    pub fn gossipsub_message_counter_block(&mut self, peer_id: &PeerId) -> bool {
-        P2p::gossipsub_message_counter(
-            &self.connections,
-            &mut self.gossipsub_message_counter_block,
-            P2P_BLOCKS,
-            peer_id,
-        )
-    }
-    pub fn gossipsub_message_counter_transaction(&mut self, peer_id: &PeerId) -> bool {
-        P2p::gossipsub_message_counter(
-            &self.connections,
-            &mut self.gossipsub_message_counter_transaction,
-            P2P_TRANSACTIONS,
-            peer_id,
-        )
-    }
-    pub fn gossipsub_message_counter_stake(&mut self, peer_id: &PeerId) -> bool {
-        P2p::gossipsub_message_counter(
-            &self.connections,
-            &mut self.gossipsub_message_counter_stake,
-            P2P_STAKES,
-            peer_id,
-        )
-    }
-    pub fn gossipsub_message_counter_peers(&mut self, peer_id: &PeerId) -> bool {
-        P2p::gossipsub_message_counter(
-            &self.connections,
-            &mut self.gossipsub_message_counter_peers,
-            P2P_PEERS,
-            peer_id,
-        )
+        vec
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm

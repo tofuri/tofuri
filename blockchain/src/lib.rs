@@ -119,10 +119,12 @@ impl Blockchain {
     }
     pub fn height_by_hash(&self, hash: &Hash) -> Result<usize, Error> {
         if let Some(index) = self.forks.unstable.hashes.iter().position(|a| a == hash) {
-            return Ok(self.forks.stable.hashes.len() + index + 1);
+            let height = self.forks.stable.hashes.len() + index + 1;
+            return Ok(height);
         }
         if let Some(index) = self.forks.stable.hashes.iter().position(|a| a == hash) {
-            return Ok(index + 1);
+            let height = index + 1;
+            return Ok(height);
         }
         Err(Error::HeightByHash)
     }
@@ -132,9 +134,11 @@ impl Blockchain {
         }
         let index = height.saturating_sub(1);
         if index < self.forks.stable.hashes.len() {
-            Ok(self.forks.stable.hashes[index])
+            let hash = self.forks.stable.hashes[index];
+            Ok(hash)
         } else {
-            Ok(self.forks.unstable.hashes[index - self.forks.stable.hashes.len()])
+            let hash = self.forks.unstable.hashes[index - self.forks.stable.hashes.len()];
+            Ok(hash)
         }
     }
     pub fn sync_block(

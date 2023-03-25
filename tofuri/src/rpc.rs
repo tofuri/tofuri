@@ -130,36 +130,43 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type)
 #[tracing::instrument(skip_all, level = "trace")]
 fn balance(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    Ok(node.blockchain.balance(&address_bytes))
+    let balance = node.blockchain.balance(&address_bytes);
+    Ok(balance)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn balance_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    Ok(node.blockchain.balance_pending_min(&address_bytes))
+    let balance_pending_min = node.blockchain.balance_pending_min(&address_bytes);
+    Ok(balance_pending_min)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn balance_pending_max(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    Ok(node.blockchain.balance_pending_max(&address_bytes))
+    let balance_pending_max = node.blockchain.balance_pending_max(&address_bytes);
+    Ok(balance_pending_max)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn staked(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    Ok(node.blockchain.staked(&address_bytes))
+    let staked = node.blockchain.staked(&address_bytes);
+    Ok(staked)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn staked_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    Ok(node.blockchain.staked_pending_min(&address_bytes))
+    let staked_pending_min = node.blockchain.staked_pending_min(&address_bytes);
+    Ok(staked_pending_min)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn staked_pending_max(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    Ok(node.blockchain.staked_pending_max(&address_bytes))
+    let staked_pending_max = node.blockchain.staked_pending_max(&address_bytes);
+    Ok(staked_pending_max)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn height(node: &mut Node) -> Result<usize, Error> {
-    Ok(node.blockchain.height())
+    let height = node.blockchain.height();
+    Ok(height)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Error> {
@@ -196,7 +203,8 @@ fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<StakeA, Error> {
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn peers(node: &mut Node) -> Result<Vec<&IpAddr>, Error> {
-    Ok(node.p2p.connections.values().collect())
+    let vec = node.p2p.connections.values().collect();
+    Ok(vec)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Error> {

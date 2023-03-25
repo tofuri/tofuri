@@ -123,7 +123,8 @@ impl StakeB {
         hash(self)
     }
     fn input_address(&self) -> Result<AddressBytes, Error> {
-        Ok(Key::address(&self.input_public_key()?))
+        let input_address = Key::address(&self.input_public_key()?);
+        Ok(input_address)
     }
     fn input_public_key(&self) -> Result<PublicKeyBytes, Error> {
         Key::recover(&self.hash(), &self.signature).map_err(Error::Key)

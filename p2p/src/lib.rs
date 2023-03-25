@@ -41,13 +41,14 @@ impl P2p {
         timeout: u64,
         connections_known: HashSet<IpAddr>,
     ) -> Result<P2p, Error> {
-        Ok(P2p {
+        let p2p = P2p {
             swarm: swarm(max_established, timeout).await?,
             connections: HashMap::new(),
             connections_unknown: HashSet::new(),
             connections_known,
             ratelimit: Ratelimit::default(),
-        })
+        };
+        Ok(p2p)
     }
     pub fn vec_ip_addr(&self, peer_ids: &[PeerId]) -> Vec<IpAddr> {
         let mut vec = vec![];

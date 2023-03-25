@@ -25,30 +25,26 @@ pub struct Counter {
 }
 impl Counter {
     pub fn add(&mut self, ip_addr: IpAddr, endpoint: &Endpoint) -> bool {
-        let (hash_map, limit) = match endpoint {
-            Endpoint::Request => (&mut self.request, P2P_RATELIMIT_REQUEST),
-            Endpoint::Response => (&mut self.response, P2P_RATELIMIT_RESPONSE),
-            Endpoint::GossipsubMessageBlock => (
-                &mut self.gossipsub_message_block,
-                P2P_RATELIMIT_GOSSIPSUB_MESSAGE_BLOCK,
-            ),
-            Endpoint::GossipsubMessageTransaction => (
-                &mut self.gossipsub_message_transaction,
-                P2P_RATELIMIT_GOSSIPSUB_MESSAGE_TRANSACTION,
-            ),
-            Endpoint::GossipsubMessageStake => (
-                &mut self.gossipsub_message_stake,
-                P2P_RATELIMIT_GOSSIPSUB_MESSAGE_STAKE,
-            ),
-            Endpoint::GossipsubMessagePeers => (
-                &mut self.gossipsub_message_peers,
-                P2P_RATELIMIT_GOSSIPSUB_MESSAGE_PEERS,
-            ),
+        let map = match endpoint {
+            Endpoint::Request => &mut self.request,
+            Endpoint::Response => &mut self.response,
+            Endpoint::GossipsubMessageBlock => &mut self.gossipsub_message_block,
+            Endpoint::GossipsubMessageTransaction => &mut self.gossipsub_message_transaction,
+            Endpoint::GossipsubMessageStake => &mut self.gossipsub_message_stake,
+            Endpoint::GossipsubMessagePeers => &mut self.gossipsub_message_peers,
         };
-        let mut counter = *hash_map.get(&ip_addr).unwrap_or(&0);
-        counter += 1;
-        hash_map.insert(ip_addr, counter);
-        counter > limit
+        let limit = match endpoint {
+            Endpoint::Request => P2P_RATELIMIT_REQUEST,
+            Endpoint::Response => P2P_RATELIMIT_RESPONSE,
+            Endpoint::GossipsubMessageBlock => P2P_RATELIMIT_GOSSIPSUB_MESSAGE_BLOCK,
+            Endpoint::GossipsubMessageTransaction => P2P_RATELIMIT_GOSSIPSUB_MESSAGE_TRANSACTION,
+            Endpoint::GossipsubMessageStake => P2P_RATELIMIT_GOSSIPSUB_MESSAGE_STAKE,
+            Endpoint::GossipsubMessagePeers => P2P_RATELIMIT_GOSSIPSUB_MESSAGE_PEERS,
+        };
+        let mut i = *map.get(&ip_addr).unwrap_or(&0);
+        i += 1;
+        map.insert(ip_addr, i);
+        i > limit
     }
     pub fn clear(&mut self) {
         self.request.clear();
@@ -66,20 +62,25 @@ pub struct Timeout {
 }
 impl Timeout {
     pub fn insert(&mut self, ip_addr: IpAddr, endpoint: Endpoint) {
-        let hash_map = match endpoint {
+        let map = match endpoint {
             Endpoint::Request => &mut self.request,
             Endpoint::Response => &mut self.response,
             _ => unimplemented!(),
         };
-        hash_map.insert(ip_addr, tofuri_util::timestamp());
+        map.insert(ip_addr, tofuri_util::timestamp());
     }
     pub fn has(&self, ip_addr: IpAddr, endpoint: Endpoint) -> bool {
-        let (hash_map, limit) = match endpoint {
-            Endpoint::Request => (&self.request, P2P_RATELIMIT_REQUEST_TIMEOUT),
-            Endpoint::Response => (&self.response, P2P_RATELIMIT_RESPONSE_TIMEOUT),
+        let map = match endpoint {
+            Endpoint::Request => &self.request,
+            Endpoint::Response => &self.response,
             _ => unimplemented!(),
         };
-        let timestamp = hash_map.get(&ip_addr).unwrap_or(&0);
+        let limit = match endpoint {
+            Endpoint::Request => P2P_RATELIMIT_REQUEST_TIMEOUT,
+            Endpoint::Response => P2P_RATELIMIT_RESPONSE_TIMEOUT,
+            _ => unimplemented!(),
+        };
+        let timestamp = map.get(&ip_addr).unwrap_or(&0);
         tofuri_util::timestamp() - timestamp < limit
     }
 }

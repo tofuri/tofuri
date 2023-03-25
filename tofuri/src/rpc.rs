@@ -20,8 +20,8 @@ use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
+use tracing::debug;
 use tracing::error;
-use tracing::info;
 use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
@@ -37,7 +37,7 @@ pub enum Error {
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
     match res {
         Ok((stream, socket_addr)) => match request(node, stream).await {
-            Ok((bytes, t)) => info!(socket_addr = socket_addr.to_string(), bytes, "{:?}", t),
+            Ok((bytes, t)) => debug!(socket_addr = socket_addr.to_string(), bytes, "{:?}", t),
             Err(err) => error!(socket_addr = socket_addr.to_string(), "{:?}", err),
         },
         Err(err) => error!("{:?}", err),

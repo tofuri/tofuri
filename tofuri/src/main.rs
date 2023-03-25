@@ -79,23 +79,17 @@ async fn main() {
     node.p2p.swarm.listen_on(multiaddr).unwrap();
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
     info!(local_addr = listener.local_addr().unwrap().to_string(), "RPC");
-    let mut interval_grow = tofuri_util::interval_at(Duration::from_secs(INTERVAL_GROW));
-    let mut interval_clear = tofuri_util::interval_at(Duration::from_secs(INTERVAL_CLEAR));
-    let mut interval_share = tofuri_util::interval_at(Duration::from_secs(INTERVAL_SHARE));
-    let mut interval_dial_known = tofuri_util::interval_at(Duration::from_secs(INTERVAL_DIAL_KNOWN));
-    let mut interval_dial_unknown = tofuri_util::interval_at(Duration::from_secs(INTERVAL_DIAL_UNKNOWN));
-    let mut interval_sync_request = tofuri_util::interval_at(Duration::from_secs(INTERVAL_SYNC_REQUEST));
-    let mut interval_checkpoint = tofuri_util::interval_at(Duration::from_secs(INTERVAL_CHECKPOINT));
+    let mut interval_1s = tofuri_util::interval_at(Duration::from_secs(1));
+    let mut interval_10s = tofuri_util::interval_at(Duration::from_secs(10));
+    let mut interval_1m = tofuri_util::interval_at(Duration::from_secs(60));
+    let mut interval_10m = tofuri_util::interval_at(Duration::from_secs(600));
     loop {
         node.ticks += 1;
         tokio::select! {
-            _ = interval_grow.tick() => interval::grow(&mut node),
-            _ = interval_clear.tick() => interval::clear(&mut node),
-            _ = interval_share.tick() => interval::share(&mut node),
-            _ = interval_dial_known.tick() => interval::dial_known(&mut node),
-            _ = interval_dial_unknown.tick() => interval::dial_unknown(&mut node),
-            _ = interval_sync_request.tick() => interval::sync_request(&mut node),
-            _ = interval_checkpoint.tick() => interval::checkpoint(&mut node),
+            _ = interval_1s.tick() => interval::interval_1s(&mut node),
+            _ = interval_10s.tick() => interval::interval_10s(&mut node),
+            _ = interval_1m.tick() => interval::interval_1m(&mut node),
+            _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
             res = listener.accept() => rpc::accept(&mut node, res).await
         }

@@ -10,17 +10,36 @@ use tracing::error;
 use tracing::info;
 use tracing::warn;
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn dial_known(node: &mut Node) {
+pub fn interval_1s(node: &mut Node) {
+    clear(node);
+    sync_request(node);
+}
+#[tracing::instrument(skip_all, level = "debug")]
+pub fn interval_10s(node: &mut Node) {
+    dial_known(node)
+}
+#[tracing::instrument(skip_all, level = "debug")]
+pub fn interval_1m(node: &mut Node) {
+    grow(node);
+    share(node);
+    dial_unknown(node);
+}
+#[tracing::instrument(skip_all, level = "debug")]
+pub fn interval_10m(node: &mut Node) {
+    checkpoint(node);
+}
+#[tracing::instrument(skip_all, level = "debug")]
+fn dial_known(node: &mut Node) {
     let vec = node.p2p.connections_known.clone().into_iter().collect();
     dial(node, vec);
 }
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn dial_unknown(node: &mut Node) {
+fn dial_unknown(node: &mut Node) {
     let vec = node.p2p.connections_unknown.drain().collect();
     dial(node, vec);
 }
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn clear(node: &mut Node) {
+fn clear(node: &mut Node) {
     node.blockchain.sync.handler();
     node.p2p.request_response_counter.clear();
     node.p2p.gossipsub_message_counter_peers.clear();
@@ -36,7 +55,7 @@ fn dial(node: &mut Node, vec: Vec<IpAddr>) {
     }
 }
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn share(node: &mut Node) {
+fn share(node: &mut Node) {
     let vec: Vec<&IpAddr> = node.p2p.connections.values().collect();
     if vec.is_empty() {
         return;
@@ -47,7 +66,7 @@ pub fn share(node: &mut Node) {
     }
 }
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn grow(node: &mut Node) {
+fn grow(node: &mut Node) {
     let timestamp = tofuri_util::timestamp();
     let timestamp = timestamp - (timestamp % BLOCK_TIME);
     node.blockchain.pending_retain(timestamp);
@@ -72,7 +91,7 @@ pub fn grow(node: &mut Node) {
     }
 }
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn sync_request(node: &mut Node) {
+fn sync_request(node: &mut Node) {
     if node.blockchain.forks.unstable.latest_block.timestamp >= tofuri_util::timestamp() - BLOCK_TIME {
         return;
     }
@@ -85,7 +104,7 @@ pub fn sync_request(node: &mut Node) {
     }
 }
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn checkpoint(node: &mut Node) {
+fn checkpoint(node: &mut Node) {
     let checkpoint = node.blockchain.forks.stable.checkpoint();
     tofuri_db::checkpoint::put(&node.db, &checkpoint).unwrap();
     info!(checkpoint.height);

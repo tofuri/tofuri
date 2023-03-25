@@ -2,7 +2,7 @@ use crate::Node;
 use rand::prelude::*;
 use std::net::IpAddr;
 use tofuri_core::*;
-use tofuri_p2p::behaviour::SyncRequest;
+use tofuri_p2p::behaviour::Request;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_util;
@@ -128,7 +128,7 @@ fn sync_request(node: &mut Node) {
         .request_response
         .send_request(
             &peer_id,
-            SyncRequest(bincode::serialize(&(node.blockchain.height())).unwrap()),
+            Request(bincode::serialize(&(node.blockchain.height())).unwrap()),
         );
 }
 #[tracing::instrument(skip_all, level = "debug")]

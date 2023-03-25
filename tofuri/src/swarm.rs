@@ -20,8 +20,8 @@ use tofuri_block::BlockB;
 use tofuri_core::*;
 use tofuri_db as db;
 use tofuri_p2p::behaviour::OutEvent;
-use tofuri_p2p::behaviour::SyncRequest;
-use tofuri_p2p::behaviour::SyncResponse;
+use tofuri_p2p::behaviour::Request;
+use tofuri_p2p::behaviour::Response;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_stake::StakeB;
@@ -240,8 +240,8 @@ fn gossipsub_message(
 fn sync_request(
     node: &mut Node,
     peer_id: PeerId,
-    request: SyncRequest,
-    channel: ResponseChannel<SyncResponse>,
+    request: Request,
+    channel: ResponseChannel<Response>,
 ) {
     let ip_addr = match node.p2p.connections.get(&peer_id) {
         Some(x) => *x,
@@ -257,12 +257,12 @@ fn sync_request(
     enum Error {
         Bincode(bincode::Error),
         Blockchain(tofuri_blockchain::Error),
-        SyncResponse(tofuri_p2p::behaviour::SyncResponse),
+        Response(Response),
     }
     fn inner(
         node: &mut Node,
-        request: SyncRequest,
-        channel: ResponseChannel<SyncResponse>,
+        request: Request,
+        channel: ResponseChannel<Response>,
     ) -> Result<(), Error> {
         let height: usize = bincode::deserialize(&request.0).map_err(Error::Bincode)?;
         let mut size = 0;
@@ -285,8 +285,8 @@ fn sync_request(
             .swarm
             .behaviour_mut()
             .request_response
-            .send_response(channel, SyncResponse(vec))
-            .map_err(Error::SyncResponse)?;
+            .send_response(channel, Response(vec))
+            .map_err(Error::Response)?;
         Ok(())
     }
     match inner(node, request, channel) {
@@ -301,7 +301,7 @@ fn sync_request(
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) {
+fn sync_response(node: &mut Node, peer_id: PeerId, response: Response) {
     let ip_addr = match node.p2p.connections.get(&peer_id) {
         Some(x) => *x,
         None => {
@@ -317,7 +317,7 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) {
         Bincode(bincode::Error),
         Blockchain(tofuri_blockchain::Error),
     }
-    fn inner(node: &mut Node, response: SyncResponse) -> Result<(), Error> {
+    fn inner(node: &mut Node, response: Response) -> Result<(), Error> {
         for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0).map_err(Error::Bincode)? {
             node.blockchain
                 .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)

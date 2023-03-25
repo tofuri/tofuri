@@ -29,7 +29,7 @@ pub struct Behaviour {
     pub identify: identify::Behaviour,
     pub gossipsub: Gossipsub,
     pub autonat: autonat::Behaviour,
-    pub request_response: RequestResponse<SyncCodec>,
+    pub request_response: RequestResponse<Codec>,
 }
 impl Behaviour {
     pub async fn new(local_key: identity::Keypair) -> Result<Behaviour, Error> {
@@ -50,8 +50,8 @@ impl Behaviour {
         let autonat =
             autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default());
         let request_response = RequestResponse::new(
-            SyncCodec(),
-            std::iter::once((SyncProtocol(), ProtocolSupport::Full)),
+            Codec(),
+            std::iter::once((Protocol(), ProtocolSupport::Full)),
             Default::default(),
         );
         let behaviour = Behaviour {
@@ -70,7 +70,7 @@ pub enum OutEvent {
     Mdns(mdns::Event),
     Identify(identify::Event),
     Autonat(autonat::Event),
-    RequestResponse(RequestResponseEvent<SyncRequest, SyncResponse>),
+    RequestResponse(RequestResponseEvent<Request, Response>),
 }
 impl From<mdns::Event> for OutEvent {
     fn from(v: mdns::Event) -> OutEvent {
@@ -92,50 +92,52 @@ impl From<autonat::Event> for OutEvent {
         OutEvent::Autonat(v)
     }
 }
-impl From<RequestResponseEvent<SyncRequest, SyncResponse>> for OutEvent {
-    fn from(v: RequestResponseEvent<SyncRequest, SyncResponse>) -> OutEvent {
+impl From<RequestResponseEvent<Request, Response>> for OutEvent {
+    fn from(v: RequestResponseEvent<Request, Response>) -> OutEvent {
         OutEvent::RequestResponse(v)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SyncRequest(pub Vec<u8>);
+pub struct Request(pub Vec<u8>);
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SyncResponse(pub Vec<u8>);
+pub struct Response(pub Vec<u8>);
 #[derive(Debug, Clone)]
-pub struct SyncProtocol();
-impl ProtocolName for SyncProtocol {
+pub struct Protocol();
+impl ProtocolName for Protocol {
     fn protocol_name(&self) -> &[u8] {
         PROTOCOL_NAME.as_bytes()
     }
 }
 #[derive(Clone)]
-pub struct SyncCodec();
+pub struct Codec();
 #[async_trait]
-impl RequestResponseCodec for SyncCodec {
-    type Protocol = SyncProtocol;
-    type Request = SyncRequest;
-    type Response = SyncResponse;
+impl RequestResponseCodec for Codec {
+    type Protocol = Protocol;
+    type Request = Request;
+    type Response = Response;
     async fn read_request<T: AsyncRead + Unpin + Send>(
         &mut self,
-        _: &SyncProtocol,
+        _: &Protocol,
         io: &mut T,
     ) -> io::Result<Self::Request> {
-        Ok(SyncRequest(read_length_prefixed(io, 8).await?))
+        let vec = read_length_prefixed(io, 8).await?;
+        let request = Request(vec);
+        Ok(request)
     }
     async fn read_response<T: AsyncRead + Unpin + Send>(
         &mut self,
-        _: &SyncProtocol,
+        _: &Protocol,
         io: &mut T,
     ) -> io::Result<Self::Response> {
         let vec = read_length_prefixed(io, MAX_TRANSMIT_SIZE).await?;
-        let response = SyncResponse(vec);
+        let response = Response(vec);
         Ok(response)
     }
     async fn write_request<T: AsyncWrite + Unpin + Send>(
         &mut self,
-        _: &SyncProtocol,
+        _: &Protocol,
         io: &mut T,
-        SyncRequest(vec): SyncRequest,
+        Request(vec): Request,
     ) -> io::Result<()> {
         write_length_prefixed(io, vec).await?;
         io.close().await?;
@@ -143,9 +145,9 @@ impl RequestResponseCodec for SyncCodec {
     }
     async fn write_response<T: AsyncWrite + Unpin + Send>(
         &mut self,
-        _: &SyncProtocol,
+        _: &Protocol,
         io: &mut T,
-        SyncResponse(vec): SyncResponse,
+        Response(vec): Response,
     ) -> io::Result<()> {
         write_length_prefixed(io, vec).await?;
         io.close().await?;

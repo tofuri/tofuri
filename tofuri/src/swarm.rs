@@ -98,11 +98,21 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
         Bincode(bincode::Error),
         Blockchain(tofuri_blockchain::Error),
         MessageSource,
-        Peers,
+        RatelimitBlock,
+        RatelimitTransaction,
+        RatelimitStake,
+        RatelimitPeers,
     }
     fn inner(node: &mut Node, message: &GossipsubMessage, propagation_source: &PeerId) -> Result<(), Error> {
+        if message.source.is_none() {
+            return Err(Error::MessageSource);
+        }
+        let source = message.source.as_ref().unwrap();
         match message.topic.as_str() {
             "block" => {
+                if node.p2p.gossipsub_message_counter_block(source) || node.p2p.gossipsub_message_counter_block(propagation_source) {
+                    return Err(Error::RatelimitBlock);
+                }
                 let block_b: BlockB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)
@@ -110,23 +120,24 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
                 node.blockchain.save_blocks(&node.db, node.args.trust);
             }
             "transaction" => {
+                if node.p2p.gossipsub_message_counter_transaction(source) || node.p2p.gossipsub_message_counter_transaction(propagation_source) {
+                    return Err(Error::RatelimitTransaction);
+                }
                 let transaction_b: TransactionB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_transactions_push(transaction_b, node.args.time_delta)
                     .map_err(Error::Blockchain)?;
             }
             "stake" => {
+                if node.p2p.gossipsub_message_counter_stake(source) || node.p2p.gossipsub_message_counter_stake(propagation_source) {
+                    return Err(Error::RatelimitStake);
+                }
                 let stake_b: StakeB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain.pending_stakes_push(stake_b, node.args.time_delta).map_err(Error::Blockchain)?;
             }
             "peers" => {
-                match &message.source {
-                    Some(source) => {
-                        if node.p2p.gossipsub_message_counter_peers(source) || node.p2p.gossipsub_message_counter_peers(propagation_source) {
-                            return Err(Error::Peers);
-                        }
-                    }
-                    None => return Err(Error::MessageSource),
+                if node.p2p.gossipsub_message_counter_peers(source) || node.p2p.gossipsub_message_counter_peers(propagation_source) {
+                    return Err(Error::RatelimitPeers);
                 }
                 for ip_addr in bincode::deserialize::<Vec<IpAddr>>(&message.data).map_err(Error::Bincode)? {
                     node.p2p.connections_unknown.insert(ip_addr);

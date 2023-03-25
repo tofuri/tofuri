@@ -49,7 +49,7 @@ impl P2p {
             ratelimit: Ratelimit::default(),
         })
     }
-    pub fn vec_ip_addr(&self, peer_ids: &[&PeerId]) -> Vec<IpAddr> {
+    pub fn vec_ip_addr(&self, peer_ids: &[PeerId]) -> Vec<IpAddr> {
         let mut vec = vec![];
         for peer_id in peer_ids {
             if let Some(ip_addr) = self.connections.get(peer_id).cloned() {

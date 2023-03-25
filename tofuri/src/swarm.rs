@@ -137,9 +137,9 @@ fn gossipsub_message(
     fn inner(
         node: &mut Node,
         message: &GossipsubMessage,
-        propagation_source: &PeerId,
+        propagation_source: PeerId,
     ) -> Result<(), Error> {
-        let source = message.source.as_ref().ok_or(Error::MessageSource)?;
+        let source = message.source.ok_or(Error::MessageSource)?;
         let vec_ip_addr = node.p2p.vec_ip_addr(&[source, propagation_source]);
         if vec_ip_addr.is_empty() {
             return Err(Error::IpAddr);
@@ -190,7 +190,7 @@ fn gossipsub_message(
         }
         Ok(())
     }
-    match match inner(node, &message, &propagation_source) {
+    match match inner(node, &message, propagation_source) {
         Ok(()) => {
             debug!("Gossipsub message processed");
             node.p2p

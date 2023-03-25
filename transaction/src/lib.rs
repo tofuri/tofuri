@@ -115,7 +115,7 @@ impl TransactionA {
 impl TransactionB {
     pub fn a(&self, input_address: Option<AddressBytes>) -> Result<TransactionA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
-        Ok(TransactionA {
+        let transaction_a = TransactionA {
             output_address: self.output_address,
             amount: tofuri_int::from_be_slice(&self.amount),
             fee: tofuri_int::from_be_slice(&self.fee),
@@ -123,7 +123,8 @@ impl TransactionB {
             signature: self.signature,
             input_address,
             hash: self.hash(),
-        })
+        };
+        Ok(transaction_a)
     }
     pub fn hash(&self) -> Hash {
         hash(self)

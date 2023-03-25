@@ -186,7 +186,7 @@ impl BlockB {
         for stake in self.stakes.iter() {
             stakes.push(stake.a(None).map_err(Error::Stake)?);
         }
-        Ok(BlockA {
+        let block_a = BlockA {
             hash: self.hash(),
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,
@@ -196,7 +196,8 @@ impl BlockB {
             signature: self.signature,
             transactions,
             stakes,
-        })
+        };
+        Ok(block_a)
     }
     pub fn c(&self) -> BlockC {
         BlockC {

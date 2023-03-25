@@ -108,7 +108,7 @@ impl StakeA {
 impl StakeB {
     pub fn a(&self, input_address: Option<AddressBytes>) -> Result<StakeA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
-        Ok(StakeA {
+        let stake_a = StakeA {
             amount: tofuri_int::from_be_slice(&self.amount),
             fee: tofuri_int::from_be_slice(&self.fee),
             deposit: self.deposit,
@@ -116,7 +116,8 @@ impl StakeB {
             signature: self.signature,
             input_address,
             hash: self.hash(),
-        })
+        };
+        Ok(stake_a)
     }
     pub fn hash(&self) -> Hash {
         hash(self)

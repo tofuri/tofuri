@@ -24,14 +24,13 @@ pub struct Key {
 }
 impl Key {
     pub fn generate() -> Key {
-        Key {
-            secret_key: SecretKey::new(&mut rand::thread_rng()),
-        }
+        let secret_key = SecretKey::new(&mut rand::thread_rng());
+        Key { secret_key }
     }
     pub fn from_slice(secret_key_bytes: &SecretKeyBytes) -> Result<Key, Error> {
-        Ok(Key {
-            secret_key: SecretKey::from_slice(secret_key_bytes).map_err(Error::Secp256k1)?,
-        })
+        let secret_key = SecretKey::from_slice(secret_key_bytes).map_err(Error::Secp256k1)?;
+        let key = Key { secret_key };
+        Ok(key)
     }
     pub fn secret_key_bytes(&self) -> SecretKeyBytes {
         self.secret_key.secret_bytes()
@@ -55,7 +54,7 @@ impl Key {
     }
     pub fn sign(&self, hash: &Hash) -> Result<SignatureBytes, Error> {
         let message = Message::from_slice(hash).map_err(Error::Secp256k1)?;
-        Ok(loop {
+        let signature_bytes = loop {
             let signature = SECP256K1.sign_ecdsa_recoverable_with_noncedata(
                 &message,
                 &self.secret_key,
@@ -65,7 +64,8 @@ impl Key {
             if recovery_id.to_i32() == RECOVERY_ID {
                 break signature_bytes;
             }
-        })
+        };
+        Ok(signature_bytes)
     }
     pub fn recover(hash: &Hash, signature_bytes: &SignatureBytes) -> Result<PublicKeyBytes, Error> {
         let message = Message::from_slice(hash).map_err(Error::Secp256k1)?;
@@ -92,19 +92,22 @@ impl Key {
         let vec = vrf
             .prove(&self.secret_key_bytes(), alpha)
             .map_err(Error::ECVRF)?;
-        Ok(vec.try_into().unwrap())
+        let pi = vec.try_into().unwrap();
+        Ok(pi)
     }
     #[cfg(feature = "vrf")]
     pub fn vrf_proof_to_hash(pi: &[u8]) -> Result<Beta, Error> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).map_err(Error::ECVRF)?;
         let vec = vrf.proof_to_hash(pi).map_err(Error::ECVRF)?;
-        Ok(vec.try_into().unwrap())
+        let beta = vec.try_into().unwrap();
+        Ok(beta)
     }
     #[cfg(feature = "vrf")]
     pub fn vrf_verify(y: &[u8], pi: &[u8], alpha: &[u8]) -> Result<Beta, Error> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).map_err(Error::ECVRF)?;
         let vec = vrf.verify(y, pi, alpha).map_err(Error::ECVRF)?;
-        Ok(vec.try_into().unwrap())
+        let beta = vec.try_into().unwrap();
+        Ok(beta)
     }
 }
 #[cfg(test)]

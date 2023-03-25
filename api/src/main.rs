@@ -9,8 +9,22 @@ use tofuri_api::CARGO_PKG_REPOSITORY;
 use tofuri_api::CARGO_PKG_VERSION;
 use tofuri_core::*;
 use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
+use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::fmt;
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::registry()
+        .with(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
+        .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
+        .init();
     let mut args = tofuri_api::Args::parse();
     println!(
         "{}",
@@ -26,6 +40,7 @@ async fn main() {
     }
     let addr: SocketAddr = args.api.parse().unwrap();
     let cors = CorsLayer::permissive();
+    let trace = TraceLayer::new_for_http();
     let app = Router::new()
         .route("/", get(router::root))
         .route("/balance/:address", get(router::balance))
@@ -77,6 +92,7 @@ async fn main() {
         .route("/stable_latest_hashes", get(router::stable_latest_hashes))
         .route("/stable_stakers", get(router::stable_stakers))
         .route("/sync_remaining", get(router::sync_remaining))
+        .layer(trace)
         .layer(cors)
         .with_state(args);
     axum::Server::bind(&addr)

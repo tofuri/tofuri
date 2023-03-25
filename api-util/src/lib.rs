@@ -54,7 +54,7 @@ pub fn stake(stake_a: &StakeA) -> Stake {
     }
 }
 pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
-    Ok(TransactionB {
+    let transaction_b = TransactionB {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
         amount: tofuri_int::to_be_bytes(
             tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?,
@@ -66,10 +66,11 @@ pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
             .as_slice()
             .try_into()
             .map_err(Error::TryFromSliceError)?,
-    })
+    };
+    Ok(transaction_b)
 }
 pub fn stake_b(stake: &Stake) -> Result<StakeB, Error> {
-    Ok(StakeB {
+    let stake_b = StakeB {
         amount: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.amount).map_err(Error::Int)?),
         fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.fee).map_err(Error::Int)?),
         deposit: stake.deposit,
@@ -79,5 +80,6 @@ pub fn stake_b(stake: &Stake) -> Result<StakeB, Error> {
             .as_slice()
             .try_into()
             .map_err(Error::TryFromSliceError)?,
-    })
+    };
+    Ok(stake_b)
 }

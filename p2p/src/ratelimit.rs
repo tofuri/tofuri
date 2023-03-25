@@ -27,7 +27,7 @@ impl Counter {
     pub fn add(&mut self, ip_addr: IpAddr, endpoint: &Endpoint) -> bool {
         let (hash_map, limit) = match endpoint {
             Endpoint::Request => (&mut self.request, P2P_RATELIMIT_REQUEST),
-            Endpoint::Response => (&mut self.request, P2P_RATELIMIT_RESPONSE),
+            Endpoint::Response => (&mut self.response, P2P_RATELIMIT_RESPONSE),
             Endpoint::GossipsubMessageBlock => (
                 &mut self.gossipsub_message_block,
                 P2P_RATELIMIT_GOSSIPSUB_MESSAGE_BLOCK,

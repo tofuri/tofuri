@@ -67,7 +67,8 @@ pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block
     for hash in block_c.stake_hashes.iter() {
         stakes.push(stake::get_b(db, hash).map_err(Error::Stake)?);
     }
-    Ok(block_c.b(transactions, stakes))
+    let block_b = block_c.b(transactions, stakes);
+    Ok(block_b)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn get_c(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockC, Error> {

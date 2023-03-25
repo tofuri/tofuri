@@ -19,9 +19,10 @@ pub fn put(
 }
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<PublicKeyBytes, Error> {
-    let input_public_key = db
+    let vec = db
         .get_cf(crate::input_public_keys(db), hash)
         .map_err(Error::RocksDB)?
         .ok_or(Error::NotFound)?;
-    Ok(input_public_key.try_into().unwrap())
+    let input_public_key = vec.try_into().unwrap();
+    Ok(input_public_key)
 }

@@ -19,9 +19,10 @@ pub fn put(
 }
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<AddressBytes, Error> {
-    let input_address = db
+    let vec = db
         .get_cf(crate::input_addresses(db), hash)
         .map_err(Error::RocksDB)?
         .ok_or(Error::NotFound)?;
-    Ok(input_address.try_into().unwrap())
+    let input_address = vec.try_into().unwrap();
+    Ok(input_address)
 }

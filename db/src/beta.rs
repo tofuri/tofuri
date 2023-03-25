@@ -24,5 +24,6 @@ pub fn get(db: &DBWithThreadMode<SingleThreaded>, block_hash: &[u8]) -> Result<B
         .get_cf(crate::betas(db), key)
         .map_err(Error::RocksDB)?
         .ok_or(Error::NotFound)?;
-    Ok(vec.try_into().unwrap())
+    let beta = vec.try_into().unwrap();
+    Ok(beta)
 }

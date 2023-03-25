@@ -4,6 +4,7 @@ use std::net::IpAddr;
 use tofuri_core::*;
 use tofuri_p2p::behaviour::SyncRequest;
 use tofuri_p2p::multiaddr;
+use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_util;
 use tracing::debug;
 use tracing::error;
@@ -108,22 +109,25 @@ fn sync_request(node: &mut Node) {
     {
         return;
     }
-    if let Some(peer_id) = node
-        .p2p
-        .swarm
-        .connected_peers()
-        .choose(&mut thread_rng())
-        .cloned()
-    {
-        node.p2p
-            .swarm
-            .behaviour_mut()
-            .request_response
-            .send_request(
-                &peer_id,
-                SyncRequest(bincode::serialize(&(node.blockchain.height())).unwrap()),
-            );
+    let peer_id = match node.p2p.swarm.connected_peers().choose(&mut thread_rng()) {
+        Some(x) => *x,
+        None => return,
+    };
+    let ip_addr = match node.p2p.connections.get(&peer_id) {
+        Some(x) => *x,
+        None => return,
+    };
+    if node.p2p.ratelimit.timeout.has(ip_addr, Endpoint::Response) {
+        return;
     }
+    node.p2p
+        .swarm
+        .behaviour_mut()
+        .request_response
+        .send_request(
+            &peer_id,
+            SyncRequest(bincode::serialize(&(node.blockchain.height())).unwrap()),
+        );
 }
 #[tracing::instrument(skip_all, level = "debug")]
 fn checkpoint(node: &mut Node) {

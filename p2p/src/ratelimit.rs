@@ -69,7 +69,7 @@ impl Timeout {
         let hash_map = match endpoint {
             Endpoint::Request => &mut self.request,
             Endpoint::Response => &mut self.response,
-            _ => return,
+            _ => unimplemented!(),
         };
         hash_map.insert(ip_addr, tofuri_util::timestamp());
     }
@@ -77,7 +77,7 @@ impl Timeout {
         let (hash_map, limit) = match endpoint {
             Endpoint::Request => (&self.request, P2P_RATELIMIT_REQUEST_TIMEOUT),
             Endpoint::Response => (&self.response, P2P_RATELIMIT_RESPONSE_TIMEOUT),
-            _ => return false,
+            _ => unimplemented!(),
         };
         let timestamp = hash_map.get(&ip_addr).unwrap_or(&0);
         tofuri_util::timestamp() - timestamp < limit

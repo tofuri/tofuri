@@ -10,10 +10,11 @@ pub fn to_ip_addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
 }
 pub fn from_ip_addr(ip_addr: &IpAddr) -> Multiaddr {
     let mut multiaddr = Multiaddr::empty();
-    multiaddr.push(match ip_addr {
+    let protocol = match ip_addr {
         IpAddr::V4(ip) => Protocol::Ip4(*ip),
         IpAddr::V6(ip) => Protocol::Ip6(*ip),
-    });
+    };
+    multiaddr.push(protocol);
     multiaddr.push(Protocol::Tcp(9333));
     multiaddr
 }

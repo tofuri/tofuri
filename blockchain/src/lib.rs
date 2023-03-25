@@ -199,26 +199,26 @@ impl Blockchain {
                 _ => unreachable!(),
             }
         }
-        let block_a = if let Some(main) = self.tree.main() {
-            BlockA::sign(
+        let res = self.tree.main();
+        let res = match res {
+            Some(main) => BlockA::sign(
                 main.hash,
                 timestamp,
                 transactions,
                 stakes,
                 key,
                 &self.forks.unstable.latest_block.beta,
-            )
-        } else {
-            BlockA::sign(
+            ),
+            None => BlockA::sign(
                 GENESIS_BLOCK_PREVIOUS_HASH,
                 timestamp,
                 transactions,
                 stakes,
                 key,
                 &GENESIS_BLOCK_BETA,
-            )
-        }
-        .unwrap();
+            ),
+        };
+        let block_a = res.unwrap();
         self.save_block(db, &block_a, true, trust_fork_after_blocks);
         block_a
     }

@@ -80,12 +80,11 @@ fn connection_established(
     endpoint: ConnectedPoint,
     num_established: NonZeroU32,
 ) {
-    let ip_addr = match endpoint {
-        ConnectedPoint::Dialer { address, .. } => multiaddr::to_ip_addr(&address).unwrap(),
-        ConnectedPoint::Listener { send_back_addr, .. } => {
-            multiaddr::to_ip_addr(&send_back_addr).unwrap()
-        }
+    let res = match endpoint {
+        ConnectedPoint::Dialer { address, .. } => multiaddr::to_ip_addr(&address),
+        ConnectedPoint::Listener { send_back_addr, .. } => multiaddr::to_ip_addr(&send_back_addr),
     };
+    let ip_addr = res.unwrap();
     node.p2p.connections_known.insert(ip_addr);
     let _ = db::peer::put(&ip_addr, &node.db);
     // if let Some((previous_peer_id, _)) = node.p2p.connections.iter().find(|x| x.1 == &ip_addr) {
@@ -101,7 +100,8 @@ fn connection_established(
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn connection_closed(node: &mut Node, peer_id: PeerId, num_established: u32) {
-    let ip_addr = node.p2p.connections.remove(&peer_id).unwrap();
+    let res = node.p2p.connections.remove(&peer_id);
+    let ip_addr = res.unwrap();
     info!(
         ip_addr = ip_addr.to_string(),
         num_established, "Connection closed"
@@ -112,7 +112,8 @@ fn mdns(node: &mut Node, event: mdns::Event) {
     match event {
         mdns::Event::Discovered(iter) => {
             for (_, multiaddr) in iter {
-                let ip_addr = multiaddr::to_ip_addr(&multiaddr).unwrap();
+                let res = multiaddr::to_ip_addr(&multiaddr);
+                let ip_addr = res.unwrap();
                 node.p2p.connections_unknown.insert(ip_addr);
             }
         }

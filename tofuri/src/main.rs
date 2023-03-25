@@ -62,15 +62,15 @@ async fn main() {
         false => "./tofuri-db",
     };
     let db = tofuri_db::open(path);
-    let mut known = HashSet::new();
+    let mut connections_known = HashSet::new();
     if let Ok(ip_addr) = args.peer.parse() {
-        known.insert(ip_addr);
+        connections_known.insert(ip_addr);
     }
     let peers = tofuri_db::peer::get_all(&db).unwrap();
     for ip_addr in peers {
-        known.insert(ip_addr);
+        connections_known.insert(ip_addr);
     }
-    let p2p = P2p::new(args.max_established, args.timeout, known).await.unwrap();
+    let p2p = P2p::new(args.max_established, args.timeout, connections_known).await.unwrap();
     let blockchain = Blockchain::default();
     let mut node = Node::new(db, key, args.clone(), p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust).unwrap();

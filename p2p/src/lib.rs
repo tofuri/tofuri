@@ -40,12 +40,12 @@ pub struct P2p {
     pub gossipsub_message_counter_peers: HashMap<IpAddr, usize>,
 }
 impl P2p {
-    pub async fn new(max_established: Option<u32>, timeout: u64, known: HashSet<IpAddr>) -> Result<P2p, Error> {
+    pub async fn new(max_established: Option<u32>, timeout: u64, connections_known: HashSet<IpAddr>) -> Result<P2p, Error> {
         Ok(P2p {
             swarm: swarm(max_established, timeout).await?,
             connections: HashMap::new(),
             connections_unknown: HashSet::new(),
-            connections_known: known,
+            connections_known,
             request_response_timeouts: HashMap::new(),
             request_response_counter: HashMap::new(),
             gossipsub_message_counter_block: HashMap::new(),

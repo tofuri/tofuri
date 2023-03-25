@@ -11,8 +11,8 @@ use tracing::info;
 use tracing::warn;
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn interval_1s(node: &mut Node) {
-    clear(node);
     sync_request(node);
+    node.blockchain.sync.handler();
 }
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn interval_10s(node: &mut Node) {
@@ -23,6 +23,11 @@ pub fn interval_1m(node: &mut Node) {
     grow(node);
     share(node);
     dial_unknown(node);
+    node.p2p.request_response_counter.clear();
+    node.p2p.gossipsub_message_counter_block.clear();
+    node.p2p.gossipsub_message_counter_transaction.clear();
+    node.p2p.gossipsub_message_counter_stake.clear();
+    node.p2p.gossipsub_message_counter_peers.clear();
 }
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn interval_10m(node: &mut Node) {
@@ -37,12 +42,6 @@ fn dial_known(node: &mut Node) {
 fn dial_unknown(node: &mut Node) {
     let vec = node.p2p.connections_unknown.drain().collect();
     dial(node, vec);
-}
-#[tracing::instrument(skip_all, level = "debug")]
-fn clear(node: &mut Node) {
-    node.blockchain.sync.handler();
-    node.p2p.request_response_counter.clear();
-    node.p2p.gossipsub_message_counter_peers.clear();
 }
 #[tracing::instrument(skip_all, level = "debug")]
 fn dial(node: &mut Node, vec: Vec<IpAddr>) {

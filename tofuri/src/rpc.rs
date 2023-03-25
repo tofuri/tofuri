@@ -22,6 +22,7 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tracing::error;
 use tracing::info;
+use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
     Blockchain(tofuri_blockchain::Error),
@@ -32,7 +33,7 @@ pub enum Error {
     Io(std::io::Error),
     Elapsed(tokio::time::error::Elapsed),
 }
-#[tracing::instrument(skip_all, level = "debug")]
+#[instrument(skip_all, level = "debug")]
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
     match res {
         Ok((stream, socket_addr)) => match request(node, stream).await {
@@ -42,7 +43,7 @@ pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Er
         Err(err) => error!("{:?}", err),
     }
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type), Error> {
     let mut buf = [0; 1024];
     let bytes = timeout(Duration::from_millis(1), stream.read(&mut buf))
@@ -127,92 +128,92 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type)
     stream.flush().await.map_err(Error::Io)?;
     Ok((bytes, request.t))
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn balance(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let balance = node.blockchain.balance(&address_bytes);
     Ok(balance)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn balance_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let balance_pending_min = node.blockchain.balance_pending_min(&address_bytes);
     Ok(balance_pending_min)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn balance_pending_max(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let balance_pending_max = node.blockchain.balance_pending_max(&address_bytes);
     Ok(balance_pending_max)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn staked(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let staked = node.blockchain.staked(&address_bytes);
     Ok(staked)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn staked_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let staked_pending_min = node.blockchain.staked_pending_min(&address_bytes);
     Ok(staked_pending_min)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn staked_pending_max(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
     let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let staked_pending_max = node.blockchain.staked_pending_max(&address_bytes);
     Ok(staked_pending_max)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn height(node: &mut Node) -> Result<usize, Error> {
     let height = node.blockchain.height();
     Ok(height)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Error> {
     let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     node.blockchain
         .height_by_hash(&hash)
         .map_err(Error::Blockchain)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn block_latest(node: &mut Node) -> Result<&BlockA, Error> {
     Ok(&node.blockchain.forks.unstable.latest_block)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Error> {
     let height: usize = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     node.blockchain
         .hash_by_height(height)
         .map_err(Error::Blockchain)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Error> {
     let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     db::block::get_a(&node.db, &hash).map_err(Error::DBBlock)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<TransactionA, Error> {
     let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     db::transaction::get_a(&node.db, &hash).map_err(Error::DBTransaction)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<StakeA, Error> {
     let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     db::stake::get_a(&node.db, &hash).map_err(Error::DBStake)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn peers(node: &mut Node) -> Result<Vec<&IpAddr>, Error> {
     let vec = node.p2p.connections.values().collect();
     Ok(vec)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Error> {
     let ip_addr = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     node.p2p.connections_unknown.insert(ip_addr);
     Ok(())
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
     let transaction_b: TransactionB = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let vec = bincode::serialize(&transaction_b).unwrap();
@@ -233,7 +234,7 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
     };
     Ok(status)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
     let stake_b: StakeB = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let vec = bincode::serialize(&stake_b).unwrap();
@@ -254,51 +255,51 @@ fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
     };
     Ok(status)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn cargo_pkg_name() -> &'static str {
     CARGO_PKG_NAME
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn cargo_pkg_version() -> &'static str {
     CARGO_PKG_VERSION
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn cargo_pkg_repository() -> &'static str {
     CARGO_PKG_REPOSITORY
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn git_hash() -> &'static str {
     GIT_HASH
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn address(node: &mut Node) -> AddressBytes {
     node.key.address_bytes()
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn ticks(node: &mut Node) -> &usize {
     &node.ticks
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn time() -> i64 {
     chrono::offset::Utc::now().timestamp_millis()
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn tree_size(node: &mut Node) -> usize {
     node.blockchain.tree.size()
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn sync(node: &mut Node) -> &tofuri_sync::Sync {
     &node.blockchain.sync
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn random_queue(node: &mut Node) -> Vec<AddressBytes> {
     node.blockchain.forks.unstable.stakers_n(8)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn unstable_hashes(node: &mut Node) -> usize {
     node.blockchain.forks.unstable.hashes.len()
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn unstable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
     node.blockchain
         .forks
@@ -309,15 +310,15 @@ fn unstable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
         .take(16)
         .collect()
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn unstable_stakers(node: &mut Node) -> usize {
     node.blockchain.forks.unstable.stakers.len()
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn stable_hashes(node: &mut Node) -> usize {
     node.blockchain.forks.stable.hashes.len()
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn stable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
     node.blockchain
         .forks
@@ -328,7 +329,7 @@ fn stable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
         .take(16)
         .collect()
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn stable_stakers(node: &mut Node) -> usize {
     node.blockchain.forks.stable.stakers.len()
 }

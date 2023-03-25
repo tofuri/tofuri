@@ -3,6 +3,7 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
+use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
     Transaction(tofuri_transaction::Error),
@@ -11,7 +12,7 @@ pub enum Error {
     InputAddress(input_address::Error),
     NotFound,
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn put(
     transaction_a: &TransactionA,
     db: &DBWithThreadMode<SingleThreaded>,
@@ -21,7 +22,7 @@ pub fn put(
     db.put_cf(crate::transactions(db), key, value)
         .map_err(Error::RocksDB)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionA, Error> {
     let input_address = input_address::get(db, hash).ok();
     let transaction_a = get_b(db, hash)?
@@ -32,7 +33,7 @@ pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Trans
     }
     Ok(transaction_a)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionB, Error> {
     let key = hash;
     let vec = db

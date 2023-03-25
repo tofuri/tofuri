@@ -5,13 +5,14 @@ use std::collections::HashMap;
 use tofuri_block::BlockC;
 use tofuri_core::*;
 use tofuri_tree::Tree;
+use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
     RocksDB(rocksdb::Error),
     Bincode(bincode::Error),
     GenesisBlockHashes,
 }
-#[tracing::instrument(skip_all, level = "debug")]
+#[instrument(skip_all, level = "debug")]
 pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
     tree.clear();
     let mut map: HashMap<Hash, Vec<(Hash, u32)>> = HashMap::new();

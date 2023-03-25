@@ -1,12 +1,13 @@
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use tofuri_core::*;
+use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
     RocksDB(rocksdb::Error),
     NotFound,
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn put(
     block_hash: &[u8],
     beta: &Beta,
@@ -17,7 +18,7 @@ pub fn put(
     db.put_cf(crate::betas(db), key, value)
         .map_err(Error::RocksDB)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn get(db: &DBWithThreadMode<SingleThreaded>, block_hash: &[u8]) -> Result<Beta, Error> {
     let key = block_hash;
     let vec = db

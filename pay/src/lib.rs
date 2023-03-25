@@ -12,6 +12,7 @@ use tofuri_key::Key;
 use tofuri_pay_core::Charge;
 use tofuri_pay_core::ChargeStatus;
 use tofuri_pay_core::Payment;
+use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
     Reqwest(reqwest::Error),
@@ -247,7 +248,7 @@ impl Pay {
         self.chain = chain;
         Ok(())
     }
-    #[tracing::instrument(skip_all)]
+    #[instrument(skip_all)]
     pub fn load(&mut self) -> Result<(), Error> {
         for res in self
             .db

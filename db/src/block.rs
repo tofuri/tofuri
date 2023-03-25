@@ -7,6 +7,7 @@ use rocksdb::SingleThreaded;
 use tofuri_block::BlockA;
 use tofuri_block::BlockB;
 use tofuri_block::BlockC;
+use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
     Block(tofuri_block::Error),
@@ -18,7 +19,7 @@ pub enum Error {
     InputPublicKey(input_public_key::Error),
     NotFound,
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn put(block_a: &BlockA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
     for transaction_a in block_a.transactions.iter() {
         transaction::put(transaction_a, db).map_err(Error::Transaction)?;
@@ -31,7 +32,7 @@ pub fn put(block_a: &BlockA, db: &DBWithThreadMode<SingleThreaded>) -> Result<()
     db.put_cf(crate::blocks(db), key, value)
         .map_err(Error::RocksDB)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Error> {
     let block_c = get_c(db, hash)?;
     let mut transactions = vec![];
@@ -56,7 +57,7 @@ pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block
     }
     Ok(block_a)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockB, Error> {
     let block_c = get_c(db, hash)?;
     let mut transactions = vec![];
@@ -70,7 +71,7 @@ pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block
     let block_b = block_c.b(transactions, stakes);
     Ok(block_b)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn get_c(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockC, Error> {
     let key = hash;
     let vec = db

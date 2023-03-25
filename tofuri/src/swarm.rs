@@ -29,6 +29,7 @@ use tofuri_transaction::TransactionB;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
+use tracing::instrument;
 use tracing::warn;
 use void::Void;
 type HandlerErr = EitherError<
@@ -38,7 +39,7 @@ type HandlerErr = EitherError<
     >,
     ConnectionHandlerUpgrErr<io::Error>,
 >;
-#[tracing::instrument(skip_all, level = "debug")]
+#[instrument(skip_all, level = "debug")]
 pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
     match event {
         SwarmEvent::ConnectionEstablished {
@@ -73,7 +74,7 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
         _ => {}
     }
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn connection_established(
     node: &mut Node,
     peer_id: PeerId,
@@ -98,7 +99,7 @@ fn connection_established(
         num_established, "Connection established"
     );
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn connection_closed(node: &mut Node, peer_id: PeerId, num_established: u32) {
     let res = node.p2p.connections.remove(&peer_id);
     let ip_addr = res.unwrap();
@@ -107,7 +108,7 @@ fn connection_closed(node: &mut Node, peer_id: PeerId, num_established: u32) {
         num_established, "Connection closed"
     );
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn mdns(node: &mut Node, event: mdns::Event) {
     match event {
         mdns::Event::Discovered(iter) => {
@@ -120,7 +121,7 @@ fn mdns(node: &mut Node, event: mdns::Event) {
         mdns::Event::Expired(_) => {}
     }
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn gossipsub_message(
     node: &mut Node,
     message: GossipsubMessage,
@@ -237,7 +238,7 @@ fn gossipsub_message(
         Err(err) => error!("{:?}", err),
     }
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn sync_request(
     node: &mut Node,
     peer_id: PeerId,
@@ -301,7 +302,7 @@ fn sync_request(
         }
     }
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 fn sync_response(node: &mut Node, peer_id: PeerId, response: Response) {
     let ip_addr = match node.p2p.connections.get(&peer_id) {
         Some(x) => *x,

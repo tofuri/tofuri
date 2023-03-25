@@ -3,6 +3,7 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
+use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
     Stake(tofuri_stake::Error),
@@ -11,14 +12,14 @@ pub enum Error {
     InputAddress(input_address::Error),
     NotFound,
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn put(stake_a: &StakeA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
     let key = stake_a.hash;
     let value = bincode::serialize(&stake_a.b()).map_err(Error::Bincode)?;
     db.put_cf(crate::stakes(db), key, value)
         .map_err(Error::RocksDB)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeA, Error> {
     let input_address = input_address::get(db, hash).ok();
     let stake_a = get_b(db, hash)?.a(input_address).map_err(Error::Stake)?;
@@ -27,7 +28,7 @@ pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Stake
     }
     Ok(stake_a)
 }
-#[tracing::instrument(skip_all, level = "trace")]
+#[instrument(skip_all, level = "trace")]
 pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Error> {
     let key = hash;
     let vec = db

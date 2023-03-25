@@ -18,6 +18,7 @@ use tofuri_util::EMPTY_BLOCK_SIZE;
 use tofuri_util::STAKE_SIZE;
 use tofuri_util::TRANSACTION_SIZE;
 use tracing::info;
+use tracing::instrument;
 use tracing::warn;
 #[derive(Debug)]
 pub enum Error {
@@ -69,7 +70,7 @@ pub struct Blockchain {
     pending_blocks: Vec<BlockA>,
 }
 impl Blockchain {
-    #[tracing::instrument(skip_all, level = "debug")]
+    #[instrument(skip_all, level = "debug")]
     pub fn load(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,

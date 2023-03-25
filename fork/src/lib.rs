@@ -171,7 +171,12 @@ impl Manager {
         hashes.reverse();
         Ok(Unstable::from(db, &hashes, &self.stable))
     }
-    pub fn update(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes_1: &[Hash], trust_fork_after_blocks: usize) {
+    pub fn update(
+        &mut self,
+        db: &DBWithThreadMode<SingleThreaded>,
+        hashes_1: &[Hash],
+        trust_fork_after_blocks: usize,
+    ) {
         let hashes_0 = &self.unstable.hashes;
         if hashes_0.len() == trust_fork_after_blocks {
             let block_a = tofuri_db::block::get_a(db, hashes_0.first().unwrap()).unwrap();
@@ -215,7 +220,11 @@ impl Stable {
     }
 }
 impl Unstable {
-    pub fn from(db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash], stable: &Stable) -> Unstable {
+    pub fn from(
+        db: &DBWithThreadMode<SingleThreaded>,
+        hashes: &[Hash],
+        stable: &Stable,
+    ) -> Unstable {
         let mut unstable = Unstable {
             hashes: vec![],
             stakers: stable.stakers.clone(),
@@ -227,7 +236,11 @@ impl Unstable {
         load(&mut unstable, db, hashes);
         unstable
     }
-    pub fn check_overflow(&self, transactions: &Vec<TransactionA>, stakes: &Vec<StakeA>) -> Result<(), Error> {
+    pub fn check_overflow(
+        &self,
+        transactions: &Vec<TransactionA>,
+        stakes: &Vec<StakeA>,
+    ) -> Result<(), Error> {
         let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
         let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
         for transaction_a in transactions {
@@ -237,7 +250,9 @@ impl Unstable {
             } else {
                 self.balance(&k)
             };
-            balance = balance.checked_sub(transaction_a.amount + transaction_a.fee).ok_or(Error::Overflow)?;
+            balance = balance
+                .checked_sub(transaction_a.amount + transaction_a.fee)
+                .ok_or(Error::Overflow)?;
             map_balance.insert(k, balance);
         }
         for stake_a in stakes {
@@ -253,7 +268,9 @@ impl Unstable {
                 self.staked(&k)
             };
             if stake_a.deposit {
-                balance = balance.checked_sub(stake_a.amount + stake_a.fee).ok_or(Error::Overflow)?;
+                balance = balance
+                    .checked_sub(stake_a.amount + stake_a.fee)
+                    .ok_or(Error::Overflow)?;
             } else {
                 balance = balance.checked_sub(stake_a.fee).ok_or(Error::Overflow)?;
                 staked = staked.checked_sub(stake_a.amount).ok_or(Error::Overflow)?;
@@ -265,7 +282,11 @@ impl Unstable {
     }
     pub fn transaction_in_chain(&self, transaction_a: &TransactionA) -> bool {
         for block_a in self.latest_blocks.iter() {
-            if block_a.transactions.iter().any(|a| a.hash == transaction_a.hash) {
+            if block_a
+                .transactions
+                .iter()
+                .any(|a| a.hash == transaction_a.hash)
+            {
                 return true;
             }
         }
@@ -337,7 +358,11 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, lo
         insert_staked(fork, *staker, staked);
         update_stakers(fork, *staker);
         if !loading && !T::is_stable() {
-            warn!(amount = tofuri_int::to_string(penalty), address = address::encode(staker), "Slashed");
+            warn!(
+                amount = tofuri_int::to_string(penalty),
+                address = address::encode(staker),
+                "Slashed"
+            );
         }
     }
     if stakers_n(fork, offline(block_a.timestamp, previous_timestamp)).1 {
@@ -393,12 +418,22 @@ pub fn update<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, 
     update_3(fork, block_a);
 }
 fn update_latest_blocks<T: Fork>(fork: &mut T, block_a: &BlockA) {
-    while fork.get_latest_blocks().first().is_some() && tofuri_util::elapsed(fork.get_latest_blocks().first().unwrap().timestamp, block_a.timestamp) {
+    while fork.get_latest_blocks().first().is_some()
+        && tofuri_util::elapsed(
+            fork.get_latest_blocks().first().unwrap().timestamp,
+            block_a.timestamp,
+        )
+    {
         (*fork.get_latest_blocks_mut()).remove(0);
     }
     (*fork.get_latest_blocks_mut()).push(block_a.clone());
 }
-pub fn append_block<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
+pub fn append_block<T: Fork>(
+    fork: &mut T,
+    block_a: &BlockA,
+    previous_timestamp: u32,
+    loading: bool,
+) {
     update(fork, block_a, previous_timestamp, loading);
     update_latest_blocks(fork, block_a);
     fork.get_hashes_mut().push(block_a.hash);
@@ -458,7 +493,11 @@ pub fn next_staker<T: Fork>(fork: &T, timestamp: u32) -> Option<AddressBytes> {
         (x, _) => x.last().copied(),
     }
 }
-fn stakers_offline<T: Fork>(fork: &T, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
+fn stakers_offline<T: Fork>(
+    fork: &T,
+    timestamp: u32,
+    previous_timestamp: u32,
+) -> Vec<AddressBytes> {
     match offline(timestamp, previous_timestamp) {
         0 => vec![],
         n => stakers_n(fork, n - 1).0,

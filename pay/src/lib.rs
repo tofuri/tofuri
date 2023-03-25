@@ -141,7 +141,10 @@ impl Pay {
                         Some(a) => *a,
                         None => 0,
                     };
-                    map.insert(address, amount + tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?);
+                    map.insert(
+                        address,
+                        amount + tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?,
+                    );
                 }
             }
         }
@@ -159,7 +162,9 @@ impl Pay {
                 charge.status = ChargeStatus::Completed;
                 tofuri_pay_db::charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
                 charges.push(charge);
-            } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending) && charge.timestamp < tofuri_util::timestamp() - self.args.expires {
+            } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending)
+                && charge.timestamp < tofuri_util::timestamp() - self.args.expires
+            {
                 charge.status = ChargeStatus::Expired;
                 tofuri_pay_db::charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
             }
@@ -230,7 +235,8 @@ impl Pay {
                     return Ok(());
                 }
             }
-            if block.previous_hash == "0000000000000000000000000000000000000000000000000000000000000000"
+            if block.previous_hash
+                == "0000000000000000000000000000000000000000000000000000000000000000"
                 || block.timestamp < tofuri_util::timestamp() - self.args.expires
             {
                 break;
@@ -243,7 +249,10 @@ impl Pay {
     }
     #[tracing::instrument(skip_all)]
     pub fn load(&mut self) -> Result<(), Error> {
-        for res in self.db.iterator_cf(tofuri_pay_db::charges(&self.db), IteratorMode::Start) {
+        for res in self
+            .db
+            .iterator_cf(tofuri_pay_db::charges(&self.db), IteratorMode::Start)
+        {
             self.subkey_n += 1;
             let (hash, bytes) = res.map_err(Error::RocksDB)?;
             let hash = hash.to_vec().try_into().unwrap();

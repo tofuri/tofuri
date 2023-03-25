@@ -25,7 +25,10 @@ pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) -> Result<
                 map.insert(block_metadata.previous_hash, vec);
             }
             None => {
-                map.insert(block_metadata.previous_hash, vec![(hash, block_metadata.timestamp)]);
+                map.insert(
+                    block_metadata.previous_hash,
+                    vec![(hash, block_metadata.timestamp)],
+                );
             }
         };
     }

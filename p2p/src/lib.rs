@@ -40,7 +40,11 @@ pub struct P2p {
     pub gossipsub_message_counter_peers: HashMap<IpAddr, usize>,
 }
 impl P2p {
-    pub async fn new(max_established: Option<u32>, timeout: u64, connections_known: HashSet<IpAddr>) -> Result<P2p, Error> {
+    pub async fn new(
+        max_established: Option<u32>,
+        timeout: u64,
+        connections_known: HashSet<IpAddr>,
+    ) -> Result<P2p, Error> {
         Ok(P2p {
             swarm: swarm(max_established, timeout).await?,
             connections: HashMap::new(),
@@ -68,7 +72,8 @@ impl P2p {
             return;
         }
         let ip_addr = option_ip_addr.unwrap();
-        self.request_response_timeouts.insert(ip_addr, tofuri_util::timestamp());
+        self.request_response_timeouts
+            .insert(ip_addr, tofuri_util::timestamp());
     }
     pub fn request_response_counter(&mut self, peer_id: &PeerId) -> bool {
         let option_ip_addr = self.get_ip_addr(peer_id);
@@ -85,7 +90,12 @@ impl P2p {
         let timestamp = self.request_response_timeouts.get(&ip_addr).unwrap_or(&0);
         tofuri_util::timestamp() - timestamp < P2P_TIMEOUT
     }
-    fn gossipsub_message_counter(connections: &HashMap<PeerId, IpAddr>, map: &mut HashMap<IpAddr, usize>, limit: usize, peer_id: &PeerId) -> bool {
+    fn gossipsub_message_counter(
+        connections: &HashMap<PeerId, IpAddr>,
+        map: &mut HashMap<IpAddr, usize>,
+        limit: usize,
+        peer_id: &PeerId,
+    ) -> bool {
         let option_ip_addr = connections.get(peer_id);
         if option_ip_addr.is_none() {
             return true;
@@ -97,19 +107,44 @@ impl P2p {
         counter > limit
     }
     pub fn gossipsub_message_counter_block(&mut self, peer_id: &PeerId) -> bool {
-        P2p::gossipsub_message_counter(&self.connections, &mut self.gossipsub_message_counter_block, P2P_BLOCKS, peer_id)
+        P2p::gossipsub_message_counter(
+            &self.connections,
+            &mut self.gossipsub_message_counter_block,
+            P2P_BLOCKS,
+            peer_id,
+        )
     }
     pub fn gossipsub_message_counter_transaction(&mut self, peer_id: &PeerId) -> bool {
-        P2p::gossipsub_message_counter(&self.connections, &mut self.gossipsub_message_counter_transaction, P2P_TRANSACTIONS, peer_id)
+        P2p::gossipsub_message_counter(
+            &self.connections,
+            &mut self.gossipsub_message_counter_transaction,
+            P2P_TRANSACTIONS,
+            peer_id,
+        )
     }
     pub fn gossipsub_message_counter_stake(&mut self, peer_id: &PeerId) -> bool {
-        P2p::gossipsub_message_counter(&self.connections, &mut self.gossipsub_message_counter_stake, P2P_STAKES, peer_id)
+        P2p::gossipsub_message_counter(
+            &self.connections,
+            &mut self.gossipsub_message_counter_stake,
+            P2P_STAKES,
+            peer_id,
+        )
     }
     pub fn gossipsub_message_counter_peers(&mut self, peer_id: &PeerId) -> bool {
-        P2p::gossipsub_message_counter(&self.connections, &mut self.gossipsub_message_counter_peers, P2P_PEERS, peer_id)
+        P2p::gossipsub_message_counter(
+            &self.connections,
+            &mut self.gossipsub_message_counter_peers,
+            P2P_PEERS,
+            peer_id,
+        )
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
-        self.swarm.behaviour().gossipsub.mesh_peers(&TopicHash::from_raw(topic)).count() != 0
+        self.swarm
+            .behaviour()
+            .gossipsub
+            .mesh_peers(&TopicHash::from_raw(topic))
+            .count()
+            != 0
     }
     pub fn gossipsub_publish(&mut self, topic: &str, data: Vec<u8>) -> Result<(), Error> {
         if !self.gossipsub_has_mesh_peers(topic) {
@@ -128,7 +163,10 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
     let local_peer_id = PeerId::from(local_key.public());
     let transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true))
         .upgrade(upgrade::Version::V1)
-        .authenticate(noise::NoiseAuthenticated::xx(&local_key).expect("Signing libp2p-noise static DH keypair failed."))
+        .authenticate(
+            noise::NoiseAuthenticated::xx(&local_key)
+                .expect("Signing libp2p-noise static DH keypair failed."),
+        )
         .multiplex(mplex::MplexConfig::new())
         .timeout(Duration::from_millis(timeout))
         .boxed();
@@ -141,12 +179,17 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
     ]
     .iter()
     {
-        behaviour.gossipsub.subscribe(ident_topic).map_err(Error::SubscriptionError)?;
+        behaviour
+            .gossipsub
+            .subscribe(ident_topic)
+            .map_err(Error::SubscriptionError)?;
     }
     let mut limits = ConnectionLimits::default();
     limits = limits.with_max_established_per_peer(Some(1));
     limits = limits.with_max_established(max_established);
-    Ok(SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id)
-        .connection_limits(limits)
-        .build())
+    Ok(
+        SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id)
+            .connection_limits(limits)
+            .build(),
+    )
 }

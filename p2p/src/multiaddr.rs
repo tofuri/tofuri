@@ -24,17 +24,32 @@ mod tests {
     fn test_to_ip_addr() {
         assert_eq!(to_ip_addr(&"".parse::<Multiaddr>().unwrap()), None);
         assert_eq!(to_ip_addr(&"/tcp/9333".parse::<Multiaddr>().unwrap()), None);
-        assert_eq!(to_ip_addr(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()), Some("0.0.0.0".parse().unwrap()));
+        assert_eq!(
+            to_ip_addr(&"/ip4/0.0.0.0".parse::<Multiaddr>().unwrap()),
+            Some("0.0.0.0".parse().unwrap())
+        );
         assert_eq!(
             to_ip_addr(&"/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()),
             Some("0.0.0.0".parse().unwrap())
         );
-        assert_eq!(to_ip_addr(&"/ip6/::".parse::<Multiaddr>().unwrap()), Some("::".parse().unwrap()));
-        assert_eq!(to_ip_addr(&"/ip6/::/tcp/9333".parse::<Multiaddr>().unwrap()), Some("::".parse().unwrap()));
+        assert_eq!(
+            to_ip_addr(&"/ip6/::".parse::<Multiaddr>().unwrap()),
+            Some("::".parse().unwrap())
+        );
+        assert_eq!(
+            to_ip_addr(&"/ip6/::/tcp/9333".parse::<Multiaddr>().unwrap()),
+            Some("::".parse().unwrap())
+        );
     }
     #[test]
     fn test_from_ip_addr() {
-        assert_eq!(from_ip_addr(&"0.0.0.0".parse().unwrap()), "/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap());
-        assert_eq!(from_ip_addr(&"::".parse().unwrap()), "/ip6/::/tcp/9333".parse::<Multiaddr>().unwrap());
+        assert_eq!(
+            from_ip_addr(&"0.0.0.0".parse().unwrap()),
+            "/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()
+        );
+        assert_eq!(
+            from_ip_addr(&"::".parse().unwrap()),
+            "/ip6/::/tcp/9333".parse::<Multiaddr>().unwrap()
+        );
     }
 }

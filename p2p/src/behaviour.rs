@@ -35,7 +35,10 @@ impl Behaviour {
     pub async fn new(local_key: identity::Keypair) -> Result<Self, Error> {
         Ok(Self {
             mdns: mdns::tokio::Behaviour::new(mdns::Config::default()).map_err(Error::Io)?,
-            identify: identify::Behaviour::new(identify::Config::new(PROTOCOL_VERSION.to_string(), local_key.public())),
+            identify: identify::Behaviour::new(identify::Config::new(
+                PROTOCOL_VERSION.to_string(),
+                local_key.public(),
+            )),
             gossipsub: Gossipsub::new(
                 MessageAuthenticity::Signed(local_key.clone()),
                 GossipsubConfigBuilder::default()
@@ -45,8 +48,15 @@ impl Behaviour {
                     .unwrap(),
             )
             .unwrap(),
-            autonat: autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default()),
-            request_response: RequestResponse::new(SyncCodec(), std::iter::once((SyncProtocol(), ProtocolSupport::Full)), Default::default()),
+            autonat: autonat::Behaviour::new(
+                local_key.public().to_peer_id(),
+                autonat::Config::default(),
+            ),
+            request_response: RequestResponse::new(
+                SyncCodec(),
+                std::iter::once((SyncProtocol(), ProtocolSupport::Full)),
+                Default::default(),
+            ),
         })
     }
 }
@@ -101,18 +111,38 @@ impl RequestResponseCodec for SyncCodec {
     type Protocol = SyncProtocol;
     type Request = SyncRequest;
     type Response = SyncResponse;
-    async fn read_request<T: AsyncRead + Unpin + Send>(&mut self, _: &SyncProtocol, io: &mut T) -> io::Result<Self::Request> {
+    async fn read_request<T: AsyncRead + Unpin + Send>(
+        &mut self,
+        _: &SyncProtocol,
+        io: &mut T,
+    ) -> io::Result<Self::Request> {
         Ok(SyncRequest(read_length_prefixed(io, 8).await?))
     }
-    async fn read_response<T: AsyncRead + Unpin + Send>(&mut self, _: &SyncProtocol, io: &mut T) -> io::Result<Self::Response> {
-        Ok(SyncResponse(read_length_prefixed(io, MAX_TRANSMIT_SIZE).await?))
+    async fn read_response<T: AsyncRead + Unpin + Send>(
+        &mut self,
+        _: &SyncProtocol,
+        io: &mut T,
+    ) -> io::Result<Self::Response> {
+        Ok(SyncResponse(
+            read_length_prefixed(io, MAX_TRANSMIT_SIZE).await?,
+        ))
     }
-    async fn write_request<T: AsyncWrite + Unpin + Send>(&mut self, _: &SyncProtocol, io: &mut T, SyncRequest(vec): SyncRequest) -> io::Result<()> {
+    async fn write_request<T: AsyncWrite + Unpin + Send>(
+        &mut self,
+        _: &SyncProtocol,
+        io: &mut T,
+        SyncRequest(vec): SyncRequest,
+    ) -> io::Result<()> {
         write_length_prefixed(io, vec).await?;
         io.close().await?;
         Ok(())
     }
-    async fn write_response<T: AsyncWrite + Unpin + Send>(&mut self, _: &SyncProtocol, io: &mut T, SyncResponse(vec): SyncResponse) -> io::Result<()> {
+    async fn write_response<T: AsyncWrite + Unpin + Send>(
+        &mut self,
+        _: &SyncProtocol,
+        io: &mut T,
+        SyncResponse(vec): SyncResponse,
+    ) -> io::Result<()> {
         write_length_prefixed(io, vec).await?;
         io.close().await?;
         Ok(())

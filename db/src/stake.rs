@@ -15,7 +15,8 @@ pub enum Error {
 pub fn put(stake_a: &StakeA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
     let key = stake_a.hash;
     let value = bincode::serialize(&stake_a.b()).map_err(Error::Bincode)?;
-    db.put_cf(crate::stakes(db), key, value).map_err(Error::RocksDB)
+    db.put_cf(crate::stakes(db), key, value)
+        .map_err(Error::RocksDB)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeA, Error> {
@@ -29,7 +30,10 @@ pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Stake
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<StakeB, Error> {
     let key = hash;
-    let vec = db.get_cf(crate::stakes(db), key).map_err(Error::RocksDB)?.ok_or(Error::NotFound)?;
+    let vec = db
+        .get_cf(crate::stakes(db), key)
+        .map_err(Error::RocksDB)?
+        .ok_or(Error::NotFound)?;
     bincode::deserialize(&vec).map_err(Error::Bincode)
 }
 #[test]

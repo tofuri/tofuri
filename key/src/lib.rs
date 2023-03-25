@@ -56,7 +56,11 @@ impl Key {
     pub fn sign(&self, hash: &Hash) -> Result<SignatureBytes, Error> {
         let message = Message::from_slice(hash).map_err(Error::Secp256k1)?;
         Ok(loop {
-            let signature = SECP256K1.sign_ecdsa_recoverable_with_noncedata(&message, &self.secret_key, &rand::random());
+            let signature = SECP256K1.sign_ecdsa_recoverable_with_noncedata(
+                &message,
+                &self.secret_key,
+                &rand::random(),
+            );
             let (recovery_id, signature_bytes) = signature.serialize_compact();
             if recovery_id.to_i32() == RECOVERY_ID {
                 break signature_bytes;
@@ -65,8 +69,15 @@ impl Key {
     }
     pub fn recover(hash: &Hash, signature_bytes: &SignatureBytes) -> Result<PublicKeyBytes, Error> {
         let message = Message::from_slice(hash).map_err(Error::Secp256k1)?;
-        let signature = RecoverableSignature::from_compact(signature_bytes, RecoveryId::from_i32(RECOVERY_ID).unwrap()).map_err(Error::Secp256k1)?;
-        let public_key_bytes: PublicKeyBytes = SECP256K1.recover_ecdsa(&message, &signature).map_err(Error::Secp256k1)?.serialize();
+        let signature = RecoverableSignature::from_compact(
+            signature_bytes,
+            RecoveryId::from_i32(RECOVERY_ID).unwrap(),
+        )
+        .map_err(Error::Secp256k1)?;
+        let public_key_bytes: PublicKeyBytes = SECP256K1
+            .recover_ecdsa(&message, &signature)
+            .map_err(Error::Secp256k1)?
+            .serialize();
         Ok(public_key_bytes)
     }
     pub fn subkey(&self, n: u128) -> Result<Key, Error> {
@@ -78,7 +89,9 @@ impl Key {
     #[cfg(feature = "vrf")]
     pub fn vrf_prove(&self, alpha: &[u8]) -> Result<Pi, Error> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).map_err(Error::ECVRF)?;
-        let vec = vrf.prove(&self.secret_key_bytes(), alpha).map_err(Error::ECVRF)?;
+        let vec = vrf
+            .prove(&self.secret_key_bytes(), alpha)
+            .map_err(Error::ECVRF)?;
         Ok(vec.try_into().unwrap())
     }
     #[cfg(feature = "vrf")]
@@ -101,7 +114,10 @@ mod tests {
     fn test_address() {
         assert_eq!(
             Key::address(&[0; 33]),
-            [0x7f, 0x9c, 0x9e, 0x31, 0xac, 0x82, 0x56, 0xca, 0x2f, 0x25, 0x85, 0x83, 0xdf, 0x26, 0x2d, 0xbc, 0x7d, 0x6f, 0x68, 0xf2]
+            [
+                0x7f, 0x9c, 0x9e, 0x31, 0xac, 0x82, 0x56, 0xca, 0x2f, 0x25, 0x85, 0x83, 0xdf, 0x26,
+                0x2d, 0xbc, 0x7d, 0x6f, 0x68, 0xf2
+            ]
         );
     }
     #[test]
@@ -109,7 +125,10 @@ mod tests {
         let key = Key::generate();
         let hash = [0; 32];
         let signature_bytes = key.sign(&hash).unwrap();
-        assert_eq!(key.public_key_bytes(), Key::recover(&hash, &signature_bytes).unwrap());
+        assert_eq!(
+            key.public_key_bytes(),
+            Key::recover(&hash, &signature_bytes).unwrap()
+        );
     }
     #[test]
     #[cfg(feature = "vrf")]
@@ -135,8 +154,9 @@ mod tests {
         assert_eq!(
             subkey.secret_key_bytes(),
             [
-                0xa2, 0xcf, 0x3f, 0x85, 0xbd, 0x37, 0xfa, 0x8d, 0x0a, 0xdc, 0xce, 0x6d, 0xde, 0x50, 0x2b, 0xa7, 0xe1, 0xc4, 0x75, 0x42, 0x35, 0x94, 0x81, 0xd0,
-                0x34, 0x4d, 0x35, 0xdd, 0x91, 0x94, 0xba, 0x63
+                0xa2, 0xcf, 0x3f, 0x85, 0xbd, 0x37, 0xfa, 0x8d, 0x0a, 0xdc, 0xce, 0x6d, 0xde, 0x50,
+                0x2b, 0xa7, 0xe1, 0xc4, 0x75, 0x42, 0x35, 0x94, 0x81, 0xd0, 0x34, 0x4d, 0x35, 0xdd,
+                0x91, 0x94, 0xba, 0x63
             ]
         );
     }

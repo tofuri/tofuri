@@ -60,7 +60,10 @@ fn share(node: &mut Node) {
         return;
     }
     debug!(connections = vec.len(), "Share");
-    if let Err(err) = node.p2p.gossipsub_publish("peers", bincode::serialize(&vec).unwrap()) {
+    if let Err(err) = node
+        .p2p
+        .gossipsub_publish("peers", bincode::serialize(&vec).unwrap())
+    {
         error!("{:?}", err);
     }
 }
@@ -70,7 +73,15 @@ fn grow(node: &mut Node) {
     let timestamp = timestamp - (timestamp % BLOCK_TIME);
     node.blockchain.pending_retain(timestamp);
     node.blockchain.save_blocks(&node.db, node.args.trust);
-    if !node.blockchain.sync.downloading() && !node.args.mint && node.blockchain.forks.unstable.next_staker(timestamp).is_none() {
+    if !node.blockchain.sync.downloading()
+        && !node.args.mint
+        && node
+            .blockchain
+            .forks
+            .unstable
+            .next_staker(timestamp)
+            .is_none()
+    {
         info!("Idling");
         node.blockchain.sync.completed = false;
     }
@@ -84,22 +95,38 @@ fn grow(node: &mut Node) {
     } else {
         warn!("No stakers");
     }
-    let block_a = node.blockchain.forge_block(&node.db, &node.key, timestamp, node.args.trust);
-    if let Err(err) = node.p2p.gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap()) {
+    let block_a = node
+        .blockchain
+        .forge_block(&node.db, &node.key, timestamp, node.args.trust);
+    if let Err(err) = node
+        .p2p
+        .gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap())
+    {
         error!("{:?}", err);
     }
 }
 #[tracing::instrument(skip_all, level = "debug")]
 fn sync_request(node: &mut Node) {
-    if node.blockchain.forks.unstable.latest_block.timestamp >= tofuri_util::timestamp() - BLOCK_TIME {
+    if node.blockchain.forks.unstable.latest_block.timestamp
+        >= tofuri_util::timestamp() - BLOCK_TIME
+    {
         return;
     }
-    if let Some(peer_id) = node.p2p.swarm.connected_peers().choose(&mut thread_rng()).cloned() {
+    if let Some(peer_id) = node
+        .p2p
+        .swarm
+        .connected_peers()
+        .choose(&mut thread_rng())
+        .cloned()
+    {
         node.p2p
             .swarm
             .behaviour_mut()
             .request_response
-            .send_request(&peer_id, SyncRequest(bincode::serialize(&(node.blockchain.height())).unwrap()));
+            .send_request(
+                &peer_id,
+                SyncRequest(bincode::serialize(&(node.blockchain.height())).unwrap()),
+            );
     }
 }
 #[tracing::instrument(skip_all, level = "debug")]

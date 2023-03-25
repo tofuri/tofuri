@@ -28,11 +28,18 @@ use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
-        .with(EnvFilter::builder().with_default_directive(LevelFilter::INFO.into()).from_env_lossy())
+        .with(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
     let mut args = Args::parse();
-    info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    info!(
+        "{}",
+        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
+    );
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = TEMP_DB_DEV;
@@ -54,7 +61,11 @@ async fn main() {
     let addr: SocketAddr = args.pay_api.parse().unwrap();
     let key = match args.tempkey {
         true => Key::generate(),
-        false => tofuri_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
+        false => {
+            tofuri_wallet::load(&args.wallet, &args.passphrase)
+                .unwrap()
+                .3
+        }
     };
     info!(address = address::encode(&key.address_bytes()));
     let tempdir = TempDir::new("tofuri-pay-db").unwrap();
@@ -87,5 +98,8 @@ async fn main() {
             }
         }
     });
-    axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }

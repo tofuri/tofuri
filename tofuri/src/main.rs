@@ -28,11 +28,18 @@ use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
-        .with(EnvFilter::builder().with_default_directive(LevelFilter::INFO.into()).from_env_lossy())
+        .with(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
     let mut args = tofuri::Args::parse();
-    info!("{}", tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY));
+    info!(
+        "{}",
+        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
+    );
     if args.dev {
         if args.tempdb == TEMP_DB {
             args.tempdb = TEMP_DB_DEV;
@@ -53,7 +60,11 @@ async fn main() {
     }
     let key = match args.tempkey {
         true => Key::generate(),
-        false => tofuri_wallet::load(&args.wallet, &args.passphrase).unwrap().3,
+        false => {
+            tofuri_wallet::load(&args.wallet, &args.passphrase)
+                .unwrap()
+                .3
+        }
     };
     info!(address = address::encode(&key.address_bytes()));
     let tempdir = TempDir::new("tofuri-db").unwrap();
@@ -70,7 +81,9 @@ async fn main() {
     for ip_addr in peers {
         connections_known.insert(ip_addr);
     }
-    let p2p = P2p::new(args.max_established, args.timeout, connections_known).await.unwrap();
+    let p2p = P2p::new(args.max_established, args.timeout, connections_known)
+        .await
+        .unwrap();
     let blockchain = Blockchain::default();
     let mut node = Node::new(db, key, args.clone(), p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust).unwrap();
@@ -78,7 +91,10 @@ async fn main() {
     info!(multiaddr = multiaddr.to_string(), "P2P");
     node.p2p.swarm.listen_on(multiaddr).unwrap();
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
-    info!(local_addr = listener.local_addr().unwrap().to_string(), "RPC");
+    info!(
+        local_addr = listener.local_addr().unwrap().to_string(),
+        "RPC"
+    );
     let mut interval_1s = tofuri_util::interval_at(Duration::from_secs(1));
     let mut interval_10s = tofuri_util::interval_at(Duration::from_secs(10));
     let mut interval_1m = tofuri_util::interval_at(Duration::from_secs(60));

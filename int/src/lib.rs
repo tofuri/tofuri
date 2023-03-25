@@ -50,7 +50,11 @@ pub fn floor(uint: u128) -> u128 {
 pub fn to_string(uint: u128) -> String {
     let mut string = format!("{}{}", "0".repeat(DECIMAL_PLACES), uint);
     string.insert(string.len() - DECIMAL_PLACES, '.');
-    string = string.trim_start_matches('0').trim_end_matches('0').trim_end_matches('.').to_string();
+    string = string
+        .trim_start_matches('0')
+        .trim_end_matches('0')
+        .trim_end_matches('.')
+        .to_string();
     if string.starts_with('.') {
         let mut s = "0".to_string();
         s.push_str(&string);
@@ -86,7 +90,10 @@ mod tests {
     }
     #[test]
     fn test_decode_max() {
-        assert_eq!(0xfffffff0000000000000000000000000, from_be_slice(&[0xff, 0xff, 0xff, 0xff]));
+        assert_eq!(
+            0xfffffff0000000000000000000000000,
+            from_be_slice(&[0xff, 0xff, 0xff, 0xff])
+        );
     }
     #[test]
     fn test_to_string() {

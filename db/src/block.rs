@@ -28,7 +28,8 @@ pub fn put(block_a: &BlockA, db: &DBWithThreadMode<SingleThreaded>) -> Result<()
     }
     let key = block_a.hash;
     let value = bincode::serialize(&block_a.b().c()).map_err(Error::Bincode)?;
-    db.put_cf(crate::blocks(db), key, value).map_err(Error::RocksDB)
+    db.put_cf(crate::blocks(db), key, value)
+        .map_err(Error::RocksDB)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Error> {
@@ -43,12 +44,15 @@ pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block
     }
     let beta = beta::get(db, hash).ok();
     let input_public_key = input_public_key::get(db, hash).ok();
-    let block_a = block_c.a(transactions, stakes, beta, input_public_key).map_err(Error::Block)?;
+    let block_a = block_c
+        .a(transactions, stakes, beta, input_public_key)
+        .map_err(Error::Block)?;
     if beta.is_none() {
         beta::put(hash, &block_a.beta, db).map_err(Error::Beta)?;
     }
     if input_public_key.is_none() {
-        input_public_key::put(hash, &block_a.input_public_key, db).map_err(Error::InputPublicKey)?;
+        input_public_key::put(hash, &block_a.input_public_key, db)
+            .map_err(Error::InputPublicKey)?;
     }
     Ok(block_a)
 }
@@ -68,7 +72,10 @@ pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn get_c(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockC, Error> {
     let key = hash;
-    let vec = db.get_cf(crate::blocks(db), key).map_err(Error::RocksDB)?.ok_or(Error::NotFound)?;
+    let vec = db
+        .get_cf(crate::blocks(db), key)
+        .map_err(Error::RocksDB)?
+        .ok_or(Error::NotFound)?;
     bincode::deserialize(&vec).map_err(Error::Bincode)
 }
 #[test]

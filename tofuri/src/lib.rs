@@ -20,7 +20,13 @@ pub struct Node {
     pub ticks: usize,
 }
 impl Node {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, args: Args, p2p: P2p, blockchain: Blockchain) -> Node {
+    pub fn new(
+        db: DBWithThreadMode<SingleThreaded>,
+        key: Key,
+        args: Args,
+        p2p: P2p,
+        blockchain: Blockchain,
+    ) -> Node {
         Node {
             db,
             key,

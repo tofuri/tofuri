@@ -83,7 +83,13 @@ impl StakeA {
     pub fn hash(&self) -> Hash {
         hash(self)
     }
-    pub fn sign(deposit: bool, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<StakeA, Error> {
+    pub fn sign(
+        deposit: bool,
+        amount: u128,
+        fee: u128,
+        timestamp: u32,
+        key: &Key,
+    ) -> Result<StakeA, Error> {
         let mut stake_a = StakeA {
             amount: tofuri_int::floor(amount),
             fee: tofuri_int::floor(fee),
@@ -166,8 +172,8 @@ mod tests {
         assert_eq!(
             StakeB::default().hash(),
             [
-                62, 112, 119, 253, 47, 102, 214, 137, 224, 206, 230, 167, 207, 91, 55, 191, 45, 202, 124, 151, 154, 243, 86, 208, 163, 28, 188, 92, 133, 96,
-                92, 125
+                62, 112, 119, 253, 47, 102, 214, 137, 224, 206, 230, 167, 207, 91, 55, 191, 45,
+                202, 124, 151, 154, 243, 86, 208, 163, 28, 188, 92, 133, 96, 92, 125
             ]
         );
     }

@@ -13,7 +13,8 @@ use uint::construct_uint;
 pub const GIT_HASH: &str = env!("GIT_HASH");
 lazy_static! {
     pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
-    pub static ref TRANSACTION_SIZE: usize = bincode::serialize(&TransactionB::default()).unwrap().len();
+    pub static ref TRANSACTION_SIZE: usize =
+        bincode::serialize(&TransactionB::default()).unwrap().len();
     pub static ref STAKE_SIZE: usize = bincode::serialize(&StakeB::default()).unwrap().len();
 }
 construct_uint! {
@@ -62,7 +63,12 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
         if i == 1 {
             string.push_str(" and ");
         }
-        string.push_str(&format!("{} {}{}", num, str, if num == 1 { "" } else { "s" }));
+        string.push_str(&format!(
+            "{} {}{}",
+            num,
+            str,
+            if num == 1 { "" } else { "s" }
+        ));
         if i == 1 {
             break;
         }
@@ -97,6 +103,9 @@ mod tests {
     use super::*;
     #[test]
     fn test_block_size_limit() {
-        assert_eq!(BLOCK_SIZE_LIMIT, *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * 600);
+        assert_eq!(
+            BLOCK_SIZE_LIMIT,
+            *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * 600
+        );
     }
 }

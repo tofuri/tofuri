@@ -30,14 +30,22 @@ pub mod charge {
     use rocksdb::SingleThreaded;
     use tofuri_key::Key;
     use tofuri_pay_core::Charge;
-    pub fn put(db: &DBWithThreadMode<SingleThreaded>, key: &Key, charge: &Charge) -> Result<(), Error> {
+    pub fn put(
+        db: &DBWithThreadMode<SingleThreaded>,
+        key: &Key,
+        charge: &Charge,
+    ) -> Result<(), Error> {
         let key = charge.address_bytes(key);
         let value = bincode::serialize(charge).map_err(Error::Bincode)?;
-        db.put_cf(super::charges(db), key, value).map_err(Error::RocksDB)
+        db.put_cf(super::charges(db), key, value)
+            .map_err(Error::RocksDB)
     }
     pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Charge, Error> {
         let key = hash;
-        let vec = db.get_cf(super::charges(db), key).map_err(Error::RocksDB)?.ok_or(Error::ChargeNotFound)?;
+        let vec = db
+            .get_cf(super::charges(db), key)
+            .map_err(Error::RocksDB)?
+            .ok_or(Error::ChargeNotFound)?;
         bincode::deserialize(&vec).map_err(Error::Bincode)
     }
 }

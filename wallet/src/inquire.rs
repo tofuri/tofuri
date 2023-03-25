@@ -27,10 +27,12 @@ pub fn select() -> Result<String, Error> {
     let mut filenames = util::filenames().map_err(Error::Util)?;
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());
-    let filename = Select::new(">>", filenames.to_vec()).prompt().unwrap_or_else(|err| {
-        println!("{}", err.to_string().red());
-        process::exit(0)
-    });
+    let filename = Select::new(">>", filenames.to_vec())
+        .prompt()
+        .unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        });
     Ok(filename)
 }
 pub fn name() -> Result<String, Error> {
@@ -45,7 +47,9 @@ pub fn name() -> Result<String, Error> {
             let mut path = PathBuf::new().join(input);
             path.set_extension(EXTENSION);
             if filenames.contains(&path.file_name().unwrap().to_string_lossy().into_owned()) {
-                Ok(Validation::Invalid("A wallet with that name already exists.".into()))
+                Ok(Validation::Invalid(
+                    "A wallet with that name already exists.".into(),
+                ))
             } else {
                 Ok(Validation::Valid)
             }
@@ -130,17 +134,20 @@ pub fn import() -> Result<Key, Error> {
     let secret = Password::new("Enter secret key:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
-        .with_validator(move |input: &str| match tofuri_address::secret::decode(input) {
-            Ok(_) => Ok(Validation::Valid),
-            Err(_) => Ok(Validation::Invalid("Invalid secret key.".into())),
-        })
+        .with_validator(
+            move |input: &str| match tofuri_address::secret::decode(input) {
+                Ok(_) => Ok(Validation::Valid),
+                Err(_) => Ok(Validation::Invalid("Invalid secret key.".into())),
+            },
+        )
         .with_help_message("Enter a valid secret key (SECRETx...)")
         .prompt()
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    Key::from_slice(&tofuri_address::secret::decode(&secret).map_err(Error::Address)?).map_err(Error::Key)
+    Key::from_slice(&tofuri_address::secret::decode(&secret).map_err(Error::Address)?)
+        .map_err(Error::Key)
 }
 pub fn send() -> bool {
     match Confirm::new("Send?").prompt() {
@@ -213,10 +220,12 @@ pub fn fee() -> u128 {
         })
 }
 pub fn deposit() -> bool {
-    match Select::new(">>", vec!["deposit", "withdraw"]).prompt().unwrap_or_else(|err| {
-        println!("{}", err.to_string().red());
-        process::exit(0)
-    }) {
+    match Select::new(">>", vec!["deposit", "withdraw"])
+        .prompt()
+        .unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        }) {
         "deposit" => true,
         "withdraw" => false,
         _ => false,

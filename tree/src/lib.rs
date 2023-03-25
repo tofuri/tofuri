@@ -9,7 +9,11 @@ pub struct Branch {
 }
 impl Branch {
     fn new(hash: Hash, height: usize, timestamp: u32) -> Branch {
-        Branch { hash, height, timestamp }
+        Branch {
+            hash,
+            height,
+            timestamp,
+        }
     }
 }
 #[derive(Default, Debug, Clone)]
@@ -24,7 +28,10 @@ impl Tree {
     pub fn size(&self) -> usize {
         self.hashes.len()
     }
-    pub fn stable_and_unstable_hashes(&self, trust_fork_after_blocks: usize) -> (Vec<Hash>, Vec<Hash>) {
+    pub fn stable_and_unstable_hashes(
+        &self,
+        trust_fork_after_blocks: usize,
+    ) -> (Vec<Hash>, Vec<Hash>) {
         let mut stable_hashes = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.hash;
@@ -44,7 +51,11 @@ impl Tree {
         }
         stable_hashes.reverse();
         let len = stable_hashes.len();
-        let start = if len < trust_fork_after_blocks { 0 } else { len - trust_fork_after_blocks };
+        let start = if len < trust_fork_after_blocks {
+            0
+        } else {
+            len - trust_fork_after_blocks
+        };
         let unstable_hashes = stable_hashes.drain(start..len).collect();
         (stable_hashes, unstable_hashes)
     }
@@ -81,7 +92,8 @@ impl Tree {
             Some(false)
         } else {
             // new branch
-            self.branches.push(Branch::new(hash, self.height(&previous_hash), timestamp));
+            self.branches
+                .push(Branch::new(hash, self.height(&previous_hash), timestamp));
             Some(true)
         }
     }

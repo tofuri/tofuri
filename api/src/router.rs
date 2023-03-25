@@ -22,32 +22,65 @@ pub async fn root(State(args): State<Args>) -> impl IntoResponse {
 }
 pub async fn balance(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance = tofuri_int::to_string(tofuri_rpc::balance(&args.rpc, &address_bytes).await.unwrap());
+    let balance = tofuri_int::to_string(
+        tofuri_rpc::balance(&args.rpc, &address_bytes)
+            .await
+            .unwrap(),
+    );
     Json(balance)
 }
-pub async fn balance_pending_min(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
+pub async fn balance_pending_min(
+    State(args): State<Args>,
+    address: Path<String>,
+) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance_pending_min = tofuri_int::to_string(tofuri_rpc::balance_pending_min(&args.rpc, &address_bytes).await.unwrap());
+    let balance_pending_min = tofuri_int::to_string(
+        tofuri_rpc::balance_pending_min(&args.rpc, &address_bytes)
+            .await
+            .unwrap(),
+    );
     Json(balance_pending_min)
 }
-pub async fn balance_pending_max(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
+pub async fn balance_pending_max(
+    State(args): State<Args>,
+    address: Path<String>,
+) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance_pending_max = tofuri_int::to_string(tofuri_rpc::balance_pending_max(&args.rpc, &address_bytes).await.unwrap());
+    let balance_pending_max = tofuri_int::to_string(
+        tofuri_rpc::balance_pending_max(&args.rpc, &address_bytes)
+            .await
+            .unwrap(),
+    );
     Json(balance_pending_max)
 }
 pub async fn staked(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked = tofuri_int::to_string(tofuri_rpc::staked(&args.rpc, &address_bytes).await.unwrap());
+    let staked =
+        tofuri_int::to_string(tofuri_rpc::staked(&args.rpc, &address_bytes).await.unwrap());
     Json(staked)
 }
-pub async fn staked_pending_min(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
+pub async fn staked_pending_min(
+    State(args): State<Args>,
+    address: Path<String>,
+) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked_pending_min = tofuri_int::to_string(tofuri_rpc::staked_pending_min(&args.rpc, &address_bytes).await.unwrap());
+    let staked_pending_min = tofuri_int::to_string(
+        tofuri_rpc::staked_pending_min(&args.rpc, &address_bytes)
+            .await
+            .unwrap(),
+    );
     Json(staked_pending_min)
 }
-pub async fn staked_pending_max(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
+pub async fn staked_pending_max(
+    State(args): State<Args>,
+    address: Path<String>,
+) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked_pending_max = tofuri_int::to_string(tofuri_rpc::staked_pending_max(&args.rpc, &address_bytes).await.unwrap());
+    let staked_pending_max = tofuri_int::to_string(
+        tofuri_rpc::staked_pending_max(&args.rpc, &address_bytes)
+            .await
+            .unwrap(),
+    );
     Json(staked_pending_max)
 }
 pub async fn height(State(args): State<Args>) -> impl IntoResponse {
@@ -66,7 +99,11 @@ pub async fn block_latest(State(args): State<Args>) -> impl IntoResponse {
 }
 pub async fn hash_by_height(State(args): State<Args>, height: Path<String>) -> impl IntoResponse {
     let height: usize = height.parse().unwrap();
-    let hash = hex::encode(tofuri_rpc::hash_by_height(&args.rpc, &height).await.unwrap());
+    let hash = hex::encode(
+        tofuri_rpc::hash_by_height(&args.rpc, &height)
+            .await
+            .unwrap(),
+    );
     Json(hash)
 }
 pub async fn block_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
@@ -75,9 +112,14 @@ pub async fn block_by_hash(State(args): State<Args>, hash: Path<String>) -> impl
     let block = tofuri_api_util::block(&block_a);
     Json(block)
 }
-pub async fn transaction_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
+pub async fn transaction_by_hash(
+    State(args): State<Args>,
+    hash: Path<String>,
+) -> impl IntoResponse {
     let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-    let transaction_a = tofuri_rpc::transaction_by_hash(&args.rpc, &hash).await.unwrap();
+    let transaction_a = tofuri_rpc::transaction_by_hash(&args.rpc, &hash)
+        .await
+        .unwrap();
     let transaction = tofuri_api_util::transaction(&transaction_a);
     Json(transaction)
 }
@@ -92,12 +134,19 @@ pub async fn peers(State(args): State<Args>) -> impl IntoResponse {
     Json(peers)
 }
 pub async fn peer(State(args): State<Args>, Path(ip_addr): Path<String>) -> impl IntoResponse {
-    tofuri_rpc::peer(&args.rpc, &ip_addr.parse().unwrap()).await.unwrap();
+    tofuri_rpc::peer(&args.rpc, &ip_addr.parse().unwrap())
+        .await
+        .unwrap();
     Json(true)
 }
-pub async fn transaction(State(args): State<Args>, Json(transaction): Json<Transaction>) -> impl IntoResponse {
+pub async fn transaction(
+    State(args): State<Args>,
+    Json(transaction): Json<Transaction>,
+) -> impl IntoResponse {
     let transaction_b = tofuri_api_util::transaction_b(&transaction).unwrap();
-    let status = tofuri_rpc::transaction(&args.rpc, &transaction_b).await.unwrap();
+    let status = tofuri_rpc::transaction(&args.rpc, &transaction_b)
+        .await
+        .unwrap();
     Json(status)
 }
 pub async fn stake(State(args): State<Args>, Json(stake): Json<Stake>) -> impl IntoResponse {
@@ -153,7 +202,8 @@ pub async fn unstable_hashes(State(args): State<Args>) -> impl IntoResponse {
 }
 pub async fn unstable_latest_hashes(State(args): State<Args>) -> impl IntoResponse {
     let unstable_latest_hashes = tofuri_rpc::unstable_latest_hashes(&args.rpc).await.unwrap();
-    let unstable_latest_hashes: Vec<String> = unstable_latest_hashes.iter().map(hex::encode).collect();
+    let unstable_latest_hashes: Vec<String> =
+        unstable_latest_hashes.iter().map(hex::encode).collect();
     Json(unstable_latest_hashes)
 }
 pub async fn unstable_stakers(State(args): State<Args>) -> impl IntoResponse {

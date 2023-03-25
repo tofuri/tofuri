@@ -23,7 +23,11 @@ pub fn block(block_a: &BlockA) -> Block {
         pi: hex::encode(block_a.pi),
         forger_address: address::encode(&block_a.input_address()),
         signature: hex::encode(block_a.signature),
-        transactions: block_a.transactions.iter().map(|x| hex::encode(x.hash)).collect(),
+        transactions: block_a
+            .transactions
+            .iter()
+            .map(|x| hex::encode(x.hash))
+            .collect(),
         stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
     }
 }
@@ -52,7 +56,9 @@ pub fn stake(stake_a: &StakeA) -> Stake {
 pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
     Ok(TransactionB {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
-        amount: tofuri_int::to_be_bytes(tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?),
+        amount: tofuri_int::to_be_bytes(
+            tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?,
+        ),
         fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&transaction.fee).map_err(Error::Int)?),
         timestamp: transaction.timestamp,
         signature: hex::decode(&transaction.signature)

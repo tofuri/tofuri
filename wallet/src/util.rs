@@ -15,7 +15,15 @@ pub fn filenames() -> Result<Vec<String>, Error> {
     }
     let mut filenames: Vec<String> = vec![];
     for entry in read_dir(path).unwrap() {
-        filenames.push(entry.map_err(Error::Io)?.path().file_name().unwrap().to_string_lossy().into_owned());
+        filenames.push(
+            entry
+                .map_err(Error::Io)?
+                .path()
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned(),
+        );
     }
     Ok(filenames)
 }

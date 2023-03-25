@@ -184,7 +184,11 @@ impl Wallet {
             .json()
             .await
             .map_err(Error::Reqwest)?;
-        println!("Account balance: {}, staked: {}", balance.to_string().yellow(), staked.yellow());
+        println!(
+            "Account balance: {}, staked: {}",
+            balance.to_string().yellow(),
+            staked.yellow()
+        );
         Ok(())
     }
     async fn height(&self) -> Result<(), Error> {
@@ -232,7 +236,14 @@ impl Wallet {
             .json()
             .await
             .map_err(Error::Reqwest)?;
-        println!("{}", if res == "success" { res.green() } else { res.red() });
+        println!(
+            "{}",
+            if res == "success" {
+                res.green()
+            } else {
+                res.red()
+            }
+        );
         Ok(())
     }
     async fn stake(&self) -> Result<(), Error> {
@@ -243,7 +254,14 @@ impl Wallet {
         if !send {
             return Ok(());
         }
-        let stake_a = StakeA::sign(deposit, amount, fee, tofuri_util::timestamp(), self.key.as_ref().unwrap()).unwrap();
+        let stake_a = StakeA::sign(
+            deposit,
+            amount,
+            fee,
+            tofuri_util::timestamp(),
+            self.key.as_ref().unwrap(),
+        )
+        .unwrap();
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
         let res: String = self
             .client
@@ -255,7 +273,14 @@ impl Wallet {
             .json()
             .await
             .map_err(Error::Reqwest)?;
-        println!("{}", if res == "success" { res.green() } else { res.red() });
+        println!(
+            "{}",
+            if res == "success" {
+                res.green()
+            } else {
+                res.red()
+            }
+        );
         Ok(())
     }
     async fn search(&self) -> Result<(), Error> {
@@ -279,28 +304,57 @@ impl Wallet {
                 .json()
                 .await
                 .map_err(Error::Reqwest)?;
-            println!("Address found\nAccount balance: {}, staked: {}", balance.to_string().yellow(), staked.yellow());
+            println!(
+                "Address found\nAccount balance: {}, staked: {}",
+                balance.to_string().yellow(),
+                staked.yellow()
+            );
             return Ok(());
         } else if search.len() == 64 {
-            if let Ok(res) = self.client.get(format!("{}/block/{}", self.args.api, search)).send().await {
+            if let Ok(res) = self
+                .client
+                .get(format!("{}/block/{}", self.args.api, search))
+                .send()
+                .await
+            {
                 let block: Block = res.json().await.map_err(Error::Reqwest)?;
                 println!("Block found\n{block:?}");
                 return Ok(());
             }
-            if let Ok(res) = self.client.get(format!("{}/transaction/{}", self.args.api, search)).send().await {
+            if let Ok(res) = self
+                .client
+                .get(format!("{}/transaction/{}", self.args.api, search))
+                .send()
+                .await
+            {
                 let transaction: Transaction = res.json().await.map_err(Error::Reqwest)?;
                 println!("Transaction found\n{transaction:?}");
                 return Ok(());
             }
-            if let Ok(res) = self.client.get(format!("{}/stake/{}", self.args.api, search)).send().await {
+            if let Ok(res) = self
+                .client
+                .get(format!("{}/stake/{}", self.args.api, search))
+                .send()
+                .await
+            {
                 let stake: Stake = res.json().await.map_err(Error::Reqwest)?;
                 println!("Stake found\n{stake:?}");
                 return Ok(());
             }
         } else if search.parse::<usize>().is_ok() {
-            if let Ok(res) = self.client.get(format!("{}/hash/{}", self.args.api, search)).send().await {
+            if let Ok(res) = self
+                .client
+                .get(format!("{}/hash/{}", self.args.api, search))
+                .send()
+                .await
+            {
                 let hash: String = res.json().await.map_err(Error::Reqwest)?;
-                if let Ok(res) = self.client.get(format!("{}/block/{}", self.args.api, hash)).send().await {
+                if let Ok(res) = self
+                    .client
+                    .get(format!("{}/block/{}", self.args.api, hash))
+                    .send()
+                    .await
+                {
                     let block: Block = res.json().await.map_err(Error::Reqwest)?;
                     println!("Block found\n{block:?}");
                     return Ok(());
@@ -312,12 +366,18 @@ impl Wallet {
         Ok(())
     }
     fn address(&self) {
-        println!("{}", address::encode(&self.key.as_ref().unwrap().address_bytes()).green());
+        println!(
+            "{}",
+            address::encode(&self.key.as_ref().unwrap().address_bytes()).green()
+        );
     }
     fn key(&self) {
         println!("{}", "Are you being watched?".yellow());
         println!("{}", "Never share your secret key!".yellow());
-        println!("{}", "Anyone who has it can access your funds from anywhere.".italic());
+        println!(
+            "{}",
+            "Anyone who has it can access your funds from anywhere.".italic()
+        );
         println!("{}", "View in private with no cameras around.".italic());
         if match Confirm::new("View secret key?").prompt() {
             Ok(b) => b,
@@ -326,7 +386,10 @@ impl Wallet {
                 process::exit(0)
             }
         } {
-            println!("{}", secret::encode(&self.key.as_ref().unwrap().secret_key_bytes()).red());
+            println!(
+                "{}",
+                secret::encode(&self.key.as_ref().unwrap().secret_key_bytes()).red()
+            );
         }
     }
     fn data(&self) {
@@ -356,13 +419,21 @@ pub fn encrypt(key: &Key) -> Result<(Salt, Nonce, Ciphertext), Error> {
     let cipher = ChaCha20Poly1305::new_from_slice(&cipher_key).unwrap();
     let nonce: Nonce = rand::random();
     let ciphertext: Ciphertext = cipher
-        .encrypt(&nonce.try_into().unwrap(), key.secret_key_bytes().as_slice())
+        .encrypt(
+            &nonce.try_into().unwrap(),
+            key.secret_key_bytes().as_slice(),
+        )
         .unwrap()
         .try_into()
         .unwrap();
     Ok((salt, nonce, ciphertext))
 }
-pub fn decrypt(salt: &Salt, nonce: &Nonce, ciphertext: &Ciphertext, passphrase: &str) -> Result<Vec<u8>, Error> {
+pub fn decrypt(
+    salt: &Salt,
+    nonce: &Nonce,
+    ciphertext: &Ciphertext,
+    passphrase: &str,
+) -> Result<Vec<u8>, Error> {
     let passphrase = match passphrase {
         "" => crate::inquire::passphrase(),
         _ => passphrase.to_string(),
@@ -399,7 +470,13 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
             let salt: Salt = slice[0..32].try_into().unwrap();
             let nonce: Nonce = slice[32..44].try_into().unwrap();
             let ciphertext: Ciphertext = slice[44..92].try_into().unwrap();
-            let key = Key::from_slice(decrypt(&salt, &nonce, &ciphertext, passphrase)?.as_slice().try_into().unwrap()).map_err(Error::Key)?;
+            let key = Key::from_slice(
+                decrypt(&salt, &nonce, &ciphertext, passphrase)?
+                    .as_slice()
+                    .try_into()
+                    .unwrap(),
+            )
+            .map_err(Error::Key)?;
             Ok((salt, nonce, ciphertext, key))
         }
         let res = inner(slice, passphrase);
@@ -409,7 +486,10 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         res
     }
     if filename.is_empty() ^ passphrase.is_empty() {
-        println!("{}", "To use autodecrypt you must specify both --wallet and --passphrase".red());
+        println!(
+            "{}",
+            "To use autodecrypt you must specify both --wallet and --passphrase".red()
+        );
         process::exit(0);
     }
     if !filename.is_empty() && !passphrase.is_empty() {

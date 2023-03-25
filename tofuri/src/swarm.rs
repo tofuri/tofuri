@@ -31,7 +31,10 @@ use tracing::info;
 use tracing::warn;
 use void::Void;
 type HandlerErr = EitherError<
-    EitherError<EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>, ConnectionHandlerUpgrErr<io::Error>>,
+    EitherError<
+        EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>,
+        ConnectionHandlerUpgrErr<io::Error>,
+    >,
     ConnectionHandlerUpgrErr<io::Error>,
 >;
 #[tracing::instrument(skip_all, level = "debug")]
@@ -43,7 +46,11 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
             num_established,
             ..
         } => connection_established(node, peer_id, endpoint, num_established),
-        SwarmEvent::ConnectionClosed { peer_id, num_established, .. } => connection_closed(node, peer_id, num_established),
+        SwarmEvent::ConnectionClosed {
+            peer_id,
+            num_established,
+            ..
+        } => connection_closed(node, peer_id, num_established),
         SwarmEvent::Behaviour(OutEvent::Mdns(event)) => mdns(node, event),
         SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
             message_id,
@@ -51,18 +58,30 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
             propagation_source,
             ..
         })) => gossipsub_message(node, message, message_id, propagation_source),
-        SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message { message, peer })) => match message {
-            RequestResponseMessage::Request { request, channel, .. } => sync_request(node, peer, request, channel),
+        SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message {
+            message,
+            peer,
+        })) => match message {
+            RequestResponseMessage::Request {
+                request, channel, ..
+            } => sync_request(node, peer, request, channel),
             RequestResponseMessage::Response { response, .. } => sync_response(node, response),
         },
         _ => {}
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedPoint, num_established: NonZeroU32) {
+fn connection_established(
+    node: &mut Node,
+    peer_id: PeerId,
+    endpoint: ConnectedPoint,
+    num_established: NonZeroU32,
+) {
     let ip_addr = match endpoint {
         ConnectedPoint::Dialer { address, .. } => multiaddr::to_ip_addr(&address).unwrap(),
-        ConnectedPoint::Listener { send_back_addr, .. } => multiaddr::to_ip_addr(&send_back_addr).unwrap(),
+        ConnectedPoint::Listener { send_back_addr, .. } => {
+            multiaddr::to_ip_addr(&send_back_addr).unwrap()
+        }
     };
     node.p2p.connections_known.insert(ip_addr);
     let _ = db::peer::put(&ip_addr, &node.db);
@@ -72,12 +91,18 @@ fn connection_established(node: &mut Node, peer_id: PeerId, endpoint: ConnectedP
     // }
     // }
     node.p2p.connections.insert(peer_id, ip_addr);
-    info!(ip_addr = ip_addr.to_string(), num_established, "Connection established");
+    info!(
+        ip_addr = ip_addr.to_string(),
+        num_established, "Connection established"
+    );
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn connection_closed(node: &mut Node, peer_id: PeerId, num_established: u32) {
     let ip_addr = node.p2p.connections.remove(&peer_id).unwrap();
-    info!(ip_addr = ip_addr.to_string(), num_established, "Connection closed");
+    info!(
+        ip_addr = ip_addr.to_string(),
+        num_established, "Connection closed"
+    );
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn mdns(node: &mut Node, event: mdns::Event) {
@@ -92,7 +117,12 @@ fn mdns(node: &mut Node, event: mdns::Event) {
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: MessageId, propagation_source: PeerId) {
+fn gossipsub_message(
+    node: &mut Node,
+    message: GossipsubMessage,
+    message_id: MessageId,
+    propagation_source: PeerId,
+) {
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
@@ -103,43 +133,64 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
         RatelimitStake,
         RatelimitPeers,
     }
-    fn inner(node: &mut Node, message: &GossipsubMessage, propagation_source: &PeerId) -> Result<(), Error> {
+    fn inner(
+        node: &mut Node,
+        message: &GossipsubMessage,
+        propagation_source: &PeerId,
+    ) -> Result<(), Error> {
         if message.source.is_none() {
             return Err(Error::MessageSource);
         }
         let source = message.source.as_ref().unwrap();
         match message.topic.as_str() {
             "block" => {
-                if node.p2p.gossipsub_message_counter_block(source) || node.p2p.gossipsub_message_counter_block(propagation_source) {
+                if node.p2p.gossipsub_message_counter_block(source)
+                    || node.p2p.gossipsub_message_counter_block(propagation_source)
+                {
                     return Err(Error::RatelimitBlock);
                 }
-                let block_b: BlockB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+                let block_b: BlockB =
+                    bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)
                     .map_err(Error::Blockchain)?;
                 node.blockchain.save_blocks(&node.db, node.args.trust);
             }
             "transaction" => {
-                if node.p2p.gossipsub_message_counter_transaction(source) || node.p2p.gossipsub_message_counter_transaction(propagation_source) {
+                if node.p2p.gossipsub_message_counter_transaction(source)
+                    || node
+                        .p2p
+                        .gossipsub_message_counter_transaction(propagation_source)
+                {
                     return Err(Error::RatelimitTransaction);
                 }
-                let transaction_b: TransactionB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+                let transaction_b: TransactionB =
+                    bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_transactions_push(transaction_b, node.args.time_delta)
                     .map_err(Error::Blockchain)?;
             }
             "stake" => {
-                if node.p2p.gossipsub_message_counter_stake(source) || node.p2p.gossipsub_message_counter_stake(propagation_source) {
+                if node.p2p.gossipsub_message_counter_stake(source)
+                    || node.p2p.gossipsub_message_counter_stake(propagation_source)
+                {
                     return Err(Error::RatelimitStake);
                 }
-                let stake_b: StakeB = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
-                node.blockchain.pending_stakes_push(stake_b, node.args.time_delta).map_err(Error::Blockchain)?;
+                let stake_b: StakeB =
+                    bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+                node.blockchain
+                    .pending_stakes_push(stake_b, node.args.time_delta)
+                    .map_err(Error::Blockchain)?;
             }
             "peers" => {
-                if node.p2p.gossipsub_message_counter_peers(source) || node.p2p.gossipsub_message_counter_peers(propagation_source) {
+                if node.p2p.gossipsub_message_counter_peers(source)
+                    || node.p2p.gossipsub_message_counter_peers(propagation_source)
+                {
                     return Err(Error::RatelimitPeers);
                 }
-                for ip_addr in bincode::deserialize::<Vec<IpAddr>>(&message.data).map_err(Error::Bincode)? {
+                for ip_addr in
+                    bincode::deserialize::<Vec<IpAddr>>(&message.data).map_err(Error::Bincode)?
+                {
                     node.p2p.connections_unknown.insert(ip_addr);
                 }
             }
@@ -154,7 +205,11 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
                 .swarm
                 .behaviour_mut()
                 .gossipsub
-                .report_message_validation_result(&message_id, &propagation_source, MessageAcceptance::Accept)
+                .report_message_validation_result(
+                    &message_id,
+                    &propagation_source,
+                    MessageAcceptance::Accept,
+                )
         }
         Err(Error::Blockchain(tofuri_blockchain::Error::BlockPending))
         | Err(Error::Blockchain(tofuri_blockchain::Error::BlockHashInTree))
@@ -163,14 +218,22 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
             .swarm
             .behaviour_mut()
             .gossipsub
-            .report_message_validation_result(&message_id, &propagation_source, MessageAcceptance::Ignore),
+            .report_message_validation_result(
+                &message_id,
+                &propagation_source,
+                MessageAcceptance::Ignore,
+            ),
         Err(err) => {
             error!("{:?}", err);
             node.p2p
                 .swarm
                 .behaviour_mut()
                 .gossipsub
-                .report_message_validation_result(&message_id, &propagation_source, MessageAcceptance::Reject)
+                .report_message_validation_result(
+                    &message_id,
+                    &propagation_source,
+                    MessageAcceptance::Reject,
+                )
         }
     } {
         Ok(cache) => debug!(cache, "Message validation result reported"),
@@ -178,7 +241,12 @@ fn gossipsub_message(node: &mut Node, message: GossipsubMessage, message_id: Mes
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel: ResponseChannel<SyncResponse>) {
+fn sync_request(
+    node: &mut Node,
+    peer_id: PeerId,
+    request: SyncRequest,
+    channel: ResponseChannel<SyncResponse>,
+) {
     if node.p2p.request_response_counter(&peer_id) {
         return;
     }
@@ -188,7 +256,11 @@ fn sync_request(node: &mut Node, peer_id: PeerId, request: SyncRequest, channel:
         Blockchain(tofuri_blockchain::Error),
         SyncResponse(tofuri_p2p::behaviour::SyncResponse),
     }
-    fn inner(node: &mut Node, request: SyncRequest, channel: ResponseChannel<SyncResponse>) -> Result<(), Error> {
+    fn inner(
+        node: &mut Node,
+        request: SyncRequest,
+        channel: ResponseChannel<SyncResponse>,
+    ) -> Result<(), Error> {
         let height: usize = bincode::deserialize(&request.0).map_err(Error::Bincode)?;
         let mut size = 0;
         let mut vec = vec![];

@@ -226,7 +226,10 @@ impl BlockC {
         beta: Option<[u8; 32]>,
         input_public_key: Option<PublicKeyBytes>,
     ) -> Result<BlockA, Error> {
-        let block_b = self.b(transactions.iter().map(|x| x.b()).collect(), stakes.iter().map(|x| x.b()).collect());
+        let block_b = self.b(
+            transactions.iter().map(|x| x.b()).collect(),
+            stakes.iter().map(|x| x.b()).collect(),
+        );
         let beta = beta.unwrap_or(block_b.beta()?);
         let input_public_key = input_public_key.unwrap_or(block_b.input_public_key()?);
         let mut block_a = BlockA {
@@ -330,7 +333,10 @@ mod tests {
     fn test_hash() {
         assert_eq!(
             BlockB::default().hash(),
-            [219, 36, 84, 162, 32, 189, 146, 241, 148, 53, 36, 177, 50, 142, 92, 103, 125, 225, 26, 208, 20, 86, 5, 216, 113, 32, 54, 141, 75, 147, 221, 219]
+            [
+                219, 36, 84, 162, 32, 189, 146, 241, 148, 53, 36, 177, 50, 142, 92, 103, 125, 225,
+                26, 208, 20, 86, 5, 216, 113, 32, 54, 141, 75, 147, 221, 219
+            ]
         );
     }
 }

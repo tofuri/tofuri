@@ -11,7 +11,8 @@ pub enum Error {
 pub fn put(ip_addr: &IpAddr, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
     let key = bincode::serialize(ip_addr).map_err(Error::Bincode)?;
     let value = [];
-    db.put_cf(crate::peers(db), key, value).map_err(Error::RocksDB)
+    db.put_cf(crate::peers(db), key, value)
+        .map_err(Error::RocksDB)
 }
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn get_all(db: &DBWithThreadMode<SingleThreaded>) -> Result<Vec<IpAddr>, Error> {

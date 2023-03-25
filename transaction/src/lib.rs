@@ -90,7 +90,13 @@ impl TransactionA {
     pub fn hash(&self) -> Hash {
         hash(self)
     }
-    pub fn sign(public_key_output: AddressBytes, amount: u128, fee: u128, timestamp: u32, key: &Key) -> Result<TransactionA, Error> {
+    pub fn sign(
+        public_key_output: AddressBytes,
+        amount: u128,
+        fee: u128,
+        timestamp: u32,
+        key: &Key,
+    ) -> Result<TransactionA, Error> {
         let mut transaction_a = TransactionA {
             input_address: [0; 20],
             output_address: public_key_output,
@@ -174,8 +180,8 @@ mod tests {
         assert_eq!(
             TransactionB::default().hash(),
             [
-                102, 104, 122, 173, 248, 98, 189, 119, 108, 143, 193, 139, 142, 159, 142, 32, 8, 151, 20, 133, 110, 226, 51, 179, 144, 42, 89, 29, 13, 95, 41,
-                37
+                102, 104, 122, 173, 248, 98, 189, 119, 108, 143, 193, 139, 142, 159, 142, 32, 8,
+                151, 20, 133, 110, 226, 51, 179, 144, 42, 89, 29, 13, 95, 41, 37
             ]
         );
     }

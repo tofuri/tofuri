@@ -53,26 +53,49 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type)
     let request: Request = bincode::deserialize(slice).map_err(Error::Bincode)?;
     stream
         .write_all(&match request.t {
-            Type::Balance => bincode::serialize(&balance(node, &request.v)?).map_err(Error::Bincode)?,
-            Type::BalancePendingMin => bincode::serialize(&balance_pending_min(node, &request.v)?).map_err(Error::Bincode)?,
-            Type::BalancePendingMax => bincode::serialize(&balance_pending_max(node, &request.v)?).map_err(Error::Bincode)?,
-            Type::Staked => bincode::serialize(&staked(node, &request.v)?).map_err(Error::Bincode)?,
-            Type::StakedPendingMin => bincode::serialize(&staked_pending_min(node, &request.v)?).map_err(Error::Bincode)?,
-            Type::StakedPendingMax => bincode::serialize(&staked_pending_max(node, &request.v)?).map_err(Error::Bincode)?,
+            Type::Balance => {
+                bincode::serialize(&balance(node, &request.v)?).map_err(Error::Bincode)?
+            }
+            Type::BalancePendingMin => bincode::serialize(&balance_pending_min(node, &request.v)?)
+                .map_err(Error::Bincode)?,
+            Type::BalancePendingMax => bincode::serialize(&balance_pending_max(node, &request.v)?)
+                .map_err(Error::Bincode)?,
+            Type::Staked => {
+                bincode::serialize(&staked(node, &request.v)?).map_err(Error::Bincode)?
+            }
+            Type::StakedPendingMin => bincode::serialize(&staked_pending_min(node, &request.v)?)
+                .map_err(Error::Bincode)?,
+            Type::StakedPendingMax => bincode::serialize(&staked_pending_max(node, &request.v)?)
+                .map_err(Error::Bincode)?,
             Type::Height => bincode::serialize(&height(node)?).map_err(Error::Bincode)?,
-            Type::HeightByHash => bincode::serialize(&height_by_hash(node, &request.v)?).map_err(Error::Bincode)?,
+            Type::HeightByHash => {
+                bincode::serialize(&height_by_hash(node, &request.v)?).map_err(Error::Bincode)?
+            }
             Type::BlockLatest => bincode::serialize(block_latest(node)?).map_err(Error::Bincode)?,
-            Type::HashByHeight => bincode::serialize(&hash_by_height(node, &request.v)?).map_err(Error::Bincode)?,
-            Type::BlockByHash => bincode::serialize(&block_by_hash(node, &request.v)?).map_err(Error::Bincode)?,
-            Type::TransactionByHash => bincode::serialize(&transaction_by_hash(node, &request.v)?).map_err(Error::Bincode)?,
-            Type::StakeByHash => bincode::serialize(&stake_by_hash(node, &request.v)?).map_err(Error::Bincode)?,
+            Type::HashByHeight => {
+                bincode::serialize(&hash_by_height(node, &request.v)?).map_err(Error::Bincode)?
+            }
+            Type::BlockByHash => {
+                bincode::serialize(&block_by_hash(node, &request.v)?).map_err(Error::Bincode)?
+            }
+            Type::TransactionByHash => bincode::serialize(&transaction_by_hash(node, &request.v)?)
+                .map_err(Error::Bincode)?,
+            Type::StakeByHash => {
+                bincode::serialize(&stake_by_hash(node, &request.v)?).map_err(Error::Bincode)?
+            }
             Type::Peers => bincode::serialize(&peers(node)?).map_err(Error::Bincode)?,
             Type::Peer => bincode::serialize(&peer(node, &request.v)?).map_err(Error::Bincode)?,
-            Type::Transaction => bincode::serialize(&transaction(node, &request.v)?).map_err(Error::Bincode)?,
+            Type::Transaction => {
+                bincode::serialize(&transaction(node, &request.v)?).map_err(Error::Bincode)?
+            }
             Type::Stake => bincode::serialize(&stake(node, &request.v)?).map_err(Error::Bincode)?,
             Type::CargoPkgName => bincode::serialize(cargo_pkg_name()).map_err(Error::Bincode)?,
-            Type::CargoPkgVersion => bincode::serialize(cargo_pkg_version()).map_err(Error::Bincode)?,
-            Type::CargoPkgRepository => bincode::serialize(cargo_pkg_repository()).map_err(Error::Bincode)?,
+            Type::CargoPkgVersion => {
+                bincode::serialize(cargo_pkg_version()).map_err(Error::Bincode)?
+            }
+            Type::CargoPkgRepository => {
+                bincode::serialize(cargo_pkg_repository()).map_err(Error::Bincode)?
+            }
             Type::GitHash => bincode::serialize(git_hash()).map_err(Error::Bincode)?,
             Type::Address => bincode::serialize(&address(node)).map_err(Error::Bincode)?,
             Type::Ticks => bincode::serialize(ticks(node)).map_err(Error::Bincode)?,
@@ -80,12 +103,24 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type)
             Type::TreeSize => bincode::serialize(&tree_size(node)).map_err(Error::Bincode)?,
             Type::Sync => bincode::serialize(sync(node)).map_err(Error::Bincode)?,
             Type::RandomQueue => bincode::serialize(&random_queue(node)).map_err(Error::Bincode)?,
-            Type::UnstableHashes => bincode::serialize(&unstable_hashes(node)).map_err(Error::Bincode)?,
-            Type::UnstableLatestHashes => bincode::serialize(&unstable_latest_hashes(node)).map_err(Error::Bincode)?,
-            Type::UnstableStakers => bincode::serialize(&unstable_stakers(node)).map_err(Error::Bincode)?,
-            Type::StableHashes => bincode::serialize(&stable_hashes(node)).map_err(Error::Bincode)?,
-            Type::StableLatestHashes => bincode::serialize(&stable_latest_hashes(node)).map_err(Error::Bincode)?,
-            Type::StableStakers => bincode::serialize(&stable_stakers(node)).map_err(Error::Bincode)?,
+            Type::UnstableHashes => {
+                bincode::serialize(&unstable_hashes(node)).map_err(Error::Bincode)?
+            }
+            Type::UnstableLatestHashes => {
+                bincode::serialize(&unstable_latest_hashes(node)).map_err(Error::Bincode)?
+            }
+            Type::UnstableStakers => {
+                bincode::serialize(&unstable_stakers(node)).map_err(Error::Bincode)?
+            }
+            Type::StableHashes => {
+                bincode::serialize(&stable_hashes(node)).map_err(Error::Bincode)?
+            }
+            Type::StableLatestHashes => {
+                bincode::serialize(&stable_latest_hashes(node)).map_err(Error::Bincode)?
+            }
+            Type::StableStakers => {
+                bincode::serialize(&stable_stakers(node)).map_err(Error::Bincode)?
+            }
         })
         .await
         .map_err(Error::Io)?;
@@ -129,7 +164,9 @@ fn height(node: &mut Node) -> Result<usize, Error> {
 #[tracing::instrument(skip_all, level = "trace")]
 fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Error> {
     let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    node.blockchain.height_by_hash(&hash).map_err(Error::Blockchain)
+    node.blockchain
+        .height_by_hash(&hash)
+        .map_err(Error::Blockchain)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn block_latest(node: &mut Node) -> Result<&BlockA, Error> {
@@ -138,7 +175,9 @@ fn block_latest(node: &mut Node) -> Result<&BlockA, Error> {
 #[tracing::instrument(skip_all, level = "trace")]
 fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Error> {
     let height: usize = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    node.blockchain.hash_by_height(height).map_err(Error::Blockchain)
+    node.blockchain
+        .hash_by_height(height)
+        .map_err(Error::Blockchain)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Error> {
@@ -169,7 +208,10 @@ fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Error> {
 fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
     let transaction_b: TransactionB = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let vec = bincode::serialize(&transaction_b).unwrap();
-    let status = match node.blockchain.pending_transactions_push(transaction_b, node.args.time_delta) {
+    let status = match node
+        .blockchain
+        .pending_transactions_push(transaction_b, node.args.time_delta)
+    {
         Ok(()) => {
             if let Err(err) = node.p2p.gossipsub_publish("transaction", vec) {
                 error!("{:?}", err);
@@ -187,7 +229,10 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
 fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
     let stake_b: StakeB = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let vec = bincode::serialize(&stake_b).unwrap();
-    let status = match node.blockchain.pending_stakes_push(stake_b, node.args.time_delta) {
+    let status = match node
+        .blockchain
+        .pending_stakes_push(stake_b, node.args.time_delta)
+    {
         Ok(()) => {
             if let Err(err) = node.p2p.gossipsub_publish("stake", vec) {
                 error!("{:?}", err);
@@ -247,7 +292,14 @@ fn unstable_hashes(node: &mut Node) -> usize {
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn unstable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
-    node.blockchain.forks.unstable.hashes.iter().rev().take(16).collect()
+    node.blockchain
+        .forks
+        .unstable
+        .hashes
+        .iter()
+        .rev()
+        .take(16)
+        .collect()
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn unstable_stakers(node: &mut Node) -> usize {
@@ -259,7 +311,14 @@ fn stable_hashes(node: &mut Node) -> usize {
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn stable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
-    node.blockchain.forks.stable.hashes.iter().rev().take(16).collect()
+    node.blockchain
+        .forks
+        .stable
+        .hashes
+        .iter()
+        .rev()
+        .take(16)
+        .collect()
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn stable_stakers(node: &mut Node) -> usize {

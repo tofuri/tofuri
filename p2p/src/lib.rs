@@ -49,19 +49,19 @@ impl P2p {
             ratelimit: Ratelimit::default(),
         })
     }
-    pub fn vec_ip_addr(&self, slice_peer_id: &[&PeerId]) -> Vec<IpAddr> {
-        let mut vec = vec![];
-        for peer_id in slice_peer_id {
+    pub fn vec_ip_addr(&self, peer_ids: &[&PeerId]) -> Vec<IpAddr> {
+        let mut vec_ip_addr = vec![];
+        for peer_id in peer_ids {
             if let Some(ip_addr) = self.connections.get(peer_id).cloned() {
-                if vec.contains(&ip_addr) {
+                if vec_ip_addr.contains(&ip_addr) {
                     continue;
                 }
-                vec.push(ip_addr);
+                vec_ip_addr.push(ip_addr);
             } else {
                 warn!("Peer {} not found in connections", peer_id);
             }
         }
-        vec
+        vec_ip_addr
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm

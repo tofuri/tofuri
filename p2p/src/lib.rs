@@ -50,18 +50,18 @@ impl P2p {
         })
     }
     pub fn vec_ip_addr(&self, peer_ids: &[&PeerId]) -> Vec<IpAddr> {
-        let mut vec_ip_addr = vec![];
+        let mut vec = vec![];
         for peer_id in peer_ids {
             if let Some(ip_addr) = self.connections.get(peer_id).cloned() {
-                if vec_ip_addr.contains(&ip_addr) {
+                if vec.contains(&ip_addr) {
                     continue;
                 }
-                vec_ip_addr.push(ip_addr);
+                vec.push(ip_addr);
             } else {
                 warn!("Peer {} not found in connections", peer_id);
             }
         }
-        vec_ip_addr
+        vec
     }
     fn gossipsub_has_mesh_peers(&self, topic: &str) -> bool {
         self.swarm
@@ -96,25 +96,23 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
         .timeout(Duration::from_millis(timeout))
         .boxed();
     let mut behaviour = Behaviour::new(local_key).await.map_err(Error::Behaviour)?;
-    for ident_topic in [
+    let topics = [
         IdentTopic::new("block"),
         IdentTopic::new("stake"),
         IdentTopic::new("transaction"),
         IdentTopic::new("peers"),
-    ]
-    .iter()
-    {
+    ];
+    for topic in topics.iter() {
         behaviour
             .gossipsub
-            .subscribe(ident_topic)
+            .subscribe(topic)
             .map_err(Error::SubscriptionError)?;
     }
     let mut limits = ConnectionLimits::default();
     limits = limits.with_max_established_per_peer(Some(1));
     limits = limits.with_max_established(max_established);
-    Ok(
-        SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id)
-            .connection_limits(limits)
-            .build(),
-    )
+    let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id)
+        .connection_limits(limits)
+        .build();
+    Ok(swarm)
 }

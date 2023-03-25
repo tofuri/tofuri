@@ -52,10 +52,12 @@ fn dial(node: &mut Node, vec: Vec<IpAddr>) {
 }
 #[tracing::instrument(skip_all, level = "debug")]
 fn share(node: &mut Node) {
-    let vec: Vec<&IpAddr> = node.p2p.connections.values().collect();
+    let mut vec: Vec<&IpAddr> = node.p2p.connections.values().collect();
     if vec.is_empty() {
         return;
     }
+    vec.shuffle(&mut thread_rng());
+    vec.truncate(SHARE_PEERS_MAX_LEN);
     debug!(connections = vec.len(), "Share");
     if let Err(err) = node
         .p2p

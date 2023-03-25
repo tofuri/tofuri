@@ -133,6 +133,7 @@ fn gossipsub_message(
         MessageSource,
         IpAddr,
         Ratelimit,
+        SharePeersMaxLen,
     }
     fn inner(
         node: &mut Node,
@@ -180,9 +181,12 @@ fn gossipsub_message(
                     .map_err(Error::Blockchain)?;
             }
             Endpoint::GossipsubMessagePeers => {
-                for ip_addr in
-                    bincode::deserialize::<Vec<IpAddr>>(&message.data).map_err(Error::Bincode)?
-                {
+                let vec =
+                    bincode::deserialize::<Vec<IpAddr>>(&message.data).map_err(Error::Bincode)?;
+                if vec.len() > SHARE_PEERS_MAX_LEN {
+                    return Err(Error::SharePeersMaxLen);
+                }
+                for ip_addr in vec {
                     node.p2p.connections_unknown.insert(ip_addr);
                 }
             }

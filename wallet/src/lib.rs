@@ -416,7 +416,7 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         let mut path = util::default_path().join(filename);
         path.set_extension(EXTENSION);
         let bytes = read_exact(path)?;
-        return attempt(&bytes, &passphrase);
+        return attempt(&bytes, passphrase);
     }
     let mut filename = crate::inquire::select().map_err(Error::Inquire)?;
     if filename.as_str() == *GENERATE {
@@ -444,7 +444,7 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         if let Err(Error::InvalidPassphrase) = res {
             continue;
         }
-        return Ok(res?);
+        return res;
     }
 }
 pub fn press_any_key_to_continue() {

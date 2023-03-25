@@ -91,7 +91,7 @@ impl P2p {
             return true;
         }
         let ip_addr = option_ip_addr.unwrap();
-        let mut counter = *map.get(&ip_addr).unwrap_or(&0);
+        let mut counter = *map.get(ip_addr).unwrap_or(&0);
         counter += 1;
         map.insert(*ip_addr, counter);
         counter > limit

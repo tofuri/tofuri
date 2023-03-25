@@ -88,7 +88,7 @@ fn mdns(node: &mut Node, event: mdns::Event) {
                 node.p2p.connections_unknown.insert(ip_addr);
             }
         }
-        _ => {}
+        mdns::Event::Expired(_) => {}
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]

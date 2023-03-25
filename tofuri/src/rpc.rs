@@ -129,7 +129,7 @@ fn height(node: &mut Node) -> Result<usize, Error> {
 #[tracing::instrument(skip_all, level = "trace")]
 fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Error> {
     let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    Ok(node.blockchain.height_by_hash(&hash).map_err(Error::Blockchain)?)
+    node.blockchain.height_by_hash(&hash).map_err(Error::Blockchain)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn block_latest(node: &mut Node) -> Result<&BlockA, Error> {
@@ -138,7 +138,7 @@ fn block_latest(node: &mut Node) -> Result<&BlockA, Error> {
 #[tracing::instrument(skip_all, level = "trace")]
 fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Error> {
     let height: usize = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    Ok(node.blockchain.hash_by_height(height).map_err(Error::Blockchain)?)
+    node.blockchain.hash_by_height(height).map_err(Error::Blockchain)
 }
 #[tracing::instrument(skip_all, level = "trace")]
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Error> {

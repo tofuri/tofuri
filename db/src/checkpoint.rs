@@ -17,5 +17,5 @@ pub fn put(db: &DBWithThreadMode<SingleThreaded>, checkpoint: &Checkpoint) -> Re
 pub fn get(db: &DBWithThreadMode<SingleThreaded>) -> Result<Checkpoint, Error> {
     let key = [];
     let vec = db.get_cf(crate::checkpoint(db), key).map_err(Error::RocksDB)?.ok_or(Error::NotFound)?;
-    Ok(bincode::deserialize(&vec).map_err(Error::Bincode)?)
+    bincode::deserialize(&vec).map_err(Error::Bincode)
 }

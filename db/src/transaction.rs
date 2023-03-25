@@ -30,7 +30,7 @@ pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Trans
 pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<TransactionB, Error> {
     let key = hash;
     let vec = db.get_cf(crate::transactions(db), key).map_err(Error::RocksDB)?.ok_or(Error::NotFound)?;
-    Ok(bincode::deserialize(&vec).map_err(Error::Bincode)?)
+    bincode::deserialize(&vec).map_err(Error::Bincode)
 }
 #[test]
 fn test_serialize_len() {

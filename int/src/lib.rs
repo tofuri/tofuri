@@ -71,7 +71,7 @@ pub fn from_str(str: &str) -> Result<u128, Error> {
         None => (str.to_string(), DECIMAL_PLACES),
     };
     string.push_str(&"0".repeat(diff));
-    Ok(string.parse().map_err(Error::FromStr)?)
+    string.parse().map_err(Error::FromStr)
 }
 #[cfg(test)]
 mod tests {

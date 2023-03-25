@@ -73,28 +73,28 @@ pub enum OutEvent {
     RequestResponse(RequestResponseEvent<SyncRequest, SyncResponse>),
 }
 impl From<mdns::Event> for OutEvent {
-    fn from(v: mdns::Event) -> Self {
-        Self::Mdns(v)
+    fn from(v: mdns::Event) -> OutEvent {
+        OutEvent::Mdns(v)
     }
 }
 impl From<GossipsubEvent> for OutEvent {
-    fn from(v: GossipsubEvent) -> Self {
-        Self::Gossipsub(v)
+    fn from(v: GossipsubEvent) -> OutEvent {
+        OutEvent::Gossipsub(v)
     }
 }
 impl From<identify::Event> for OutEvent {
-    fn from(v: identify::Event) -> Self {
-        Self::Identify(v)
+    fn from(v: identify::Event) -> OutEvent {
+        OutEvent::Identify(v)
     }
 }
 impl From<autonat::Event> for OutEvent {
-    fn from(v: autonat::Event) -> Self {
-        Self::Autonat(v)
+    fn from(v: autonat::Event) -> OutEvent {
+        OutEvent::Autonat(v)
     }
 }
 impl From<RequestResponseEvent<SyncRequest, SyncResponse>> for OutEvent {
-    fn from(v: RequestResponseEvent<SyncRequest, SyncResponse>) -> Self {
-        Self::RequestResponse(v)
+    fn from(v: RequestResponseEvent<SyncRequest, SyncResponse>) -> OutEvent {
+        OutEvent::RequestResponse(v)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -141,7 +141,7 @@ fn hash_input<T: Stake>(stake: &T) -> [u8; 9] {
     bytes
 }
 impl Default for StakeA {
-    fn default() -> Self {
+    fn default() -> StakeA {
         StakeA {
             amount: 0,
             fee: 0,
@@ -154,7 +154,7 @@ impl Default for StakeA {
     }
 }
 impl Default for StakeB {
-    fn default() -> Self {
+    fn default() -> StakeB {
         StakeB {
             amount: [0; AMOUNT_BYTES],
             fee: [0; AMOUNT_BYTES],

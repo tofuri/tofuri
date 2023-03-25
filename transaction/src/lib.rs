@@ -149,7 +149,7 @@ fn hash_input<T: Transaction>(transaction: &T) -> [u8; 32] {
     bytes
 }
 impl Default for TransactionA {
-    fn default() -> Self {
+    fn default() -> TransactionA {
         TransactionA {
             output_address: [0; 20],
             amount: 0,
@@ -162,7 +162,7 @@ impl Default for TransactionA {
     }
 }
 impl Default for TransactionB {
-    fn default() -> Self {
+    fn default() -> TransactionB {
         TransactionB {
             output_address: [0; 20],
             amount: [0; AMOUNT_BYTES],

@@ -258,7 +258,7 @@ impl BlockC {
     }
 }
 impl Default for BlockA {
-    fn default() -> Self {
+    fn default() -> BlockA {
         BlockA {
             hash: [0; 32],
             previous_hash: [0; 32],
@@ -273,7 +273,7 @@ impl Default for BlockA {
     }
 }
 impl Default for BlockB {
-    fn default() -> Self {
+    fn default() -> BlockB {
         BlockB {
             previous_hash: [0; 32],
             timestamp: 0,
@@ -285,7 +285,7 @@ impl Default for BlockB {
     }
 }
 impl Default for BlockC {
-    fn default() -> Self {
+    fn default() -> BlockC {
         BlockC {
             previous_hash: [0; 32],
             timestamp: 0,

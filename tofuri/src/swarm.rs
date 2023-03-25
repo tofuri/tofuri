@@ -66,7 +66,9 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
             RequestResponseMessage::Request {
                 request, channel, ..
             } => sync_request(node, peer, request, channel),
-            RequestResponseMessage::Response { response, .. } => sync_response(node, response),
+            RequestResponseMessage::Response { response, .. } => {
+                sync_response(node, peer, response)
+            }
         },
         _ => {}
     }
@@ -244,12 +246,7 @@ fn sync_request(
             return;
         }
     };
-    if node
-        .p2p
-        .ratelimit
-        .counter
-        .add(ip_addr, &Endpoint::RequestResponse)
-    {
+    if node.p2p.ratelimit.counter.add(ip_addr, &Endpoint::Request) {
         return;
     }
     #[derive(Debug)]
@@ -295,12 +292,22 @@ fn sync_request(
             node.p2p
                 .ratelimit
                 .timeout
-                .insert(ip_addr, Endpoint::RequestResponse);
+                .insert(ip_addr, Endpoint::Request);
         }
     }
 }
 #[tracing::instrument(skip_all, level = "trace")]
-fn sync_response(node: &mut Node, response: SyncResponse) {
+fn sync_response(node: &mut Node, peer_id: PeerId, response: SyncResponse) {
+    let ip_addr = match node.p2p.connections.get(&peer_id) {
+        Some(x) => *x,
+        None => {
+            warn!("Peer {} not found in connections", peer_id);
+            return;
+        }
+    };
+    if node.p2p.ratelimit.counter.add(ip_addr, &Endpoint::Response) {
+        return;
+    }
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
@@ -319,6 +326,10 @@ fn sync_response(node: &mut Node, response: SyncResponse) {
         Ok(()) => debug!("Sync response processed"),
         Err(err) => {
             error!("{:?}", err);
+            node.p2p
+                .ratelimit
+                .timeout
+                .insert(ip_addr, Endpoint::Response);
         }
     }
 }

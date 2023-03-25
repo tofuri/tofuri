@@ -32,32 +32,36 @@ pub struct Behaviour {
     pub request_response: RequestResponse<SyncCodec>,
 }
 impl Behaviour {
-    pub async fn new(local_key: identity::Keypair) -> Result<Self, Error> {
-        Ok(Self {
-            mdns: mdns::tokio::Behaviour::new(mdns::Config::default()).map_err(Error::Io)?,
-            identify: identify::Behaviour::new(identify::Config::new(
-                PROTOCOL_VERSION.to_string(),
-                local_key.public(),
-            )),
-            gossipsub: Gossipsub::new(
-                MessageAuthenticity::Signed(local_key.clone()),
-                GossipsubConfigBuilder::default()
-                    .max_transmit_size(MAX_TRANSMIT_SIZE)
-                    .validate_messages()
-                    .build()
-                    .unwrap(),
-            )
-            .unwrap(),
-            autonat: autonat::Behaviour::new(
-                local_key.public().to_peer_id(),
-                autonat::Config::default(),
-            ),
-            request_response: RequestResponse::new(
-                SyncCodec(),
-                std::iter::once((SyncProtocol(), ProtocolSupport::Full)),
-                Default::default(),
-            ),
-        })
+    pub async fn new(local_key: identity::Keypair) -> Result<Behaviour, Error> {
+        let mdns = mdns::tokio::Behaviour::new(mdns::Config::default()).map_err(Error::Io)?;
+        let identify = identify::Behaviour::new(identify::Config::new(
+            PROTOCOL_VERSION.to_string(),
+            local_key.public(),
+        ));
+        let gossipsub = Gossipsub::new(
+            MessageAuthenticity::Signed(local_key.clone()),
+            GossipsubConfigBuilder::default()
+                .max_transmit_size(MAX_TRANSMIT_SIZE)
+                .validate_messages()
+                .build()
+                .unwrap(),
+        )
+        .unwrap();
+        let autonat =
+            autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default());
+        let request_response = RequestResponse::new(
+            SyncCodec(),
+            std::iter::once((SyncProtocol(), ProtocolSupport::Full)),
+            Default::default(),
+        );
+        let behaviour = Behaviour {
+            mdns,
+            identify,
+            gossipsub,
+            autonat,
+            request_response,
+        };
+        Ok(behaviour)
     }
 }
 #[derive(Debug)]
@@ -123,9 +127,9 @@ impl RequestResponseCodec for SyncCodec {
         _: &SyncProtocol,
         io: &mut T,
     ) -> io::Result<Self::Response> {
-        Ok(SyncResponse(
-            read_length_prefixed(io, MAX_TRANSMIT_SIZE).await?,
-        ))
+        let vec = read_length_prefixed(io, MAX_TRANSMIT_SIZE).await?;
+        let response = SyncResponse(vec);
+        Ok(response)
     }
     async fn write_request<T: AsyncWrite + Unpin + Send>(
         &mut self,

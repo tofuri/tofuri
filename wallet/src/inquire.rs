@@ -162,9 +162,10 @@ pub fn search() -> String {
     CustomType::<String>::new("Search:")
         .with_error_message("Please enter a valid Address, Hash or Number.")
         .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
-        .with_parser(&|x| {
-            if address::decode(x).is_ok() || x.len() == 64 || x.parse::<usize>().is_ok() {
-                return Ok(x.to_string());
+        .with_parser(&|input| {
+            if address::decode(input).is_ok() || input.len() == 64 || input.parse::<usize>().is_ok()
+            {
+                return Ok(input.to_string());
             }
             Err(())
         })
@@ -178,8 +179,8 @@ pub fn address() -> String {
     CustomType::<String>::new("Address:")
         .with_error_message("Please enter a valid address")
         .with_help_message("Type the hex encoded address with 0x as prefix")
-        .with_parser(&|x| match address::decode(x) {
-            Ok(y) => Ok(address::encode(&y)),
+        .with_parser(&|input| match address::decode(input) {
+            Ok(address_bytes) => Ok(address::encode(&address_bytes)),
             Err(_) => Err(()),
         })
         .prompt()
@@ -193,8 +194,10 @@ pub fn amount() -> u128 {
         .with_formatter(&|i| format!("{i:.18} tofuri"))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount to send using a decimal point as a separator")
-        .with_parser(&|x| match x.parse::<f64>() {
-            Ok(f) => Ok(tofuri_int::floor((f * COIN as f64) as u128) as f64 / COIN as f64),
+        .with_parser(&|input| match input.parse::<f64>() {
+            Ok(amount) => {
+                Ok(tofuri_int::floor((amount * COIN as f64) as u128) as f64 / COIN as f64)
+            }
             Err(_) => Err(()),
         })
         .prompt()
@@ -209,8 +212,8 @@ pub fn fee() -> u128 {
         .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the fee to use in satoshis")
-        .with_parser(&|x| match x.parse::<u128>() {
-            Ok(u) => Ok(tofuri_int::floor(u)),
+        .with_parser(&|input| match input.parse::<u128>() {
+            Ok(fee) => Ok(tofuri_int::floor(fee)),
             Err(_) => Err(()),
         })
         .prompt()

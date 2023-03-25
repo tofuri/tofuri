@@ -145,7 +145,8 @@ impl Manager {
         previous_hash: &Hash,
     ) -> Result<Unstable, Error> {
         if previous_hash == &GENESIS_BLOCK_PREVIOUS_HASH {
-            return Ok(Unstable::default());
+            let unstable = Unstable::default();
+            return Ok(unstable);
         }
         let first = self.unstable.hashes.first().unwrap();
         let mut hashes = vec![];
@@ -169,7 +170,8 @@ impl Manager {
             }
         }
         hashes.reverse();
-        Ok(Unstable::from(db, &hashes, &self.stable))
+        let unstable = Unstable::from(db, &hashes, &self.stable);
+        Ok(unstable)
     }
     pub fn update(
         &mut self,

@@ -3,6 +3,7 @@ use colored::*;
 use libp2p::futures::StreamExt;
 use libp2p::Multiaddr;
 use std::collections::HashSet;
+use std::process;
 use std::time::Duration;
 use tempdir::TempDir;
 use tofuri::interval;
@@ -17,6 +18,8 @@ use tofuri_blockchain::Blockchain;
 use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
+use tokio::io::AsyncBufReadExt;
+use tokio::io::BufReader;
 use tokio::net::TcpListener;
 use tracing::info;
 use tracing::warn;
@@ -95,6 +98,8 @@ async fn main() {
         local_addr = listener.local_addr().unwrap().to_string(),
         "RPC"
     );
+    let mut reader = BufReader::new(tokio::io::stdin());
+    let mut line = String::new();
     let mut interval_1s = tofuri_util::interval_at(Duration::from_secs(1));
     let mut interval_10s = tofuri_util::interval_at(Duration::from_secs(10));
     let mut interval_1m = tofuri_util::interval_at(Duration::from_secs(60));
@@ -107,7 +112,25 @@ async fn main() {
             _ = interval_1m.tick() => interval::interval_1m(&mut node),
             _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
-            res = listener.accept() => rpc::accept(&mut node, res).await
+            res = listener.accept() => rpc::accept(&mut node, res).await,
+            _ = reader.read_line(&mut line) => command(&mut node, &mut line),
         }
     }
+}
+pub fn command(node: &mut Node, line: &mut String) {
+    let command = line.trim();
+    match command {
+        "stop" => {
+            println!("Stopping...");
+            process::exit(0)
+        }
+        "address" => {
+            println!("{}", address::encode(&node.key.address_bytes()))
+        }
+        "peers" => {
+            println!("{:?}", node.p2p.connections.values().collect::<Vec<_>>());
+        }
+        _ => {}
+    }
+    line.clear();
 }

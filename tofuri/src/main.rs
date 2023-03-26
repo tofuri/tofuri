@@ -17,6 +17,7 @@ use tofuri_address::address;
 use tofuri_blockchain::Blockchain;
 use tofuri_core::*;
 use tofuri_key::Key;
+use tofuri_p2p::multiaddr;
 use tofuri_p2p::P2p;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
@@ -139,6 +140,15 @@ pub fn command(node: &mut Node, line: &mut String) {
                 let address_bytes = address::decode(address).unwrap();
                 let balance = node.blockchain.balance(&address_bytes);
                 println!("{}", tofuri_int::to_string(balance));
+            }
+        }
+        "dial" => {
+            if let Some(arg) = args.get(1) {
+                if let Ok(ip_addr) = arg.parse() {
+                    let multiaddr = multiaddr::from_ip_addr(&ip_addr);
+                    println!("Dialing {}", multiaddr);
+                    let _ = node.p2p.swarm.dial(multiaddr);
+                }
             }
         }
         _ => {}

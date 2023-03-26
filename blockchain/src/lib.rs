@@ -444,12 +444,10 @@ impl Blockchain {
                 &block_a.previous_hash,
             )
             .map_err(Error::Fork)?;
-        if block_a
-            .timestamp
-            .saturating_sub(unstable.latest_block.timestamp)
-            == 0
-            || block_a.timestamp % BLOCK_TIME != 0
-        {
+        if !tofuri_util::validate_block_timestamp(
+            block_a.timestamp,
+            unstable.latest_block.timestamp,
+        ) {
             return Err(Error::BlockTimestamp);
         }
         let previous_beta =

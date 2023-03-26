@@ -131,3 +131,6 @@ pub fn io_reload_filter(reload_handle: reload::Handle<EnvFilter, Registry>) {
         }
     });
 }
+pub fn validate_block_timestamp(timestamp: u32, previous_timestamp: u32) -> bool {
+    !(timestamp.saturating_sub(previous_timestamp) == 0 || timestamp % BLOCK_TIME != 0)
+}

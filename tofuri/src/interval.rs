@@ -71,24 +71,22 @@ fn share(node: &mut Node) {
 fn grow(node: &mut Node) {
     let timestamp = tofuri_util::timestamp();
     let timestamp = timestamp - (timestamp % BLOCK_TIME);
-    node.blockchain.pending_retain(timestamp);
-    node.blockchain.save_blocks(&node.db, node.args.trust);
-    if !node.blockchain.sync.downloading()
-        && !node.args.mint
-        && node
-            .blockchain
-            .forks
-            .unstable
-            .next_staker(timestamp)
-            .is_none()
-    {
+    let blockchain = &mut node.blockchain;
+    blockchain.pending_retain(timestamp);
+    blockchain.save_blocks(&node.db, node.args.trust);
+    let sync = &mut blockchain.sync;
+    let unstable = &blockchain.forks.unstable;
+    if !sync.downloading() && !node.args.mint && unstable.next_staker(timestamp).is_none() {
         info!("Idling");
-        node.blockchain.sync.completed = false;
+        sync.completed = false;
     }
-    if !node.blockchain.sync.completed {
+    if !sync.completed {
         return;
     }
-    if let Some(staker) = node.blockchain.forks.unstable.next_staker(timestamp) {
+    if !tofuri_util::validate_block_timestamp(timestamp, unstable.latest_block.timestamp) {
+        return;
+    }
+    if let Some(staker) = unstable.next_staker(timestamp) {
         if staker != node.key.address_bytes() {
             return;
         }

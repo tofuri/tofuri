@@ -1,4 +1,5 @@
 use crate::Node;
+use colored::*;
 use std::process;
 use tofuri_address::address;
 use tofuri_p2p::multiaddr;
@@ -31,20 +32,23 @@ fn peers(node: &mut Node) {
 fn balance(node: &mut Node, args: &[&str]) {
     let arg1 = match args.get(1) {
         Some(x) => *x,
-        None => return,
+        None => return println!("{}", "Missing argument".red()),
     };
-    let address_bytes = address::decode(arg1).unwrap();
+    let address_bytes = match address::decode(arg1) {
+        Ok(x) => x,
+        Err(_) => return println!("{}", "Invalid address".red()),
+    };
     let balance = node.blockchain.balance(&address_bytes);
     println!("{}", tofuri_int::to_string(balance));
 }
 fn dial(node: &mut Node, args: &[&str]) {
     let arg1 = match args.get(1) {
         Some(x) => *x,
-        None => return,
+        None => return println!("{}", "Missing argument".red()),
     };
     let ip_addr = match arg1.parse() {
         Ok(x) => x,
-        Err(_) => return,
+        Err(_) => return println!("{}", "Invalid IP address".red()),
     };
     let multiaddr = multiaddr::from_ip_addr(&ip_addr);
     println!("Dialing {}", multiaddr);

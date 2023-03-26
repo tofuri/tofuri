@@ -14,6 +14,7 @@ pub fn command(node: &mut Node, line: &mut String) {
         "address" => address(node),
         "peers" => peers(node),
         "balance" => balance(node, &args),
+        "staked" => staked(node, &args),
         "dial" => dial(node, &args),
         _ => {}
     }
@@ -40,6 +41,18 @@ fn balance(node: &mut Node, args: &[&str]) {
     };
     let balance = node.blockchain.balance(&address_bytes);
     println!("{}", tofuri_int::to_string(balance));
+}
+fn staked(node: &mut Node, args: &[&str]) {
+    let arg1 = match args.get(1) {
+        Some(x) => *x,
+        None => return println!("{}", "Missing argument".red()),
+    };
+    let address_bytes = match address::decode(arg1) {
+        Ok(x) => x,
+        Err(_) => return println!("{}", "Invalid address".red()),
+    };
+    let staked = node.blockchain.staked(&address_bytes);
+    println!("{}", tofuri_int::to_string(staked));
 }
 fn dial(node: &mut Node, args: &[&str]) {
     let arg1 = match args.get(1) {

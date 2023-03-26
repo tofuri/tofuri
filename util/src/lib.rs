@@ -123,9 +123,9 @@ pub fn io_reload_filter(reload_handle: reload::Handle<EnvFilter, Registry>) {
         loop {
             _ = reader.read_line(&mut line);
             let filter = EnvFilter::new(line.trim());
-            info!(%filter, "Reload");
+            info!(?filter, "Reload");
             if let Err(e) = reload_handle.modify(|x| *x = filter) {
-                error!(%e)
+                error!(?e)
             }
             line.clear();
         }

@@ -92,7 +92,7 @@ async fn main() {
     let mut node = Node::new(db, key, args.clone(), p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust).unwrap();
     let multiaddr: Multiaddr = node.args.host.parse().unwrap();
-    info!(multiaddr = multiaddr.to_string(), "P2P");
+    info!(%multiaddr, "P2P");
     node.p2p.swarm.listen_on(multiaddr).unwrap();
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
     info!(

@@ -74,7 +74,7 @@ fn dial(node: &mut Node, args: &[&str]) {
         Err(_) => return error!("{}", "Invalid IP address"),
     };
     let multiaddr = multiaddr::from_ip_addr(&ip_addr);
-    info!(multiaddr = multiaddr.to_string(), "Dialing");
+    info!(%multiaddr, "Dialing");
     let _ = node.p2p.swarm.dial(multiaddr);
 }
 fn filter(args: &[&str], reload_handle: &reload::Handle<EnvFilter, Registry>) {
@@ -83,6 +83,8 @@ fn filter(args: &[&str], reload_handle: &reload::Handle<EnvFilter, Registry>) {
         None => return error!("{}", "Missing argument"),
     };
     let filter = EnvFilter::new(arg1);
-    info!(filter = filter.to_string(), "Reload filter");
-    reload_handle.modify(|x| *x = filter).unwrap();
+    info!(%filter, "Reload filter");
+    if let Err(e) = reload_handle.modify(|x| *x = filter) {
+        error!(%e)
+    }
 }

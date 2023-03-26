@@ -38,7 +38,8 @@ fn address(node: &mut Node) {
     info!(address)
 }
 fn peers(node: &mut Node) {
-    info!("{:?}", node.p2p.connections.values().collect::<Vec<_>>());
+    let vec = node.p2p.connections.values().collect::<Vec<_>>();
+    info!(?vec);
 }
 fn balance(node: &mut Node, args: &[&str]) {
     let arg1 = match args.get(1) {

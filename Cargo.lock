@@ -4568,6 +4568,7 @@ dependencies = [
  "tofuri-transaction",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "uint",
 ]
 

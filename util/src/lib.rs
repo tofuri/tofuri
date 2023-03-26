@@ -2,6 +2,8 @@ use colored::*;
 use lazy_static::lazy_static;
 use sha2::Digest;
 use sha2::Sha256;
+use std::io::BufRead;
+use std::io::BufReader;
 use std::time::Duration;
 use tofuri_block::BlockB;
 use tofuri_core::*;
@@ -9,6 +11,11 @@ use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
 use tokio::time::Instant;
 use tokio::time::Interval;
+use tracing::error;
+use tracing::info;
+use tracing_subscriber::reload;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::Registry;
 use uint::construct_uint;
 pub const GIT_HASH: &str = env!("GIT_HASH");
 lazy_static! {
@@ -108,4 +115,19 @@ mod tests {
             *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * 600
         );
     }
+}
+pub fn io_reload_filter(reload_handle: reload::Handle<EnvFilter, Registry>) {
+    std::thread::spawn(move || {
+        let mut reader = BufReader::new(std::io::stdin());
+        let mut line = String::new();
+        loop {
+            _ = reader.read_line(&mut line);
+            let filter = EnvFilter::new(line.trim());
+            info!(%filter, "Reload");
+            if let Err(e) = reload_handle.modify(|x| *x = filter) {
+                error!(%e)
+            }
+            line.clear();
+        }
+    });
 }

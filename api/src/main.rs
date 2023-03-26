@@ -8,11 +8,8 @@ use tofuri_api::CARGO_PKG_NAME;
 use tofuri_api::CARGO_PKG_REPOSITORY;
 use tofuri_api::CARGO_PKG_VERSION;
 use tofuri_core::*;
-use tokio::io::AsyncBufReadExt;
-use tokio::io::BufReader;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
-use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -29,17 +26,6 @@ async fn main() {
         .with(layer)
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
-    tokio::spawn(async move {
-        let mut reader = BufReader::new(tokio::io::stdin());
-        let mut line = String::new();
-        loop {
-            _ = reader.read_line(&mut line).await;
-            let filter = EnvFilter::new(line.trim());
-            info!(filter = filter.to_string(), "Reload filter");
-            reload_handle.modify(|x| *x = filter).unwrap();
-            line.clear();
-        }
-    });
     let mut args = tofuri_api::Args::parse();
     println!(
         "{}",
@@ -110,6 +96,7 @@ async fn main() {
         .layer(trace)
         .layer(cors)
         .with_state(args);
+    tofuri_util::io_reload_filter(reload_handle);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

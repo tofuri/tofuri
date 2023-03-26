@@ -499,20 +499,20 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
         return attempt(&bytes, passphrase);
     }
     let mut filename = crate::inquire::select().map_err(Error::Inquire)?;
-    if filename.as_str() == *GENERATE {
-        let key = Key::generate();
+    let res = if filename.as_str() == *GENERATE {
+        Some(Key::generate())
+    } else if filename.as_str() == *IMPORT {
+        Some(inquire::import().map_err(Error::Inquire)?)
+    } else {
+        None
+    };
+    if let Some(key) = res {
         if !inquire::save() {
             return Ok(([0; 32], [0; 12], [0; 48], key));
         }
         filename = inquire::name().map_err(Error::Inquire)?;
         save(&filename, &key)?;
-    } else if filename.as_str() == *IMPORT {
-        let key = inquire::import().map_err(Error::Inquire)?;
-        if !inquire::save() {
-            return Ok(([0; 32], [0; 12], [0; 48], key));
-        }
-        save(&filename, &key)?;
-    };
+    }
     let mut path = util::default_path().join(filename);
     path.set_extension(EXTENSION);
     clear();

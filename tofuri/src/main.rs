@@ -118,7 +118,11 @@ async fn main() {
     }
 }
 pub fn command(node: &mut Node, line: &mut String) {
-    let command = line.trim();
+    let args: Vec<&str> = line.trim().split(" ").collect();
+    let command = match args.first() {
+        Some(x) => *x,
+        None => return,
+    };
     match command {
         "stop" => {
             println!("Stopping...");
@@ -129,6 +133,13 @@ pub fn command(node: &mut Node, line: &mut String) {
         }
         "peers" => {
             println!("{:?}", node.p2p.connections.values().collect::<Vec<_>>());
+        }
+        "balance" => {
+            if let Some(address) = args.get(1) {
+                let address_bytes = address::decode(address).unwrap();
+                let balance = node.blockchain.balance(&address_bytes);
+                println!("{}", tofuri_int::to_string(balance));
+            }
         }
         _ => {}
     }

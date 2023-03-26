@@ -1,3 +1,4 @@
+pub mod command;
 pub mod interval;
 pub mod rpc;
 pub mod swarm;

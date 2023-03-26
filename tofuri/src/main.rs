@@ -3,9 +3,9 @@ use colored::*;
 use libp2p::futures::StreamExt;
 use libp2p::Multiaddr;
 use std::collections::HashSet;
-use std::process;
 use std::time::Duration;
 use tempdir::TempDir;
+use tofuri::command;
 use tofuri::interval;
 use tofuri::rpc;
 use tofuri::swarm;
@@ -17,7 +17,6 @@ use tofuri_address::address;
 use tofuri_blockchain::Blockchain;
 use tofuri_core::*;
 use tofuri_key::Key;
-use tofuri_p2p::multiaddr;
 use tofuri_p2p::P2p;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
@@ -114,44 +113,7 @@ async fn main() {
             _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
             res = listener.accept() => rpc::accept(&mut node, res).await,
-            _ = reader.read_line(&mut line) => command(&mut node, &mut line),
+            _ = reader.read_line(&mut line) => command::command(&mut node, &mut line),
         }
     }
-}
-pub fn command(node: &mut Node, line: &mut String) {
-    let args: Vec<&str> = line.trim().split(" ").collect();
-    let command = match args.first() {
-        Some(x) => *x,
-        None => return,
-    };
-    match command {
-        "stop" => {
-            println!("Stopping...");
-            process::exit(0)
-        }
-        "address" => {
-            println!("{}", address::encode(&node.key.address_bytes()))
-        }
-        "peers" => {
-            println!("{:?}", node.p2p.connections.values().collect::<Vec<_>>());
-        }
-        "balance" => {
-            if let Some(address) = args.get(1) {
-                let address_bytes = address::decode(address).unwrap();
-                let balance = node.blockchain.balance(&address_bytes);
-                println!("{}", tofuri_int::to_string(balance));
-            }
-        }
-        "dial" => {
-            if let Some(arg) = args.get(1) {
-                if let Ok(ip_addr) = arg.parse() {
-                    let multiaddr = multiaddr::from_ip_addr(&ip_addr);
-                    println!("Dialing {}", multiaddr);
-                    let _ = node.p2p.swarm.dial(multiaddr);
-                }
-            }
-        }
-        _ => {}
-    }
-    line.clear();
 }

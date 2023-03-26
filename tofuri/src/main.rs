@@ -27,15 +27,16 @@ use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::prelude::*;
+use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
+    let filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .from_env_lossy();
+    let (filter, reload_handle) = reload::Layer::new(filter);
     tracing_subscriber::registry()
-        .with(
-            EnvFilter::builder()
-                .with_default_directive(LevelFilter::INFO.into())
-                .from_env_lossy(),
-        )
+        .with(filter)
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
     let mut args = tofuri::Args::parse();
@@ -113,7 +114,7 @@ async fn main() {
             _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
             res = listener.accept() => rpc::accept(&mut node, res).await,
-            _ = reader.read_line(&mut line) => command::command(&mut node, &mut line),
+            _ = reader.read_line(&mut line) => command::command(&mut node, &mut line, &reload_handle),
         }
     }
 }

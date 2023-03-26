@@ -70,7 +70,8 @@ async fn main() {
                 .3
         }
     };
-    info!(address = address::encode(&key.address_bytes()));
+    let address = address::encode(&key.address_bytes());
+    info!(address);
     let tempdir = TempDir::new("tofuri-db").unwrap();
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),

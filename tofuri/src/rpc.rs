@@ -37,10 +37,10 @@ pub enum Error {
 pub async fn accept(node: &mut Node, res: Result<(TcpStream, SocketAddr), io::Error>) {
     match res {
         Ok((stream, socket_addr)) => match request(node, stream).await {
-            Ok((bytes, t)) => debug!(socket_addr = socket_addr.to_string(), bytes, "{:?}", t),
-            Err(err) => error!(socket_addr = socket_addr.to_string(), "{:?}", err),
+            Ok((bytes, t)) => debug!(?socket_addr, bytes, ?t),
+            Err(e) => error!(?e, ?socket_addr),
         },
-        Err(err) => error!("{:?}", err),
+        Err(e) => error!(?e),
     }
 }
 #[instrument(skip_all, level = "trace")]
@@ -222,14 +222,14 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
         .pending_transactions_push(transaction_b, node.args.time_delta)
     {
         Ok(()) => {
-            if let Err(err) = node.p2p.gossipsub_publish("transaction", vec) {
-                error!("{:?}", err);
+            if let Err(e) = node.p2p.gossipsub_publish("transaction", vec) {
+                error!(?e);
             }
             "success".to_string()
         }
-        Err(err) => {
-            error!("{:?}", err);
-            format!("{:?}", err)
+        Err(e) => {
+            error!(?e);
+            format!("{:?}", e)
         }
     };
     Ok(status)
@@ -243,14 +243,14 @@ fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
         .pending_stakes_push(stake_b, node.args.time_delta)
     {
         Ok(()) => {
-            if let Err(err) = node.p2p.gossipsub_publish("stake", vec) {
-                error!("{:?}", err);
+            if let Err(e) = node.p2p.gossipsub_publish("stake", vec) {
+                error!(?e);
             }
             "success".to_string()
         }
-        Err(err) => {
-            error!("{:?}", err);
-            format!("{:?}", err)
+        Err(e) => {
+            error!(?e);
+            format!("{:?}", e)
         }
     };
     Ok(status)

@@ -47,7 +47,7 @@ fn dial(node: &mut Node, vec: Vec<IpAddr>) {
         if node.p2p.connections.iter().any(|x| x.1 == &ip_addr) {
             continue;
         }
-        debug!(ip_addr = ip_addr.to_string(), "Dial");
+        debug!(?ip_addr, "Dial");
         let _ = node.p2p.swarm.dial(multiaddr::from_ip_addr(&ip_addr));
     }
 }
@@ -59,12 +59,12 @@ fn share(node: &mut Node) {
     }
     vec.shuffle(&mut thread_rng());
     vec.truncate(SHARE_PEERS_MAX_LEN);
-    debug!(connections = vec.len(), "Share");
-    if let Err(err) = node
+    debug!(?vec, "Share");
+    if let Err(e) = node
         .p2p
         .gossipsub_publish("peers", bincode::serialize(&vec).unwrap())
     {
-        error!("{:?}", err);
+        error!(?e);
     }
 }
 #[instrument(skip_all, level = "debug")]
@@ -98,11 +98,11 @@ fn grow(node: &mut Node) {
     let block_a = node
         .blockchain
         .forge_block(&node.db, &node.key, timestamp, node.args.trust);
-    if let Err(err) = node
+    if let Err(e) = node
         .p2p
         .gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap())
     {
-        error!("{:?}", err);
+        error!(?e);
     }
 }
 #[instrument(skip_all, level = "debug")]

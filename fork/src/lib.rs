@@ -371,11 +371,12 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, lo
         let input_address = block_a.input_address();
         insert_staked(fork, input_address, COIN);
         update_stakers(fork, input_address);
+        let address = address::encode(&input_address);
         if !loading && !T::is_stable() {
-            warn!(address = address::encode(&input_address), "Minted")
+            warn!(address, "Minted")
         }
         if loading {
-            debug!(address = address::encode(&input_address), "Minted")
+            debug!(address, "Minted")
         }
     }
 }

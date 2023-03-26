@@ -302,7 +302,8 @@ impl Blockchain {
             &transaction_a,
             tofuri_util::timestamp() + time_delta,
         )?;
-        info!(hash = hex::encode(transaction_a.hash), "Transaction");
+        let hash = hex::encode(transaction_a.hash);
+        info!(hash, "Transaction");
         self.pending_transactions.push(transaction_a);
         Ok(())
     }
@@ -329,7 +330,8 @@ impl Blockchain {
             &stake_a,
             tofuri_util::timestamp() + time_delta,
         )?;
-        info!(hash = hex::encode(stake_a.hash), "Stake");
+        let hash = hex::encode(stake_a.hash);
+        info!(hash, "Stake");
         self.pending_stakes.push(stake_a);
         Ok(())
     }

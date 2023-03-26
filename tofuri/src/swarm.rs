@@ -215,8 +215,8 @@ fn gossipsub_message(
                 &propagation_source,
                 MessageAcceptance::Ignore,
             ),
-        Err(err) => {
-            error!("{:?}", err);
+        Err(e) => {
+            error!(?e);
             node.p2p
                 .swarm
                 .behaviour_mut()
@@ -229,7 +229,7 @@ fn gossipsub_message(
         }
     } {
         Ok(cache) => debug!(cache, "Message validation result reported"),
-        Err(err) => error!("{:?}", err),
+        Err(e) => error!(?e),
     }
 }
 #[instrument(skip_all, level = "trace")]
@@ -287,8 +287,8 @@ fn sync_request(
     }
     match inner(node, request, channel) {
         Ok(()) => debug!("Sync request processed"),
-        Err(err) => {
-            error!("{:?}", err);
+        Err(e) => {
+            error!(?e);
             node.p2p
                 .ratelimit
                 .timeout
@@ -324,8 +324,8 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: Response) {
     }
     match inner(node, response) {
         Ok(()) => debug!("Sync response processed"),
-        Err(err) => {
-            error!("{:?}", err);
+        Err(e) => {
+            error!(?e);
             node.p2p
                 .ratelimit
                 .timeout

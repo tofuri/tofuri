@@ -68,7 +68,8 @@ async fn main() {
                 .3
         }
     };
-    info!(address = address::encode(&key.address_bytes()));
+    let address = address::encode(&key.address_bytes());
+    info!(address);
     let tempdir = TempDir::new("tofuri-pay-db").unwrap();
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),
@@ -92,10 +93,10 @@ async fn main() {
             match pay.lock().await.check().await {
                 Ok(vec) => {
                     if !vec.is_empty() {
-                        info!("{:?}", vec);
+                        info!(?vec);
                     }
                 }
-                Err(err) => error!("{:?}", err),
+                Err(e) => error!(?e),
             }
         }
     });

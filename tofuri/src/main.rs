@@ -95,10 +95,8 @@ async fn main() {
     info!(%multiaddr, "P2P");
     node.p2p.swarm.listen_on(multiaddr).unwrap();
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
-    info!(
-        local_addr = listener.local_addr().unwrap().to_string(),
-        "RPC"
-    );
+    let local_addr = listener.local_addr().unwrap().to_string();
+    info!(local_addr, "RPC");
     let mut reader = BufReader::new(tokio::io::stdin());
     let mut line = String::new();
     let mut interval_1s = tofuri_util::interval_at(Duration::from_secs(1));

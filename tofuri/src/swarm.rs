@@ -94,19 +94,13 @@ fn connection_established(
     // }
     // }
     node.p2p.connections.insert(peer_id, ip_addr);
-    info!(
-        ip_addr = ip_addr.to_string(),
-        num_established, "Connection established"
-    );
+    info!(?ip_addr, num_established, "Connection established");
 }
 #[instrument(skip_all, level = "trace")]
 fn connection_closed(node: &mut Node, peer_id: PeerId, num_established: u32) {
     let res = node.p2p.connections.remove(&peer_id);
     let ip_addr = res.unwrap();
-    info!(
-        ip_addr = ip_addr.to_string(),
-        num_established, "Connection closed"
-    );
+    info!(?ip_addr, num_established, "Connection closed");
 }
 #[instrument(skip_all, level = "trace")]
 fn mdns(node: &mut Node, event: mdns::Event) {

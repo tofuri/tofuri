@@ -83,8 +83,8 @@ fn filter(args: &[&str], reload_handle: &reload::Handle<EnvFilter, Registry>) {
         None => return error!("{}", "Missing argument"),
     };
     let filter = EnvFilter::new(arg1);
-    info!(%filter, "Reload filter");
+    info!(?filter, "Reload");
     if let Err(e) = reload_handle.modify(|x| *x = filter) {
-        error!(%e)
+        error!(?e);
     }
 }

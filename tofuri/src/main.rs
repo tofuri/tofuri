@@ -34,9 +34,9 @@ async fn main() {
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
-    let (filter, reload_handle) = reload::Layer::new(filter);
+    let (layer, reload_handle) = reload::Layer::new(filter);
     tracing_subscriber::registry()
-        .with(filter)
+        .with(layer)
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
     let mut args = tofuri::Args::parse();

@@ -117,7 +117,7 @@ impl TransactionA {
         hash(self)
     }
     pub fn sign(
-        public_key_output: AddressBytes,
+        output_address: AddressBytes,
         amount: u128,
         fee: u128,
         timestamp: u32,
@@ -125,7 +125,7 @@ impl TransactionA {
     ) -> Result<TransactionA, Error> {
         let mut transaction_a = TransactionA {
             input_address: [0; 20],
-            output_address: public_key_output,
+            output_address,
             amount: tofuri_int::floor(amount),
             fee: tofuri_int::floor(fee),
             timestamp,

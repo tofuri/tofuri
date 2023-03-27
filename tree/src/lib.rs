@@ -120,15 +120,12 @@ impl Tree {
             return None;
         }
         if let Some(index) = self.branches.iter().position(|a| a.hash == previous_hash) {
-            // extend branch
             self.branches[index] = Branch::new(hash, self.branches[index].height + 1, timestamp);
-            Some(false)
-        } else {
-            // new branch
-            self.branches
-                .push(Branch::new(hash, self.height(&previous_hash), timestamp));
-            Some(true)
+            return Some(false);
         }
+        self.branches
+            .push(Branch::new(hash, self.height(&previous_hash), timestamp));
+        Some(true)
     }
     pub fn sort_branches(&mut self) {
         self.branches.sort_by(|a, b| {

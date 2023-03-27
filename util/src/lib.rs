@@ -112,17 +112,6 @@ pub fn build(cargo_pkg_name: &str, cargo_pkg_version: &str, cargo_pkg_repository
         GIT_HASH.magenta()
     )
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_block_size_limit() {
-        assert_eq!(
-            BLOCK_SIZE_LIMIT,
-            *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * 600
-        );
-    }
-}
 pub fn io_reload_filter(reload_handle: reload::Handle<EnvFilter, Registry>) {
     std::thread::spawn(move || {
         let mut reader = BufReader::new(std::io::stdin());
@@ -140,4 +129,15 @@ pub fn io_reload_filter(reload_handle: reload::Handle<EnvFilter, Registry>) {
 }
 pub fn validate_block_timestamp(timestamp: u32, previous_timestamp: u32) -> bool {
     !(timestamp.saturating_sub(previous_timestamp) == 0 || timestamp % BLOCK_TIME != 0)
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_block_size_limit() {
+        assert_eq!(
+            BLOCK_SIZE_LIMIT,
+            *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * 600
+        );
+    }
 }

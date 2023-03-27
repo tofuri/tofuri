@@ -52,6 +52,10 @@ pub fn penalty(index: usize) -> u128 {
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
 }
+pub fn block_timestamp() -> u32 {
+    let timestamp = timestamp();
+    timestamp - (timestamp % BLOCK_TIME)
+}
 pub fn duration_to_string(seconds: u32, now: &str) -> String {
     if seconds == 0 {
         return now.to_string();

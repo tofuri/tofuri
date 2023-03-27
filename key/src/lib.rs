@@ -87,7 +87,7 @@ impl Key {
         Key::from_slice(&hasher.finalize().into())
     }
     #[cfg(feature = "vrf")]
-    pub fn vrf_prove(&self, alpha: &[u8]) -> Result<Pi, Error> {
+    pub fn vrf_prove(&self, alpha: &Beta) -> Result<Pi, Error> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).map_err(Error::ECVRF)?;
         let vec = vrf
             .prove(&self.secret_key_bytes(), alpha)
@@ -96,14 +96,14 @@ impl Key {
         Ok(pi)
     }
     #[cfg(feature = "vrf")]
-    pub fn vrf_proof_to_hash(pi: &[u8]) -> Result<Beta, Error> {
+    pub fn vrf_proof_to_hash(pi: &Pi) -> Result<Beta, Error> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).map_err(Error::ECVRF)?;
         let vec = vrf.proof_to_hash(pi).map_err(Error::ECVRF)?;
         let beta = vec.try_into().unwrap();
         Ok(beta)
     }
     #[cfg(feature = "vrf")]
-    pub fn vrf_verify(y: &[u8], pi: &[u8], alpha: &[u8]) -> Result<Beta, Error> {
+    pub fn vrf_verify(y: &PublicKeyBytes, pi: &Pi, alpha: &Beta) -> Result<Beta, Error> {
         let mut vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).map_err(Error::ECVRF)?;
         let vec = vrf.verify(y, pi, alpha).map_err(Error::ECVRF)?;
         let beta = vec.try_into().unwrap();

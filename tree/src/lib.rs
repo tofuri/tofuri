@@ -99,7 +99,10 @@ impl Tree {
     }
     pub fn sort_branches(&mut self) {
         self.branches.sort_by(|a, b| match b.height.cmp(&a.height) {
-            Ordering::Equal => a.timestamp.cmp(&b.timestamp),
+            Ordering::Equal => match a.timestamp.cmp(&b.timestamp) {
+                Ordering::Equal => a.hash.cmp(&b.hash),
+                x => x,
+            },
             x => x,
         });
     }

@@ -8,6 +8,7 @@ fn main() {
     tree.insert([0x55; 32], [0x22; 32], 1);
     tree.insert([0x66; 32], [0x00; 32], 1);
     tree.insert([0x77; 32], [0x55; 32], 0);
+    tree.insert([0x88; 32], [0x55; 32], 0);
     tree.sort_branches();
     println!("{tree}");
     println!("{}", tree.main().unwrap());

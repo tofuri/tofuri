@@ -187,7 +187,7 @@ impl BlockA {
         transactions: Vec<TransactionA>,
         stakes: Vec<StakeA>,
         key: &Key,
-        previous_beta: &[u8],
+        previous_beta: &Beta,
     ) -> Result<BlockA, Error> {
         let pi = key.vrf_prove(previous_beta).map_err(Error::Key)?;
         let mut block_a = BlockA {

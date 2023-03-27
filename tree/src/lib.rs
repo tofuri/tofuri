@@ -1,11 +1,23 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::fmt;
 use tofuri_core::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Branch {
     pub hash: Hash,
     pub height: usize,
     pub timestamp: u32,
+}
+impl fmt::Display for Branch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Branch {{ hash: {}, height: {}, timestamp: {} }}",
+            hex::encode(&self.hash),
+            self.height,
+            self.timestamp
+        )
+    }
 }
 impl Branch {
     fn new(hash: Hash, height: usize, timestamp: u32) -> Branch {
@@ -20,6 +32,27 @@ impl Branch {
 pub struct Tree {
     branches: Vec<Branch>,
     hashes: HashMap<Hash, Hash>,
+}
+impl fmt::Display for Tree {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = String::new();
+        s.push_str("Tree {\n");
+        s.push_str("  branches: [\n");
+        for branch in &self.branches {
+            s.push_str(&format!("    {},\n", branch));
+        }
+        s.push_str("  ],\n");
+        s.push_str("  hashes: {\n");
+        for (key, value) in &self.hashes {
+            s.push_str(&format!(
+                "    {}: {},\n",
+                hex::encode(key),
+                hex::encode(value)
+            ));
+        }
+        s.push_str("  }\n}");
+        write!(f, "{}", s)
+    }
 }
 impl Tree {
     pub fn main(&self) -> Option<&Branch> {

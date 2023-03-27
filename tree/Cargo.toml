@@ -8,3 +8,4 @@ repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 tofuri-core = { version = "0.1", path = "../core" }
+hex = "0.4"

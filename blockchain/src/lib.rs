@@ -80,12 +80,9 @@ impl Blockchain {
         let (mut stable_hashes, unstable_hashes) = self
             .tree
             .stable_and_unstable_hashes(trust_fork_after_blocks);
+        let height = self.tree.main().map(|x| x.height);
         info!(
-            height = if let Some(main) = self.tree.main() {
-                main.height
-            } else {
-                0
-            },
+            ?height,
             last_seen = self.last_seen(),
             stable_hashes = stable_hashes.len(),
             unstable_hashes = unstable_hashes.len(),
@@ -246,19 +243,16 @@ impl Blockchain {
             &self.tree.unstable_hashes(trust_fork_after_blocks),
             trust_fork_after_blocks,
         );
-        info!(
-            height = self.height(),
-            fork,
-            hash = hex::encode(block_a.hash),
-            transactions = block_a.transactions.len(),
-            stakes = block_a.stakes.len(),
-            "{}",
-            if forger {
-                "Forged".magenta()
-            } else {
-                "Accept".green()
-            }
-        );
+        let height = self.height();
+        let hash = hex::encode(block_a.hash);
+        let transactions = block_a.transactions.len();
+        let stakes = block_a.stakes.len();
+        let text = if forger {
+            "Forged".magenta()
+        } else {
+            "Accept".green()
+        };
+        info!(height, fork, hash, transactions, stakes, "{}", text);
     }
     pub fn save_blocks(
         &mut self,

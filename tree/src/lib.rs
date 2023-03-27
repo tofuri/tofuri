@@ -98,12 +98,16 @@ impl Tree {
         }
     }
     pub fn sort_branches(&mut self) {
-        self.branches.sort_by(|a, b| match b.height.cmp(&a.height) {
-            Ordering::Equal => match a.timestamp.cmp(&b.timestamp) {
-                Ordering::Equal => a.hash.cmp(&b.hash),
-                x => x,
-            },
-            x => x,
+        self.branches.sort_by(|a, b| {
+            match b.height.cmp(&a.height) {
+                Ordering::Equal => {}
+                x => return x,
+            }
+            match a.timestamp.cmp(&b.timestamp) {
+                Ordering::Equal => {}
+                x => return x,
+            }
+            a.hash.cmp(&b.hash)
         });
     }
     pub fn clear(&mut self) {

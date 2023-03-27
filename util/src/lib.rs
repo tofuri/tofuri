@@ -11,6 +11,7 @@ use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
 use tokio::time::Instant;
 use tokio::time::Interval;
+use tokio::time::MissedTickBehavior::Skip;
 use tracing::error;
 use tracing::info;
 use tracing_subscriber::reload;
@@ -92,7 +93,9 @@ pub fn duration_until_next_tick(duration: Duration) -> Duration {
 }
 pub fn interval_at(duration: Duration) -> Interval {
     let start = Instant::now() + duration_until_next_tick(duration);
-    tokio::time::interval_at(start, duration)
+    let mut interval = tokio::time::interval_at(start, duration);
+    interval.set_missed_tick_behavior(Skip);
+    interval
 }
 pub fn build(cargo_pkg_name: &str, cargo_pkg_version: &str, cargo_pkg_repository: &str) -> String {
     format!(

@@ -230,8 +230,7 @@ impl Blockchain {
         tofuri_db::block::put(block_a, db).unwrap();
         let fork = self
             .tree
-            .insert(block_a.hash, block_a.previous_hash, block_a.timestamp)
-            .unwrap();
+            .insert(block_a.hash, block_a.previous_hash, block_a.timestamp);
         self.tree.sort_branches();
         if let Some(main) = self.tree.main() {
             if block_a.hash == main.hash && !forger {

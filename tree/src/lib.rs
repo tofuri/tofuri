@@ -115,17 +115,17 @@ impl Tree {
     pub fn get(&self, hash: &Hash) -> Option<&Hash> {
         self.hashes.get(hash)
     }
-    pub fn insert(&mut self, hash: Hash, previous_hash: Hash, timestamp: u32) -> Option<bool> {
+    pub fn insert(&mut self, hash: Hash, previous_hash: Hash, timestamp: u32) -> bool {
         if self.hashes.insert(hash, previous_hash).is_some() {
-            return None;
+            panic!("hash collision");
         }
         if let Some(index) = self.branches.iter().position(|a| a.hash == previous_hash) {
             self.branches[index] = Branch::new(hash, self.branches[index].height + 1, timestamp);
-            return Some(false);
+            return false;
         }
         self.branches
             .push(Branch::new(hash, self.height(&previous_hash), timestamp));
-        Some(true)
+        true
     }
     pub fn sort_branches(&mut self) {
         self.branches.sort_by(|a, b| {

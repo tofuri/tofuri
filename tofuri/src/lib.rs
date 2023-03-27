@@ -94,6 +94,6 @@ pub struct Args {
     pub dev: bool,
 
     /// Timeout
-    #[clap(long, value_parser, default_value = "300")]
+    #[clap(long, value_parser, default_value = "10000")]
     pub timeout: u64,
 }

@@ -3,6 +3,8 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
+use std::fmt;
+use tofuri_address::address;
 use tofuri_core::*;
 use tofuri_key::Key;
 #[derive(Debug)]
@@ -57,7 +59,7 @@ impl Transaction for TransactionB {
         hash_input(self)
     }
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct TransactionA {
     pub input_address: AddressBytes,
     pub output_address: AddressBytes,
@@ -68,7 +70,20 @@ pub struct TransactionA {
     #[serde(with = "BigArray")]
     pub signature: SignatureBytes,
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
+impl fmt::Debug for TransactionA {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut pretty = f.debug_struct("TransactionA");
+        pretty.field("input_address", &address::encode(&self.input_address));
+        pretty.field("output_address", &address::encode(&self.output_address));
+        pretty.field("amount", &tofuri_int::to_string(self.amount));
+        pretty.field("fee", &tofuri_int::to_string(self.fee));
+        pretty.field("timestamp", &self.timestamp.to_string());
+        pretty.field("hash", &hex::encode(&self.hash));
+        pretty.field("signature", &hex::encode(&self.signature));
+        pretty.finish()
+    }
+}
+#[derive(Serialize, Deserialize, Clone)]
 pub struct TransactionB {
     pub output_address: AddressBytes,
     pub amount: AmountBytes,
@@ -76,6 +91,17 @@ pub struct TransactionB {
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: SignatureBytes,
+}
+impl fmt::Debug for TransactionB {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut pretty = f.debug_struct("TransactionB");
+        pretty.field("output_address", &address::encode(&self.output_address));
+        pretty.field("amount", &hex::encode(&self.amount));
+        pretty.field("fee", &hex::encode(&self.fee));
+        pretty.field("timestamp", &self.timestamp.to_string());
+        pretty.field("signature", &hex::encode(&self.signature));
+        pretty.finish()
+    }
 }
 impl TransactionA {
     pub fn b(&self) -> TransactionB {

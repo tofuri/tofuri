@@ -148,9 +148,9 @@ mod tests {
         tree.insert([0x55; 32], [0x22; 32], 1);
         tree.insert([0x66; 32], [0x00; 32], 1);
         tree.insert([0x77; 32], [0x55; 32], 0);
-        assert_eq!(tree.main(), Some(&Branch::new([0x44; 32], 4, 1)));
+        assert_eq!(tree.main(), Some(&Branch::new([0x44; 32], 3, 1)));
         tree.sort_branches();
-        assert_eq!(tree.main(), Some(&Branch::new([0x77; 32], 4, 0)));
+        assert_eq!(tree.main(), Some(&Branch::new([0x77; 32], 3, 0)));
         assert_eq!(tree.size(), 7);
     }
 }

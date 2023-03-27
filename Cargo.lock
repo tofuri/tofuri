@@ -4517,9 +4517,11 @@ dependencies = [
 name = "tofuri-stake"
 version = "0.1.0"
 dependencies = [
+ "hex",
  "serde",
  "serde-big-array",
  "sha2 0.10.6",
+ "tofuri-address",
  "tofuri-core",
  "tofuri-int",
  "tofuri-key",

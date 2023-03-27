@@ -72,15 +72,15 @@ pub struct TransactionA {
 }
 impl fmt::Debug for TransactionA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut pretty = f.debug_struct("TransactionA");
-        pretty.field("input_address", &address::encode(&self.input_address));
-        pretty.field("output_address", &address::encode(&self.output_address));
-        pretty.field("amount", &tofuri_int::to_string(self.amount));
-        pretty.field("fee", &tofuri_int::to_string(self.fee));
-        pretty.field("timestamp", &self.timestamp.to_string());
-        pretty.field("hash", &hex::encode(&self.hash));
-        pretty.field("signature", &hex::encode(&self.signature));
-        pretty.finish()
+        f.debug_struct("TransactionA")
+            .field("input_address", &address::encode(&self.input_address))
+            .field("output_address", &address::encode(&self.output_address))
+            .field("amount", &tofuri_int::to_string(self.amount))
+            .field("fee", &tofuri_int::to_string(self.fee))
+            .field("timestamp", &self.timestamp.to_string())
+            .field("hash", &hex::encode(&self.hash))
+            .field("signature", &hex::encode(&self.signature))
+            .finish()
     }
 }
 #[derive(Serialize, Deserialize, Clone)]
@@ -94,13 +94,13 @@ pub struct TransactionB {
 }
 impl fmt::Debug for TransactionB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut pretty = f.debug_struct("TransactionB");
-        pretty.field("output_address", &address::encode(&self.output_address));
-        pretty.field("amount", &hex::encode(&self.amount));
-        pretty.field("fee", &hex::encode(&self.fee));
-        pretty.field("timestamp", &self.timestamp.to_string());
-        pretty.field("signature", &hex::encode(&self.signature));
-        pretty.finish()
+        f.debug_struct("TransactionB")
+            .field("output_address", &address::encode(&self.output_address))
+            .field("amount", &hex::encode(&self.amount))
+            .field("fee", &hex::encode(&self.fee))
+            .field("timestamp", &self.timestamp.to_string())
+            .field("signature", &hex::encode(&self.signature))
+            .finish()
     }
 }
 impl TransactionA {

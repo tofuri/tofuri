@@ -3,6 +3,8 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
+use std::fmt;
+use tofuri_address::address;
 use tofuri_core::*;
 use tofuri_key::Key;
 #[derive(Debug)]
@@ -50,7 +52,7 @@ impl Stake for StakeB {
         hash_input(self)
     }
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct StakeA {
     pub amount: u128,
     pub fee: u128,
@@ -61,7 +63,20 @@ pub struct StakeA {
     pub input_address: AddressBytes,
     pub hash: Hash,
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
+impl fmt::Debug for StakeA {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("StakeA")
+            .field("amount", &tofuri_int::to_string(self.amount))
+            .field("fee", &tofuri_int::to_string(self.fee))
+            .field("deposit", &self.deposit)
+            .field("timestamp", &self.timestamp)
+            .field("signature", &hex::encode(&self.signature))
+            .field("input_address", &address::encode(&self.input_address))
+            .field("hash", &hex::encode(&self.hash))
+            .finish()
+    }
+}
+#[derive(Serialize, Deserialize, Clone)]
 pub struct StakeB {
     pub amount: AmountBytes,
     pub fee: AmountBytes,
@@ -69,6 +84,17 @@ pub struct StakeB {
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: SignatureBytes,
+}
+impl fmt::Debug for StakeB {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("StakeB")
+            .field("amount", &hex::encode(&self.amount))
+            .field("fee", &hex::encode(&self.fee))
+            .field("deposit", &self.deposit)
+            .field("timestamp", &self.timestamp)
+            .field("signature", &hex::encode(&self.signature))
+            .finish()
+    }
 }
 impl StakeA {
     pub fn b(&self) -> StakeB {

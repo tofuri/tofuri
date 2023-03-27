@@ -443,10 +443,12 @@ impl Blockchain {
         ) {
             return Err(Error::BlockTimestamp);
         }
-        let previous_beta =
-            Key::vrf_proof_to_hash(&unstable.latest_block.pi).unwrap_or(GENESIS_BLOCK_BETA);
-        Key::vrf_verify(&block_a.input_public_key, &block_a.pi, &previous_beta)
-            .map_err(Error::Key)?;
+        Key::vrf_verify(
+            &block_a.input_public_key,
+            &block_a.pi,
+            &unstable.latest_block.beta,
+        )
+        .map_err(Error::Key)?;
         if let Some(staker) = unstable.next_staker(block_a.timestamp) {
             if staker != input_address {
                 return Err(Error::BlockStakerAddress);

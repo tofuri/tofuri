@@ -394,4 +394,8 @@ mod tests {
             ]
         );
     }
+    #[test]
+    fn test_genesis_beta() {
+        assert_eq!(BlockA::default().beta, GENESIS_BLOCK_BETA);
+    }
 }

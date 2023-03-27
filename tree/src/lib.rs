@@ -116,7 +116,7 @@ impl Tree {
     }
     fn height(&self, previous_hash: &Hash) -> usize {
         let mut hash = previous_hash;
-        let mut height = 1;
+        let mut height = 0;
         loop {
             match self.hashes.get(hash) {
                 Some(previous_hash) => {

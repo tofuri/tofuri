@@ -4329,10 +4329,12 @@ dependencies = [
 name = "tofuri-block"
 version = "0.1.0"
 dependencies = [
+ "hex",
  "merkle-cbt",
  "serde",
  "serde-big-array",
  "sha2 0.10.6",
+ "tofuri-address",
  "tofuri-core",
  "tofuri-key",
  "tofuri-stake",

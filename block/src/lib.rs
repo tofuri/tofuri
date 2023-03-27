@@ -5,6 +5,7 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
+use std::fmt;
 use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_stake::StakeA;
@@ -79,7 +80,7 @@ impl Block for BlockB {
         beta(self)
     }
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct BlockA {
     pub hash: Hash,
     pub previous_hash: Hash,
@@ -94,7 +95,22 @@ pub struct BlockA {
     pub transactions: Vec<TransactionA>,
     pub stakes: Vec<StakeA>,
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
+impl fmt::Debug for BlockA {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BlockA")
+            .field("hash", &hex::encode(&self.hash))
+            .field("previous_hash", &hex::encode(&self.previous_hash))
+            .field("timestamp", &self.timestamp)
+            .field("beta", &hex::encode(self.beta))
+            .field("pi", &hex::encode(&self.pi))
+            .field("input_public_key", &hex::encode(&self.input_public_key))
+            .field("signature", &hex::encode(&self.signature))
+            .field("transactions", &self.transactions)
+            .field("stakes", &self.stakes)
+            .finish()
+    }
+}
+#[derive(Serialize, Deserialize, Clone)]
 pub struct BlockB {
     pub previous_hash: Hash,
     pub timestamp: u32,
@@ -105,7 +121,19 @@ pub struct BlockB {
     pub transactions: Vec<TransactionB>,
     pub stakes: Vec<StakeB>,
 }
-#[derive(Serialize, Deserialize, Debug)]
+impl fmt::Debug for BlockB {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BlockB")
+            .field("previous_hash", &hex::encode(&self.previous_hash))
+            .field("timestamp", &self.timestamp)
+            .field("signature", &hex::encode(&self.signature))
+            .field("pi", &hex::encode(&self.pi))
+            .field("transactions", &self.transactions)
+            .field("stakes", &self.stakes)
+            .finish()
+    }
+}
+#[derive(Serialize, Deserialize)]
 pub struct BlockC {
     pub previous_hash: Hash,
     pub timestamp: u32,
@@ -115,6 +143,32 @@ pub struct BlockC {
     pub pi: Pi,
     pub transaction_hashes: Vec<Hash>,
     pub stake_hashes: Vec<Hash>,
+}
+impl fmt::Debug for BlockC {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BlockC")
+            .field("previous_hash", &hex::encode(&self.previous_hash))
+            .field("timestamp", &self.timestamp)
+            .field("signature", &hex::encode(&self.signature))
+            .field("pi", &hex::encode(&self.pi))
+            .field(
+                "transaction_hashes",
+                &self
+                    .transaction_hashes
+                    .iter()
+                    .map(hex::encode)
+                    .collect::<Vec<_>>(),
+            )
+            .field(
+                "stake_hashes",
+                &self
+                    .stake_hashes
+                    .iter()
+                    .map(hex::encode)
+                    .collect::<Vec<_>>(),
+            )
+            .finish()
+    }
 }
 impl BlockA {
     pub fn b(&self) -> BlockB {

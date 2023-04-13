@@ -7,6 +7,7 @@ description = "Tofuri"
 readme = "crate.md"
 categories = ["cryptography::cryptocurrencies"]
 repository = "https://github.com/tofuri/tofuri"
+default-run = "tofuri"
 
 [dependencies]
 tofuri-address = { version = "0.1", path = "../address" }

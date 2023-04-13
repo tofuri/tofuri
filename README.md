@@ -11,7 +11,7 @@ git clone https://github.com/tofuri/tofuri
 ### Running Validator
 
 ```bash
-cargo run --bin tofuri
+cargo run
 ```
 
 ### Dependencies

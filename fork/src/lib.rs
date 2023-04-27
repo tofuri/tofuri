@@ -345,9 +345,10 @@ fn insert_staked<T: Fork>(fork: &mut T, address: AddressBytes, staked: u128) {
 fn update_stakers<T: Fork>(fork: &mut T, address: AddressBytes) {
     let staked = get_staked(fork, &address);
     let index = fork.get_stakers().iter().position(|x| x == &address);
-    if index.is_none() && staked >= COIN {
+    let threshold = COIN * (fork.get_stakers().len() + 1) as u128;
+    if index.is_none() && staked >= threshold {
         fork.get_stakers_mut().push_back(address);
-    } else if index.is_some() && staked < COIN {
+    } else if index.is_some() && staked < threshold {
         fork.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }

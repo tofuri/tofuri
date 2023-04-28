@@ -1,5 +1,6 @@
 use colored::*;
 use lazy_static::lazy_static;
+use multiaddr::Multiaddr;
 use sha2::Digest;
 use sha2::Sha256;
 use std::io::BufRead;
@@ -24,6 +25,8 @@ lazy_static! {
     pub static ref TRANSACTION_SIZE: usize =
         bincode::serialize(&TransactionB::default()).unwrap().len();
     pub static ref STAKE_SIZE: usize = bincode::serialize(&StakeB::default()).unwrap().len();
+    pub static ref MAINNET: Multiaddr = "/ip4/0.0.0.0/tcp/9333".parse().unwrap();
+    pub static ref TESTNET: Multiaddr = "/ip4/0.0.0.0/tcp/9335".parse().unwrap();
 }
 construct_uint! {
     pub struct U256(4);

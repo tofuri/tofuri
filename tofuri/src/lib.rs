@@ -6,7 +6,6 @@ use clap::Parser;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use tofuri_blockchain::Blockchain;
-use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
@@ -46,11 +45,11 @@ pub struct Args {
     pub debug: bool,
 
     /// Store blockchain in a temporary database
-    #[clap(long, value_parser, default_value_t = TEMP_DB)]
+    #[clap(long, value_parser, default_value_t = false)]
     pub tempdb: bool,
 
     /// Use temporary random keypair
-    #[clap(long, value_parser, default_value_t = TEMP_KEY)]
+    #[clap(long, value_parser, default_value_t = false)]
     pub tempkey: bool,
 
     /// Generate genesis block
@@ -82,16 +81,12 @@ pub struct Args {
     pub peer: String,
 
     /// TCP socket address to bind to
-    #[clap(long, value_parser, default_value = RPC)]
+    #[clap(long, value_parser, default_value = ":::9332")]
     pub rpc: String,
 
-    /// Multiaddr to listen on
-    #[clap(short, long, value_parser, default_value = HOST)]
-    pub host: String,
-
-    /// Development mode
+    /// Use testnet instead of mainnet
     #[clap(long, value_parser, default_value_t = false)]
-    pub dev: bool,
+    pub testnet: bool,
 
     /// Timeout
     #[clap(long, value_parser, default_value = "10000")]

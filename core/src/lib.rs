@@ -28,20 +28,6 @@ pub const GENESIS_BLOCK_HASH: Hash = [
     0x59, 0x08, 0xdb, 0xf7, 0xfa, 0xe8, 0x16, 0xd8, 0x48, 0xb7, 0x7b, 0xc4, 0xe5, 0x08, 0xca, 0x54,
 ];
 pub const RECOVERY_ID: i32 = 0;
-pub const TEMP_DB: bool = false;
-pub const TEMP_DB_DEV: bool = true;
-pub const TEMP_KEY: bool = false;
-pub const TEMP_KEY_DEV: bool = true;
-pub const RPC: &str = ":::9332";
-pub const RPC_DEV: &str = ":::9334";
-pub const HOST: &str = "/ip4/0.0.0.0/tcp/9333";
-pub const HOST_DEV: &str = "/ip4/0.0.0.0/tcp/9335";
-pub const API: &str = "0.0.0.0:80";
-pub const API_DEV: &str = "0.0.0.0:3000";
-pub const HTTP_API: &str = "http://localhost:80";
-pub const HTTP_API_DEV: &str = "http://localhost:3000";
-pub const PAY_API: &str = "0.0.0.0:4000";
-pub const PAY_API_DEV: &str = "0.0.0.0:5000";
 pub const P2P_RATELIMIT_REQUEST_TIMEOUT: u32 = 3600;
 pub const P2P_RATELIMIT_RESPONSE_TIMEOUT: u32 = 3600;
 pub const P2P_RATELIMIT_REQUEST: usize = 60 + 1;

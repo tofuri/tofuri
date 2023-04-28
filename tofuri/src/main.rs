@@ -1,7 +1,6 @@
 use clap::Parser;
 use colored::*;
 use libp2p::futures::StreamExt;
-use libp2p::Multiaddr;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
@@ -15,7 +14,6 @@ use tofuri::CARGO_PKG_REPOSITORY;
 use tofuri::CARGO_PKG_VERSION;
 use tofuri_address::address;
 use tofuri_blockchain::Blockchain;
-use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
 use tokio::io::AsyncBufReadExt;
@@ -39,28 +37,14 @@ async fn main() {
         .with(layer)
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
-    let mut args = tofuri::Args::parse();
     info!(
         "{}",
         tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
     );
-    if args.dev {
-        if args.tempdb == TEMP_DB {
-            args.tempdb = TEMP_DB_DEV;
-        }
-        if args.tempkey == TEMP_KEY {
-            args.tempkey = TEMP_KEY_DEV;
-        }
-        if args.rpc == RPC {
-            args.rpc = RPC_DEV.to_string();
-        }
-        if args.host == HOST {
-            args.host = HOST_DEV.to_string();
-        }
-    }
+    let args = tofuri::Args::parse();
     info!("{:#?}", args);
-    if args.dev {
-        warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
+    if args.testnet {
+        warn!("{}", "TESTNET".yellow());
     }
     let key = match args.tempkey {
         true => Key::generate(),
@@ -92,9 +76,13 @@ async fn main() {
     let blockchain = Blockchain::default();
     let mut node = Node::new(db, key, args.clone(), p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust).unwrap();
-    let multiaddr: Multiaddr = node.args.host.parse().unwrap();
-    info!(?multiaddr, "P2P");
-    node.p2p.swarm.listen_on(multiaddr).unwrap();
+    node.p2p
+        .swarm
+        .listen_on(match args.testnet {
+            true => tofuri_util::TESTNET.clone(),
+            false => tofuri_util::MAINNET.clone(),
+        })
+        .unwrap();
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
     let local_addr = listener.local_addr().unwrap().to_string();
     info!(local_addr, "RPC");

@@ -7,7 +7,6 @@ use tofuri_api::router;
 use tofuri_api::CARGO_PKG_NAME;
 use tofuri_api::CARGO_PKG_REPOSITORY;
 use tofuri_api::CARGO_PKG_VERSION;
-use tofuri_core::*;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::filter::LevelFilter;
@@ -26,19 +25,11 @@ async fn main() {
         .with(layer)
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
-    let mut args = tofuri_api::Args::parse();
     println!(
         "{}",
         tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
     );
-    if args.dev {
-        if args.api == API {
-            args.api = API_DEV.to_string();
-        }
-        if args.rpc == RPC {
-            args.rpc = RPC_DEV.to_string();
-        }
-    }
+    let args = tofuri_api::Args::parse();
     let addr: SocketAddr = args.api.parse().unwrap();
     let cors = CorsLayer::permissive();
     let trace = TraceLayer::new_for_http();

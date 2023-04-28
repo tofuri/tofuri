@@ -57,16 +57,12 @@ pub struct Args {
     pub passphrase: String,
 
     /// API Endpoint
-    #[clap(long, value_parser, default_value = HTTP_API)]
+    #[clap(long, value_parser, default_value = "http://localhost:80")]
     pub api: String,
 
     /// Pay API Endpoint
-    #[clap(long, value_parser, default_value = PAY_API)]
+    #[clap(long, value_parser, default_value = "0.0.0.0:4000")]
     pub pay_api: String,
-
-    /// Development mode
-    #[clap(long, value_parser, default_value_t = false)]
-    pub dev: bool,
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,

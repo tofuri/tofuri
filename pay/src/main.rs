@@ -1,13 +1,11 @@
 use axum::routing::get;
 use axum::Router;
 use clap::Parser;
-use colored::*;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tempdir::TempDir;
 use tofuri_address::address;
-use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_pay::router;
 use tofuri_pay::Args;
@@ -19,7 +17,6 @@ use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 use tracing::error;
 use tracing::info;
-use tracing::warn;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -36,29 +33,12 @@ async fn main() {
         .with(layer)
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
-    let mut args = Args::parse();
     info!(
         "{}",
         tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
     );
-    if args.dev {
-        if args.tempdb == TEMP_DB {
-            args.tempdb = TEMP_DB_DEV;
-        }
-        if args.tempkey == TEMP_KEY {
-            args.tempkey = TEMP_KEY_DEV;
-        }
-        if args.api == HTTP_API {
-            args.api = HTTP_API_DEV.to_string();
-        }
-        if args.pay_api == PAY_API {
-            args.pay_api = PAY_API_DEV.to_string();
-        }
-    }
+    let args = Args::parse();
     info!("{:#?}", args);
-    if args.dev {
-        warn!("{}", "DEVELOPMENT MODE IS ACTIVATED!".yellow());
-    }
     let addr: SocketAddr = args.pay_api.parse().unwrap();
     let key = match args.tempkey {
         true => Key::generate(),

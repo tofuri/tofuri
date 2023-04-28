@@ -1,6 +1,5 @@
 pub mod router;
 use clap::Parser;
-use tofuri_core::*;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
@@ -8,14 +7,10 @@ pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// API Endpoint
-    #[clap(long, value_parser, default_value = API)]
+    #[clap(long, value_parser, default_value = "0.0.0.0:80")]
     pub api: String,
 
     /// API Internal Endpoint
-    #[clap(long, value_parser, default_value = RPC)]
+    #[clap(long, value_parser, default_value = ":::9332")]
     pub rpc: String,
-
-    /// Development mode
-    #[clap(long, value_parser, default_value_t = false)]
-    pub dev: bool,
 }

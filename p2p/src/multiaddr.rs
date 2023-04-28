@@ -8,14 +8,18 @@ pub fn to_ip_addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
         _ => None,
     }
 }
-pub fn from_ip_addr(ip_addr: &IpAddr) -> Multiaddr {
+pub fn from_ip_addr(ip_addr: &IpAddr, testnet: bool) -> Multiaddr {
+    let port = match testnet {
+        true => 9335,
+        false => 9333,
+    };
     let mut multiaddr = Multiaddr::empty();
     let protocol = match ip_addr {
         IpAddr::V4(ip) => Protocol::Ip4(*ip),
         IpAddr::V6(ip) => Protocol::Ip6(*ip),
     };
     multiaddr.push(protocol);
-    multiaddr.push(Protocol::Tcp(9333));
+    multiaddr.push(Protocol::Tcp(port));
     multiaddr
 }
 #[cfg(test)]
@@ -45,11 +49,11 @@ mod tests {
     #[test]
     fn test_from_ip_addr() {
         assert_eq!(
-            from_ip_addr(&"0.0.0.0".parse().unwrap()),
+            from_ip_addr(&"0.0.0.0".parse().unwrap(), false),
             "/ip4/0.0.0.0/tcp/9333".parse::<Multiaddr>().unwrap()
         );
         assert_eq!(
-            from_ip_addr(&"::".parse().unwrap()),
+            from_ip_addr(&"::".parse().unwrap(), false),
             "/ip6/::/tcp/9333".parse::<Multiaddr>().unwrap()
         );
     }

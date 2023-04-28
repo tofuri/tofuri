@@ -74,7 +74,7 @@ fn dial(node: &mut Node, args: &[&str]) {
         Ok(x) => x,
         Err(_) => return error!("{}", "Invalid IP address"),
     };
-    let multiaddr = multiaddr::from_ip_addr(&ip_addr);
+    let multiaddr = multiaddr::from_ip_addr(&ip_addr, node.args.testnet);
     info!(?multiaddr, "Dialing");
     let _ = node.p2p.swarm.dial(multiaddr);
 }

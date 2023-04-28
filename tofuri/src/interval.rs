@@ -48,7 +48,10 @@ fn dial(node: &mut Node, vec: Vec<IpAddr>) {
             continue;
         }
         debug!(?ip_addr, "Dial");
-        let _ = node.p2p.swarm.dial(multiaddr::from_ip_addr(&ip_addr));
+        let _ = node
+            .p2p
+            .swarm
+            .dial(multiaddr::from_ip_addr(&ip_addr, node.args.testnet));
     }
 }
 #[instrument(skip_all, level = "debug")]

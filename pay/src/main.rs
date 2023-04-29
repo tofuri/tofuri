@@ -38,7 +38,7 @@ async fn main() {
         tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
     );
     let args = Args::parse();
-    info!("{:#?}", args);
+    info!("{:?}", args);
     let addr: SocketAddr = args.pay_api.parse().unwrap();
     let key = match args.tempkey {
         true => Key::generate(),

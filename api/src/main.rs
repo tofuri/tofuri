@@ -4,11 +4,13 @@ use axum::Router;
 use clap::Parser;
 use std::net::SocketAddr;
 use tofuri_api::router;
+use tofuri_api::Args;
 use tofuri_api::CARGO_PKG_NAME;
 use tofuri_api::CARGO_PKG_REPOSITORY;
 use tofuri_api::CARGO_PKG_VERSION;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
+use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -29,7 +31,8 @@ async fn main() {
         "{}",
         tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
     );
-    let args = tofuri_api::Args::parse();
+    let args = Args::parse();
+    info!("{:?}", args);
     let addr: SocketAddr = args.api.parse().unwrap();
     let cors = CorsLayer::permissive();
     let trace = TraceLayer::new_for_http();

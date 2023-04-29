@@ -8,6 +8,7 @@ use tofuri::command;
 use tofuri::interval;
 use tofuri::rpc;
 use tofuri::swarm;
+use tofuri::Args;
 use tofuri::Node;
 use tofuri::CARGO_PKG_NAME;
 use tofuri::CARGO_PKG_REPOSITORY;
@@ -41,10 +42,10 @@ async fn main() {
         "{}",
         tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
     );
-    let args = tofuri::Args::parse();
-    info!("{:#?}", args);
+    let args = Args::parse();
+    info!("{:?}", args);
     if args.testnet {
-        warn!("{}", "TESTNET".yellow());
+        warn!("{}", "RUNNING ON TESTNET!".yellow());
     }
     let key = match args.tempkey {
         true => Key::generate(),

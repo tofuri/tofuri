@@ -10,7 +10,7 @@ use tofuri_api::CARGO_PKG_REPOSITORY;
 use tofuri_api::CARGO_PKG_VERSION;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
-use tracing::info;
+use tracing::debug;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -19,6 +19,10 @@ use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
+    println!(
+        "{}",
+        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
+    );
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
@@ -27,12 +31,8 @@ async fn main() {
         .with(layer)
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
-    println!(
-        "{}",
-        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
-    );
     let args = Args::parse();
-    info!("{:?}", args);
+    debug!("{:?}", args);
     let addr: SocketAddr = args.api.parse().unwrap();
     let cors = CorsLayer::permissive();
     let trace = TraceLayer::new_for_http();

@@ -15,6 +15,7 @@ use tofuri_pay::CARGO_PKG_REPOSITORY;
 use tofuri_pay::CARGO_PKG_VERSION;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
+use tracing::debug;
 use tracing::error;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
@@ -25,6 +26,10 @@ use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
+    println!(
+        "{}",
+        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
+    );
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
@@ -33,12 +38,8 @@ async fn main() {
         .with(layer)
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
-    info!(
-        "{}",
-        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
-    );
     let args = Args::parse();
-    info!("{:?}", args);
+    debug!("{:?}", args);
     let addr: SocketAddr = args.pay_api.parse().unwrap();
     let key = match args.tempkey {
         true => Key::generate(),

@@ -13,7 +13,6 @@ async fn main() {
         tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
     );
     let args = Args::parse();
-    println!("{:?}", args);
     let mut wallet = Wallet::new(args);
     loop {
         if wallet.select().await {

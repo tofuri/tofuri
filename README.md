@@ -4,15 +4,7 @@
 
 ## Installation
 
-```bash
-git clone https://github.com/tofuri/tofuri
-```
-
-### Running Validator
-
-```bash
-cargo run
-```
+Visit <https://doc.tofuri.com> for detailed installation instructions and guidance on getting started.
 
 ### Dependencies
 

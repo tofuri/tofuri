@@ -4,7 +4,7 @@
 
 ## Installation
 
-Visit <https://doc.tofuri.com> for detailed installation instructions and guidance on getting started.
+Visit [doc.tofuri.com](https://doc.tofuri.com) for detailed installation instructions and guidance on getting started.
 
 ### Dependencies
 

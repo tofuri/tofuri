@@ -81,7 +81,7 @@ pub struct Args {
     pub peer: String,
 
     /// TCP socket address to bind to
-    #[clap(long, value_parser, default_value = ":::9332")]
+    #[clap(long, value_parser, default_value = ":::2021")]
     pub rpc: String,
 
     /// Use testnet instead of mainnet

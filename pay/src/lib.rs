@@ -57,11 +57,11 @@ pub struct Args {
     pub passphrase: String,
 
     /// API Endpoint
-    #[clap(long, value_parser, default_value = "http://localhost:80")]
+    #[clap(long, value_parser, default_value = "http://localhost:2022")]
     pub api: String,
 
     /// Pay API Endpoint
-    #[clap(long, value_parser, default_value = "0.0.0.0:4000")]
+    #[clap(long, value_parser, default_value = "0.0.0.0:2023")]
     pub pay_api: String,
 }
 pub struct Pay {

@@ -12,7 +12,7 @@ Visit [doc.tofuri.com](https://doc.tofuri.com) for detailed installation instruc
 
 ---
 
-| Port | Crate | Description |
+| Port Number | Crate | Description |
 |-|-|-|
 | 2020 | tofuri | P2P communication |
 | 2021 | tofuri | RPC |

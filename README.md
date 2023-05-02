@@ -17,4 +17,5 @@ Visit [doc.tofuri.com](https://doc.tofuri.com) for detailed installation instruc
 | P2P | 2020 |
 | RPC | 2021 |
 | API | 2022 |
+| API pay | 2023 |
 | P2P testnet | 3030 |

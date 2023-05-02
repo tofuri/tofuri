@@ -1,0 +1,22 @@
+version: "3.1"
+services:
+  tofuri:
+    build:
+      context: .
+      dockerfile: dockerfile.tofuri
+    ports:
+      - "2020:2020"
+      - "2021:2021"
+    volumes:
+      - ./tofuri-db:/tofuri-db
+      - ./tofuri-wallet:/tofuri-wallet
+    command: ["--wallet=${WALLET}", "--passphrase=${PASSPHRASE}"]
+  tofuri-api:
+    build:
+      context: .
+      dockerfile: dockerfile.tofuri-api
+    ports:
+      - "2022:2022"
+    depends_on:
+      - tofuri
+    command: ["--rpc=tofuri:2021"]

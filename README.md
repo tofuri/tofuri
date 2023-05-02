@@ -12,10 +12,10 @@ Visit [doc.tofuri.com](https://doc.tofuri.com) for detailed installation instruc
 
 ---
 
-| Port | Description |
-|-|-|
-| 2020 | P2P Communication |
-| 2021 | RPC |
-| 2022 | API |
-| 2023 | Payment API |
-| 3030 | Testnet P2P Communication |
+| Port Number | Use Case |
+|-------------|----------|
+| 2020        | Peer-to-peer (P2P) communication |
+| 2021        | Remote Procedure Call (RPC) |
+| 2022        | API over HTTP using JSON format |
+| 2023        | Payment Processor API over HTTP using JSON format |
+| 3030        | Testnet P2P communication |

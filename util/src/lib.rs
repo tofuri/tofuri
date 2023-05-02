@@ -25,8 +25,12 @@ lazy_static! {
     pub static ref TRANSACTION_SIZE: usize =
         bincode::serialize(&TransactionB::default()).unwrap().len();
     pub static ref STAKE_SIZE: usize = bincode::serialize(&StakeB::default()).unwrap().len();
-    pub static ref MAINNET: Multiaddr = "/ip4/0.0.0.0/tcp/9333".parse().unwrap();
-    pub static ref TESTNET: Multiaddr = "/ip4/0.0.0.0/tcp/9335".parse().unwrap();
+    pub static ref MAINNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", tofuri_core::MAINNET)
+        .parse()
+        .unwrap();
+    pub static ref TESTNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", tofuri_core::TESTNET)
+        .parse()
+        .unwrap();
 }
 construct_uint! {
     pub struct U256(4);

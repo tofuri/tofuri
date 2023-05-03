@@ -1,10 +1,10 @@
 FROM rust:latest as builder
 WORKDIR /a
+COPY . .
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     clang \
     && rm -rf /var/lib/apt/lists/*
-COPY . .
 RUN cargo build --bin tofuri-pay --release
 FROM debian:stable-slim
 COPY --from=builder /a/target/release/tofuri-pay /usr/local/bin/

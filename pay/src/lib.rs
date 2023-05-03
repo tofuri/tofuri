@@ -52,7 +52,7 @@ pub struct Args {
     pub expires: u32,
 
     /// API Endpoint
-    #[clap(long, env = "API", default_value = "http://localhost:2022")]
+    #[clap(long, env = "API", default_value = "http://localhost:2022/")]
     pub api: Url,
 
     /// Pay API Endpoint

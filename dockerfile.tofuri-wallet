@@ -9,8 +9,8 @@ RUN apt-get update && \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 COPY . .
-RUN cargo build --bin tofuri-api --release
+RUN cargo build --bin tofuri-wallet --release
 FROM debian:stable-slim
-COPY --from=build /usr/src/tofuri/target/release/tofuri-api /usr/local/bin/
+COPY --from=build /usr/src/tofuri/target/release/tofuri-wallet /usr/local/bin/
 EXPOSE 2022
-ENTRYPOINT ["tofuri-api"]
+ENTRYPOINT ["tofuri-wallet"]

@@ -9,7 +9,7 @@ RUN apt-get update && \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 COPY . .
-RUN cargo build --release
+RUN cargo build --bin tofuri --release
 FROM debian:stable-slim
 COPY --from=build /usr/src/tofuri/target/release/tofuri /usr/local/bin/
 EXPOSE 2020 2021

@@ -145,7 +145,7 @@ impl Wallet {
         }
     }
     fn decrypt(&mut self) {
-        let (salt, nonce, ciphertext, key) = load("", "").unwrap();
+        let (salt, nonce, ciphertext, key) = load().unwrap();
         self.salt = salt;
         self.nonce = nonce;
         self.ciphertext = ciphertext;
@@ -457,7 +457,7 @@ pub fn save(filename: &str, key: &Key) -> Result<(), Error> {
     file.write_all(hex::encode(bytes).as_bytes()).unwrap();
     Ok(())
 }
-pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
+pub fn load() -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
     fn read_exact(path: impl AsRef<Path>) -> Result<[u8; 92], Error> {
         let mut file = File::open(path).unwrap();
         let mut bytes = [0; 184];
@@ -484,19 +484,6 @@ pub fn load(filename: &str, passphrase: &str) -> Result<(Salt, Nonce, Ciphertext
             println!("{}", INCORRECT.red())
         }
         res
-    }
-    if filename.is_empty() ^ passphrase.is_empty() {
-        println!(
-            "{}",
-            "To use autodecrypt you must specify both --wallet and --passphrase".red()
-        );
-        process::exit(0);
-    }
-    if !filename.is_empty() && !passphrase.is_empty() {
-        let mut path = util::default_path().join(filename);
-        path.set_extension(EXTENSION);
-        let bytes = read_exact(path)?;
-        return attempt(&bytes, passphrase);
     }
     let mut filename = crate::inquire::select().map_err(Error::Inquire)?;
     let res = if filename.as_str() == *GENERATE {

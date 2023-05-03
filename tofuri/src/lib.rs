@@ -5,6 +5,7 @@ pub mod swarm;
 use clap::Parser;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
+use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
@@ -68,13 +69,9 @@ pub struct Args {
     #[clap(long, value_parser)]
     pub max_established: Option<u32>,
 
-    /// Wallet filename
+    /// Secret key
     #[clap(long, value_parser, default_value = "")]
-    pub wallet: String,
-
-    /// Passphrase to wallet
-    #[clap(long, value_parser, default_value = "")]
-    pub passphrase: String,
+    pub secret: String,
 
     /// IpAddr to dial
     #[clap(short, long, value_parser, default_value = "")]
@@ -91,4 +88,15 @@ pub struct Args {
     /// Timeout
     #[clap(long, value_parser, default_value = "10000")]
     pub timeout: u64,
+}
+pub fn key(tempkey: bool, secret: &str) -> Key {
+    if tempkey && !secret.is_empty() {
+        panic!("--tempkey and --secret are mutually exclusive")
+    } else if tempkey {
+        Key::generate()
+    } else if !secret.is_empty() {
+        Key::from_slice(&secret::decode(secret).unwrap()).unwrap()
+    } else {
+        tofuri_wallet::load().unwrap().3
+    }
 }

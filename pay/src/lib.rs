@@ -5,6 +5,7 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
+use tofuri_address::secret;
 use tofuri_api_core::Block;
 use tofuri_api_core::Transaction;
 use tofuri_core::*;
@@ -48,13 +49,9 @@ pub struct Args {
     #[clap(long, value_parser, default_value = "60")]
     pub expires: u32,
 
-    /// Wallet filename
+    /// Secret key
     #[clap(long, value_parser, default_value = "")]
-    pub wallet: String,
-
-    /// Passphrase to wallet
-    #[clap(long, value_parser, default_value = "")]
-    pub passphrase: String,
+    pub secret: String,
 
     /// API Endpoint
     #[clap(long, value_parser, default_value = "http://localhost:2022")]
@@ -63,6 +60,17 @@ pub struct Args {
     /// Pay API Endpoint
     #[clap(long, value_parser, default_value = "0.0.0.0:2023")]
     pub pay_api: String,
+}
+pub fn key(tempkey: bool, secret: &str) -> Key {
+    if tempkey && !secret.is_empty() {
+        panic!("--tempkey and --secret are mutually exclusive")
+    } else if tempkey {
+        Key::generate()
+    } else if !secret.is_empty() {
+        Key::from_slice(&secret::decode(secret).unwrap()).unwrap()
+    } else {
+        tofuri_wallet::load().unwrap().3
+    }
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,

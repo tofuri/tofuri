@@ -12,5 +12,5 @@ COPY . .
 RUN cargo build --release
 FROM debian:stable-slim
 COPY --from=build /usr/src/tofuri/target/release/tofuri-pay /usr/local/bin/
-EXPOSE 2022
+EXPOSE 2023
 ENTRYPOINT ["tofuri-pay"]

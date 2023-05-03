@@ -8,7 +8,6 @@ services:
     ports:
       - "2023:2023"
     volumes:
-      - ./tofuri-wallet:/tofuri-wallet
       - ./tofuri-pay-db:/tofuri-pay-db
     environment:
       - API=http://tofuri-api:2022

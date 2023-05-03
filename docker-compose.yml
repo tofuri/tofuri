@@ -9,4 +9,3 @@ services:
       - "2021:2021"
     volumes:
       - ./tofuri-db:/tofuri-db
-      - ./tofuri-wallet:/tofuri-wallet

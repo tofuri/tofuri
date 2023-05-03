@@ -1,10 +1,13 @@
 pub mod router;
 use clap::Parser;
 use reqwest::Client;
+use reqwest::Url;
 use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
+use std::net::SocketAddr;
+use tofuri_address::secret;
 use tofuri_api_core::Block;
 use tofuri_api_core::Transaction;
 use tofuri_core::*;
@@ -29,40 +32,36 @@ pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// Log path to source file
-    #[clap(short, long, value_parser, default_value_t = false)]
+    #[clap(long, env = "DEBUG")]
     pub debug: bool,
 
     /// Store blockchain in a temporary database
-    #[clap(long, value_parser, default_value_t = false)]
+    #[clap(long, env = "TEMPDB")]
     pub tempdb: bool,
 
     /// Use temporary random keypair
-    #[clap(long, value_parser, default_value_t = false)]
+    #[clap(long, env = "TEMPKEY")]
     pub tempkey: bool,
 
     /// Confirmations needed
-    #[clap(long, value_parser, default_value = "10")]
+    #[clap(long, env = "CONFIRMATIONS", default_value_t = 10)]
     pub confirmations: usize,
 
     /// Charge expires after seconds
-    #[clap(long, value_parser, default_value = "60")]
+    #[clap(long, env = "EXPIRES", default_value_t = 60)]
     pub expires: u32,
 
-    /// Wallet filename
-    #[clap(long, value_parser, default_value = "")]
-    pub wallet: String,
-
-    /// Passphrase to wallet
-    #[clap(long, value_parser, default_value = "")]
-    pub passphrase: String,
-
     /// API Endpoint
-    #[clap(long, value_parser, default_value = "http://localhost:2022")]
-    pub api: String,
+    #[clap(long, env = "API", default_value = "http://localhost:2022")]
+    pub api: Url,
 
     /// Pay API Endpoint
-    #[clap(long, value_parser, default_value = "0.0.0.0:2023")]
-    pub pay_api: String,
+    #[clap(long, env = "PAY_API", default_value = "[::]:2023")]
+    pub pay_api: SocketAddr,
+
+    /// Secret key
+    #[clap(long, env = "SECRET", value_parser = secret::decode)]
+    pub secret: Option<SecretKeyBytes>,
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,
@@ -119,7 +118,11 @@ impl Pay {
             for hash in block.transactions.iter() {
                 let transaction: Transaction = self
                     .client
-                    .get(format!("{}/transaction/{}", &self.args.api, &hash))
+                    .get(format!(
+                        "{}transaction/{}",
+                        &self.args.api.to_string(),
+                        &hash
+                    ))
                     .send()
                     .await
                     .map_err(Error::Reqwest)?
@@ -175,7 +178,7 @@ impl Pay {
     async fn update_chain(&mut self) -> Result<(), Error> {
         let latest_block: Block = self
             .client
-            .get(format!("{}/block", &self.args.api))
+            .get(format!("{}block", &self.args.api.to_string()))
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -208,7 +211,7 @@ impl Pay {
         let mut chain = vec![];
         let mut previous_hash = self
             .client
-            .get(format!("{}/block", &self.args.api))
+            .get(format!("{}block", &self.args.api.to_string()))
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -219,7 +222,11 @@ impl Pay {
         loop {
             let block: Block = self
                 .client
-                .get(format!("{}/block/{}", &self.args.api, &previous_hash))
+                .get(format!(
+                    "{}block/{}",
+                    &self.args.api.to_string(),
+                    &previous_hash
+                ))
                 .send()
                 .await
                 .map_err(Error::Reqwest)?

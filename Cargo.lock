@@ -4265,7 +4265,6 @@ dependencies = [
  "tofuri-transaction",
  "tofuri-tree",
  "tofuri-util",
- "tofuri-wallet",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -4274,7 +4273,7 @@ dependencies = [
 
 [[package]]
 name = "tofuri-address"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hex",
  "sha2 0.10.6",
@@ -4374,7 +4373,7 @@ dependencies = [
 
 [[package]]
 name = "tofuri-core"
-version = "0.1.1"
+version = "0.1.2"
 
 [[package]]
 name = "tofuri-db"
@@ -4465,7 +4464,6 @@ dependencies = [
  "tofuri-pay-db",
  "tofuri-transaction",
  "tofuri-util",
- "tofuri-wallet",
  "tokio",
  "tower-http",
  "tracing",
@@ -4571,6 +4569,7 @@ dependencies = [
  "sha2 0.10.6",
  "tofuri-block",
  "tofuri-core",
+ "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
  "tokio",

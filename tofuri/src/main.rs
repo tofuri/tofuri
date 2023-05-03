@@ -15,7 +15,6 @@ use tofuri::CARGO_PKG_REPOSITORY;
 use tofuri::CARGO_PKG_VERSION;
 use tofuri_address::address;
 use tofuri_blockchain::Blockchain;
-use tofuri_key::Key;
 use tofuri_p2p::P2p;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
@@ -48,14 +47,7 @@ async fn main() {
     if args.testnet {
         warn!("{}", "RUNNING ON TESTNET!".yellow());
     }
-    let key = match args.tempkey {
-        true => Key::generate(),
-        false => {
-            tofuri_wallet::load(&args.wallet, &args.passphrase)
-                .unwrap()
-                .3
-        }
-    };
+    let key = tofuri_util::key_from_secret(args.tempkey, args.secret).unwrap();
     let address = address::encode(&key.address_bytes());
     info!(address);
     let tempdir = TempDir::new("tofuri-db").unwrap();
@@ -65,7 +57,7 @@ async fn main() {
     };
     let db = tofuri_db::open(path);
     let mut connections_known = HashSet::new();
-    if let Ok(ip_addr) = args.peer.parse() {
+    if let Some(ip_addr) = args.peer {
         connections_known.insert(ip_addr);
     }
     let peers = tofuri_db::peer::get_all(&db).unwrap();

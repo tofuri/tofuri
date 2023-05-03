@@ -7,11 +7,10 @@ services:
     restart: unless-stopped
     ports:
       - "2023:2023"
-    command: [
-      "--api=http://tofuri-api:2022",
-      "--wallet=${WALLET}",
-      "--passphrase=${PASSPHRASE}"
-    ]
     volumes:
-      - ./tofuri-wallet:/tofuri-wallet
       - ./tofuri-pay-db:/tofuri-pay-db
+    env_file:
+      - .env
+    environment:
+      - API=http://tofuri-api:2022
+      - SECRET=${SECRET}

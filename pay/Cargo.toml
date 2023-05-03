@@ -17,10 +17,9 @@ tofuri-pay-core = { version = "0.1", path = "../pay-core" }
 tofuri-pay-db = { version = "0.1", path = "../pay-db" }
 tofuri-key = { version = "0.1", path = "../key" }
 tofuri-transaction = { version = "0.1", path = "../transaction" }
-tofuri-wallet = { version = "0.1", path = "../wallet" }
 tofuri-util = { version = "0.1", path = "../util" }
 hex = "0.4"
-clap = { version = "3.2", features = ["derive"] }
+clap = { version = "3.2", features = ["derive", "env"] }
 lazy_static = "1.4"
 regex = "1.6"
 tracing = "0.1"

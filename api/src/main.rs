@@ -2,7 +2,6 @@ use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
 use clap::Parser;
-use std::net::SocketAddr;
 use tofuri_api::router;
 use tofuri_api::Args;
 use tofuri_api::CARGO_PKG_NAME;
@@ -33,7 +32,7 @@ async fn main() {
         .init();
     let args = Args::parse();
     debug!("{:?}", args);
-    let addr: SocketAddr = args.api.parse().unwrap();
+    let addr = args.api;
     let cors = CorsLayer::permissive();
     let trace = TraceLayer::new_for_http();
     let app = Router::new()

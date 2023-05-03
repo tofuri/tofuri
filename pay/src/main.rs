@@ -1,12 +1,10 @@
 use axum::routing::get;
 use axum::Router;
 use clap::Parser;
-use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tempdir::TempDir;
 use tofuri_address::address;
-use tofuri_key::Key;
 use tofuri_pay::router;
 use tofuri_pay::Args;
 use tofuri_pay::Pay;
@@ -40,15 +38,8 @@ async fn main() {
         .init();
     let args = Args::parse();
     debug!("{:?}", args);
-    let addr: SocketAddr = args.pay_api.parse().unwrap();
-    let key = match args.tempkey {
-        true => Key::generate(),
-        false => {
-            tofuri_wallet::load(&args.wallet, &args.passphrase)
-                .unwrap()
-                .3
-        }
-    };
+    let addr = args.pay_api;
+    let key = tofuri_util::key_from_secret(args.tempkey, args.secret).unwrap();
     let address = address::encode(&key.address_bytes());
     info!(address);
     let tempdir = TempDir::new("tofuri-pay-db").unwrap();

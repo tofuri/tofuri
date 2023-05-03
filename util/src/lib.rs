@@ -8,6 +8,7 @@ use std::io::BufReader;
 use std::time::Duration;
 use tofuri_block::BlockB;
 use tofuri_core::*;
+use tofuri_key::Key;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
 use tokio::time::Instant;
@@ -136,6 +137,23 @@ pub fn io_reload_filter(reload_handle: reload::Handle<EnvFilter, Registry>) {
 }
 pub fn validate_block_timestamp(timestamp: u32, previous_timestamp: u32) -> bool {
     !(timestamp.saturating_sub(previous_timestamp) == 0 || timestamp % BLOCK_TIME != 0)
+}
+#[derive(Debug)]
+pub enum KeyFromSecretError {
+    Key(tofuri_key::Error),
+    Missing,
+}
+pub fn key_from_secret(
+    tempkey: bool,
+    secret: Option<SecretKeyBytes>,
+) -> Result<Key, KeyFromSecretError> {
+    if tempkey {
+        Ok(Key::generate())
+    } else if let Some(secret) = secret {
+        Ok(Key::from_slice(&secret).map_err(KeyFromSecretError::Key)?)
+    } else {
+        Err(KeyFromSecretError::Missing)
+    }
 }
 #[cfg(test)]
 mod tests {

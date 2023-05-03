@@ -47,7 +47,7 @@ async fn main() {
     if args.testnet {
         warn!("{}", "RUNNING ON TESTNET!".yellow());
     }
-    let key = tofuri::key(args.tempkey, &args.secret);
+    let key = tofuri_util::key_from_secret(args.tempkey, args.secret).unwrap();
     let address = address::encode(&key.address_bytes());
     info!(address);
     let tempdir = TempDir::new("tofuri-db").unwrap();
@@ -57,7 +57,7 @@ async fn main() {
     };
     let db = tofuri_db::open(path);
     let mut connections_known = HashSet::new();
-    if let Ok(ip_addr) = args.peer.parse() {
+    if let Some(ip_addr) = args.peer {
         connections_known.insert(ip_addr);
     }
     let peers = tofuri_db::peer::get_all(&db).unwrap();

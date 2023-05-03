@@ -1,4 +1,5 @@
 use std::net::IpAddr;
+use std::net::SocketAddr;
 use tofuri_block::BlockA;
 use tofuri_core::*;
 use tofuri_rpc_core::Request;
@@ -16,7 +17,7 @@ pub enum Error {
     Bincode(bincode::Error),
     Io(std::io::Error),
 }
-async fn request(t: Type, addr: &str, v: Option<Vec<u8>>) -> Result<Vec<u8>, Error> {
+async fn request(t: Type, addr: &SocketAddr, v: Option<Vec<u8>>) -> Result<Vec<u8>, Error> {
     let mut stream = TcpStream::connect(addr).await.map_err(Error::Io)?;
     let request = Request {
         t,
@@ -31,7 +32,7 @@ async fn request(t: Type, addr: &str, v: Option<Vec<u8>>) -> Result<Vec<u8>, Err
     let vec = buf[..bytes].to_vec();
     Ok(vec)
 }
-pub async fn balance(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Error> {
+pub async fn balance(addr: &SocketAddr, address_bytes: &AddressBytes) -> Result<u128, Error> {
     bincode::deserialize(
         &request(
             Type::Balance,
@@ -42,7 +43,10 @@ pub async fn balance(addr: &str, address_bytes: &AddressBytes) -> Result<u128, E
     )
     .map_err(Error::Bincode)
 }
-pub async fn balance_pending_min(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Error> {
+pub async fn balance_pending_min(
+    addr: &SocketAddr,
+    address_bytes: &AddressBytes,
+) -> Result<u128, Error> {
     bincode::deserialize(
         &request(
             Type::BalancePendingMin,
@@ -53,7 +57,10 @@ pub async fn balance_pending_min(addr: &str, address_bytes: &AddressBytes) -> Re
     )
     .map_err(Error::Bincode)
 }
-pub async fn balance_pending_max(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Error> {
+pub async fn balance_pending_max(
+    addr: &SocketAddr,
+    address_bytes: &AddressBytes,
+) -> Result<u128, Error> {
     bincode::deserialize(
         &request(
             Type::BalancePendingMax,
@@ -64,7 +71,7 @@ pub async fn balance_pending_max(addr: &str, address_bytes: &AddressBytes) -> Re
     )
     .map_err(Error::Bincode)
 }
-pub async fn staked(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Error> {
+pub async fn staked(addr: &SocketAddr, address_bytes: &AddressBytes) -> Result<u128, Error> {
     bincode::deserialize(
         &request(
             Type::Staked,
@@ -75,7 +82,10 @@ pub async fn staked(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Er
     )
     .map_err(Error::Bincode)
 }
-pub async fn staked_pending_min(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Error> {
+pub async fn staked_pending_min(
+    addr: &SocketAddr,
+    address_bytes: &AddressBytes,
+) -> Result<u128, Error> {
     bincode::deserialize(
         &request(
             Type::StakedPendingMin,
@@ -86,7 +96,10 @@ pub async fn staked_pending_min(addr: &str, address_bytes: &AddressBytes) -> Res
     )
     .map_err(Error::Bincode)
 }
-pub async fn staked_pending_max(addr: &str, address_bytes: &AddressBytes) -> Result<u128, Error> {
+pub async fn staked_pending_max(
+    addr: &SocketAddr,
+    address_bytes: &AddressBytes,
+) -> Result<u128, Error> {
     bincode::deserialize(
         &request(
             Type::StakedPendingMax,
@@ -97,10 +110,10 @@ pub async fn staked_pending_max(addr: &str, address_bytes: &AddressBytes) -> Res
     )
     .map_err(Error::Bincode)
 }
-pub async fn height(addr: &str) -> Result<usize, Error> {
+pub async fn height(addr: &SocketAddr) -> Result<usize, Error> {
     bincode::deserialize(&request(Type::Height, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn height_by_hash(addr: &str, hash: &Hash) -> Result<usize, Error> {
+pub async fn height_by_hash(addr: &SocketAddr, hash: &Hash) -> Result<usize, Error> {
     bincode::deserialize(
         &request(
             Type::HeightByHash,
@@ -111,10 +124,10 @@ pub async fn height_by_hash(addr: &str, hash: &Hash) -> Result<usize, Error> {
     )
     .map_err(Error::Bincode)
 }
-pub async fn block_latest(addr: &str) -> Result<BlockA, Error> {
+pub async fn block_latest(addr: &SocketAddr) -> Result<BlockA, Error> {
     bincode::deserialize(&request(Type::BlockLatest, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn hash_by_height(addr: &str, height: &usize) -> Result<Hash, Error> {
+pub async fn hash_by_height(addr: &SocketAddr, height: &usize) -> Result<Hash, Error> {
     bincode::deserialize(
         &request(
             Type::HashByHeight,
@@ -125,7 +138,7 @@ pub async fn hash_by_height(addr: &str, height: &usize) -> Result<Hash, Error> {
     )
     .map_err(Error::Bincode)
 }
-pub async fn block_by_hash(addr: &str, hash: &Hash) -> Result<BlockA, Error> {
+pub async fn block_by_hash(addr: &SocketAddr, hash: &Hash) -> Result<BlockA, Error> {
     bincode::deserialize(
         &request(
             Type::BlockByHash,
@@ -136,7 +149,7 @@ pub async fn block_by_hash(addr: &str, hash: &Hash) -> Result<BlockA, Error> {
     )
     .map_err(Error::Bincode)
 }
-pub async fn transaction_by_hash(addr: &str, hash: &Hash) -> Result<TransactionA, Error> {
+pub async fn transaction_by_hash(addr: &SocketAddr, hash: &Hash) -> Result<TransactionA, Error> {
     bincode::deserialize(
         &request(
             Type::TransactionByHash,
@@ -147,7 +160,7 @@ pub async fn transaction_by_hash(addr: &str, hash: &Hash) -> Result<TransactionA
     )
     .map_err(Error::Bincode)
 }
-pub async fn stake_by_hash(addr: &str, hash: &Hash) -> Result<StakeA, Error> {
+pub async fn stake_by_hash(addr: &SocketAddr, hash: &Hash) -> Result<StakeA, Error> {
     bincode::deserialize(
         &request(
             Type::StakeByHash,
@@ -158,10 +171,10 @@ pub async fn stake_by_hash(addr: &str, hash: &Hash) -> Result<StakeA, Error> {
     )
     .map_err(Error::Bincode)
 }
-pub async fn peers(addr: &str) -> Result<Vec<IpAddr>, Error> {
+pub async fn peers(addr: &SocketAddr) -> Result<Vec<IpAddr>, Error> {
     bincode::deserialize(&request(Type::Peers, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn peer(addr: &str, ip_addr: &IpAddr) -> Result<(), Error> {
+pub async fn peer(addr: &SocketAddr, ip_addr: &IpAddr) -> Result<(), Error> {
     bincode::deserialize(
         &request(
             Type::Peer,
@@ -172,7 +185,7 @@ pub async fn peer(addr: &str, ip_addr: &IpAddr) -> Result<(), Error> {
     )
     .map_err(Error::Bincode)
 }
-pub async fn transaction(addr: &str, transaction_b: &TransactionB) -> Result<String, Error> {
+pub async fn transaction(addr: &SocketAddr, transaction_b: &TransactionB) -> Result<String, Error> {
     bincode::deserialize(
         &request(
             Type::Transaction,
@@ -183,7 +196,7 @@ pub async fn transaction(addr: &str, transaction_b: &TransactionB) -> Result<Str
     )
     .map_err(Error::Bincode)
 }
-pub async fn stake(addr: &str, stake_b: &StakeB) -> Result<String, Error> {
+pub async fn stake(addr: &SocketAddr, stake_b: &StakeB) -> Result<String, Error> {
     bincode::deserialize(
         &request(
             Type::Stake,
@@ -194,54 +207,54 @@ pub async fn stake(addr: &str, stake_b: &StakeB) -> Result<String, Error> {
     )
     .map_err(Error::Bincode)
 }
-pub async fn cargo_pkg_name(addr: &str) -> Result<String, Error> {
+pub async fn cargo_pkg_name(addr: &SocketAddr) -> Result<String, Error> {
     bincode::deserialize(&request(Type::CargoPkgName, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn cargo_pkg_version(addr: &str) -> Result<String, Error> {
+pub async fn cargo_pkg_version(addr: &SocketAddr) -> Result<String, Error> {
     bincode::deserialize(&request(Type::CargoPkgVersion, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn cargo_pkg_repository(addr: &str) -> Result<String, Error> {
+pub async fn cargo_pkg_repository(addr: &SocketAddr) -> Result<String, Error> {
     bincode::deserialize(&request(Type::CargoPkgRepository, addr, None).await?)
         .map_err(Error::Bincode)
 }
-pub async fn git_hash(addr: &str) -> Result<String, Error> {
+pub async fn git_hash(addr: &SocketAddr) -> Result<String, Error> {
     bincode::deserialize(&request(Type::GitHash, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn address(addr: &str) -> Result<AddressBytes, Error> {
+pub async fn address(addr: &SocketAddr) -> Result<AddressBytes, Error> {
     bincode::deserialize(&request(Type::Address, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn ticks(addr: &str) -> Result<usize, Error> {
+pub async fn ticks(addr: &SocketAddr) -> Result<usize, Error> {
     bincode::deserialize(&request(Type::Ticks, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn time(addr: &str) -> Result<i64, Error> {
+pub async fn time(addr: &SocketAddr) -> Result<i64, Error> {
     bincode::deserialize(&request(Type::Time, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn tree_size(addr: &str) -> Result<usize, Error> {
+pub async fn tree_size(addr: &SocketAddr) -> Result<usize, Error> {
     bincode::deserialize(&request(Type::TreeSize, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn sync(addr: &str) -> Result<Sync, Error> {
+pub async fn sync(addr: &SocketAddr) -> Result<Sync, Error> {
     bincode::deserialize(&request(Type::Sync, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn random_queue(addr: &str) -> Result<Vec<AddressBytes>, Error> {
+pub async fn random_queue(addr: &SocketAddr) -> Result<Vec<AddressBytes>, Error> {
     bincode::deserialize(&request(Type::RandomQueue, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn unstable_hashes(addr: &str) -> Result<usize, Error> {
+pub async fn unstable_hashes(addr: &SocketAddr) -> Result<usize, Error> {
     bincode::deserialize(&request(Type::UnstableHashes, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn unstable_latest_hashes(addr: &str) -> Result<Vec<Hash>, Error> {
+pub async fn unstable_latest_hashes(addr: &SocketAddr) -> Result<Vec<Hash>, Error> {
     bincode::deserialize(&request(Type::UnstableLatestHashes, addr, None).await?)
         .map_err(Error::Bincode)
 }
-pub async fn unstable_stakers(addr: &str) -> Result<usize, Error> {
+pub async fn unstable_stakers(addr: &SocketAddr) -> Result<usize, Error> {
     bincode::deserialize(&request(Type::UnstableStakers, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn stable_hashes(addr: &str) -> Result<usize, Error> {
+pub async fn stable_hashes(addr: &SocketAddr) -> Result<usize, Error> {
     bincode::deserialize(&request(Type::StableHashes, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn stable_latest_hashes(addr: &str) -> Result<Vec<Hash>, Error> {
+pub async fn stable_latest_hashes(addr: &SocketAddr) -> Result<Vec<Hash>, Error> {
     bincode::deserialize(&request(Type::StableLatestHashes, addr, None).await?)
         .map_err(Error::Bincode)
 }
-pub async fn stable_stakers(addr: &str) -> Result<usize, Error> {
+pub async fn stable_stakers(addr: &SocketAddr) -> Result<usize, Error> {
     bincode::deserialize(&request(Type::StableStakers, addr, None).await?).map_err(Error::Bincode)
 }

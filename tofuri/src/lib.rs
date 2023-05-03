@@ -5,8 +5,11 @@ pub mod swarm;
 use clap::Parser;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
+use std::net::IpAddr;
+use std::net::SocketAddr;
 use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
+use tofuri_core::SecretKeyBytes;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
@@ -42,61 +45,50 @@ impl Node {
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// Log path to source file
-    #[clap(short, long, value_parser, default_value_t = false)]
+    #[clap(long, env = "SECRET")]
     pub debug: bool,
 
     /// Store blockchain in a temporary database
-    #[clap(long, value_parser, default_value_t = false)]
+    #[clap(long, env = "TEMPDB")]
     pub tempdb: bool,
 
     /// Use temporary random keypair
-    #[clap(long, value_parser, default_value_t = false)]
+    #[clap(long, env = "TEMPKEY")]
     pub tempkey: bool,
 
     /// Generate genesis block
-    #[clap(long, value_parser, default_value_t = false)]
+    #[clap(long, env = "MINT")]
     pub mint: bool,
 
+    /// Use testnet instead of mainnet
+    #[clap(long, env = "TESTNET")]
+    pub testnet: bool,
+
     /// Trust fork after blocks
-    #[clap(long, value_parser, default_value = "2")]
+    #[clap(long, env = "TRUST", default_value_t = 2)]
     pub trust: usize,
 
     /// Allow timestamps from the future
-    #[clap(long, value_parser, default_value = "1")]
+    #[clap(long, env = "TIME_DELTA", default_value_t = 1)]
     pub time_delta: u32,
 
+    /// Timeout
+    #[clap(long, env = "TIMEOUT", default_value_t = 10000)]
+    pub timeout: u64,
+
+    /// TCP socket address to bind to
+    #[clap(long, env = "RPC", default_value = "[::]:2021")]
+    pub rpc: SocketAddr,
+
+    /// IpAddr to dial
+    #[clap(long, env = "PEER")]
+    pub peer: Option<IpAddr>,
+
     /// Swarm connection limits
-    #[clap(long, value_parser)]
+    #[clap(long, env = "MAX_ESTABLISHED")]
     pub max_established: Option<u32>,
 
     /// Secret key
-    #[clap(long, value_parser, default_value = "")]
-    pub secret: String,
-
-    /// IpAddr to dial
-    #[clap(short, long, value_parser, default_value = "")]
-    pub peer: String,
-
-    /// TCP socket address to bind to
-    #[clap(long, value_parser, default_value = ":::2021")]
-    pub rpc: String,
-
-    /// Use testnet instead of mainnet
-    #[clap(long, value_parser, default_value_t = false)]
-    pub testnet: bool,
-
-    /// Timeout
-    #[clap(long, value_parser, default_value = "10000")]
-    pub timeout: u64,
-}
-pub fn key(tempkey: bool, secret: &str) -> Key {
-    if tempkey && !secret.is_empty() {
-        panic!("--tempkey and --secret are mutually exclusive")
-    } else if tempkey {
-        Key::generate()
-    } else if !secret.is_empty() {
-        Key::from_slice(&secret::decode(secret).unwrap()).unwrap()
-    } else {
-        tofuri_wallet::load().unwrap().3
-    }
+    #[clap(long, env = "SECRET", value_parser = secret::decode)]
+    pub secret: Option<SecretKeyBytes>,
 }

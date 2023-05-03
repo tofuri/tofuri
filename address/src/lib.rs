@@ -1,5 +1,8 @@
 use sha2::Digest;
 use sha2::Sha256;
+use std::fmt;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use tofuri_core::*;
 #[derive(Debug)]
 pub enum Error {
@@ -11,6 +14,12 @@ pub enum Error {
     InvalidSecretKeyChecksum,
     SecretKeyChecksumMismatch,
 }
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+impl std::error::Error for Error {}
 pub fn checksum(bytes: &[u8]) -> [u8; 4] {
     let mut hasher = Sha256::new();
     hasher.update(bytes);

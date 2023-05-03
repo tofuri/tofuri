@@ -16,6 +16,7 @@ use colored::*;
 use crossterm::event;
 use crossterm::terminal;
 use reqwest::Client;
+use reqwest::Url;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -49,12 +50,8 @@ pub enum Error {
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// API Endpoint
-    #[clap(long, value_parser, default_value = "http://localhost:2022")]
-    pub api: String,
-
-    /// Development mode
-    #[clap(long, value_parser, default_value_t = false)]
-    pub dev: bool,
+    #[clap(long, env = "API", default_value = "http://localhost:2022")]
+    pub api: Url,
 }
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -154,7 +151,7 @@ impl Wallet {
     async fn api(&self) -> Result<(), Error> {
         let root: Root = self
             .client
-            .get(&self.args.api)
+            .get(self.args.api.to_string())
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -168,7 +165,7 @@ impl Wallet {
         let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
         let balance: String = self
             .client
-            .get(format!("{}/balance/{}", self.args.api, address))
+            .get(format!("{}balance/{}", self.args.api.to_string(), address))
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -177,7 +174,7 @@ impl Wallet {
             .map_err(Error::Reqwest)?;
         let staked: String = self
             .client
-            .get(format!("{}/staked/{}", self.args.api, address))
+            .get(format!("{}staked/{}", self.args.api.to_string(), address))
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -194,7 +191,7 @@ impl Wallet {
     async fn height(&self) -> Result<(), Error> {
         let height: usize = self
             .client
-            .get(format!("{}/height", self.args.api))
+            .get(format!("{}height", self.args.api.to_string()))
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -228,7 +225,7 @@ impl Wallet {
         println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
         let res: String = self
             .client
-            .post(format!("{}/transaction", self.args.api))
+            .post(format!("{}transaction", self.args.api.to_string()))
             .json(&tofuri_api_util::transaction(&transaction_a))
             .send()
             .await
@@ -265,7 +262,7 @@ impl Wallet {
         println!("Hash: {}", hex::encode(stake_a.hash).cyan());
         let res: String = self
             .client
-            .post(format!("{}/stake", self.args.api))
+            .post(format!("{}stake", self.args.api.to_string()))
             .json(&tofuri_api_util::stake(&stake_a))
             .send()
             .await
@@ -288,7 +285,7 @@ impl Wallet {
         if address::decode(&search).is_ok() {
             let balance: String = self
                 .client
-                .get(format!("{}/balance/{}", self.args.api, search))
+                .get(format!("{}balance/{}", self.args.api.to_string(), search))
                 .send()
                 .await
                 .map_err(Error::Reqwest)?
@@ -297,7 +294,7 @@ impl Wallet {
                 .map_err(Error::Reqwest)?;
             let staked: String = self
                 .client
-                .get(format!("{}/staked/{}", self.args.api, search))
+                .get(format!("{}staked/{}", self.args.api.to_string(), search))
                 .send()
                 .await
                 .map_err(Error::Reqwest)?
@@ -313,7 +310,7 @@ impl Wallet {
         } else if search.len() == 64 {
             if let Ok(res) = self
                 .client
-                .get(format!("{}/block/{}", self.args.api, search))
+                .get(format!("{}block/{}", self.args.api.to_string(), search))
                 .send()
                 .await
             {
@@ -323,7 +320,11 @@ impl Wallet {
             }
             if let Ok(res) = self
                 .client
-                .get(format!("{}/transaction/{}", self.args.api, search))
+                .get(format!(
+                    "{}/transaction/{}",
+                    self.args.api.to_string(),
+                    search
+                ))
                 .send()
                 .await
             {
@@ -333,7 +334,7 @@ impl Wallet {
             }
             if let Ok(res) = self
                 .client
-                .get(format!("{}/stake/{}", self.args.api, search))
+                .get(format!("{}stake/{}", self.args.api.to_string(), search))
                 .send()
                 .await
             {
@@ -344,14 +345,14 @@ impl Wallet {
         } else if search.parse::<usize>().is_ok() {
             if let Ok(res) = self
                 .client
-                .get(format!("{}/hash/{}", self.args.api, search))
+                .get(format!("{}hash/{}", self.args.api.to_string(), search))
                 .send()
                 .await
             {
                 let hash: String = res.json().await.map_err(Error::Reqwest)?;
                 if let Ok(res) = self
                     .client
-                    .get(format!("{}/block/{}", self.args.api, hash))
+                    .get(format!("{}block/{}", self.args.api.to_string(), hash))
                     .send()
                     .await
                 {

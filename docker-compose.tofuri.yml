@@ -1,0 +1,17 @@
+version: "3.1"
+services:
+  tofuri:
+    build:
+      context: .
+      dockerfile: dockerfile.tofuri
+    restart: unless-stopped
+    ports:
+      - "2020:2020"
+      - "2021:2021"
+    command: [
+      "--wallet=${WALLET}",
+      "--passphrase=${PASSPHRASE}"
+    ]
+    volumes:
+      - ./tofuri-db:/tofuri-db
+      - ./tofuri-wallet:/tofuri-wallet

@@ -9,3 +9,7 @@ services:
       - "2021:2021"
     volumes:
       - ./tofuri-db:/tofuri-db
+    env_file:
+      - .env
+    environment:
+      - SECRET=${SECRET}

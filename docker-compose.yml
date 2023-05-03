@@ -7,10 +7,6 @@ services:
     ports:
       - "2020:2020"
       - "2021:2021"
-    command: [
-      "--wallet=${WALLET}",
-      "--passphrase=${PASSPHRASE}"
-    ]
     volumes:
       - ./tofuri-db:/tofuri-db
       - ./tofuri-wallet:/tofuri-wallet

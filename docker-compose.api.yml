@@ -7,4 +7,5 @@ services:
     restart: unless-stopped
     ports:
       - "2022:2022"
-    command: ["--rpc=tofuri:2021"]
+    environment:
+      - RPC=tofuri:2021

@@ -4273,7 +4273,7 @@ dependencies = [
 
 [[package]]
 name = "tofuri-address"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hex",
  "sha2 0.10.6",
@@ -4373,7 +4373,7 @@ dependencies = [
 
 [[package]]
 name = "tofuri-core"
-version = "0.1.1"
+version = "0.1.2"
 
 [[package]]
 name = "tofuri-db"

@@ -19,7 +19,14 @@ impl Display for Error {
         write!(f, "{:?}", self)
     }
 }
-impl std::error::Error for Error {}
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Error::Hex(err) => Some(err),
+            _ => None,
+        }
+    }
+}
 pub fn checksum(bytes: &[u8]) -> [u8; 4] {
     let mut hasher = Sha256::new();
     hasher.update(bytes);

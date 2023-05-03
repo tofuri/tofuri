@@ -32,7 +32,7 @@ async fn main() {
         .init();
     let args = Args::parse();
     debug!("{:?}", args);
-    let addr = args.api;
+    let addr = args.api.parse().unwrap();
     let cors = CorsLayer::permissive();
     let trace = TraceLayer::new_for_http();
     let app = Router::new()

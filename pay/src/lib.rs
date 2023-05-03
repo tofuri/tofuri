@@ -6,7 +6,6 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
-use std::net::SocketAddr;
 use tofuri_address::secret;
 use tofuri_api_core::Block;
 use tofuri_api_core::Transaction;
@@ -57,7 +56,7 @@ pub struct Args {
 
     /// Pay API Endpoint
     #[clap(long, env = "PAY_API", default_value = "[::]:2023")]
-    pub pay_api: SocketAddr,
+    pub pay_api: String,
 
     /// Secret key
     #[clap(long, env = "SECRET", value_parser = secret::decode)]

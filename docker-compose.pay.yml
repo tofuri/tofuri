@@ -3,7 +3,7 @@ services:
   tofuri-pay:
     build:
       context: .
-      dockerfile: dockerfile.tofuri-pay
+      dockerfile: dockerfile.pay
     restart: unless-stopped
     ports:
       - "2023:2023"

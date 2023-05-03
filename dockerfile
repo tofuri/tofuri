@@ -2,11 +2,8 @@ FROM rust:latest as build
 WORKDIR /usr/src/tofuri
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    cmake \
     clang \
     protobuf-compiler \
-    libssl-dev \
-    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 COPY . .
 RUN cargo build --bin tofuri --release

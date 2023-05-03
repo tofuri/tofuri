@@ -3,7 +3,6 @@ services:
   tofuri:
     build:
       context: .
-      dockerfile: dockerfile.tofuri
     restart: unless-stopped
     ports:
       - "2020:2020"

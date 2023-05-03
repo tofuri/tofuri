@@ -3,7 +3,7 @@ services:
   tofuri-api:
     build:
       context: .
-      dockerfile: dockerfile.tofuri-api
+      dockerfile: dockerfile.api
     restart: unless-stopped
     ports:
       - "2022:2022"

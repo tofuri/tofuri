@@ -1,0 +1,10 @@
+version: "3.1"
+services:
+  tofuri-api:
+    build:
+      context: .
+      dockerfile: dockerfile.tofuri-api
+    restart: unless-stopped
+    ports:
+      - "2022:2022"
+    command: ["--rpc=tofuri:2021"]

@@ -6,7 +6,6 @@ use clap::Parser;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::net::IpAddr;
-use std::net::SocketAddr;
 use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
 use tofuri_core::SecretKeyBytes;
@@ -78,7 +77,7 @@ pub struct Args {
 
     /// TCP socket address to bind to
     #[clap(long, env = "RPC", default_value = "[::]:2021")]
-    pub rpc: SocketAddr,
+    pub rpc: String,
 
     /// IpAddr to dial
     #[clap(long, env = "PEER")]

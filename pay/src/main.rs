@@ -38,7 +38,7 @@ async fn main() {
         .init();
     let args = Args::parse();
     debug!("{:?}", args);
-    let addr = args.pay_api;
+    let addr = args.pay_api.parse().unwrap();
     let key = tofuri_util::key_from_secret(args.tempkey, args.secret).unwrap();
     let address = address::encode(&key.address_bytes());
     info!(address);

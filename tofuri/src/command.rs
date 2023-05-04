@@ -34,7 +34,10 @@ fn stop() {
     process::exit(0)
 }
 fn address(node: &mut Node) {
-    let address = address::encode(&node.key.address_bytes());
+    let address = match node.key {
+        Some(key) => address::encode(&key.address_bytes()),
+        None => return error!("{}", "No key"),
+    };
     info!(address)
 }
 fn peers(node: &mut Node) {

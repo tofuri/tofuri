@@ -72,6 +72,10 @@ fn share(node: &mut Node) {
 }
 #[instrument(skip_all, level = "debug")]
 fn grow(node: &mut Node) {
+    let key = match node.key {
+        Some(x) => x,
+        None => return debug!("No key, skip grow"),
+    };
     let timestamp = tofuri_util::block_timestamp();
     let blockchain = &mut node.blockchain;
     blockchain.pending_retain(timestamp);
@@ -89,7 +93,7 @@ fn grow(node: &mut Node) {
         return;
     }
     if let Some(staker) = unstable.next_staker(timestamp) {
-        if staker != node.key.address_bytes() {
+        if staker != key.address_bytes() {
             return;
         }
     } else {
@@ -97,7 +101,7 @@ fn grow(node: &mut Node) {
     }
     let block_a = node
         .blockchain
-        .forge_block(&node.db, &node.key, timestamp, node.args.trust);
+        .forge_block(&node.db, &key, timestamp, node.args.trust);
     if let Err(e) = node
         .p2p
         .gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap())

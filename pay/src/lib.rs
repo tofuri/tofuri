@@ -38,10 +38,6 @@ pub struct Args {
     #[clap(long, env = "TEMPDB")]
     pub tempdb: bool,
 
-    /// Use temporary random keypair
-    #[clap(long, env = "TEMPKEY")]
-    pub tempkey: bool,
-
     /// Confirmations needed
     #[clap(long, env = "CONFIRMATIONS", default_value_t = 10)]
     pub confirmations: usize,
@@ -60,7 +56,7 @@ pub struct Args {
 
     /// Secret key
     #[clap(long, env = "SECRET", value_parser = secret::decode)]
-    pub secret: Option<SecretKeyBytes>,
+    pub secret: SecretKeyBytes,
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,

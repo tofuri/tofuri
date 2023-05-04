@@ -16,7 +16,7 @@ pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 pub struct Node {
     pub db: DBWithThreadMode<SingleThreaded>,
-    pub key: Key,
+    pub key: Option<Key>,
     pub args: Args,
     pub p2p: P2p,
     pub blockchain: Blockchain,
@@ -25,7 +25,7 @@ pub struct Node {
 impl Node {
     pub fn new(
         db: DBWithThreadMode<SingleThreaded>,
-        key: Key,
+        key: Option<Key>,
         args: Args,
         p2p: P2p,
         blockchain: Blockchain,
@@ -50,10 +50,6 @@ pub struct Args {
     /// Store blockchain in a temporary database
     #[clap(long, env = "TEMPDB")]
     pub tempdb: bool,
-
-    /// Use temporary random keypair
-    #[clap(long, env = "TEMPKEY")]
-    pub tempkey: bool,
 
     /// Generate genesis block
     #[clap(long, env = "MINT")]

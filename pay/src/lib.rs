@@ -6,7 +6,6 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
-use tofuri_address::secret;
 use tofuri_api_core::Block;
 use tofuri_api_core::Transaction;
 use tofuri_core::*;
@@ -55,13 +54,8 @@ pub struct Args {
     pub pay_api: String,
 
     /// Secret key
-    #[clap(long, env = "SECRET", value_parser = value_parser_secret)]
+    #[clap(long, env = "SECRET")]
     pub secret: String,
-}
-fn value_parser_secret(s: &str) -> Result<String, String> {
-    let secret = secret::decode(s).map_err(|x| format!("{x:?}"))?;
-    let _ = Key::from_slice(&secret).map_err(|x| format!("{x:?}"))?;
-    Ok(s.to_string())
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,

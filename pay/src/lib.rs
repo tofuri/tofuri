@@ -55,8 +55,13 @@ pub struct Args {
     pub pay_api: String,
 
     /// Secret key
-    #[clap(long, env = "SECRET", value_parser = secret::decode)]
-    pub secret: SecretKeyBytes,
+    #[clap(long, env = "SECRET", value_parser = value_parser_secret)]
+    pub secret: String,
+}
+fn value_parser_secret(s: &str) -> Result<String, String> {
+    let secret = secret::decode(s).map_err(|x| format!("{x:?}"))?;
+    let _ = Key::from_slice(&secret).map_err(|x| format!("{x:?}"))?;
+    Ok(s.to_string())
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,

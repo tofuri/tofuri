@@ -14,6 +14,7 @@ use tofuri::CARGO_PKG_NAME;
 use tofuri::CARGO_PKG_REPOSITORY;
 use tofuri::CARGO_PKG_VERSION;
 use tofuri_address::address;
+use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
@@ -48,7 +49,11 @@ async fn main() {
     if args.testnet {
         warn!("{}", "RUNNING ON TESTNET!".yellow());
     }
-    let key = args.secret.and_then(|x| Some(Key::from_slice(&x).unwrap()));
+    let key = if !args.secret.is_empty() {
+        Some(Key::from_slice(&secret::decode(&args.secret).unwrap()).unwrap())
+    } else {
+        None
+    };
     if let Some(key) = key {
         let address = address::encode(&key.address_bytes());
         info!(address);

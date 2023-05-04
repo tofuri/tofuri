@@ -8,7 +8,6 @@ use rocksdb::SingleThreaded;
 use std::net::IpAddr;
 use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
-use tofuri_core::SecretKeyBytes;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
@@ -84,6 +83,14 @@ pub struct Args {
     pub max_established: Option<u32>,
 
     /// Secret key
-    #[clap(long, env = "SECRET", value_parser = secret::decode)]
-    pub secret: Option<SecretKeyBytes>,
+    #[clap(long, env = "SECRET", value_parser = value_parser_secret)]
+    pub secret: String,
+}
+fn value_parser_secret(s: &str) -> Result<String, String> {
+    if s.is_empty() {
+        return Ok("".to_string());
+    }
+    let secret = secret::decode(s).map_err(|x| format!("{x:?}"))?;
+    let _ = Key::from_slice(&secret).map_err(|x| format!("{x:?}"))?;
+    Ok(s.to_string())
 }

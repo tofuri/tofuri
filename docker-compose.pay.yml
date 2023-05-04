@@ -10,7 +10,7 @@ services:
     volumes:
       - ./tofuri-pay-db:/tofuri-pay-db
     env_file:
-      - .env
+      - pay.env
     environment:
       - API=http://tofuri-api:2022
       - SECRET=${SECRET}

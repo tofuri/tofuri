@@ -13,4 +13,8 @@ pub struct Args {
     /// API Internal Endpoint
     #[clap(long, env = "RPC", default_value = "[::]:2021")]
     pub rpc: String,
+
+    /// Disable tracing_subscriber timestamps
+    #[clap(long, env = "WITHOUT_TIME")]
+    pub without_time: bool,
 }

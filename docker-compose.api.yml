@@ -10,4 +10,5 @@ services:
     env_file:
       - api.env
     environment:
+      - WITHOUT_TIME=true
       - RPC=tofuri:2021

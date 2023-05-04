@@ -4,7 +4,7 @@ use libp2p::futures::StreamExt;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
-use tofuri::command;
+// use tofuri::command;
 use tofuri::interval;
 use tofuri::rpc;
 use tofuri::swarm;
@@ -18,8 +18,8 @@ use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
-use tokio::io::AsyncBufReadExt;
-use tokio::io::BufReader;
+// use tokio::io::AsyncBufReadExt;
+// use tokio::io::BufReader;
 use tokio::net::TcpListener;
 use tracing::debug;
 use tracing::info;
@@ -36,15 +36,21 @@ async fn main() {
         "{}",
         tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
     );
+    let args = Args::parse();
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
-    let (layer, reload_handle) = reload::Layer::new(filter);
-    tracing_subscriber::registry()
-        .with(layer)
-        .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
-        .init();
-    let args = Args::parse();
+    let (layer, _) = reload::Layer::new(filter);
+    let fmt_layer = fmt::layer()
+        .with_file(true)
+        .with_line_number(true)
+        .with_span_events(FmtSpan::CLOSE);
+    let registry = tracing_subscriber::registry().with(layer);
+    if args.without_time {
+        registry.with(fmt_layer.without_time()).init();
+    } else {
+        registry.with(fmt_layer).init();
+    }
     debug!("{:?}", args);
     if args.testnet {
         warn!("{}", "RUNNING ON TESTNET!".yellow());
@@ -91,8 +97,8 @@ async fn main() {
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
     let local_addr = listener.local_addr().unwrap().to_string();
     info!(local_addr, "RPC");
-    let mut reader = BufReader::new(tokio::io::stdin());
-    let mut line = String::new();
+    // let mut reader = BufReader::new(tokio::io::stdin());
+    // let mut line = String::new();
     let mut interval_1s = tofuri_util::interval_at(Duration::from_secs(1));
     let mut interval_10s = tofuri_util::interval_at(Duration::from_secs(10));
     let mut interval_1m = tofuri_util::interval_at(Duration::from_secs(60));
@@ -106,7 +112,7 @@ async fn main() {
             _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
             res = listener.accept() => rpc::accept(&mut node, res).await,
-            _ = reader.read_line(&mut line) => command::command(&mut node, &mut line, &reload_handle),
+            // _ = reader.read_line(&mut line) => command::command(&mut node, &mut line, &reload_handle),
         }
     }
 }

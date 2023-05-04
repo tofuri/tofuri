@@ -84,4 +84,8 @@ pub struct Args {
     /// Secret key
     #[clap(long, env = "SECRET")]
     pub secret: Option<String>,
+
+    /// Disable tracing_subscriber timestamps
+    #[clap(long, env = "WITHOUT_TIME")]
+    pub without_time: bool,
 }

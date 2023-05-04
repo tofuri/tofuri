@@ -12,5 +12,6 @@ services:
     env_file:
       - pay.env
     environment:
+      - WITHOUT_TIME=true
       - API=http://tofuri-api:2022
       - SECRET=${SECRET}

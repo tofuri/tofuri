@@ -22,6 +22,6 @@ tokio = { version = "1.24", features = ["full"] }
 hex = "0.4"
 axum = "0.6"
 tower-http = { version = "0.3", features = ["cors", "trace"] }
-clap = { version = "3.2", features = ["derive", "env"] }
+clap = { version = "4.2", features = ["derive", "env"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing = "0.1"

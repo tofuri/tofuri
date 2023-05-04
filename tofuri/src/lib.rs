@@ -83,5 +83,5 @@ pub struct Args {
 
     /// Secret key
     #[clap(long, env = "SECRET")]
-    pub secret: String,
+    pub secret: Option<String>,
 }

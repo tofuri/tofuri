@@ -49,11 +49,14 @@ async fn main() {
     if args.testnet {
         warn!("{}", "RUNNING ON TESTNET!".yellow());
     }
-    let key = if !args.secret.is_empty() {
-        Some(Key::from_slice(&secret::decode(&args.secret).unwrap()).unwrap())
-    } else {
-        None
-    };
+    let key = args.secret.clone().and_then(|secret| {
+        if secret.is_empty() {
+            warn!("No secret key provided.");
+            None
+        } else {
+            Some(Key::from_slice(&secret::decode(&secret).unwrap()).unwrap())
+        }
+    });
     if let Some(key) = key {
         let address = address::encode(&key.address_bytes());
         info!(address);

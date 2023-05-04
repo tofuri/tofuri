@@ -8,6 +8,6 @@ services:
     ports:
       - "2022:2022"
     env_file:
-      - .env
+      - api.env
     environment:
       - RPC=tofuri:2021

@@ -6,7 +6,6 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
-use tofuri_address::secret;
 use tofuri_api_core::Block;
 use tofuri_api_core::Transaction;
 use tofuri_core::*;
@@ -38,10 +37,6 @@ pub struct Args {
     #[clap(long, env = "TEMPDB")]
     pub tempdb: bool,
 
-    /// Use temporary random keypair
-    #[clap(long, env = "TEMPKEY")]
-    pub tempkey: bool,
-
     /// Confirmations needed
     #[clap(long, env = "CONFIRMATIONS", default_value_t = 10)]
     pub confirmations: usize,
@@ -59,8 +54,8 @@ pub struct Args {
     pub pay_api: String,
 
     /// Secret key
-    #[clap(long, env = "SECRET", value_parser = secret::decode)]
-    pub secret: Option<SecretKeyBytes>,
+    #[clap(long, env = "SECRET")]
+    pub secret: String,
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,

@@ -272,8 +272,8 @@ fn git_hash() -> &'static str {
     GIT_HASH
 }
 #[instrument(skip_all, level = "trace")]
-fn address(node: &mut Node) -> AddressBytes {
-    node.key.address_bytes()
+fn address(node: &mut Node) -> Option<AddressBytes> {
+    node.key.and_then(|x| Some(x.address_bytes()))
 }
 #[instrument(skip_all, level = "trace")]
 fn ticks(node: &mut Node) -> &usize {

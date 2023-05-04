@@ -4569,7 +4569,6 @@ dependencies = [
  "sha2 0.10.6",
  "tofuri-block",
  "tofuri-core",
- "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
  "tokio",

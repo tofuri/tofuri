@@ -6,9 +6,7 @@ use clap::Parser;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use std::net::IpAddr;
-use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
-use tofuri_core::SecretKeyBytes;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
@@ -16,7 +14,7 @@ pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 pub struct Node {
     pub db: DBWithThreadMode<SingleThreaded>,
-    pub key: Key,
+    pub key: Option<Key>,
     pub args: Args,
     pub p2p: P2p,
     pub blockchain: Blockchain,
@@ -25,7 +23,7 @@ pub struct Node {
 impl Node {
     pub fn new(
         db: DBWithThreadMode<SingleThreaded>,
-        key: Key,
+        key: Option<Key>,
         args: Args,
         p2p: P2p,
         blockchain: Blockchain,
@@ -50,10 +48,6 @@ pub struct Args {
     /// Store blockchain in a temporary database
     #[clap(long, env = "TEMPDB")]
     pub tempdb: bool,
-
-    /// Use temporary random keypair
-    #[clap(long, env = "TEMPKEY")]
-    pub tempkey: bool,
 
     /// Generate genesis block
     #[clap(long, env = "MINT")]
@@ -88,6 +82,6 @@ pub struct Args {
     pub max_established: Option<u32>,
 
     /// Secret key
-    #[clap(long, env = "SECRET", value_parser = secret::decode)]
-    pub secret: Option<SecretKeyBytes>,
+    #[clap(long, env = "SECRET")]
+    pub secret: Option<String>,
 }

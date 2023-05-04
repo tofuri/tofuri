@@ -14,7 +14,9 @@ use tofuri::CARGO_PKG_NAME;
 use tofuri::CARGO_PKG_REPOSITORY;
 use tofuri::CARGO_PKG_VERSION;
 use tofuri_address::address;
+use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
+use tofuri_key::Key;
 use tofuri_p2p::P2p;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
@@ -47,9 +49,18 @@ async fn main() {
     if args.testnet {
         warn!("{}", "RUNNING ON TESTNET!".yellow());
     }
-    let key = tofuri_util::key_from_secret(args.tempkey, args.secret).unwrap();
-    let address = address::encode(&key.address_bytes());
-    info!(address);
+    let key = args.secret.clone().and_then(|secret| {
+        if secret.is_empty() {
+            warn!("No secret key provided.");
+            None
+        } else {
+            Some(Key::from_slice(&secret::decode(&secret).unwrap()).unwrap())
+        }
+    });
+    if let Some(key) = key {
+        let address = address::encode(&key.address_bytes());
+        info!(address);
+    }
     let tempdir = TempDir::new("tofuri-db").unwrap();
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),

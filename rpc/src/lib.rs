@@ -207,7 +207,7 @@ pub async fn cargo_pkg_repository(addr: &str) -> Result<String, Error> {
 pub async fn git_hash(addr: &str) -> Result<String, Error> {
     bincode::deserialize(&request(Type::GitHash, addr, None).await?).map_err(Error::Bincode)
 }
-pub async fn address(addr: &str) -> Result<AddressBytes, Error> {
+pub async fn address(addr: &str) -> Result<Option<AddressBytes>, Error> {
     bincode::deserialize(&request(Type::Address, addr, None).await?).map_err(Error::Bincode)
 }
 pub async fn ticks(addr: &str) -> Result<usize, Error> {

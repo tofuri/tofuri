@@ -88,8 +88,12 @@ fn grow(node: &mut Node) {
     if !tofuri_util::validate_block_timestamp(timestamp, unstable.latest_block.timestamp) {
         return;
     }
+    let key = match node.key {
+        Some(x) => x,
+        None => return debug!("No key, skip forge block"),
+    };
     if let Some(staker) = unstable.next_staker(timestamp) {
-        if staker != node.key.address_bytes() {
+        if staker != key.address_bytes() {
             return;
         }
     } else {
@@ -97,7 +101,7 @@ fn grow(node: &mut Node) {
     }
     let block_a = node
         .blockchain
-        .forge_block(&node.db, &node.key, timestamp, node.args.trust);
+        .forge_block(&node.db, &key, timestamp, node.args.trust);
     if let Err(e) = node
         .p2p
         .gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap())

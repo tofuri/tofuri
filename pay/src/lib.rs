@@ -29,10 +29,6 @@ pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[derive(Parser, Debug, Clone)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
-    /// Log path to source file
-    #[clap(long, env = "DEBUG")]
-    pub debug: bool,
-
     /// Store blockchain in a temporary database
     #[clap(long, env = "TEMPDB")]
     pub tempdb: bool,

@@ -22,15 +22,21 @@ async fn main() {
         "{}",
         tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
     );
+    let args = Args::parse();
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
-    let (layer, reload_handle) = reload::Layer::new(filter);
-    tracing_subscriber::registry()
-        .with(layer)
-        .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
-        .init();
-    let args = Args::parse();
+    let (layer, _) = reload::Layer::new(filter);
+    let fmt_layer = fmt::layer()
+        .with_file(true)
+        .with_line_number(true)
+        .with_span_events(FmtSpan::CLOSE);
+    let registry = tracing_subscriber::registry().with(layer);
+    if args.without_time {
+        registry.with(fmt_layer.without_time()).init();
+    } else {
+        registry.with(fmt_layer).init();
+    }
     debug!("{:?}", args);
     let addr = args.api.parse().unwrap();
     let cors = CorsLayer::permissive();
@@ -89,7 +95,7 @@ async fn main() {
         .layer(trace)
         .layer(cors)
         .with_state(args);
-    tofuri_util::io_reload_filter(reload_handle);
+    // tofuri_util::io_reload_filter(reload_handle);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

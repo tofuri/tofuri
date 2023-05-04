@@ -56,6 +56,10 @@ pub struct Args {
     /// Secret key
     #[clap(long, env = "SECRET")]
     pub secret: String,
+
+    /// Disable tracing_subscriber timestamps
+    #[clap(long, env = "WITHOUT_TIME")]
+    pub without_time: bool,
 }
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,

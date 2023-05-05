@@ -196,7 +196,7 @@ pub async fn git_hash(State(args): State<Args>) -> impl IntoResponse {
 #[instrument(skip_all)]
 pub async fn address(State(args): State<Args>) -> impl IntoResponse {
     let address = tofuri_rpc::address(&args.rpc).await.unwrap();
-    let address = address.and_then(|x| Some(address::encode(&x)));
+    let address = address.map(|x| address::encode(&x));
     Json(address)
 }
 #[instrument(skip_all)]

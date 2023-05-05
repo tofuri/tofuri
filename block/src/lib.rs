@@ -98,13 +98,13 @@ pub struct BlockA {
 impl fmt::Debug for BlockA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BlockA")
-            .field("hash", &hex::encode(&self.hash))
-            .field("previous_hash", &hex::encode(&self.previous_hash))
+            .field("hash", &hex::encode(self.hash))
+            .field("previous_hash", &hex::encode(self.previous_hash))
             .field("timestamp", &self.timestamp)
             .field("beta", &hex::encode(self.beta))
-            .field("pi", &hex::encode(&self.pi))
-            .field("input_public_key", &hex::encode(&self.input_public_key))
-            .field("signature", &hex::encode(&self.signature))
+            .field("pi", &hex::encode(self.pi))
+            .field("input_public_key", &hex::encode(self.input_public_key))
+            .field("signature", &hex::encode(self.signature))
             .field("transactions", &self.transactions)
             .field("stakes", &self.stakes)
             .finish()
@@ -124,10 +124,10 @@ pub struct BlockB {
 impl fmt::Debug for BlockB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BlockB")
-            .field("previous_hash", &hex::encode(&self.previous_hash))
+            .field("previous_hash", &hex::encode(self.previous_hash))
             .field("timestamp", &self.timestamp)
-            .field("signature", &hex::encode(&self.signature))
-            .field("pi", &hex::encode(&self.pi))
+            .field("signature", &hex::encode(self.signature))
+            .field("pi", &hex::encode(self.pi))
             .field("transactions", &self.transactions)
             .field("stakes", &self.stakes)
             .finish()
@@ -147,10 +147,10 @@ pub struct BlockC {
 impl fmt::Debug for BlockC {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BlockC")
-            .field("previous_hash", &hex::encode(&self.previous_hash))
+            .field("previous_hash", &hex::encode(self.previous_hash))
             .field("timestamp", &self.timestamp)
-            .field("signature", &hex::encode(&self.signature))
-            .field("pi", &hex::encode(&self.pi))
+            .field("signature", &hex::encode(self.signature))
+            .field("pi", &hex::encode(self.pi))
             .field(
                 "transaction_hashes",
                 &self

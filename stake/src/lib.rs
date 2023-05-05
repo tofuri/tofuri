@@ -70,9 +70,9 @@ impl fmt::Debug for StakeA {
             .field("fee", &tofuri_int::to_string(self.fee))
             .field("deposit", &self.deposit)
             .field("timestamp", &self.timestamp)
-            .field("signature", &hex::encode(&self.signature))
+            .field("signature", &hex::encode(self.signature))
             .field("input_address", &address::encode(&self.input_address))
-            .field("hash", &hex::encode(&self.hash))
+            .field("hash", &hex::encode(self.hash))
             .finish()
     }
 }
@@ -88,11 +88,11 @@ pub struct StakeB {
 impl fmt::Debug for StakeB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("StakeB")
-            .field("amount", &hex::encode(&self.amount))
-            .field("fee", &hex::encode(&self.fee))
+            .field("amount", &hex::encode(self.amount))
+            .field("fee", &hex::encode(self.fee))
             .field("deposit", &self.deposit)
             .field("timestamp", &self.timestamp)
-            .field("signature", &hex::encode(&self.signature))
+            .field("signature", &hex::encode(self.signature))
             .finish()
     }
 }

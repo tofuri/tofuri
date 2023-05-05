@@ -78,8 +78,8 @@ impl fmt::Debug for TransactionA {
             .field("amount", &tofuri_int::to_string(self.amount))
             .field("fee", &tofuri_int::to_string(self.fee))
             .field("timestamp", &self.timestamp.to_string())
-            .field("hash", &hex::encode(&self.hash))
-            .field("signature", &hex::encode(&self.signature))
+            .field("hash", &hex::encode(self.hash))
+            .field("signature", &hex::encode(self.signature))
             .finish()
     }
 }
@@ -96,10 +96,10 @@ impl fmt::Debug for TransactionB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TransactionB")
             .field("output_address", &address::encode(&self.output_address))
-            .field("amount", &hex::encode(&self.amount))
-            .field("fee", &hex::encode(&self.fee))
+            .field("amount", &hex::encode(self.amount))
+            .field("fee", &hex::encode(self.fee))
             .field("timestamp", &self.timestamp.to_string())
-            .field("signature", &hex::encode(&self.signature))
+            .field("signature", &hex::encode(self.signature))
             .finish()
     }
 }

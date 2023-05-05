@@ -12,7 +12,7 @@ pub fn command(
     line: &mut String,
     reload_handle: &reload::Handle<EnvFilter, Registry>,
 ) {
-    let args: Vec<&str> = line.trim().split(" ").collect();
+    let args: Vec<&str> = line.trim().split(' ').collect();
     let command = match args.first() {
         Some(x) => *x,
         None => return,

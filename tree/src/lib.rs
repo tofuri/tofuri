@@ -13,7 +13,7 @@ impl fmt::Display for Branch {
         write!(
             f,
             "Branch {{ hash: {}, height: {}, timestamp: {} }}",
-            hex::encode(&self.hash),
+            hex::encode(self.hash),
             self.height,
             self.timestamp
         )

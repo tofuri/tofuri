@@ -1,6 +1,7 @@
 # Tofuri Core integration/staging tree
 
 [![Rust](https://github.com/tofuri/tofuri/actions/workflows/rust.yml/badge.svg)](https://github.com/tofuri/tofuri/actions/workflows/rust.yml)
+[![dependency status](https://deps.rs/repo/github/tofuri/tofuri/status.svg)](https://deps.rs/repo/github/tofuri/tofuri)
 
 ## About
 

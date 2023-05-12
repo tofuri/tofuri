@@ -326,6 +326,7 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: Response) {
         Ok(()) => debug!("Sync response processed"),
         Err(e) => {
             error!(?e);
+            return;
             node.p2p
                 .ratelimit
                 .timeout

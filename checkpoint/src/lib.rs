@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_block::BlockA;
 use tofuri_core::*;
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Checkpoint {
     pub height: usize,
     pub latest_block: BlockA,

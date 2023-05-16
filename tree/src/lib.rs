@@ -1,8 +1,10 @@
+use serde::Deserialize;
+use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt;
 use tofuri_core::*;
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Branch {
     pub hash: Hash,
     pub height: usize,
@@ -28,7 +30,7 @@ impl Branch {
         }
     }
 }
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Tree {
     branches: Vec<Branch>,
     hashes: HashMap<Hash, Hash>,

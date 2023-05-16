@@ -18,7 +18,7 @@ pub enum Error {
     ECVRF(vrf::openssl::Error),
     Secp256k1(secp256k1::Error),
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Key {
     pub secret_key: SecretKey,
 }

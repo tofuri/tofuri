@@ -1,5 +1,7 @@
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_address::address;
@@ -113,12 +115,12 @@ impl Fork for Unstable {
         append_block(self, block_a, previous_timestamp, loading)
     }
 }
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Manager {
     pub stable: Stable,
     pub unstable: Unstable,
 }
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Stable {
     pub latest_block: BlockA,
     pub hashes: Vec<Hash>,
@@ -127,7 +129,7 @@ pub struct Stable {
     map_balance: HashMap<AddressBytes, u128>,
     map_staked: HashMap<AddressBytes, u128>,
 }
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Unstable {
     pub latest_block: BlockA,
     pub hashes: Vec<Hash>,

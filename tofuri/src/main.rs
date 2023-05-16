@@ -63,7 +63,7 @@ async fn main() {
             Some(Key::from_slice(&secret::decode(&secret).unwrap()).unwrap())
         }
     });
-    if let Some(key) = key {
+    if let Some(key) = &key {
         let address = address::encode(&key.address_bytes());
         info!(address);
     }

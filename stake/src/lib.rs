@@ -52,7 +52,7 @@ impl Stake for StakeB {
         hash_input(self)
     }
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeA {
     pub amount: u128,
     pub fee: u128,
@@ -76,7 +76,7 @@ impl fmt::Debug for StakeA {
             .finish()
     }
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeB {
     pub amount: AmountBytes,
     pub fee: AmountBytes,

@@ -1,3 +1,5 @@
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::net::IpAddr;
 use tofuri_core::*;
@@ -9,12 +11,12 @@ pub enum Endpoint {
     GossipsubMessageStake,
     GossipsubMessagePeers,
 }
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Ratelimit {
     pub counter: Counter,
     pub timeout: Timeout,
 }
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Counter {
     pub request: HashMap<IpAddr, usize>,
     pub response: HashMap<IpAddr, usize>,
@@ -55,7 +57,7 @@ impl Counter {
         self.gossipsub_message_peers.clear();
     }
 }
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Timeout {
     pub request: HashMap<IpAddr, u32>,
     pub response: HashMap<IpAddr, u32>,

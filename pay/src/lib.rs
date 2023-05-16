@@ -57,6 +57,7 @@ pub struct Args {
     #[clap(long, env = "WITHOUT_TIME")]
     pub without_time: bool,
 }
+#[derive(Debug)]
 pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,

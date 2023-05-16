@@ -2,8 +2,9 @@ use serde::Deserialize;
 use serde::Serialize;
 use tofuri_core::*;
 use tofuri_key::Key;
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub enum ChargeStatus {
+    #[default]
     New,
     Pending,
     Expired,
@@ -19,7 +20,7 @@ pub fn status(status: &ChargeStatus) -> String {
         ChargeStatus::Cancelled => "CANCELLED".to_string(),
     }
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Charge {
     pub amount: u128,
     pub timestamp: u32,
@@ -41,7 +42,7 @@ impl Charge {
         }
     }
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Payment {
     pub address: String,
     pub amount: u128,

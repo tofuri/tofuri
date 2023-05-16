@@ -80,7 +80,7 @@ impl Block for BlockB {
         beta(self)
     }
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockA {
     pub hash: Hash,
     pub previous_hash: Hash,
@@ -110,7 +110,7 @@ impl fmt::Debug for BlockA {
             .finish()
     }
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockB {
     pub previous_hash: Hash,
     pub timestamp: u32,
@@ -133,7 +133,7 @@ impl fmt::Debug for BlockB {
             .finish()
     }
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockC {
     pub previous_hash: Hash,
     pub timestamp: u32,

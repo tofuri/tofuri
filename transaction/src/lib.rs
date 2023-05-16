@@ -59,7 +59,7 @@ impl Transaction for TransactionB {
         hash_input(self)
     }
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionA {
     pub input_address: AddressBytes,
     pub output_address: AddressBytes,
@@ -83,7 +83,7 @@ impl fmt::Debug for TransactionA {
             .finish()
     }
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionB {
     pub output_address: AddressBytes,
     pub amount: AmountBytes,

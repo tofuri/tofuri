@@ -88,7 +88,7 @@ fn grow(node: &mut Node) {
     if !tofuri_util::validate_block_timestamp(timestamp, unstable.latest_block.timestamp) {
         return;
     }
-    let key = match node.key {
+    let key = match &node.key {
         Some(x) => x,
         None => return debug!("No key, skip forge block"),
     };

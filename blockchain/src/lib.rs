@@ -1,6 +1,8 @@
 use colored::*;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
+use serde::Deserialize;
+use serde::Serialize;
 use tofuri_block::BlockA;
 use tofuri_block::BlockB;
 use tofuri_core::*;
@@ -60,7 +62,7 @@ pub enum Error {
     HashByHeight,
     SyncBlock,
 }
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Blockchain {
     pub tree: Tree,
     pub forks: Manager,

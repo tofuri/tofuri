@@ -4474,6 +4474,7 @@ dependencies = [
  "colored",
  "hex",
  "rocksdb",
+ "serde",
  "tofuri-address",
  "tofuri-block",
  "tofuri-core",
@@ -4523,6 +4524,7 @@ name = "tofuri-fork"
 version = "0.1.0"
 dependencies = [
  "rocksdb",
+ "serde",
  "tofuri-address",
  "tofuri-block",
  "tofuri-checkpoint",
@@ -4561,6 +4563,7 @@ dependencies = [
  "async-trait",
  "futures",
  "libp2p",
+ "serde",
  "tofuri-core",
  "tofuri-util",
  "tokio",
@@ -4681,6 +4684,7 @@ name = "tofuri-tree"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "serde",
  "tofuri-core",
 ]
 

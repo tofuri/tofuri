@@ -34,7 +34,7 @@ fn stop() {
     process::exit(0)
 }
 fn address(node: &mut Node) {
-    let address = match node.key {
+    let address = match &node.key {
         Some(key) => address::encode(&key.address_bytes()),
         None => return error!("{}", "No key"),
     };

@@ -324,13 +324,6 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: Response) {
     }
     match inner(node, response) {
         Ok(()) => debug!("Sync response processed"),
-        Err(e) => {
-            error!(?e);
-            return;
-            node.p2p
-                .ratelimit
-                .timeout
-                .insert(ip_addr, Endpoint::Response);
-        }
+        Err(e) => error!(?e, ?peer_id),
     }
 }

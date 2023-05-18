@@ -7,13 +7,13 @@ description = "Tofuri database"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-int = { version = "0.1.0", path = "../int" }
-tofuri-block = { version = "0.1.0", path = "../block" }
-tofuri-checkpoint = { version = "0.1.0", path = "../checkpoint" }
-tofuri-core = { version = "0.1.0", path = "../core" }
-tofuri-stake = { version = "0.1.0", path = "../stake" }
-tofuri-transaction = { version = "0.1.0", path = "../transaction" }
-tofuri-tree = { version = "0.1.0", path = "../tree" }
-rocksdb = "0.21.0"
-bincode = "1.3.3"
-tracing = "0.1.37"
+tofuri-int = { version = "=0.1.0", path = "../int" }
+tofuri-block = { version = "=0.1.0", path = "../block" }
+tofuri-checkpoint = { version = "=0.1.0", path = "../checkpoint" }
+tofuri-core = { version = "=0.1.2", path = "../core" }
+tofuri-stake = { version = "=0.1.0", path = "../stake" }
+tofuri-transaction = { version = "=0.1.0", path = "../transaction" }
+tofuri-tree = { version = "=0.1.0", path = "../tree" }
+rocksdb = "=0.21.0"
+bincode = "=1.3.3"
+tracing = "=0.1.37"

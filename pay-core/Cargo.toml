@@ -7,8 +7,8 @@ description = "Tofuri Pay core"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-address = { version = "0.1.1", path = "../address" }
-tofuri-core = { version = "0.1.0", path = "../core" }
-tofuri-key = { version = "0.1.0", path = "../key" }
-serde = { version = "1.0.163", features = ["derive"] }
-sha2 = "0.10.6"
+tofuri-address = { version = "=0.1.1", path = "../address" }
+tofuri-core = { version = "=0.1.2", path = "../core" }
+tofuri-key = { version = "=0.1.0", path = "../key" }
+serde = { version = "=1.0.163", features = ["derive"] }
+sha2 = "=0.10.6"

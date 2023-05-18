@@ -8,8 +8,8 @@ repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 tofuri-core = { version = "0.1.0", path = "../core" }
-secp256k1 = { version = "0.25", features = ["rand-std","recovery","global-context"] }
-vrf = { version = "0.2", optional = true }
+secp256k1 = { version = "0.27.0", features = ["rand-std","recovery","global-context"] }
+vrf = { version = "0.2.4", optional = true }
 rand = "0.8.5"
 sha2 = "0.10.6"
 

@@ -403,11 +403,11 @@ impl Wallet {
     }
 }
 pub fn argon2_key_derivation(password: &[u8], salt: &[u8; 32]) -> Hash {
-    let mut builder = ParamsBuilder::new();
-    builder.m_cost(1024).unwrap();
-    builder.t_cost(1).unwrap();
-    builder.p_cost(1).unwrap();
-    let params = builder.params().unwrap();
+    let mut params_builder = ParamsBuilder::new();
+    params_builder.m_cost(1024);
+    params_builder.t_cost(1);
+    params_builder.p_cost(1);
+    let params = params_builder.build().unwrap();
     let ctx = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
     let mut bytes = [0; 32];
     ctx.hash_password_into(password, salt, &mut bytes).unwrap();

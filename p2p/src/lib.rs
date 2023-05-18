@@ -8,11 +8,11 @@ use libp2p::gossipsub::PublishError;
 use libp2p::gossipsub::SubscriptionError;
 use libp2p::gossipsub::TopicHash;
 use libp2p::identity;
-use libp2p::mplex;
 use libp2p::noise;
 use libp2p::swarm::ConnectionLimits;
 use libp2p::swarm::SwarmBuilder;
 use libp2p::tcp;
+use libp2p::yamux;
 use libp2p::PeerId;
 use libp2p::Swarm;
 use libp2p::Transport;
@@ -89,11 +89,8 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
     let local_peer_id = PeerId::from(local_key.public());
     let transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true))
         .upgrade(upgrade::Version::V1)
-        .authenticate(
-            noise::NoiseAuthenticated::xx(&local_key)
-                .expect("Signing libp2p-noise static DH keypair failed."),
-        )
-        .multiplex(mplex::MplexConfig::new())
+        .authenticate(noise::Config::new(&local_key).unwrap())
+        .multiplex(yamux::Config::default())
         .timeout(Duration::from_millis(timeout))
         .boxed();
     let mut behaviour = Behaviour::new(local_key).await.map_err(Error::Behaviour)?;

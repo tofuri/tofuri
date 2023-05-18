@@ -7,16 +7,16 @@ description = "Tofuri fork"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-address = { version = "0.1", path = "../address" }
-tofuri-int = { version = "0.1", path = "../int" }
-tofuri-block = { version = "0.1", path = "../block" }
-tofuri-checkpoint = { version = "0.1", path = "../checkpoint" }
-tofuri-core = { version = "0.1", path = "../core" }
-tofuri-db = { version = "0.1", path = "../db" }
-tofuri-stake = { version = "0.1", path = "../stake" }
-tofuri-transaction = { version = "0.1", path = "../transaction" }
-tofuri-tree = { version = "0.1", path = "../tree" }
-tofuri-util = { version = "0.1", path = "../util" }
+tofuri-address = { version = "0.1.1", path = "../address" }
+tofuri-int = { version = "0.1.0", path = "../int" }
+tofuri-block = { version = "0.1.0", path = "../block" }
+tofuri-checkpoint = { version = "0.1.0", path = "../checkpoint" }
+tofuri-core = { version = "0.1.0", path = "../core" }
+tofuri-db = { version = "0.1.0", path = "../db" }
+tofuri-stake = { version = "0.1.0", path = "../stake" }
+tofuri-transaction = { version = "0.1.0", path = "../transaction" }
+tofuri-tree = { version = "0.1.0", path = "../tree" }
+tofuri-util = { version = "0.1.0", path = "../util" }
 rocksdb = "0.20"
-tracing = "0.1"
+tracing = "0.1.37"
 serde = "1.0"

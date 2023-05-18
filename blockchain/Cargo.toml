@@ -7,20 +7,20 @@ description = "Tofuri blockchain"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-address = { version = "0.1", path = "../address" }
-tofuri-int = { version = "0.1", path = "../int" }
-tofuri-block = { version = "0.1", path = "../block" }
-tofuri-sync = { version = "0.1", path = "../sync" }
-tofuri-core = { version = "0.1", path = "../core" }
-tofuri-db = { version = "0.1", path = "../db" }
-tofuri-fork = { version = "0.1", path = "../fork" }
-tofuri-key = { version = "0.1", path = "../key" }
-tofuri-stake = { version = "0.1", path = "../stake" }
-tofuri-transaction = { version = "0.1", path = "../transaction" }
-tofuri-tree = { version = "0.1", path = "../tree" }
-tofuri-util = { version = "0.1", path = "../util" }
+tofuri-address = { version = "0.1.1", path = "../address" }
+tofuri-int = { version = "0.1.0", path = "../int" }
+tofuri-block = { version = "0.1.0", path = "../block" }
+tofuri-sync = { version = "0.1.0", path = "../sync" }
+tofuri-core = { version = "0.1.0", path = "../core" }
+tofuri-db = { version = "0.1.0", path = "../db" }
+tofuri-fork = { version = "0.1.0", path = "../fork" }
+tofuri-key = { version = "0.1.0", path = "../key" }
+tofuri-stake = { version = "0.1.0", path = "../stake" }
+tofuri-transaction = { version = "0.1.0", path = "../transaction" }
+tofuri-tree = { version = "0.1.0", path = "../tree" }
+tofuri-util = { version = "0.1.0", path = "../util" }
 rocksdb = "0.20"
 colored = "2.0"
-tracing = "0.1"
-hex = "0.4"
+tracing = "0.1.37"
+hex = "0.4.3"
 serde = "1.0"

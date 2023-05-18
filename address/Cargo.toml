@@ -7,6 +7,6 @@ description = "Tofuri address"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-core = { version = "0.1", path = "../core" }
-hex = "0.4"
-sha2 = "0.10"
+tofuri-core = { version = "0.1.0", path = "../core" }
+hex = "0.4.3"
+sha2 = "0.10.6"

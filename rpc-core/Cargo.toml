@@ -7,4 +7,4 @@ description = "Tofuri RPC core"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.163", features = ["derive"] }

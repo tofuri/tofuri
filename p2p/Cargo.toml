@@ -9,7 +9,7 @@ repository = "https://github.com/tofuri/tofuri"
 [dependencies]
 tofuri-core = { version = "0.1.0", path = "../core" }
 tofuri-util = { version = "0.1.0", path = "../util" }
-libp2p = { version = "0.50", features = ["mplex","noise","tcp","request-response","autonat","macros","identify","mdns","gossipsub","tokio"] }
+libp2p = { version = "0.50.1", features = ["mplex","noise","tcp","request-response","autonat","macros","identify","mdns","gossipsub","tokio"] }
 tokio = "1.28.1"
 async-trait = "0.1.68"
 futures = "0.3.28"

@@ -29,7 +29,7 @@ reqwest = { version = "0.11.18", features = ["json"] }
 rocksdb = "0.21.0"
 tempdir = "0.3.7"
 chrono = "0.4.24"
-tokio = { version = "1.23", features = ["full"] }
+tokio = { version = "1.28.1", features = ["full"] }
 axum = "0.6.18"
 tower-http = { version = "0.4.0", features = ["cors"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }

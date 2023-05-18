@@ -1,19 +1,16 @@
 use crate::Node;
 use libp2p::core::connection::ConnectedPoint;
-use libp2p::core::either::EitherError;
-use libp2p::gossipsub::error::GossipsubHandlerError;
-use libp2p::gossipsub::GossipsubEvent;
-use libp2p::gossipsub::GossipsubMessage;
+use libp2p::gossipsub;
 use libp2p::gossipsub::MessageAcceptance;
 use libp2p::gossipsub::MessageId;
 use libp2p::mdns;
-use libp2p::request_response::RequestResponseEvent;
-use libp2p::request_response::RequestResponseMessage;
+use libp2p::request_response;
 use libp2p::request_response::ResponseChannel;
+use libp2p::swarm::derive_prelude::Either;
 use libp2p::swarm::ConnectionHandlerUpgrErr;
 use libp2p::swarm::SwarmEvent;
 use libp2p::PeerId;
-use std::io;
+use std::io::Error;
 use std::net::IpAddr;
 use std::num::NonZeroU32;
 use tofuri_block::BlockB;
@@ -32,15 +29,15 @@ use tracing::info;
 use tracing::instrument;
 use tracing::warn;
 use void::Void;
-type HandlerErr = EitherError<
-    EitherError<
-        EitherError<EitherError<Void, io::Error>, GossipsubHandlerError>,
-        ConnectionHandlerUpgrErr<io::Error>,
+type Event = SwarmEvent<
+    OutEvent,
+    Either<
+        Either<Either<Either<Void, Error>, Void>, ConnectionHandlerUpgrErr<Error>>,
+        ConnectionHandlerUpgrErr<Error>,
     >,
-    ConnectionHandlerUpgrErr<io::Error>,
 >;
 #[instrument(skip_all, level = "debug")]
-pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
+pub fn event(node: &mut Node, event: Event) {
     match event {
         SwarmEvent::ConnectionEstablished {
             peer_id,
@@ -54,20 +51,20 @@ pub fn event(node: &mut Node, event: SwarmEvent<OutEvent, HandlerErr>) {
             ..
         } => connection_closed(node, peer_id, num_established),
         SwarmEvent::Behaviour(OutEvent::Mdns(event)) => mdns(node, event),
-        SwarmEvent::Behaviour(OutEvent::Gossipsub(GossipsubEvent::Message {
+        SwarmEvent::Behaviour(OutEvent::Gossipsub(gossipsub::Event::Message {
             message_id,
             message,
             propagation_source,
             ..
         })) => gossipsub_message(node, message, message_id, propagation_source),
-        SwarmEvent::Behaviour(OutEvent::RequestResponse(RequestResponseEvent::Message {
+        SwarmEvent::Behaviour(OutEvent::RequestResponse(request_response::Event::Message {
             message,
             peer,
         })) => match message {
-            RequestResponseMessage::Request {
+            request_response::Message::Request {
                 request, channel, ..
             } => sync_request(node, peer, request, channel),
-            RequestResponseMessage::Response { response, .. } => {
+            request_response::Message::Response { response, .. } => {
                 sync_response(node, peer, response)
             }
         },
@@ -118,7 +115,7 @@ fn mdns(node: &mut Node, event: mdns::Event) {
 #[instrument(skip_all, level = "trace")]
 fn gossipsub_message(
     node: &mut Node,
-    message: GossipsubMessage,
+    message: gossipsub::Message,
     message_id: MessageId,
     propagation_source: PeerId,
 ) {
@@ -133,7 +130,7 @@ fn gossipsub_message(
     }
     fn inner(
         node: &mut Node,
-        message: &GossipsubMessage,
+        message: &gossipsub::Message,
         propagation_source: PeerId,
     ) -> Result<(), Error> {
         let source = message.source.ok_or(Error::MessageSource)?;

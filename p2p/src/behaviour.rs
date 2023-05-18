@@ -4,17 +4,13 @@ use libp2p::autonat;
 use libp2p::core::upgrade::read_length_prefixed;
 use libp2p::core::upgrade::write_length_prefixed;
 use libp2p::core::upgrade::ProtocolName;
-use libp2p::gossipsub::Gossipsub;
-use libp2p::gossipsub::GossipsubConfigBuilder;
-use libp2p::gossipsub::GossipsubEvent;
+use libp2p::gossipsub;
 use libp2p::gossipsub::MessageAuthenticity;
 use libp2p::identify;
 use libp2p::identity;
 use libp2p::mdns;
+use libp2p::request_response;
 use libp2p::request_response::ProtocolSupport;
-use libp2p::request_response::RequestResponse;
-use libp2p::request_response::RequestResponseCodec;
-use libp2p::request_response::RequestResponseEvent;
 use libp2p::swarm::NetworkBehaviour;
 use tofuri_core::*;
 use tokio::io;
@@ -27,29 +23,31 @@ pub enum Error {
 pub struct Behaviour {
     pub mdns: mdns::tokio::Behaviour,
     pub identify: identify::Behaviour,
-    pub gossipsub: Gossipsub,
+    pub gossipsub: gossipsub::Behaviour,
     pub autonat: autonat::Behaviour,
-    pub request_response: RequestResponse<Codec>,
+    pub request_response: request_response::Behaviour<Codec>,
 }
 impl Behaviour {
     pub async fn new(local_key: identity::Keypair) -> Result<Behaviour, Error> {
-        let mdns = mdns::tokio::Behaviour::new(mdns::Config::default()).map_err(Error::Io)?;
+        let local_public_key = local_key.public();
+        let local_peer_id = local_public_key.to_peer_id();
+        let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), local_peer_id)
+            .map_err(Error::Io)?;
         let identify = identify::Behaviour::new(identify::Config::new(
             PROTOCOL_VERSION.to_string(),
-            local_key.public(),
+            local_public_key,
         ));
-        let gossipsub = Gossipsub::new(
-            MessageAuthenticity::Signed(local_key.clone()),
-            GossipsubConfigBuilder::default()
+        let gossipsub = gossipsub::Behaviour::new(
+            MessageAuthenticity::Signed(local_key),
+            gossipsub::ConfigBuilder::default()
                 .max_transmit_size(MAX_TRANSMIT_SIZE)
                 .validate_messages()
                 .build()
                 .unwrap(),
         )
         .unwrap();
-        let autonat =
-            autonat::Behaviour::new(local_key.public().to_peer_id(), autonat::Config::default());
-        let request_response = RequestResponse::new(
+        let autonat = autonat::Behaviour::new(local_peer_id, autonat::Config::default());
+        let request_response = request_response::Behaviour::new(
             Codec(),
             std::iter::once((Protocol(), ProtocolSupport::Full)),
             Default::default(),
@@ -66,19 +64,19 @@ impl Behaviour {
 }
 #[derive(Debug)]
 pub enum OutEvent {
-    Gossipsub(GossipsubEvent),
+    Gossipsub(gossipsub::Event),
     Mdns(mdns::Event),
     Identify(identify::Event),
     Autonat(autonat::Event),
-    RequestResponse(RequestResponseEvent<Request, Response>),
+    RequestResponse(request_response::Event<Request, Response>),
 }
 impl From<mdns::Event> for OutEvent {
     fn from(v: mdns::Event) -> OutEvent {
         OutEvent::Mdns(v)
     }
 }
-impl From<GossipsubEvent> for OutEvent {
-    fn from(v: GossipsubEvent) -> OutEvent {
+impl From<gossipsub::Event> for OutEvent {
+    fn from(v: gossipsub::Event) -> OutEvent {
         OutEvent::Gossipsub(v)
     }
 }
@@ -92,8 +90,8 @@ impl From<autonat::Event> for OutEvent {
         OutEvent::Autonat(v)
     }
 }
-impl From<RequestResponseEvent<Request, Response>> for OutEvent {
-    fn from(v: RequestResponseEvent<Request, Response>) -> OutEvent {
+impl From<request_response::Event<Request, Response>> for OutEvent {
+    fn from(v: request_response::Event<Request, Response>) -> OutEvent {
         OutEvent::RequestResponse(v)
     }
 }
@@ -111,7 +109,7 @@ impl ProtocolName for Protocol {
 #[derive(Clone)]
 pub struct Codec();
 #[async_trait]
-impl RequestResponseCodec for Codec {
+impl request_response::Codec for Codec {
     type Protocol = Protocol;
     type Request = Request;
     type Response = Response;

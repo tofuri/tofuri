@@ -7,11 +7,11 @@ description = "Tofuri stake"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-int = { version = "=0.1.0", path = "../int" }
-tofuri-core = { version = "=0.1.2", path = "../core" }
-tofuri-key = { version = "=0.1.0", path = "../key" }
-tofuri-address = { version = "=0.1.1", path = "../address" }
-serde = { version = "=1.0.163", features = ["derive"] }
-serde-big-array = "=0.5.1"
-sha2 = "=0.10.6"
-hex = "=0.4.3"
+tofuri-int = { version = "0.1", path = "../int" }
+tofuri-core = { version = "0.1", path = "../core" }
+tofuri-key = { version = "0.1", path = "../key" }
+tofuri-address = { version = "0.1", path = "../address" }
+serde = { version = "1", features = ["derive"] }
+serde-big-array = "0.5"
+sha2 = "0.10"
+hex = "0.4"

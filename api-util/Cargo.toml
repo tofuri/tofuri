@@ -7,10 +7,10 @@ description = "Tofuri API utilities"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-address = { version = "=0.1.1", path = "../address" }
-tofuri-api-core = { version = "=0.1.0", path = "../api-core" }
-tofuri-block = { version = "=0.1.0", path = "../block" }
-tofuri-int = { version = "=0.1.0", path = "../int" }
-tofuri-stake = { version = "=0.1.0", path = "../stake" }
-tofuri-transaction = { version = "=0.1.0", path = "../transaction" }
-hex = "=0.4.3"
+tofuri-address = { version = "0.1", path = "../address" }
+tofuri-api-core = { version = "0.1", path = "../api-core" }
+tofuri-block = { version = "0.1", path = "../block" }
+tofuri-int = { version = "0.1", path = "../int" }
+tofuri-stake = { version = "0.1", path = "../stake" }
+tofuri-transaction = { version = "0.1", path = "../transaction" }
+hex = "0.4"

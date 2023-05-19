@@ -7,13 +7,13 @@ description = "Tofuri block"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-core = { version = "=0.1.2", path = "../core" }
-tofuri-key = { version = "=0.1.0", path = "../key", features = ["vrf"] }
-tofuri-stake = { version = "=0.1.0", path = "../stake" }
-tofuri-transaction = { version = "=0.1.0", path = "../transaction" }
-tofuri-address = { version = "=0.1.1", path = "../address" }
-serde = { version = "=1.0.163", features = ["derive"] }
-serde-big-array = "=0.5.1"
-sha2 = "=0.10.6"
-merkle-cbt = "=0.3.2"
-hex = "=0.4.3"
+tofuri-core = { version = "0.1", path = "../core" }
+tofuri-key = { version = "0.1", path = "../key", features = ["vrf"] }
+tofuri-stake = { version = "0.1", path = "../stake" }
+tofuri-transaction = { version = "0.1", path = "../transaction" }
+tofuri-address = { version = "0.1", path = "../address" }
+serde = { version = "1", features = ["derive"] }
+serde-big-array = "0.5"
+sha2 = "0.10"
+merkle-cbt = "0.3"
+hex = "0.4"

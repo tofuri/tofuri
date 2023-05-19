@@ -9,27 +9,27 @@ categories = ["cryptography::cryptocurrencies"]
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-api-core = { version = "=0.1.0", path = "../api-core" }
-tofuri-core = { version = "=0.1.2", path = "../core" }
-tofuri-api-util = { version = "=0.1.0", path = "../api-util" }
-tofuri-address = { version = "=0.1.1", path = "../address" }
-tofuri-int = { version = "=0.1.0", path = "../int" }
-tofuri-key = { version = "=0.1.0", path = "../key" }
-tofuri-stake = { version = "=0.1.0", path = "../stake" }
-tofuri-transaction = { version = "=0.1.0", path = "../transaction" }
-tofuri-util = { version = "=0.1.0", path = "../util" }
-chacha20poly1305 = "=0.10.1"
-inquire = "=0.6.2"
-colored = "=2.0.0"
-argon2 = "=0.5.0"
-zxcvbn = "=2.2.2"
-chrono = "=0.4.24"
-hex = "=0.4.3"
-crossterm = "=0.26.1"
-tracing = "=0.1.37"
-tokio = { version = "=1.28.1", features = ["full"] }
-clap = { version = "=4.2.7", features = ["derive", "env"] }
-rand = "=0.8.5"
-lazy_static = "=1.4.0"
-bincode = "=1.3.3"
-reqwest = { version = "=0.11.18", features = ["json"] }
+tofuri-api-core = { version = "0.1", path = "../api-core" }
+tofuri-core = { version = "0.1", path = "../core" }
+tofuri-api-util = { version = "0.1", path = "../api-util" }
+tofuri-address = { version = "0.1", path = "../address" }
+tofuri-int = { version = "0.1", path = "../int" }
+tofuri-key = { version = "0.1", path = "../key" }
+tofuri-stake = { version = "0.1", path = "../stake" }
+tofuri-transaction = { version = "0.1", path = "../transaction" }
+tofuri-util = { version = "0.1", path = "../util" }
+chacha20poly1305 = "0.10"
+inquire = "0.6"
+colored = "2"
+argon2 = "0.5"
+zxcvbn = "2"
+chrono = "0.4"
+hex = "0.4"
+crossterm = "0.26"
+tracing = "0.1"
+tokio = { version = "1", features = ["full"] }
+clap = { version = "4", features = ["derive", "env"] }
+rand = "0.8"
+lazy_static = "1"
+bincode = "1"
+reqwest = { version = "0.11", features = ["json"] }

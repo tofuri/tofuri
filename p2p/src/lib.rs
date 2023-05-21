@@ -9,7 +9,6 @@ use libp2p::gossipsub::SubscriptionError;
 use libp2p::gossipsub::TopicHash;
 use libp2p::identity;
 use libp2p::noise;
-use libp2p::swarm::ConnectionLimits;
 use libp2p::swarm::SwarmBuilder;
 use libp2p::tcp;
 use libp2p::yamux;
@@ -93,7 +92,9 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
         .multiplex(yamux::Config::default())
         .timeout(Duration::from_millis(timeout))
         .boxed();
-    let mut behaviour = Behaviour::new(local_key).await.map_err(Error::Behaviour)?;
+    let mut behaviour = Behaviour::new(local_key, max_established)
+        .await
+        .map_err(Error::Behaviour)?;
     let topics = [
         IdentTopic::new("block"),
         IdentTopic::new("stake"),
@@ -106,11 +107,6 @@ async fn swarm(max_established: Option<u32>, timeout: u64) -> Result<Swarm<Behav
             .subscribe(topic)
             .map_err(Error::SubscriptionError)?;
     }
-    let mut limits = ConnectionLimits::default();
-    limits = limits.with_max_established_per_peer(Some(1));
-    limits = limits.with_max_established(max_established);
-    let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id)
-        .connection_limits(limits)
-        .build();
+    let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id).build();
     Ok(swarm)
 }

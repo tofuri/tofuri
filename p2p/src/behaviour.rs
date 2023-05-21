@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 use futures::prelude::*;
 use libp2p::autonat;
+use libp2p::connection_limits;
+use libp2p::connection_limits::ConnectionLimits;
 use libp2p::core::upgrade::read_length_prefixed;
 use libp2p::core::upgrade::write_length_prefixed;
 use libp2p::core::upgrade::ProtocolName;
@@ -26,9 +28,13 @@ pub struct Behaviour {
     pub gossipsub: gossipsub::Behaviour,
     pub autonat: autonat::Behaviour,
     pub request_response: request_response::Behaviour<Codec>,
+    pub connection_limits: connection_limits::Behaviour,
 }
 impl Behaviour {
-    pub async fn new(local_key: identity::Keypair) -> Result<Behaviour, Error> {
+    pub async fn new(
+        local_key: identity::Keypair,
+        max_established: Option<u32>,
+    ) -> Result<Behaviour, Error> {
         let local_public_key = local_key.public();
         let local_peer_id = local_public_key.to_peer_id();
         let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), local_peer_id)
@@ -52,12 +58,19 @@ impl Behaviour {
             std::iter::once((Protocol(), ProtocolSupport::Full)),
             Default::default(),
         );
+        let connection_limits = {
+            let mut connection_limits = ConnectionLimits::default();
+            connection_limits = connection_limits.with_max_established_per_peer(Some(1));
+            connection_limits = connection_limits.with_max_established(max_established);
+            connection_limits::Behaviour::new(connection_limits)
+        };
         let behaviour = Behaviour {
             mdns,
             identify,
             gossipsub,
             autonat,
             request_response,
+            connection_limits,
         };
         Ok(behaviour)
     }
@@ -69,6 +82,7 @@ pub enum OutEvent {
     Identify(identify::Event),
     Autonat(autonat::Event),
     RequestResponse(request_response::Event<Request, Response>),
+    Void(void::Void),
 }
 impl From<mdns::Event> for OutEvent {
     fn from(v: mdns::Event) -> OutEvent {
@@ -93,6 +107,11 @@ impl From<autonat::Event> for OutEvent {
 impl From<request_response::Event<Request, Response>> for OutEvent {
     fn from(v: request_response::Event<Request, Response>) -> OutEvent {
         OutEvent::RequestResponse(v)
+    }
+}
+impl From<void::Void> for OutEvent {
+    fn from(v: void::Void) -> OutEvent {
+        OutEvent::Void(v)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]

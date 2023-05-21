@@ -4534,6 +4534,7 @@ dependencies = [
  "tofuri-util",
  "tokio",
  "tracing",
+ "void",
 ]
 
 [[package]]

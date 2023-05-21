@@ -32,8 +32,11 @@ use void::Void;
 type Event = SwarmEvent<
     OutEvent,
     Either<
-        Either<Either<Either<Void, Error>, Void>, ConnectionHandlerUpgrErr<Error>>,
-        ConnectionHandlerUpgrErr<Error>,
+        Either<
+            Either<Either<Either<Void, Error>, Void>, ConnectionHandlerUpgrErr<Error>>,
+            ConnectionHandlerUpgrErr<Error>,
+        >,
+        Void,
     >,
 >;
 #[instrument(skip_all, level = "debug")]

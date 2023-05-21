@@ -101,7 +101,7 @@ fn grow(node: &mut Node) {
     }
     let block_a = node
         .blockchain
-        .forge_block(&node.db, &key, timestamp, node.args.trust);
+        .forge_block(&node.db, key, timestamp, node.args.trust);
     if let Err(e) = node
         .p2p
         .gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap())

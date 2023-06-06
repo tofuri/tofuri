@@ -26,12 +26,12 @@ pub trait Block {
     fn hash_input(&self) -> [u8; 181];
     fn beta(&self) -> Result<Beta, Error>;
 }
-pub fn hash<T: Block>(block: &T) -> Hash {
+fn hash<T: Block>(block: &T) -> Hash {
     let mut hasher = Sha256::new();
     hasher.update(block.hash_input());
     hasher.finalize().into()
 }
-pub fn hash_input<T: Block>(block: &T) -> [u8; 181] {
+fn hash_input<T: Block>(block: &T) -> [u8; 181] {
     let mut bytes = [0; 181];
     bytes[0..32].copy_from_slice(block.get_previous_hash());
     bytes[32..64].copy_from_slice(&block.get_merkle_root_transaction());
@@ -40,7 +40,7 @@ pub fn hash_input<T: Block>(block: &T) -> [u8; 181] {
     bytes[100..181].copy_from_slice(block.get_pi());
     bytes
 }
-pub fn merkle_root(hashes: &[Hash]) -> MerkleRoot {
+fn merkle_root(hashes: &[Hash]) -> MerkleRoot {
     struct Hasher;
     impl Merge for Hasher {
         type Item = [u8; 32];
@@ -53,6 +53,6 @@ pub fn merkle_root(hashes: &[Hash]) -> MerkleRoot {
     }
     <ExCBMT<[u8; 32], Hasher>>::build_merkle_root(hashes)
 }
-pub fn beta<T: Block>(block: &T) -> Result<Beta, Error> {
+fn beta<T: Block>(block: &T) -> Result<Beta, Error> {
     Key::vrf_proof_to_hash(block.get_pi()).map_err(Error::Key)
 }

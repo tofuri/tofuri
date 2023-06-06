@@ -15,6 +15,7 @@ use vrf::openssl::ECVRF;
 use vrf::VRF;
 #[derive(Debug)]
 pub enum Error {
+    #[cfg(feature = "vrf")]
     ECVRF(vrf::openssl::Error),
     Secp256k1(secp256k1::Error),
 }

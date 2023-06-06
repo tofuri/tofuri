@@ -1,18 +1,18 @@
+mod manager;
+mod stable;
+mod unstable;
+pub use manager::Manager;
 use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
-use serde::Deserialize;
-use serde::Serialize;
+pub use stable::Stable;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_address::address;
 use tofuri_block::BlockA;
-use tofuri_checkpoint::Checkpoint;
 use tofuri_core::*;
-use tofuri_stake::StakeA;
-use tofuri_transaction::TransactionA;
-use tofuri_tree::Tree;
 use tracing::debug;
 use tracing::warn;
+pub use unstable::Unstable;
 #[derive(Debug)]
 pub enum Error {
     NotAllowedToForkStableChain,
@@ -32,293 +32,6 @@ pub trait Fork {
     fn get_latest_blocks_mut(&mut self) -> &mut Vec<BlockA>;
     fn is_stable() -> bool;
     fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool);
-}
-impl Fork for Stable {
-    fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
-        &mut self.hashes
-    }
-    fn get_stakers(&self) -> &VecDeque<AddressBytes> {
-        &self.stakers
-    }
-    fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
-        &mut self.stakers
-    }
-    fn get_map_balance(&self) -> &HashMap<AddressBytes, u128> {
-        &self.map_balance
-    }
-    fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
-        &mut self.map_balance
-    }
-    fn get_map_staked(&self) -> &HashMap<AddressBytes, u128> {
-        &self.map_staked
-    }
-    fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
-        &mut self.map_staked
-    }
-    fn get_latest_block(&self) -> &BlockA {
-        &self.latest_block
-    }
-    fn get_latest_block_mut(&mut self) -> &mut BlockA {
-        &mut self.latest_block
-    }
-    fn get_latest_blocks(&self) -> &Vec<BlockA> {
-        &self.latest_blocks
-    }
-    fn get_latest_blocks_mut(&mut self) -> &mut Vec<BlockA> {
-        &mut self.latest_blocks
-    }
-    fn is_stable() -> bool {
-        true
-    }
-    fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
-        append_block(self, block_a, previous_timestamp, loading)
-    }
-}
-impl Fork for Unstable {
-    fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
-        &mut self.hashes
-    }
-    fn get_stakers(&self) -> &VecDeque<AddressBytes> {
-        &self.stakers
-    }
-    fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
-        &mut self.stakers
-    }
-    fn get_map_balance(&self) -> &HashMap<AddressBytes, u128> {
-        &self.map_balance
-    }
-    fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
-        &mut self.map_balance
-    }
-    fn get_map_staked(&self) -> &HashMap<AddressBytes, u128> {
-        &self.map_staked
-    }
-    fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
-        &mut self.map_staked
-    }
-    fn get_latest_block(&self) -> &BlockA {
-        &self.latest_block
-    }
-    fn get_latest_block_mut(&mut self) -> &mut BlockA {
-        &mut self.latest_block
-    }
-    fn get_latest_blocks(&self) -> &Vec<BlockA> {
-        &self.latest_blocks
-    }
-    fn get_latest_blocks_mut(&mut self) -> &mut Vec<BlockA> {
-        &mut self.latest_blocks
-    }
-    fn is_stable() -> bool {
-        false
-    }
-    fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
-        append_block(self, block_a, previous_timestamp, loading)
-    }
-}
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct Manager {
-    pub stable: Stable,
-    pub unstable: Unstable,
-}
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct Stable {
-    pub latest_block: BlockA,
-    pub hashes: Vec<Hash>,
-    pub stakers: VecDeque<AddressBytes>,
-    latest_blocks: Vec<BlockA>,
-    map_balance: HashMap<AddressBytes, u128>,
-    map_staked: HashMap<AddressBytes, u128>,
-}
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct Unstable {
-    pub latest_block: BlockA,
-    pub hashes: Vec<Hash>,
-    pub stakers: VecDeque<AddressBytes>,
-    latest_blocks: Vec<BlockA>,
-    map_balance: HashMap<AddressBytes, u128>,
-    map_staked: HashMap<AddressBytes, u128>,
-}
-impl Manager {
-    pub fn unstable(
-        &self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        tree: &Tree,
-        trust_fork_after_blocks: usize,
-        previous_hash: &Hash,
-    ) -> Result<Unstable, Error> {
-        if previous_hash == &GENESIS_BLOCK_PREVIOUS_HASH {
-            let unstable = Unstable::default();
-            return Ok(unstable);
-        }
-        let first = self.unstable.hashes.first().unwrap();
-        let mut hashes = vec![];
-        let mut hash = *previous_hash;
-        for _ in 0..trust_fork_after_blocks {
-            hashes.push(hash);
-            if first == &hash {
-                break;
-            }
-            match tree.get(&hash) {
-                Some(previous_hash) => hash = *previous_hash,
-                None => break,
-            };
-        }
-        if first != &hash && hash != GENESIS_BLOCK_PREVIOUS_HASH {
-            return Err(Error::NotAllowedToForkStableChain);
-        }
-        if let Some(hash) = hashes.last() {
-            if hash == &GENESIS_BLOCK_PREVIOUS_HASH {
-                hashes.pop();
-            }
-        }
-        hashes.reverse();
-        let unstable = Unstable::from(db, &hashes, &self.stable);
-        Ok(unstable)
-    }
-    pub fn update(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes_1: &[Hash],
-        trust_fork_after_blocks: usize,
-    ) {
-        let hashes_0 = &self.unstable.hashes;
-        if hashes_0.len() == trust_fork_after_blocks {
-            let block_a = tofuri_db::block::get_a(db, hashes_0.first().unwrap()).unwrap();
-            self.stable.append_block(
-                &block_a,
-                match tofuri_db::block::get_b(db, &block_a.previous_hash) {
-                    Ok(block_b) => block_b.timestamp,
-                    Err(_) => 0,
-                },
-            );
-        }
-        self.unstable = Unstable::from(db, hashes_1, &self.stable);
-    }
-}
-impl Stable {
-    pub fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32) {
-        append_block(self, block_a, previous_timestamp, false)
-    }
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
-        load(self, db, hashes)
-    }
-    pub fn checkpoint(&self) -> Checkpoint {
-        Checkpoint {
-            height: self.hashes.len(),
-            latest_block: self.latest_block.clone(),
-            stakers: self.stakers.clone(),
-            latest_blocks: self.latest_blocks.clone(),
-            map_balance: self.map_balance.clone(),
-            map_staked: self.map_staked.clone(),
-        }
-    }
-    pub fn from_checkpoint(hashes: Vec<[u8; 32]>, checkpoint: Checkpoint) -> Stable {
-        Stable {
-            latest_block: checkpoint.latest_block,
-            hashes,
-            stakers: checkpoint.stakers,
-            latest_blocks: checkpoint.latest_blocks,
-            map_balance: checkpoint.map_balance,
-            map_staked: checkpoint.map_staked,
-        }
-    }
-}
-impl Unstable {
-    pub fn from(
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &[Hash],
-        stable: &Stable,
-    ) -> Unstable {
-        let mut unstable = Unstable {
-            hashes: vec![],
-            stakers: stable.stakers.clone(),
-            map_balance: stable.map_balance.clone(),
-            map_staked: stable.map_staked.clone(),
-            latest_block: BlockA::default(),
-            latest_blocks: stable.latest_blocks.clone(),
-        };
-        load(&mut unstable, db, hashes);
-        unstable
-    }
-    pub fn check_overflow(
-        &self,
-        transactions: &Vec<TransactionA>,
-        stakes: &Vec<StakeA>,
-    ) -> Result<(), Error> {
-        let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
-        let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
-        for transaction_a in transactions {
-            let k = transaction_a.input_address;
-            let mut balance = if map_balance.contains_key(&k) {
-                *map_balance.get(&k).unwrap()
-            } else {
-                self.balance(&k)
-            };
-            balance = balance
-                .checked_sub(transaction_a.amount + transaction_a.fee)
-                .ok_or(Error::Overflow)?;
-            map_balance.insert(k, balance);
-        }
-        for stake_a in stakes {
-            let k = stake_a.input_address;
-            let mut balance = if map_balance.contains_key(&k) {
-                *map_balance.get(&k).unwrap()
-            } else {
-                self.balance(&k)
-            };
-            let mut staked = if map_staked.contains_key(&k) {
-                *map_staked.get(&k).unwrap()
-            } else {
-                self.staked(&k)
-            };
-            if stake_a.deposit {
-                balance = balance
-                    .checked_sub(stake_a.amount + stake_a.fee)
-                    .ok_or(Error::Overflow)?;
-            } else {
-                balance = balance.checked_sub(stake_a.fee).ok_or(Error::Overflow)?;
-                staked = staked.checked_sub(stake_a.amount).ok_or(Error::Overflow)?;
-            }
-            map_balance.insert(k, balance);
-            map_staked.insert(k, staked);
-        }
-        Ok(())
-    }
-    pub fn transaction_in_chain(&self, transaction_a: &TransactionA) -> bool {
-        for block_a in self.latest_blocks.iter() {
-            if block_a
-                .transactions
-                .iter()
-                .any(|a| a.hash == transaction_a.hash)
-            {
-                return true;
-            }
-        }
-        false
-    }
-    pub fn stake_in_chain(&self, stake_a: &StakeA) -> bool {
-        for block_a in self.latest_blocks.iter() {
-            if block_a.stakes.iter().any(|a| a.hash == stake_a.hash) {
-                return true;
-            }
-        }
-        false
-    }
-    pub fn balance(&self, address: &AddressBytes) -> u128 {
-        get_balance(self, address)
-    }
-    pub fn staked(&self, address: &AddressBytes) -> u128 {
-        get_staked(self, address)
-    }
-    pub fn next_staker(&self, timestamp: u32) -> Option<AddressBytes> {
-        next_staker(self, timestamp)
-    }
-    pub fn stakers_offline(&self, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
-        stakers_offline(self, timestamp, previous_timestamp)
-    }
-    pub fn stakers_n(&self, n: usize) -> Vec<AddressBytes> {
-        stakers_n(self, n).0
-    }
 }
 fn get_balance<T: Fork>(fork: &T, address: &AddressBytes) -> u128 {
     match fork.get_map_balance().get(address) {
@@ -417,7 +130,7 @@ fn update_3<T: Fork>(fork: &mut T, block_a: &BlockA) {
         update_stakers(fork, stake.input_address);
     }
 }
-pub fn update<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
+fn update<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
     update_0(fork, block_a, previous_timestamp, loading);
     update_1(fork, block_a);
     update_2(fork, block_a);
@@ -434,18 +147,13 @@ fn update_latest_blocks<T: Fork>(fork: &mut T, block_a: &BlockA) {
     }
     (*fork.get_latest_blocks_mut()).push(block_a.clone());
 }
-pub fn append_block<T: Fork>(
-    fork: &mut T,
-    block_a: &BlockA,
-    previous_timestamp: u32,
-    loading: bool,
-) {
+fn append_block<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, loading: bool) {
     update(fork, block_a, previous_timestamp, loading);
     update_latest_blocks(fork, block_a);
     fork.get_hashes_mut().push(block_a.hash);
     *fork.get_latest_block_mut() = block_a.clone();
 }
-pub fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
+fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
     let mut previous_timestamp = match hashes.first() {
         Some(hash) => tofuri_db::block::get_b(db, hash).unwrap().timestamp,
         None => 0,
@@ -493,7 +201,7 @@ fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
     let diff = timestamp.saturating_sub(previous_timestamp + 1);
     (diff / BLOCK_TIME) as usize
 }
-pub fn next_staker<T: Fork>(fork: &T, timestamp: u32) -> Option<AddressBytes> {
+fn next_staker<T: Fork>(fork: &T, timestamp: u32) -> Option<AddressBytes> {
     match stakers_n(fork, offline(timestamp, fork.get_latest_block().timestamp)) {
         (_, true) => None,
         (x, _) => x.last().copied(),

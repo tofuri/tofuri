@@ -16,12 +16,12 @@ pub trait Stake {
     fn hash(&self) -> Hash;
     fn hash_input(&self) -> [u8; 9];
 }
-pub fn hash<T: Stake>(stake: &T) -> Hash {
+fn hash<T: Stake>(stake: &T) -> Hash {
     let mut hasher = Sha256::new();
     hasher.update(stake.hash_input());
     hasher.finalize().into()
 }
-pub fn hash_input<T: Stake>(stake: &T) -> [u8; 9] {
+fn hash_input<T: Stake>(stake: &T) -> [u8; 9] {
     let mut bytes = [0; 9];
     bytes[0..4].copy_from_slice(&stake.get_timestamp().to_be_bytes());
     bytes[4..8].copy_from_slice(&stake.get_fee_bytes());

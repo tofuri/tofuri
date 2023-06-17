@@ -8,7 +8,6 @@ use merkle_cbt::merkle_tree::Merge;
 use merkle_cbt::CBMT as ExCBMT;
 use sha2::Digest;
 use sha2::Sha256;
-use tofuri_core::*;
 use tofuri_key::Key;
 #[derive(Debug)]
 pub enum Error {
@@ -17,16 +16,16 @@ pub enum Error {
     Stake(tofuri_stake::Error),
 }
 pub trait Block {
-    fn get_previous_hash(&self) -> &Hash;
-    fn get_merkle_root_transaction(&self) -> MerkleRoot;
-    fn get_merkle_root_stake(&self) -> MerkleRoot;
+    fn get_previous_hash(&self) -> &[u8; 32];
+    fn get_merkle_root_transaction(&self) -> [u8; 32];
+    fn get_merkle_root_stake(&self) -> [u8; 32];
     fn get_timestamp(&self) -> u32;
-    fn get_pi(&self) -> &Pi;
-    fn hash(&self) -> Hash;
+    fn get_pi(&self) -> &[u8; 81];
+    fn hash(&self) -> [u8; 32];
     fn hash_input(&self) -> [u8; 181];
-    fn beta(&self) -> Result<Beta, Error>;
+    fn beta(&self) -> Result<[u8; 32], Error>;
 }
-fn hash<T: Block>(block: &T) -> Hash {
+fn hash<T: Block>(block: &T) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(block.hash_input());
     hasher.finalize().into()
@@ -40,7 +39,7 @@ fn hash_input<T: Block>(block: &T) -> [u8; 181] {
     bytes[100..181].copy_from_slice(block.get_pi());
     bytes
 }
-fn merkle_root(hashes: &[Hash]) -> MerkleRoot {
+fn merkle_root(hashes: &[[u8; 32]]) -> [u8; 32] {
     struct Hasher;
     impl Merge for Hasher {
         type Item = [u8; 32];
@@ -53,6 +52,6 @@ fn merkle_root(hashes: &[Hash]) -> MerkleRoot {
     }
     <ExCBMT<[u8; 32], Hasher>>::build_merkle_root(hashes)
 }
-fn beta<T: Block>(block: &T) -> Result<Beta, Error> {
+fn beta<T: Block>(block: &T) -> Result<[u8; 32], Error> {
     Key::vrf_proof_to_hash(block.get_pi()).map_err(Error::Key)
 }

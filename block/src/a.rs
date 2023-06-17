@@ -11,16 +11,16 @@ use tofuri_stake::StakeA;
 use tofuri_transaction::TransactionA;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockA {
-    pub hash: Hash,
-    pub previous_hash: Hash,
+    pub hash: [u8; 32],
+    pub previous_hash: [u8; 32],
     pub timestamp: u32,
-    pub beta: Beta,
+    pub beta: [u8; 32],
     #[serde(with = "BigArray")]
-    pub pi: Pi,
+    pub pi: [u8; 81],
     #[serde(with = "BigArray")]
-    pub input_public_key: PublicKeyBytes,
+    pub input_public_key: [u8; 33],
     #[serde(with = "BigArray")]
-    pub signature: SignatureBytes,
+    pub signature: [u8; 64],
     pub transactions: Vec<TransactionA>,
     pub stakes: Vec<StakeA>,
 }
@@ -36,12 +36,12 @@ impl BlockA {
         }
     }
     pub fn sign(
-        previous_hash: Hash,
+        previous_hash: [u8; 32],
         timestamp: u32,
         transactions: Vec<TransactionA>,
         stakes: Vec<StakeA>,
         key: &Key,
-        previous_beta: &Beta,
+        previous_beta: &[u8; 32],
     ) -> Result<BlockA, Error> {
         let pi = key.vrf_prove(previous_beta).map_err(Error::Key)?;
         let mut block_a = BlockA {
@@ -61,7 +61,7 @@ impl BlockA {
         block_a.input_public_key = key.public_key_bytes();
         Ok(block_a)
     }
-    pub fn input_address(&self) -> AddressBytes {
+    pub fn input_address(&self) -> [u8; 20] {
         Key::address(&self.input_public_key)
     }
     pub fn reward(&self) -> u128 {
@@ -77,36 +77,36 @@ impl BlockA {
         }
         fees
     }
-    pub fn transaction_hashes(&self) -> Vec<Hash> {
+    pub fn transaction_hashes(&self) -> Vec<[u8; 32]> {
         self.transactions.iter().map(|x| x.hash()).collect()
     }
-    pub fn stake_hashes(&self) -> Vec<Hash> {
+    pub fn stake_hashes(&self) -> Vec<[u8; 32]> {
         self.stakes.iter().map(|x| x.hash()).collect()
     }
 }
 impl Block for BlockA {
-    fn get_previous_hash(&self) -> &Hash {
+    fn get_previous_hash(&self) -> &[u8; 32] {
         &self.previous_hash
     }
-    fn get_merkle_root_transaction(&self) -> MerkleRoot {
+    fn get_merkle_root_transaction(&self) -> [u8; 32] {
         crate::merkle_root(&self.transaction_hashes())
     }
-    fn get_merkle_root_stake(&self) -> MerkleRoot {
+    fn get_merkle_root_stake(&self) -> [u8; 32] {
         crate::merkle_root(&self.stake_hashes())
     }
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_pi(&self) -> &Pi {
+    fn get_pi(&self) -> &[u8; 81] {
         &self.pi
     }
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
     fn hash_input(&self) -> [u8; 181] {
         crate::hash_input(self)
     }
-    fn beta(&self) -> Result<Beta, Error> {
+    fn beta(&self) -> Result<[u8; 32], Error> {
         crate::beta(self)
     }
 }

@@ -18,7 +18,7 @@ impl Manager {
         db: &DBWithThreadMode<SingleThreaded>,
         tree: &Tree,
         trust_fork_after_blocks: usize,
-        previous_hash: &Hash,
+        previous_hash: &[u8; 32],
     ) -> Result<Unstable, Error> {
         if previous_hash == &GENESIS_BLOCK_PREVIOUS_HASH {
             let unstable = Unstable::default();
@@ -52,7 +52,7 @@ impl Manager {
     pub fn update(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        hashes_1: &[Hash],
+        hashes_1: &[[u8; 32]],
         trust_fork_after_blocks: usize,
     ) {
         let hashes_0 = &self.unstable.hashes;

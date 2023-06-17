@@ -117,7 +117,7 @@ impl Blockchain {
     pub fn height(&self) -> usize {
         self.forks.stable.hashes.len() + self.forks.unstable.hashes.len()
     }
-    pub fn height_by_hash(&self, hash: &Hash) -> Result<usize, Error> {
+    pub fn height_by_hash(&self, hash: &[u8; 32]) -> Result<usize, Error> {
         if let Some(index) = self.forks.unstable.hashes.iter().position(|a| a == hash) {
             let height = self.forks.stable.hashes.len() + index + 1;
             return Ok(height);
@@ -128,7 +128,7 @@ impl Blockchain {
         }
         Err(Error::HeightByHash)
     }
-    pub fn hash_by_height(&self, height: usize) -> Result<Hash, Error> {
+    pub fn hash_by_height(&self, height: usize) -> Result<[u8; 32], Error> {
         if height > self.height() {
             return Err(Error::HashByHeight);
         }
@@ -467,10 +467,10 @@ impl Blockchain {
             .map_err(Error::Fork)?;
         Ok(())
     }
-    pub fn balance(&self, address: &AddressBytes) -> u128 {
+    pub fn balance(&self, address: &[u8; 20]) -> u128 {
         self.forks.unstable.balance(address)
     }
-    pub fn balance_pending_min(&self, address: &AddressBytes) -> u128 {
+    pub fn balance_pending_min(&self, address: &[u8; 20]) -> u128 {
         let mut balance = self.balance(address);
         for transaction_a in self.pending_transactions.iter() {
             if &transaction_a.input_address == address {
@@ -489,7 +489,7 @@ impl Blockchain {
         }
         balance
     }
-    pub fn balance_pending_max(&self, address: &AddressBytes) -> u128 {
+    pub fn balance_pending_max(&self, address: &[u8; 20]) -> u128 {
         let mut balance = self.balance(address);
         for transaction_a in self.pending_transactions.iter() {
             if &transaction_a.output_address == address {
@@ -504,10 +504,10 @@ impl Blockchain {
         }
         balance
     }
-    pub fn staked(&self, address: &AddressBytes) -> u128 {
+    pub fn staked(&self, address: &[u8; 20]) -> u128 {
         self.forks.unstable.staked(address)
     }
-    pub fn staked_pending_min(&self, address: &AddressBytes) -> u128 {
+    pub fn staked_pending_min(&self, address: &[u8; 20]) -> u128 {
         let mut staked = self.staked(address);
         for stake_a in self.pending_stakes.iter() {
             if &stake_a.input_address == address && !stake_a.deposit {
@@ -516,7 +516,7 @@ impl Blockchain {
         }
         staked
     }
-    pub fn staked_pending_max(&self, address: &AddressBytes) -> u128 {
+    pub fn staked_pending_max(&self, address: &[u8; 20]) -> u128 {
         let mut staked = self.staked(address);
         for stake_a in self.pending_stakes.iter() {
             if &stake_a.input_address == address && stake_a.deposit {

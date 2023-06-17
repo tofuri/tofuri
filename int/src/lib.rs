@@ -4,7 +4,7 @@ use tofuri_core::*;
 pub enum Error {
     FromStr(ParseIntError),
 }
-pub fn to_be_bytes(uint: u128) -> AmountBytes {
+pub fn to_be_bytes(uint: u128) -> [u8; AMOUNT_BYTES] {
     if uint == 0 {
         return [0; AMOUNT_BYTES];
     }

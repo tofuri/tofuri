@@ -35,19 +35,19 @@ lazy_static! {
 construct_uint! {
     pub struct U256(4);
 }
-pub fn u256(hash: &Hash) -> U256 {
+pub fn u256(hash: &[u8; 32]) -> U256 {
     U256::from_big_endian(hash)
 }
-pub fn u256_modulo(hash: &Hash, modulo: u128) -> u128 {
+pub fn u256_modulo(hash: &[u8; 32], modulo: u128) -> u128 {
     (u256(hash) % modulo).as_u128()
 }
-pub fn hash_beta_n(beta: &Beta, n: u128) -> Hash {
+pub fn hash_beta_n(beta: &[u8; 32], n: u128) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(beta);
     hasher.update(n.to_be_bytes());
     hasher.finalize().into()
 }
-pub fn random(beta: &Beta, n: u128, modulo: u128) -> u128 {
+pub fn random(beta: &[u8; 32], n: u128, modulo: u128) -> u128 {
     u256_modulo(&hash_beta_n(beta, n), modulo)
 }
 pub fn penalty(index: usize) -> u128 {

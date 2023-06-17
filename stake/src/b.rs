@@ -9,15 +9,15 @@ use tofuri_core::*;
 use tofuri_key::Key;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeB {
-    pub amount: AmountBytes,
-    pub fee: AmountBytes,
+    pub amount: [u8; AMOUNT_BYTES],
+    pub fee: [u8; AMOUNT_BYTES],
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: SignatureBytes,
+    pub signature: [u8; 64],
 }
 impl StakeB {
-    pub fn a(&self, input_address: Option<AddressBytes>) -> Result<StakeA, Error> {
+    pub fn a(&self, input_address: Option<[u8; 20]>) -> Result<StakeA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let stake_a = StakeA {
             amount: tofuri_int::from_be_slice(&self.amount),
@@ -30,14 +30,14 @@ impl StakeB {
         };
         Ok(stake_a)
     }
-    pub fn hash(&self) -> Hash {
+    pub fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
-    fn input_address(&self) -> Result<AddressBytes, Error> {
+    fn input_address(&self) -> Result<[u8; 20], Error> {
         let input_address = Key::address(&self.input_public_key()?);
         Ok(input_address)
     }
-    fn input_public_key(&self) -> Result<PublicKeyBytes, Error> {
+    fn input_public_key(&self) -> Result<[u8; 33], Error> {
         Key::recover(&self.hash(), &self.signature).map_err(Error::Key)
     }
 }
@@ -48,10 +48,10 @@ impl Stake for StakeB {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee_bytes(&self) -> AmountBytes {
+    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES] {
         self.fee
     }
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
     fn hash_input(&self) -> [u8; 9] {

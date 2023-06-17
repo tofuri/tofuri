@@ -7,7 +7,6 @@ use std::net::IpAddr;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tofuri_block::BlockA;
-use tofuri_core::*;
 use tofuri_db as db;
 use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
@@ -130,37 +129,37 @@ async fn request(node: &mut Node, mut stream: TcpStream) -> Result<(usize, Type)
 }
 #[instrument(skip_all, level = "trace")]
 fn balance(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
-    let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let address_bytes: [u8; 20] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let balance = node.blockchain.balance(&address_bytes);
     Ok(balance)
 }
 #[instrument(skip_all, level = "trace")]
 fn balance_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
-    let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let address_bytes: [u8; 20] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let balance_pending_min = node.blockchain.balance_pending_min(&address_bytes);
     Ok(balance_pending_min)
 }
 #[instrument(skip_all, level = "trace")]
 fn balance_pending_max(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
-    let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let address_bytes: [u8; 20] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let balance_pending_max = node.blockchain.balance_pending_max(&address_bytes);
     Ok(balance_pending_max)
 }
 #[instrument(skip_all, level = "trace")]
 fn staked(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
-    let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let address_bytes: [u8; 20] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let staked = node.blockchain.staked(&address_bytes);
     Ok(staked)
 }
 #[instrument(skip_all, level = "trace")]
 fn staked_pending_min(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
-    let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let address_bytes: [u8; 20] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let staked_pending_min = node.blockchain.staked_pending_min(&address_bytes);
     Ok(staked_pending_min)
 }
 #[instrument(skip_all, level = "trace")]
 fn staked_pending_max(node: &mut Node, bytes: &[u8]) -> Result<u128, Error> {
-    let address_bytes: AddressBytes = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let address_bytes: [u8; 20] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let staked_pending_max = node.blockchain.staked_pending_max(&address_bytes);
     Ok(staked_pending_max)
 }
@@ -171,7 +170,7 @@ fn height(node: &mut Node) -> Result<usize, Error> {
 }
 #[instrument(skip_all, level = "trace")]
 fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Error> {
-    let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     node.blockchain
         .height_by_hash(&hash)
         .map_err(Error::Blockchain)
@@ -181,7 +180,7 @@ fn block_latest(node: &mut Node) -> Result<&BlockA, Error> {
     Ok(&node.blockchain.forks.unstable.latest_block)
 }
 #[instrument(skip_all, level = "trace")]
-fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Error> {
+fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<[u8; 32], Error> {
     let height: usize = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     node.blockchain
         .hash_by_height(height)
@@ -189,17 +188,17 @@ fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<Hash, Error> {
 }
 #[instrument(skip_all, level = "trace")]
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Error> {
-    let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     db::block::get_a(&node.db, &hash).map_err(Error::DBBlock)
 }
 #[instrument(skip_all, level = "trace")]
 fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<TransactionA, Error> {
-    let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     db::transaction::get_a(&node.db, &hash).map_err(Error::DBTransaction)
 }
 #[instrument(skip_all, level = "trace")]
 fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<StakeA, Error> {
-    let hash: Hash = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     db::stake::get_a(&node.db, &hash).map_err(Error::DBStake)
 }
 #[instrument(skip_all, level = "trace")]
@@ -272,7 +271,7 @@ fn git_hash() -> &'static str {
     GIT_HASH
 }
 #[instrument(skip_all, level = "trace")]
-fn address(node: &mut Node) -> Option<AddressBytes> {
+fn address(node: &mut Node) -> Option<[u8; 20]> {
     node.key.as_ref().map(|x| x.address_bytes())
 }
 #[instrument(skip_all, level = "trace")]
@@ -292,7 +291,7 @@ fn sync(node: &mut Node) -> &tofuri_sync::Sync {
     &node.blockchain.sync
 }
 #[instrument(skip_all, level = "trace")]
-fn random_queue(node: &mut Node) -> Vec<AddressBytes> {
+fn random_queue(node: &mut Node) -> Vec<[u8; 20]> {
     node.blockchain.forks.unstable.stakers_n(8)
 }
 #[instrument(skip_all, level = "trace")]
@@ -300,7 +299,7 @@ fn unstable_hashes(node: &mut Node) -> usize {
     node.blockchain.forks.unstable.hashes.len()
 }
 #[instrument(skip_all, level = "trace")]
-fn unstable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
+fn unstable_latest_hashes(node: &mut Node) -> Vec<&[u8; 32]> {
     node.blockchain
         .forks
         .unstable
@@ -319,7 +318,7 @@ fn stable_hashes(node: &mut Node) -> usize {
     node.blockchain.forks.stable.hashes.len()
 }
 #[instrument(skip_all, level = "trace")]
-fn stable_latest_hashes(node: &mut Node) -> Vec<&Hash> {
+fn stable_latest_hashes(node: &mut Node) -> Vec<&[u8; 32]> {
     node.blockchain
         .forks
         .stable

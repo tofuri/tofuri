@@ -15,7 +15,7 @@ pub enum Error {
 #[instrument(skip_all, level = "debug")]
 pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
     tree.clear();
-    let mut map: HashMap<Hash, Vec<(Hash, u32)>> = HashMap::new();
+    let mut map: HashMap<[u8; 32], Vec<([u8; 32], u32)>> = HashMap::new();
     for res in db.iterator_cf(crate::blocks(db), IteratorMode::Start) {
         let (hash, bytes) = res.map_err(Error::RocksDB)?;
         let hash = hash.to_vec().try_into().unwrap();

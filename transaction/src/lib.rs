@@ -10,14 +10,14 @@ pub enum Error {
     Key(tofuri_key::Error),
 }
 pub trait Transaction {
-    fn get_output_address(&self) -> &AddressBytes;
+    fn get_output_address(&self) -> &[u8; 20];
     fn get_timestamp(&self) -> u32;
-    fn get_amount_bytes(&self) -> AmountBytes;
-    fn get_fee_bytes(&self) -> AmountBytes;
-    fn hash(&self) -> Hash;
+    fn get_amount_bytes(&self) -> [u8; AMOUNT_BYTES];
+    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES];
+    fn hash(&self) -> [u8; 32];
     fn hash_input(&self) -> [u8; 32];
 }
-fn hash<T: Transaction>(transaction: &T) -> Hash {
+fn hash<T: Transaction>(transaction: &T) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(transaction.hash_input());
     hasher.finalize().into()

@@ -21,7 +21,7 @@ pub fn checksum(bytes: &[u8]) -> [u8; 4] {
 }
 pub mod address {
     use super::*;
-    pub fn encode(address: &AddressBytes) -> String {
+    pub fn encode(address: &[u8; 20]) -> String {
         [
             PREFIX_ADDRESS,
             &hex::encode(address),
@@ -29,9 +29,9 @@ pub mod address {
         ]
         .concat()
     }
-    pub fn decode(str: &str) -> Result<AddressBytes, Error> {
+    pub fn decode(str: &str) -> Result<[u8; 20], Error> {
         let decoded = hex::decode(str.replacen(PREFIX_ADDRESS, "", 1)).map_err(Error::Hex)?;
-        let address_bytes: AddressBytes = decoded
+        let address_bytes: [u8; 20] = decoded
             .get(0..20)
             .ok_or(Error::InvalidAddress)?
             .try_into()
@@ -63,7 +63,7 @@ pub mod address {
 }
 pub mod secret {
     use super::*;
-    pub fn encode(secret_key: &SecretKeyBytes) -> String {
+    pub fn encode(secret_key: &[u8; 32]) -> String {
         [
             PREFIX_SECRET_KEY,
             &hex::encode(secret_key),
@@ -71,9 +71,9 @@ pub mod secret {
         ]
         .concat()
     }
-    pub fn decode(str: &str) -> Result<SecretKeyBytes, Error> {
+    pub fn decode(str: &str) -> Result<[u8; 32], Error> {
         let decoded = hex::decode(str.replacen(PREFIX_SECRET_KEY, "", 1)).map_err(Error::Hex)?;
-        let secret_key_bytes: SecretKeyBytes = decoded
+        let secret_key_bytes: [u8; 32] = decoded
             .get(0..32)
             .ok_or(Error::InvalidSecretKey)?
             .try_into()

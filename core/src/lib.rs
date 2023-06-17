@@ -1,13 +1,3 @@
-pub type AmountBytes = [u8; AMOUNT_BYTES];
-pub type Hash = [u8; 32];
-pub type Checksum = [u8; 4];
-pub type MerkleRoot = [u8; 32];
-pub type Beta = [u8; 32];
-pub type Pi = [u8; 81];
-pub type AddressBytes = [u8; 20];
-pub type PublicKeyBytes = [u8; 33];
-pub type SecretKeyBytes = [u8; 32];
-pub type SignatureBytes = [u8; 64];
 pub const PREFIX_ADDRESS: &str = "0x";
 pub const PREFIX_SECRET_KEY: &str = "SECRETx";
 pub const BLOCK_SIZE_LIMIT: usize = 57797;
@@ -20,10 +10,10 @@ pub const BLOCK_TIME: u32 = 60;
 pub const ELAPSED: u32 = 90;
 pub const EXTENSION: &str = "tofuri";
 pub const AMOUNT_BYTES: usize = 4;
-pub const GENESIS_BLOCK_BETA: Beta = [0; 32];
-pub const GENESIS_BLOCK_PREVIOUS_HASH: Hash = [0; 32];
+pub const GENESIS_BLOCK_BETA: [u8; 32] = [0; 32];
+pub const GENESIS_BLOCK_PREVIOUS_HASH: [u8; 32] = [0; 32];
 pub const GENESIS_BLOCK_TIMESTAMP: u32 = 1680000000;
-pub const GENESIS_BLOCK_HASH: Hash = [
+pub const GENESIS_BLOCK_HASH: [u8; 32] = [
     0x5c, 0x85, 0xa0, 0x30, 0x4e, 0x26, 0x58, 0xbb, 0x8d, 0xa9, 0x0b, 0xf3, 0xb3, 0xcf, 0xfa, 0x50,
     0x59, 0x08, 0xdb, 0xf7, 0xfa, 0xe8, 0x16, 0xd8, 0x48, 0xb7, 0x7b, 0xc4, 0xe5, 0x08, 0xca, 0x54,
 ];

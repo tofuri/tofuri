@@ -8,22 +8,21 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_block::BlockA;
-use tofuri_core::*;
 use tofuri_stake::StakeA;
 use tofuri_transaction::TransactionA;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Unstable {
     pub latest_block: BlockA,
-    pub hashes: Vec<Hash>,
-    pub stakers: VecDeque<AddressBytes>,
+    pub hashes: Vec<[u8; 32]>,
+    pub stakers: VecDeque<[u8; 20]>,
     latest_blocks: Vec<BlockA>,
-    map_balance: HashMap<AddressBytes, u128>,
-    map_staked: HashMap<AddressBytes, u128>,
+    map_balance: HashMap<[u8; 20], u128>,
+    map_staked: HashMap<[u8; 20], u128>,
 }
 impl Unstable {
     pub fn from(
         db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &[Hash],
+        hashes: &[[u8; 32]],
         stable: &Stable,
     ) -> Unstable {
         let mut unstable = Unstable {
@@ -42,8 +41,8 @@ impl Unstable {
         transactions: &Vec<TransactionA>,
         stakes: &Vec<StakeA>,
     ) -> Result<(), Error> {
-        let mut map_balance: HashMap<AddressBytes, u128> = HashMap::new();
-        let mut map_staked: HashMap<AddressBytes, u128> = HashMap::new();
+        let mut map_balance: HashMap<[u8; 20], u128> = HashMap::new();
+        let mut map_staked: HashMap<[u8; 20], u128> = HashMap::new();
         for transaction_a in transactions {
             let k = transaction_a.input_address;
             let mut balance = if map_balance.contains_key(&k) {
@@ -101,42 +100,42 @@ impl Unstable {
         }
         false
     }
-    pub fn balance(&self, address: &AddressBytes) -> u128 {
+    pub fn balance(&self, address: &[u8; 20]) -> u128 {
         crate::get_balance(self, address)
     }
-    pub fn staked(&self, address: &AddressBytes) -> u128 {
+    pub fn staked(&self, address: &[u8; 20]) -> u128 {
         crate::get_staked(self, address)
     }
-    pub fn next_staker(&self, timestamp: u32) -> Option<AddressBytes> {
+    pub fn next_staker(&self, timestamp: u32) -> Option<[u8; 20]> {
         crate::next_staker(self, timestamp)
     }
-    pub fn stakers_offline(&self, timestamp: u32, previous_timestamp: u32) -> Vec<AddressBytes> {
+    pub fn stakers_offline(&self, timestamp: u32, previous_timestamp: u32) -> Vec<[u8; 20]> {
         crate::stakers_offline(self, timestamp, previous_timestamp)
     }
-    pub fn stakers_n(&self, n: usize) -> Vec<AddressBytes> {
+    pub fn stakers_n(&self, n: usize) -> Vec<[u8; 20]> {
         crate::stakers_n(self, n).0
     }
 }
 impl Fork for Unstable {
-    fn get_hashes_mut(&mut self) -> &mut Vec<Hash> {
+    fn get_hashes_mut(&mut self) -> &mut Vec<[u8; 32]> {
         &mut self.hashes
     }
-    fn get_stakers(&self) -> &VecDeque<AddressBytes> {
+    fn get_stakers(&self) -> &VecDeque<[u8; 20]> {
         &self.stakers
     }
-    fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes> {
+    fn get_stakers_mut(&mut self) -> &mut VecDeque<[u8; 20]> {
         &mut self.stakers
     }
-    fn get_map_balance(&self) -> &HashMap<AddressBytes, u128> {
+    fn get_map_balance(&self) -> &HashMap<[u8; 20], u128> {
         &self.map_balance
     }
-    fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
+    fn get_map_balance_mut(&mut self) -> &mut HashMap<[u8; 20], u128> {
         &mut self.map_balance
     }
-    fn get_map_staked(&self) -> &HashMap<AddressBytes, u128> {
+    fn get_map_staked(&self) -> &HashMap<[u8; 20], u128> {
         &self.map_staked
     }
-    fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128> {
+    fn get_map_staked_mut(&mut self) -> &mut HashMap<[u8; 20], u128> {
         &mut self.map_staked
     }
     fn get_latest_block(&self) -> &BlockA {

@@ -98,7 +98,7 @@ pub async fn height(State(args): State<Args>) -> impl IntoResponse {
 }
 #[instrument(skip_all)]
 pub async fn height_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
-    let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
+    let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let height = tofuri_rpc::height_by_hash(&args.rpc, &hash).await.unwrap();
     Json(height)
 }
@@ -120,7 +120,7 @@ pub async fn hash_by_height(State(args): State<Args>, height: Path<String>) -> i
 }
 #[instrument(skip_all)]
 pub async fn block_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
-    let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
+    let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let block_a = tofuri_rpc::block_by_hash(&args.rpc, &hash).await.unwrap();
     let block = tofuri_api_util::block(&block_a);
     Json(block)
@@ -130,7 +130,7 @@ pub async fn transaction_by_hash(
     State(args): State<Args>,
     hash: Path<String>,
 ) -> impl IntoResponse {
-    let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
+    let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let transaction_a = tofuri_rpc::transaction_by_hash(&args.rpc, &hash)
         .await
         .unwrap();
@@ -139,7 +139,7 @@ pub async fn transaction_by_hash(
 }
 #[instrument(skip_all)]
 pub async fn stake_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
-    let hash: Hash = hex::decode(hash.clone()).unwrap().try_into().unwrap();
+    let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let stake_a = tofuri_rpc::stake_by_hash(&args.rpc, &hash).await.unwrap();
     let stake = tofuri_api_util::stake(&stake_a);
     Json(stake)

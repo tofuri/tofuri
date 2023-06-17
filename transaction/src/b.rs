@@ -10,15 +10,15 @@ use tofuri_core::*;
 use tofuri_key::Key;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionB {
-    pub output_address: AddressBytes,
-    pub amount: AmountBytes,
-    pub fee: AmountBytes,
+    pub output_address: [u8; 20],
+    pub amount: [u8; AMOUNT_BYTES],
+    pub fee: [u8; AMOUNT_BYTES],
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: SignatureBytes,
+    pub signature: [u8; 64],
 }
 impl TransactionB {
-    pub fn a(&self, input_address: Option<AddressBytes>) -> Result<TransactionA, Error> {
+    pub fn a(&self, input_address: Option<[u8; 20]>) -> Result<TransactionA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let transaction_a = TransactionA {
             output_address: self.output_address,
@@ -31,30 +31,30 @@ impl TransactionB {
         };
         Ok(transaction_a)
     }
-    pub fn hash(&self) -> Hash {
+    pub fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
-    pub fn input_address(&self) -> Result<AddressBytes, Error> {
+    pub fn input_address(&self) -> Result<[u8; 20], Error> {
         Ok(Key::address(&self.input_public_key()?))
     }
-    pub fn input_public_key(&self) -> Result<PublicKeyBytes, Error> {
+    pub fn input_public_key(&self) -> Result<[u8; 33], Error> {
         Key::recover(&self.hash(), &self.signature).map_err(Error::Key)
     }
 }
 impl Transaction for TransactionB {
-    fn get_output_address(&self) -> &AddressBytes {
+    fn get_output_address(&self) -> &[u8; 20] {
         &self.output_address
     }
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount_bytes(&self) -> AmountBytes {
+    fn get_amount_bytes(&self) -> [u8; AMOUNT_BYTES] {
         self.amount
     }
-    fn get_fee_bytes(&self) -> AmountBytes {
+    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES] {
         self.fee
     }
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
     fn hash_input(&self) -> [u8; 32] {

@@ -6,21 +6,20 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
-use tofuri_core::*;
 use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockC {
-    pub previous_hash: Hash,
+    pub previous_hash: [u8; 32],
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: SignatureBytes,
+    pub signature: [u8; 64],
     #[serde(with = "BigArray")]
-    pub pi: Pi,
-    pub transaction_hashes: Vec<Hash>,
-    pub stake_hashes: Vec<Hash>,
+    pub pi: [u8; 81],
+    pub transaction_hashes: Vec<[u8; 32]>,
+    pub stake_hashes: Vec<[u8; 32]>,
 }
 impl BlockC {
     pub fn a(
@@ -28,7 +27,7 @@ impl BlockC {
         transactions: Vec<TransactionA>,
         stakes: Vec<StakeA>,
         beta: Option<[u8; 32]>,
-        input_public_key: Option<PublicKeyBytes>,
+        input_public_key: Option<[u8; 33]>,
     ) -> Result<BlockA, Error> {
         let block_b = self.b(
             transactions.iter().map(|x| x.b()).collect(),

@@ -222,7 +222,7 @@ impl Wallet {
             self.key.as_ref().unwrap(),
         )
         .unwrap();
-        println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
+        println!("[u8; 32]: {}", hex::encode(transaction_a.hash).cyan());
         let res: String = self
             .client
             .post(format!("{}transaction", self.args.api.to_string()))
@@ -259,7 +259,7 @@ impl Wallet {
             self.key.as_ref().unwrap(),
         )
         .unwrap();
-        println!("Hash: {}", hex::encode(stake_a.hash).cyan());
+        println!("[u8; 32]: {}", hex::encode(stake_a.hash).cyan());
         let res: String = self
             .client
             .post(format!("{}stake", self.args.api.to_string()))
@@ -402,7 +402,7 @@ impl Wallet {
         );
     }
 }
-pub fn argon2_key_derivation(password: &[u8], salt: &[u8; 32]) -> Hash {
+pub fn argon2_key_derivation(password: &[u8], salt: &[u8; 32]) -> [u8; 32] {
     let mut params_builder = ParamsBuilder::new();
     params_builder.m_cost(1024);
     params_builder.t_cost(1);

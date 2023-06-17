@@ -160,7 +160,7 @@ pub fn send() -> bool {
 }
 pub fn search() -> String {
     CustomType::<String>::new("Search:")
-        .with_error_message("Please enter a valid Address, Hash or Number.")
+        .with_error_message("Please enter a valid Address, [u8; 32] or Number.")
         .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
         .with_parser(&|input| {
             if address::decode(input).is_ok() || input.len() == 64 || input.parse::<usize>().is_ok()

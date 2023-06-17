@@ -8,7 +8,6 @@ use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use tofuri_api_core::Block;
 use tofuri_api_core::Transaction;
-use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_pay_core::Charge;
 use tofuri_pay_core::ChargeStatus;
@@ -62,7 +61,7 @@ pub struct Pay {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Key,
     pub args: Args,
-    charges: HashMap<AddressBytes, Charge>,
+    charges: HashMap<[u8; 20], Charge>,
     chain: Vec<Block>,
     subkey_n: u128,
     client: Client,

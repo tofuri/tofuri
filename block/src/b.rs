@@ -6,18 +6,17 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
-use tofuri_core::*;
 use tofuri_key::Key;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockB {
-    pub previous_hash: Hash,
+    pub previous_hash: [u8; 32],
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: SignatureBytes,
+    pub signature: [u8; 64],
     #[serde(with = "BigArray")]
-    pub pi: Pi,
+    pub pi: [u8; 81],
     pub transactions: Vec<TransactionB>,
     pub stakes: Vec<StakeB>,
 }
@@ -54,39 +53,39 @@ impl BlockB {
             stake_hashes: self.stake_hashes(),
         }
     }
-    pub fn transaction_hashes(&self) -> Vec<Hash> {
+    pub fn transaction_hashes(&self) -> Vec<[u8; 32]> {
         self.transactions.iter().map(|x| x.hash()).collect()
     }
-    pub fn stake_hashes(&self) -> Vec<Hash> {
+    pub fn stake_hashes(&self) -> Vec<[u8; 32]> {
         self.stakes.iter().map(|x| x.hash()).collect()
     }
-    pub fn input_public_key(&self) -> Result<PublicKeyBytes, Error> {
+    pub fn input_public_key(&self) -> Result<[u8; 33], Error> {
         Key::recover(&self.hash(), &self.signature).map_err(Error::Key)
     }
 }
 impl Block for BlockB {
-    fn get_previous_hash(&self) -> &Hash {
+    fn get_previous_hash(&self) -> &[u8; 32] {
         &self.previous_hash
     }
-    fn get_merkle_root_transaction(&self) -> MerkleRoot {
+    fn get_merkle_root_transaction(&self) -> [u8; 32] {
         crate::merkle_root(&self.transaction_hashes())
     }
-    fn get_merkle_root_stake(&self) -> MerkleRoot {
+    fn get_merkle_root_stake(&self) -> [u8; 32] {
         crate::merkle_root(&self.stake_hashes())
     }
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_pi(&self) -> &Pi {
+    fn get_pi(&self) -> &[u8; 81] {
         &self.pi
     }
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
     fn hash_input(&self) -> [u8; 181] {
         crate::hash_input(self)
     }
-    fn beta(&self) -> Result<Beta, Error> {
+    fn beta(&self) -> Result<[u8; 32], Error> {
         crate::beta(self)
     }
 }

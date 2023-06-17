@@ -3,7 +3,6 @@ extern crate test;
 use sha2::Digest;
 use sha2::Sha256;
 use test::Bencher;
-use tofuri_core::*;
 #[bench]
 fn hash(b: &mut Bencher) {
     b.iter(|| {
@@ -20,6 +19,6 @@ fn u256(b: &mut Bencher) {
 fn random(b: &mut Bencher) {
     let mut hasher = Sha256::new();
     hasher.update([0; 32]);
-    let beta: Beta = hasher.finalize().into();
+    let beta: [u8; 32] = hasher.finalize().into();
     b.iter(|| tofuri_util::random(&beta, 0, 10));
 }

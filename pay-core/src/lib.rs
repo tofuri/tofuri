@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use serde::Serialize;
-use tofuri_core::*;
 use tofuri_key::Key;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub enum ChargeStatus {
@@ -28,7 +27,7 @@ pub struct Charge {
     pub subkey_n: u128,
 }
 impl Charge {
-    pub fn address_bytes(&self, key: &Key) -> AddressBytes {
+    pub fn address_bytes(&self, key: &Key) -> [u8; 20] {
         key.subkey(self.subkey_n).unwrap().address_bytes()
     }
     pub fn payment(&self, key: &Key) -> Payment {

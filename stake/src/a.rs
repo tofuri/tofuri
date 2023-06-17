@@ -15,9 +15,9 @@ pub struct StakeA {
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
-    pub signature: SignatureBytes,
-    pub input_address: AddressBytes,
-    pub hash: Hash,
+    pub signature: [u8; 64],
+    pub input_address: [u8; 20],
+    pub hash: [u8; 32],
 }
 impl StakeA {
     pub fn b(&self) -> StakeB {
@@ -29,7 +29,7 @@ impl StakeA {
             signature: self.signature,
         }
     }
-    pub fn hash(&self) -> Hash {
+    pub fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
     pub fn sign(
@@ -61,10 +61,10 @@ impl Stake for StakeA {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee_bytes(&self) -> AmountBytes {
+    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES] {
         tofuri_int::to_be_bytes(self.fee)
     }
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
     fn hash_input(&self) -> [u8; 9] {

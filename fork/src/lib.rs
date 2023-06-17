@@ -19,13 +19,13 @@ pub enum Error {
     Overflow,
 }
 pub trait Fork {
-    fn get_hashes_mut(&mut self) -> &mut Vec<Hash>;
-    fn get_stakers(&self) -> &VecDeque<AddressBytes>;
-    fn get_stakers_mut(&mut self) -> &mut VecDeque<AddressBytes>;
-    fn get_map_balance(&self) -> &HashMap<AddressBytes, u128>;
-    fn get_map_balance_mut(&mut self) -> &mut HashMap<AddressBytes, u128>;
-    fn get_map_staked(&self) -> &HashMap<AddressBytes, u128>;
-    fn get_map_staked_mut(&mut self) -> &mut HashMap<AddressBytes, u128>;
+    fn get_hashes_mut(&mut self) -> &mut Vec<[u8; 32]>;
+    fn get_stakers(&self) -> &VecDeque<[u8; 20]>;
+    fn get_stakers_mut(&mut self) -> &mut VecDeque<[u8; 20]>;
+    fn get_map_balance(&self) -> &HashMap<[u8; 20], u128>;
+    fn get_map_balance_mut(&mut self) -> &mut HashMap<[u8; 20], u128>;
+    fn get_map_staked(&self) -> &HashMap<[u8; 20], u128>;
+    fn get_map_staked_mut(&mut self) -> &mut HashMap<[u8; 20], u128>;
     fn get_latest_block(&self) -> &BlockA;
     fn get_latest_block_mut(&mut self) -> &mut BlockA;
     fn get_latest_blocks(&self) -> &Vec<BlockA>;
@@ -33,31 +33,31 @@ pub trait Fork {
     fn is_stable() -> bool;
     fn append_block(&mut self, block_a: &BlockA, previous_timestamp: u32, loading: bool);
 }
-fn get_balance<T: Fork>(fork: &T, address: &AddressBytes) -> u128 {
+fn get_balance<T: Fork>(fork: &T, address: &[u8; 20]) -> u128 {
     match fork.get_map_balance().get(address) {
         Some(b) => *b,
         None => 0,
     }
 }
-fn get_staked<T: Fork>(fork: &T, address: &AddressBytes) -> u128 {
+fn get_staked<T: Fork>(fork: &T, address: &[u8; 20]) -> u128 {
     match fork.get_map_staked().get(address) {
         Some(b) => *b,
         None => 0,
     }
 }
-fn insert_balance<T: Fork>(fork: &mut T, address: AddressBytes, balance: u128) {
+fn insert_balance<T: Fork>(fork: &mut T, address: [u8; 20], balance: u128) {
     match balance {
         0 => fork.get_map_balance_mut().remove(&address),
         x => fork.get_map_balance_mut().insert(address, x),
     };
 }
-fn insert_staked<T: Fork>(fork: &mut T, address: AddressBytes, staked: u128) {
+fn insert_staked<T: Fork>(fork: &mut T, address: [u8; 20], staked: u128) {
     match staked {
         0 => fork.get_map_staked_mut().remove(&address),
         x => fork.get_map_staked_mut().insert(address, x),
     };
 }
-fn update_stakers<T: Fork>(fork: &mut T, address: AddressBytes) {
+fn update_stakers<T: Fork>(fork: &mut T, address: [u8; 20]) {
     let staked = get_staked(fork, &address);
     let index = fork.get_stakers().iter().position(|x| x == &address);
     let threshold = COIN * (fork.get_stakers().len() + 1) as u128;
@@ -153,7 +153,7 @@ fn append_block<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32
     fork.get_hashes_mut().push(block_a.hash);
     *fork.get_latest_block_mut() = block_a.clone();
 }
-fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[Hash]) {
+fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[[u8; 32]]) {
     let mut previous_timestamp = match hashes.first() {
         Some(hash) => tofuri_db::block::get_b(db, hash).unwrap().timestamp,
         None => 0,
@@ -164,8 +164,8 @@ fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[
         previous_timestamp = block_a.timestamp;
     }
 }
-fn stakers_n<T: Fork>(fork: &T, n: usize) -> (Vec<AddressBytes>, bool) {
-    fn random_n(slice: &[(AddressBytes, u128)], beta: &Beta, n: u128, modulo: u128) -> usize {
+fn stakers_n<T: Fork>(fork: &T, n: usize) -> (Vec<[u8; 20]>, bool) {
+    fn random_n(slice: &[([u8; 20], u128)], beta: &[u8; 32], n: u128, modulo: u128) -> usize {
         let random = tofuri_util::random(beta, n, modulo);
         let mut counter = 0;
         for (index, (_, staked)) in slice.iter().enumerate() {
@@ -177,7 +177,7 @@ fn stakers_n<T: Fork>(fork: &T, n: usize) -> (Vec<AddressBytes>, bool) {
         unreachable!()
     }
     let mut modulo = 0;
-    let mut vec: Vec<(AddressBytes, u128)> = vec![];
+    let mut vec: Vec<([u8; 20], u128)> = vec![];
     for staker in fork.get_stakers().iter() {
         let staked = get_staked(fork, staker);
         modulo += staked;
@@ -201,17 +201,13 @@ fn offline(timestamp: u32, previous_timestamp: u32) -> usize {
     let diff = timestamp.saturating_sub(previous_timestamp + 1);
     (diff / BLOCK_TIME) as usize
 }
-fn next_staker<T: Fork>(fork: &T, timestamp: u32) -> Option<AddressBytes> {
+fn next_staker<T: Fork>(fork: &T, timestamp: u32) -> Option<[u8; 20]> {
     match stakers_n(fork, offline(timestamp, fork.get_latest_block().timestamp)) {
         (_, true) => None,
         (x, _) => x.last().copied(),
     }
 }
-fn stakers_offline<T: Fork>(
-    fork: &T,
-    timestamp: u32,
-    previous_timestamp: u32,
-) -> Vec<AddressBytes> {
+fn stakers_offline<T: Fork>(fork: &T, timestamp: u32, previous_timestamp: u32) -> Vec<[u8; 20]> {
     match offline(timestamp, previous_timestamp) {
         0 => vec![],
         n => stakers_n(fork, n - 1).0,

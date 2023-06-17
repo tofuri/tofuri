@@ -12,11 +12,11 @@ pub enum Error {
 pub trait Stake {
     fn get_timestamp(&self) -> u32;
     fn get_deposit(&self) -> bool;
-    fn get_fee_bytes(&self) -> AmountBytes;
-    fn hash(&self) -> Hash;
+    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES];
+    fn hash(&self) -> [u8; 32];
     fn hash_input(&self) -> [u8; 9];
 }
-fn hash<T: Stake>(stake: &T) -> Hash {
+fn hash<T: Stake>(stake: &T) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(stake.hash_input());
     hasher.finalize().into()

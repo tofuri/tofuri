@@ -10,14 +10,14 @@ use tofuri_core::*;
 use tofuri_key::Key;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionA {
-    pub input_address: AddressBytes,
-    pub output_address: AddressBytes,
+    pub input_address: [u8; 20],
+    pub output_address: [u8; 20],
     pub amount: u128,
     pub fee: u128,
     pub timestamp: u32,
-    pub hash: Hash,
+    pub hash: [u8; 32],
     #[serde(with = "BigArray")]
-    pub signature: SignatureBytes,
+    pub signature: [u8; 64],
 }
 impl TransactionA {
     pub fn b(&self) -> TransactionB {
@@ -29,11 +29,11 @@ impl TransactionA {
             signature: self.signature,
         }
     }
-    pub fn hash(&self) -> Hash {
+    pub fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
     pub fn sign(
-        output_address: AddressBytes,
+        output_address: [u8; 20],
         amount: u128,
         fee: u128,
         timestamp: u32,
@@ -55,19 +55,19 @@ impl TransactionA {
     }
 }
 impl Transaction for TransactionA {
-    fn get_output_address(&self) -> &AddressBytes {
+    fn get_output_address(&self) -> &[u8; 20] {
         &self.output_address
     }
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount_bytes(&self) -> AmountBytes {
+    fn get_amount_bytes(&self) -> [u8; AMOUNT_BYTES] {
         tofuri_int::to_be_bytes(self.amount)
     }
-    fn get_fee_bytes(&self) -> AmountBytes {
+    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES] {
         tofuri_int::to_be_bytes(self.fee)
     }
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> [u8; 32] {
         crate::hash(self)
     }
     fn hash_input(&self) -> [u8; 32] {

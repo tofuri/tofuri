@@ -6,7 +6,7 @@ use std::fmt;
 use tofuri_core::*;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Branch {
-    pub hash: Hash,
+    pub hash: [u8; 32],
     pub height: usize,
     pub timestamp: u32,
 }
@@ -22,7 +22,7 @@ impl fmt::Display for Branch {
     }
 }
 impl Branch {
-    fn new(hash: Hash, height: usize, timestamp: u32) -> Branch {
+    fn new(hash: [u8; 32], height: usize, timestamp: u32) -> Branch {
         Branch {
             hash,
             height,
@@ -33,7 +33,7 @@ impl Branch {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Tree {
     branches: Vec<Branch>,
-    hashes: HashMap<Hash, Hash>,
+    hashes: HashMap<[u8; 32], [u8; 32]>,
 }
 impl fmt::Display for Tree {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -66,7 +66,7 @@ impl Tree {
     pub fn stable_and_unstable_hashes(
         &self,
         trust_fork_after_blocks: usize,
-    ) -> (Vec<Hash>, Vec<Hash>) {
+    ) -> (Vec<[u8; 32]>, Vec<[u8; 32]>) {
         let mut stable_hashes = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.hash;
@@ -94,7 +94,7 @@ impl Tree {
         let unstable_hashes = stable_hashes.drain(start..len).collect();
         (stable_hashes, unstable_hashes)
     }
-    pub fn unstable_hashes(&self, trust_fork_after_blocks: usize) -> Vec<Hash> {
+    pub fn unstable_hashes(&self, trust_fork_after_blocks: usize) -> Vec<[u8; 32]> {
         let mut vec = vec![];
         if let Some(main) = self.main() {
             let mut hash = main.hash;
@@ -114,10 +114,10 @@ impl Tree {
         vec.reverse();
         vec
     }
-    pub fn get(&self, hash: &Hash) -> Option<&Hash> {
+    pub fn get(&self, hash: &[u8; 32]) -> Option<&[u8; 32]> {
         self.hashes.get(hash)
     }
-    pub fn insert(&mut self, hash: Hash, previous_hash: Hash, timestamp: u32) -> bool {
+    pub fn insert(&mut self, hash: [u8; 32], previous_hash: [u8; 32], timestamp: u32) -> bool {
         if self.hashes.insert(hash, previous_hash).is_some() {
             panic!("hash collision");
         }
@@ -146,7 +146,7 @@ impl Tree {
         self.branches.clear();
         self.hashes.clear();
     }
-    fn height(&self, previous_hash: &Hash) -> usize {
+    fn height(&self, previous_hash: &[u8; 32]) -> usize {
         let mut hash = previous_hash;
         let mut height = 0;
         loop {

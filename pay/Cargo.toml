@@ -11,7 +11,6 @@ repository = "https://github.com/tofuri/tofuri"
 [dependencies]
 tofuri-address = { version = "0.1.1", path = "../address" }
 tofuri-int = { version = "0.1.0", path = "../int" }
-tofuri-core = { version = "0.1.2", path = "../core" }
 tofuri-api-core = { version = "0.1.0", path = "../api-core" }
 tofuri-pay-core = { version = "0.1.0", path = "../pay-core" }
 tofuri-pay-db = { version = "0.1.0", path = "../pay-db" }

@@ -9,7 +9,6 @@ members = [
     "block",
     "blockchain",
     "sync",
-    "core",
     "db",
     "fork",
     "int",

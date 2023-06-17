@@ -1,11 +1,12 @@
 use crate::Node;
+use crate::SHARE_PEERS_MAX_LEN;
 use rand::prelude::*;
 use std::net::IpAddr;
-use tofuri_core::*;
 use tofuri_p2p::behaviour::Request;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_util;
+use tofuri_util::BLOCK_TIME;
 use tracing::debug;
 use tracing::error;
 use tracing::info;

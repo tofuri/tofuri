@@ -12,6 +12,7 @@ use tofuri_p2p::P2p;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
+pub const SHARE_PEERS_MAX_LEN: usize = 100;
 pub struct Node {
     pub db: DBWithThreadMode<SingleThreaded>,
     pub key: Option<Key>,

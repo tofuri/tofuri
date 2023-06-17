@@ -8,5 +8,4 @@ repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 tofuri-block = { version = "0.1.0", path = "../block" }
-tofuri-core = { version = "0.1.2", path = "../core" }
 serde = { version = "1.0.163", features = ["derive"] }

@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt;
-use tofuri_core::*;
+pub const GENESIS_BLOCK_PREVIOUS_HASH: [u8; 32] = [0; 32];
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Branch {
     pub hash: [u8; 32],

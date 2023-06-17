@@ -9,6 +9,7 @@ use merkle_cbt::CBMT as ExCBMT;
 use sha2::Digest;
 use sha2::Sha256;
 use tofuri_key::Key;
+pub const GENESIS_BLOCK_BETA: [u8; 32] = [0; 32];
 #[derive(Debug)]
 pub enum Error {
     Key(tofuri_key::Error),

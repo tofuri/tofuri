@@ -1,5 +1,6 @@
 use std::num::ParseIntError;
-use tofuri_core::*;
+pub const AMOUNT_BYTES: usize = 4;
+pub const DECIMAL_PLACES: usize = 18;
 #[derive(Debug)]
 pub enum Error {
     FromStr(ParseIntError),

@@ -5,8 +5,8 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use serde::Deserialize;
 use serde::Serialize;
-use tofuri_core::*;
 use tofuri_tree::Tree;
+use tofuri_tree::GENESIS_BLOCK_PREVIOUS_HASH;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Manager {
     pub stable: Stable,

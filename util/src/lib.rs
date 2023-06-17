@@ -7,7 +7,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::time::Duration;
 use tofuri_block::BlockB;
-use tofuri_core::*;
+use tofuri_int::DECIMAL_PLACES;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
 use tokio::time::Instant;
@@ -19,16 +19,21 @@ use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Registry;
 use uint::construct_uint;
+pub const BLOCK_SIZE_LIMIT: usize = 57797;
 pub const GIT_HASH: &str = env!("GIT_HASH");
+pub const ELAPSED: u32 = 90;
+pub const MAINNET_PORT: u16 = 2020;
+pub const TESTNET_PORT: u16 = 3030;
+pub const BLOCK_TIME: u32 = 60;
 lazy_static! {
     pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
     pub static ref TRANSACTION_SIZE: usize =
         bincode::serialize(&TransactionB::default()).unwrap().len();
     pub static ref STAKE_SIZE: usize = bincode::serialize(&StakeB::default()).unwrap().len();
-    pub static ref MAINNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", tofuri_core::MAINNET)
+    pub static ref MAINNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", MAINNET_PORT)
         .parse()
         .unwrap();
-    pub static ref TESTNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", tofuri_core::TESTNET)
+    pub static ref TESTNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", TESTNET_PORT)
         .parse()
         .unwrap();
 }
@@ -54,7 +59,7 @@ pub fn penalty(index: usize) -> u128 {
     if index == 0 {
         return 0;
     }
-    COIN * 2u128.pow(index as u32 - 1)
+    10_u128.pow(DECIMAL_PLACES as u32) * 2u128.pow(index as u32 - 1)
 }
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32

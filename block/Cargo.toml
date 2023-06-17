@@ -7,11 +7,11 @@ description = "Tofuri block"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-core = { version = "0.1.2", path = "../core" }
 tofuri-key = { version = "0.1.0", path = "../key", features = ["vrf"] }
 tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
 tofuri-address = { version = "0.1.0", path = "../address" }
+tofuri-int = { version = "0.1.0", path = "../int" }
 serde = { version = "1.0.163", features = ["derive"] }
 serde-big-array = "0.5.1"
 sha2 = "0.10.6"

@@ -1,6 +1,7 @@
 use sha2::Digest;
 use sha2::Sha256;
-use tofuri_core::*;
+pub const PREFIX_ADDRESS: &str = "0x";
+pub const PREFIX_SECRET_KEY: &str = "SECRETx";
 #[derive(Debug)]
 pub enum Error {
     Hex(hex::FromHexError),

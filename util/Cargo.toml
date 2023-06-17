@@ -8,9 +8,9 @@ repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 tofuri-block = { version = "0.1.0", path = "../block" }
-tofuri-core = { version = "0.1.2", path = "../core" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
+tofuri-int = { version = "0.1.0", path = "../int" }
 bincode = "1.3.3"
 lazy_static = "1.4.0"
 chrono = "0.4.24"

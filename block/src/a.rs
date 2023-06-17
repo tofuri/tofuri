@@ -5,7 +5,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
-use tofuri_core::*;
+use tofuri_int::DECIMAL_PLACES;
 use tofuri_key::Key;
 use tofuri_stake::StakeA;
 use tofuri_transaction::TransactionA;
@@ -65,7 +65,7 @@ impl BlockA {
         Key::address(&self.input_public_key)
     }
     pub fn reward(&self) -> u128 {
-        self.fees() + COIN
+        self.fees() + 10_u128.pow(DECIMAL_PLACES as u32)
     }
     pub fn fees(&self) -> u128 {
         let mut fees = 0;
@@ -143,6 +143,7 @@ impl fmt::Debug for BlockA {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::GENESIS_BLOCK_BETA;
     #[test]
     fn test_genesis_beta() {
         assert_eq!(BlockA::default().beta, GENESIS_BLOCK_BETA);

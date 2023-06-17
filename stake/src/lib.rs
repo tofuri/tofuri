@@ -4,7 +4,7 @@ pub use a::StakeA;
 pub use b::StakeB;
 use sha2::Digest;
 use sha2::Sha256;
-use tofuri_core::*;
+use tofuri_int::AMOUNT_BYTES;
 #[derive(Debug)]
 pub enum Error {
     Key(tofuri_key::Error),

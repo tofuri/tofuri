@@ -3,8 +3,8 @@ use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
 use tofuri_block::BlockC;
-use tofuri_core::*;
 use tofuri_tree::Tree;
+use tofuri_tree::GENESIS_BLOCK_PREVIOUS_HASH;
 use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {

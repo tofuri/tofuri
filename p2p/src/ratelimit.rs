@@ -1,8 +1,15 @@
+use crate::P2P_RATELIMIT_GOSSIPSUB_MESSAGE_BLOCK;
+use crate::P2P_RATELIMIT_GOSSIPSUB_MESSAGE_PEERS;
+use crate::P2P_RATELIMIT_GOSSIPSUB_MESSAGE_STAKE;
+use crate::P2P_RATELIMIT_GOSSIPSUB_MESSAGE_TRANSACTION;
+use crate::P2P_RATELIMIT_REQUEST;
+use crate::P2P_RATELIMIT_REQUEST_TIMEOUT;
+use crate::P2P_RATELIMIT_RESPONSE;
+use crate::P2P_RATELIMIT_RESPONSE_TIMEOUT;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::net::IpAddr;
-use tofuri_core::*;
 pub enum Endpoint {
     Request,
     Response,

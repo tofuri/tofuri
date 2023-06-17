@@ -9,7 +9,8 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_address::address;
 use tofuri_block::BlockA;
-use tofuri_core::*;
+use tofuri_int::DECIMAL_PLACES;
+use tofuri_util::BLOCK_TIME;
 use tracing::debug;
 use tracing::warn;
 pub use unstable::Unstable;
@@ -60,7 +61,7 @@ fn insert_staked<T: Fork>(fork: &mut T, address: [u8; 20], staked: u128) {
 fn update_stakers<T: Fork>(fork: &mut T, address: [u8; 20]) {
     let staked = get_staked(fork, &address);
     let index = fork.get_stakers().iter().position(|x| x == &address);
-    let threshold = COIN * (fork.get_stakers().len() + 1) as u128;
+    let threshold = 10_u128.pow(DECIMAL_PLACES as u32) * (fork.get_stakers().len() + 1) as u128;
     if index.is_none() && staked >= threshold {
         fork.get_stakers_mut().push_back(address);
     } else if index.is_some() && staked < threshold {
@@ -85,7 +86,7 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, lo
     }
     if stakers_n(fork, offline(block_a.timestamp, previous_timestamp)).1 {
         let input_address = block_a.input_address();
-        insert_staked(fork, input_address, COIN);
+        insert_staked(fork, input_address, 10_u128.pow(DECIMAL_PLACES as u32));
         update_stakers(fork, input_address);
         let address = address::encode(&input_address);
         if !loading && !T::is_stable() {

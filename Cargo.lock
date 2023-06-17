@@ -4350,7 +4350,6 @@ dependencies = [
  "tofuri-address",
  "tofuri-block",
  "tofuri-blockchain",
- "tofuri-core",
  "tofuri-db",
  "tofuri-int",
  "tofuri-key",
@@ -4373,7 +4372,6 @@ version = "0.1.1"
 dependencies = [
  "hex",
  "sha2 0.10.6",
- "tofuri-core",
 ]
 
 [[package]]
@@ -4388,7 +4386,6 @@ dependencies = [
  "tofuri-api-core",
  "tofuri-api-util",
  "tofuri-block",
- "tofuri-core",
  "tofuri-int",
  "tofuri-rpc",
  "tofuri-stake",
@@ -4430,7 +4427,7 @@ dependencies = [
  "serde-big-array",
  "sha2 0.10.6",
  "tofuri-address",
- "tofuri-core",
+ "tofuri-int",
  "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
@@ -4446,7 +4443,6 @@ dependencies = [
  "serde",
  "tofuri-address",
  "tofuri-block",
- "tofuri-core",
  "tofuri-db",
  "tofuri-fork",
  "tofuri-int",
@@ -4465,12 +4461,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "tofuri-block",
- "tofuri-core",
 ]
-
-[[package]]
-name = "tofuri-core"
-version = "0.1.2"
 
 [[package]]
 name = "tofuri-db"
@@ -4480,7 +4471,6 @@ dependencies = [
  "rocksdb",
  "tofuri-block",
  "tofuri-checkpoint",
- "tofuri-core",
  "tofuri-int",
  "tofuri-stake",
  "tofuri-transaction",
@@ -4497,7 +4487,6 @@ dependencies = [
  "tofuri-address",
  "tofuri-block",
  "tofuri-checkpoint",
- "tofuri-core",
  "tofuri-db",
  "tofuri-int",
  "tofuri-stake",
@@ -4510,9 +4499,6 @@ dependencies = [
 [[package]]
 name = "tofuri-int"
 version = "0.1.0"
-dependencies = [
- "tofuri-core",
-]
 
 [[package]]
 name = "tofuri-key"
@@ -4521,7 +4507,6 @@ dependencies = [
  "rand 0.8.5",
  "secp256k1",
  "sha2 0.10.6",
- "tofuri-core",
  "vrf",
 ]
 
@@ -4533,7 +4518,6 @@ dependencies = [
  "futures",
  "libp2p",
  "serde",
- "tofuri-core",
  "tofuri-util",
  "tokio",
  "tracing",
@@ -4557,7 +4541,6 @@ dependencies = [
  "tempdir",
  "tofuri-address",
  "tofuri-api-core",
- "tofuri-core",
  "tofuri-int",
  "tofuri-key",
  "tofuri-pay-core",
@@ -4577,7 +4560,6 @@ dependencies = [
  "serde",
  "sha2 0.10.6",
  "tofuri-address",
- "tofuri-core",
  "tofuri-key",
 ]
 
@@ -4597,7 +4579,6 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "tofuri-block",
- "tofuri-core",
  "tofuri-rpc-core",
  "tofuri-stake",
  "tofuri-sync",
@@ -4621,7 +4602,6 @@ dependencies = [
  "serde-big-array",
  "sha2 0.10.6",
  "tofuri-address",
- "tofuri-core",
  "tofuri-int",
  "tofuri-key",
 ]
@@ -4632,7 +4612,6 @@ version = "0.1.0"
 dependencies = [
  "lazy_static",
  "serde",
- "tofuri-core",
 ]
 
 [[package]]
@@ -4644,7 +4623,6 @@ dependencies = [
  "serde-big-array",
  "sha2 0.10.6",
  "tofuri-address",
- "tofuri-core",
  "tofuri-int",
  "tofuri-key",
 ]
@@ -4655,7 +4633,6 @@ version = "0.1.0"
 dependencies = [
  "hex",
  "serde",
- "tofuri-core",
 ]
 
 [[package]]
@@ -4669,7 +4646,7 @@ dependencies = [
  "multiaddr",
  "sha2 0.10.6",
  "tofuri-block",
- "tofuri-core",
+ "tofuri-int",
  "tofuri-stake",
  "tofuri-transaction",
  "tokio",
@@ -4697,7 +4674,6 @@ dependencies = [
  "tofuri-address",
  "tofuri-api-core",
  "tofuri-api-util",
- "tofuri-core",
  "tofuri-int",
  "tofuri-key",
  "tofuri-stake",

@@ -1,4 +1,5 @@
 use crate::util;
+use crate::EXTENSION;
 use colored::*;
 use inquire::validator::Validation;
 use inquire::Confirm;
@@ -10,7 +11,7 @@ use lazy_static::lazy_static;
 use std::path::PathBuf;
 use std::process;
 use tofuri_address::address;
-use tofuri_core::*;
+use tofuri_int::DECIMAL_PLACES;
 use tofuri_key::Key;
 #[derive(Debug)]
 pub enum Error {
@@ -189,6 +190,7 @@ pub fn address() -> String {
             process::exit(0)
         })
 }
+const COIN: u128 = 10_u128.pow(DECIMAL_PLACES as u32);
 pub fn amount() -> u128 {
     (CustomType::<f64>::new("Amount:")
         .with_formatter(&|i| format!("{i:.18} tofuri"))

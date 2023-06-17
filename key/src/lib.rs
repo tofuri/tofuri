@@ -6,13 +6,13 @@ use secp256k1::SecretKey;
 use secp256k1::SECP256K1;
 use sha2::Digest;
 use sha2::Sha256;
-use tofuri_core::*;
 #[cfg(feature = "vrf")]
 use vrf::openssl::CipherSuite;
 #[cfg(feature = "vrf")]
 use vrf::openssl::ECVRF;
 #[cfg(feature = "vrf")]
 use vrf::VRF;
+pub const RECOVERY_ID: i32 = 0;
 #[derive(Debug)]
 pub enum Error {
     #[cfg(feature = "vrf")]

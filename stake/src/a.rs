@@ -6,7 +6,7 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_address::address;
-use tofuri_core::*;
+use tofuri_int::AMOUNT_BYTES;
 use tofuri_key::Key;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeA {

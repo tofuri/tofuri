@@ -6,8 +6,8 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_address::address;
-use tofuri_int::AMOUNT_BYTES;
 use tofuri_key::Key;
+use varint::Varint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionA {
     pub input_address: [u8; 20],
@@ -23,8 +23,8 @@ impl TransactionA {
     pub fn b(&self) -> TransactionB {
         TransactionB {
             output_address: self.output_address,
-            amount: tofuri_int::to_be_bytes(self.amount),
-            fee: tofuri_int::to_be_bytes(self.fee),
+            amount: Varint::from(self.amount).0,
+            fee: Varint::from(self.fee).0,
             timestamp: self.timestamp,
             signature: self.signature,
         }
@@ -42,8 +42,8 @@ impl TransactionA {
         let mut transaction_a = TransactionA {
             input_address: [0; 20],
             output_address,
-            amount: tofuri_int::floor(amount),
-            fee: tofuri_int::floor(fee),
+            amount: Varint::<4>::floor(amount),
+            fee: Varint::<4>::floor(fee),
             timestamp,
             hash: [0; 32],
             signature: [0; 64],
@@ -61,11 +61,11 @@ impl Transaction for TransactionA {
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount_bytes(&self) -> [u8; AMOUNT_BYTES] {
-        tofuri_int::to_be_bytes(self.amount)
+    fn get_amount_bytes(&self) -> [u8; 4] {
+        Varint::from(self.amount).0
     }
-    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES] {
-        tofuri_int::to_be_bytes(self.fee)
+    fn get_fee_bytes(&self) -> [u8; 4] {
+        Varint::from(self.fee).0
     }
     fn hash(&self) -> [u8; 32] {
         crate::hash(self)
@@ -92,8 +92,8 @@ impl fmt::Debug for TransactionA {
         f.debug_struct("TransactionA")
             .field("input_address", &address::encode(&self.input_address))
             .field("output_address", &address::encode(&self.output_address))
-            .field("amount", &tofuri_int::to_string(self.amount))
-            .field("fee", &tofuri_int::to_string(self.fee))
+            .field("amount", &parseint::to_string::<18>(self.amount))
+            .field("fee", &parseint::to_string::<18>(self.fee))
             .field("timestamp", &self.timestamp.to_string())
             .field("hash", &hex::encode(self.hash))
             .field("signature", &hex::encode(self.signature))

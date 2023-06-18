@@ -6,8 +6,8 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_address::address;
-use tofuri_int::AMOUNT_BYTES;
 use tofuri_key::Key;
+use varint::Varint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeA {
     pub amount: u128,
@@ -22,8 +22,8 @@ pub struct StakeA {
 impl StakeA {
     pub fn b(&self) -> StakeB {
         StakeB {
-            amount: tofuri_int::to_be_bytes(self.amount),
-            fee: tofuri_int::to_be_bytes(self.fee),
+            amount: Varint::from(self.amount).0,
+            fee: Varint::from(self.fee).0,
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -40,8 +40,8 @@ impl StakeA {
         key: &Key,
     ) -> Result<StakeA, Error> {
         let mut stake_a = StakeA {
-            amount: tofuri_int::floor(amount),
-            fee: tofuri_int::floor(fee),
+            amount: Varint::<4>::floor(amount),
+            fee: Varint::<4>::floor(fee),
             deposit,
             timestamp,
             signature: [0; 64],
@@ -61,8 +61,8 @@ impl Stake for StakeA {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES] {
-        tofuri_int::to_be_bytes(self.fee)
+    fn get_fee_bytes(&self) -> [u8; 4] {
+        Varint::from(self.fee).0
     }
     fn hash(&self) -> [u8; 32] {
         crate::hash(self)
@@ -87,8 +87,8 @@ impl Default for StakeA {
 impl fmt::Debug for StakeA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("StakeA")
-            .field("amount", &tofuri_int::to_string(self.amount))
-            .field("fee", &tofuri_int::to_string(self.fee))
+            .field("amount", &parseint::to_string::<18>(self.amount))
+            .field("fee", &parseint::to_string::<18>(self.fee))
             .field("deposit", &self.deposit)
             .field("timestamp", &self.timestamp)
             .field("signature", &hex::encode(self.signature))

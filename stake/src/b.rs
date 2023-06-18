@@ -5,12 +5,12 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
-use tofuri_int::AMOUNT_BYTES;
 use tofuri_key::Key;
+use varint::Varint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeB {
-    pub amount: [u8; AMOUNT_BYTES],
-    pub fee: [u8; AMOUNT_BYTES],
+    pub amount: [u8; 4],
+    pub fee: [u8; 4],
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
@@ -20,8 +20,8 @@ impl StakeB {
     pub fn a(&self, input_address: Option<[u8; 20]>) -> Result<StakeA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let stake_a = StakeA {
-            amount: tofuri_int::from_be_slice(&self.amount),
-            fee: tofuri_int::from_be_slice(&self.fee),
+            amount: Varint(self.amount).u128(),
+            fee: Varint(self.fee).u128(),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -48,7 +48,7 @@ impl Stake for StakeB {
     fn get_deposit(&self) -> bool {
         self.deposit
     }
-    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES] {
+    fn get_fee_bytes(&self) -> [u8; 4] {
         self.fee
     }
     fn hash(&self) -> [u8; 32] {
@@ -61,8 +61,8 @@ impl Stake for StakeB {
 impl Default for StakeB {
     fn default() -> StakeB {
         StakeB {
-            amount: [0; AMOUNT_BYTES],
-            fee: [0; AMOUNT_BYTES],
+            amount: [0; 4],
+            fee: [0; 4],
             deposit: false,
             timestamp: 0,
             signature: [0; 64],

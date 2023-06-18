@@ -53,7 +53,7 @@ fn balance(node: &mut Node, args: &[&str]) {
         Ok(x) => x,
         Err(_) => return error!("{}", "Invalid address"),
     };
-    let balance = tofuri_int::to_string(node.blockchain.balance(&address_bytes));
+    let balance = parseint::to_string::<18>(node.blockchain.balance(&address_bytes));
     info!(balance);
 }
 fn staked(node: &mut Node, args: &[&str]) {
@@ -65,7 +65,7 @@ fn staked(node: &mut Node, args: &[&str]) {
         Ok(x) => x,
         Err(_) => return error!("{}", "Invalid address"),
     };
-    let staked = tofuri_int::to_string(node.blockchain.staked(&address_bytes));
+    let staked = parseint::to_string::<18>(node.blockchain.staked(&address_bytes));
     info!(staked);
 }
 fn dial(node: &mut Node, args: &[&str]) {

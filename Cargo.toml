@@ -11,9 +11,9 @@ members = [
     "sync",
     "db",
     "fork",
-    "int",
     "key",
     "p2p",
+    "parseint",
     "pay",
     "pay-core",
     "pay-db",
@@ -22,5 +22,6 @@ members = [
     "transaction",
     "tree",
     "util",
+    "varint",
     "wallet",
 ]

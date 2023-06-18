@@ -6,13 +6,13 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_address::address;
-use tofuri_int::AMOUNT_BYTES;
 use tofuri_key::Key;
+use varint::Varint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionB {
     pub output_address: [u8; 20],
-    pub amount: [u8; AMOUNT_BYTES],
-    pub fee: [u8; AMOUNT_BYTES],
+    pub amount: [u8; 4],
+    pub fee: [u8; 4],
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: [u8; 64],
@@ -22,8 +22,8 @@ impl TransactionB {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let transaction_a = TransactionA {
             output_address: self.output_address,
-            amount: tofuri_int::from_be_slice(&self.amount),
-            fee: tofuri_int::from_be_slice(&self.fee),
+            amount: Varint(self.amount).u128(),
+            fee: Varint(self.fee).u128(),
             timestamp: self.timestamp,
             signature: self.signature,
             input_address,
@@ -48,10 +48,10 @@ impl Transaction for TransactionB {
     fn get_timestamp(&self) -> u32 {
         self.timestamp
     }
-    fn get_amount_bytes(&self) -> [u8; AMOUNT_BYTES] {
+    fn get_amount_bytes(&self) -> [u8; 4] {
         self.amount
     }
-    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES] {
+    fn get_fee_bytes(&self) -> [u8; 4] {
         self.fee
     }
     fn hash(&self) -> [u8; 32] {
@@ -65,8 +65,8 @@ impl Default for TransactionB {
     fn default() -> TransactionB {
         TransactionB {
             output_address: [0; 20],
-            amount: [0; AMOUNT_BYTES],
-            fee: [0; AMOUNT_BYTES],
+            amount: [0; 4],
+            fee: [0; 4],
             timestamp: 0,
             signature: [0; 64],
         }

@@ -1,3 +1,4 @@
+use std::num::ParseIntError;
 use tofuri_address::address;
 use tofuri_api_core::Block;
 use tofuri_api_core::Stake;
@@ -7,11 +8,12 @@ use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
+use varint::Varint;
 #[derive(Debug)]
 pub enum Error {
     Hex(hex::FromHexError),
     Address(tofuri_address::Error),
-    Int(tofuri_int::Error),
+    ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
 pub fn block(block_a: &BlockA) -> Block {
@@ -35,8 +37,8 @@ pub fn transaction(transaction_a: &TransactionA) -> Transaction {
     Transaction {
         input_address: address::encode(&transaction_a.input_address),
         output_address: address::encode(&transaction_a.output_address),
-        amount: tofuri_int::to_string(transaction_a.amount),
-        fee: tofuri_int::to_string(transaction_a.fee),
+        amount: parseint::to_string::<18>(transaction_a.amount),
+        fee: parseint::to_string::<18>(transaction_a.fee),
         timestamp: transaction_a.timestamp,
         hash: hex::encode(transaction_a.hash),
         signature: hex::encode(transaction_a.signature),
@@ -44,8 +46,8 @@ pub fn transaction(transaction_a: &TransactionA) -> Transaction {
 }
 pub fn stake(stake_a: &StakeA) -> Stake {
     Stake {
-        amount: tofuri_int::to_string(stake_a.amount),
-        fee: tofuri_int::to_string(stake_a.fee),
+        amount: parseint::to_string::<18>(stake_a.amount),
+        fee: parseint::to_string::<18>(stake_a.fee),
         deposit: stake_a.deposit,
         timestamp: stake_a.timestamp,
         signature: hex::encode(stake_a.signature),
@@ -56,10 +58,14 @@ pub fn stake(stake_a: &StakeA) -> Stake {
 pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
     let transaction_b = TransactionB {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
-        amount: tofuri_int::to_be_bytes(
-            tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?,
-        ),
-        fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&transaction.fee).map_err(Error::Int)?),
+        amount: Varint::from(
+            parseint::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,
+        )
+        .0,
+        fee: Varint::from(
+            parseint::from_str::<18>(&transaction.fee).map_err(Error::ParseIntError)?,
+        )
+        .0,
         timestamp: transaction.timestamp,
         signature: hex::decode(&transaction.signature)
             .map_err(Error::Hex)?
@@ -71,8 +77,11 @@ pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
 }
 pub fn stake_b(stake: &Stake) -> Result<StakeB, Error> {
     let stake_b = StakeB {
-        amount: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.amount).map_err(Error::Int)?),
-        fee: tofuri_int::to_be_bytes(tofuri_int::from_str(&stake.fee).map_err(Error::Int)?),
+        amount: Varint::from(
+            parseint::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?,
+        )
+        .0,
+        fee: Varint::from(parseint::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?).0,
         deposit: stake.deposit,
         timestamp: stake.timestamp,
         signature: hex::decode(&stake.signature)

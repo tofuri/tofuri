@@ -6,6 +6,7 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
+use std::num::ParseIntError;
 use tofuri_api_core::Block;
 use tofuri_api_core::Transaction;
 use tofuri_key::Key;
@@ -19,7 +20,7 @@ pub enum Error {
     RocksDB(rocksdb::Error),
     DB(tofuri_pay_db::Error),
     Bincode(bincode::Error),
-    Int(tofuri_int::Error),
+    ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
@@ -137,7 +138,9 @@ impl Pay {
                     };
                     map.insert(
                         address,
-                        amount + tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?,
+                        amount
+                            + parseint::from_str::<18>(&transaction.amount)
+                                .map_err(Error::ParseIntError)?,
                     );
                 }
             }

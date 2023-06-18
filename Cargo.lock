@@ -3065,6 +3065,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "parseint"
+version = "0.1.0"
+
+[[package]]
 name = "password-hash"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3888,9 +3892,9 @@ checksum = "bebd363326d05ec3e2f532ab7660680f3b02130d780c299bca73469d521bc0ed"
 
 [[package]]
 name = "serde"
-version = "1.0.163"
+version = "1.0.164"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2113ab51b87a539ae008b5c6c02dc020ffa39afd2d83cffcb3f4eb2722cebec2"
+checksum = "9e8c8cf938e98f769bc164923b06dce91cea1751522f46f8466461af04c9027d"
 dependencies = [
  "serde_derive",
 ]
@@ -3906,9 +3910,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.163"
+version = "1.0.164"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c805777e3930c8883389c602315a24224bcc738b63905ef87cd1420353ea93e"
+checksum = "d9735b638ccc51c28bf6914d90a2e9725b377144fc612c49a611fddd1b631d68"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4341,6 +4345,7 @@ dependencies = [
  "colored",
  "hex",
  "libp2p",
+ "parseint",
  "rand 0.8.5",
  "rocksdb",
  "serde",
@@ -4351,7 +4356,6 @@ dependencies = [
  "tofuri-block",
  "tofuri-blockchain",
  "tofuri-db",
- "tofuri-int",
  "tofuri-key",
  "tofuri-p2p",
  "tofuri-rpc-core",
@@ -4363,6 +4367,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "varint",
  "void",
 ]
 
@@ -4381,12 +4386,12 @@ dependencies = [
  "axum",
  "clap",
  "hex",
+ "parseint",
  "serde",
  "tofuri-address",
  "tofuri-api-core",
  "tofuri-api-util",
  "tofuri-block",
- "tofuri-int",
  "tofuri-rpc",
  "tofuri-stake",
  "tofuri-transaction",
@@ -4395,6 +4400,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "varint",
 ]
 
 [[package]]
@@ -4409,12 +4415,13 @@ name = "tofuri-api-util"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "parseint",
  "tofuri-address",
  "tofuri-api-core",
  "tofuri-block",
- "tofuri-int",
  "tofuri-stake",
  "tofuri-transaction",
+ "varint",
 ]
 
 [[package]]
@@ -4423,14 +4430,15 @@ version = "0.1.0"
 dependencies = [
  "hex",
  "merkle-cbt",
+ "parseint",
  "serde",
  "serde-big-array",
  "sha2 0.10.6",
  "tofuri-address",
- "tofuri-int",
  "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
+ "varint",
 ]
 
 [[package]]
@@ -4439,13 +4447,13 @@ version = "0.1.0"
 dependencies = [
  "colored",
  "hex",
+ "parseint",
  "rocksdb",
  "serde",
  "tofuri-address",
  "tofuri-block",
  "tofuri-db",
  "tofuri-fork",
- "tofuri-int",
  "tofuri-key",
  "tofuri-stake",
  "tofuri-sync",
@@ -4453,6 +4461,7 @@ dependencies = [
  "tofuri-tree",
  "tofuri-util",
  "tracing",
+ "varint",
 ]
 
 [[package]]
@@ -4468,37 +4477,35 @@ name = "tofuri-db"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "parseint",
  "rocksdb",
  "tofuri-block",
  "tofuri-checkpoint",
- "tofuri-int",
  "tofuri-stake",
  "tofuri-transaction",
  "tofuri-tree",
  "tracing",
+ "varint",
 ]
 
 [[package]]
 name = "tofuri-fork"
 version = "0.1.0"
 dependencies = [
+ "parseint",
  "rocksdb",
  "serde",
  "tofuri-address",
  "tofuri-block",
  "tofuri-checkpoint",
  "tofuri-db",
- "tofuri-int",
  "tofuri-stake",
  "tofuri-transaction",
  "tofuri-tree",
  "tofuri-util",
  "tracing",
+ "varint",
 ]
-
-[[package]]
-name = "tofuri-int"
-version = "0.1.0"
 
 [[package]]
 name = "tofuri-key"
@@ -4534,6 +4541,7 @@ dependencies = [
  "clap",
  "hex",
  "lazy_static",
+ "parseint",
  "regex",
  "reqwest",
  "rocksdb",
@@ -4541,7 +4549,6 @@ dependencies = [
  "tempdir",
  "tofuri-address",
  "tofuri-api-core",
- "tofuri-int",
  "tofuri-key",
  "tofuri-pay-core",
  "tofuri-pay-db",
@@ -4551,6 +4558,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "varint",
 ]
 
 [[package]]
@@ -4598,12 +4606,13 @@ name = "tofuri-stake"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "parseint",
  "serde",
  "serde-big-array",
  "sha2 0.10.6",
  "tofuri-address",
- "tofuri-int",
  "tofuri-key",
+ "varint",
 ]
 
 [[package]]
@@ -4619,12 +4628,13 @@ name = "tofuri-transaction"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "parseint",
  "serde",
  "serde-big-array",
  "sha2 0.10.6",
  "tofuri-address",
- "tofuri-int",
  "tofuri-key",
+ "varint",
 ]
 
 [[package]]
@@ -4644,15 +4654,16 @@ dependencies = [
  "colored",
  "lazy_static",
  "multiaddr",
+ "parseint",
  "sha2 0.10.6",
  "tofuri-block",
- "tofuri-int",
  "tofuri-stake",
  "tofuri-transaction",
  "tokio",
  "tracing",
  "tracing-subscriber",
  "uint",
+ "varint",
 ]
 
 [[package]]
@@ -4669,18 +4680,19 @@ dependencies = [
  "hex",
  "inquire",
  "lazy_static",
+ "parseint",
  "rand 0.8.5",
  "reqwest",
  "tofuri-address",
  "tofuri-api-core",
  "tofuri-api-util",
- "tofuri-int",
  "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
  "tofuri-util",
  "tokio",
  "tracing",
+ "varint",
  "zxcvbn",
 ]
 
@@ -5053,6 +5065,10 @@ name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
+
+[[package]]
+name = "varint"
+version = "0.1.0"
 
 [[package]]
 name = "vcpkg"

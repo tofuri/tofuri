@@ -4,7 +4,6 @@ pub use a::TransactionA;
 pub use b::TransactionB;
 use sha2::Digest;
 use sha2::Sha256;
-use tofuri_int::AMOUNT_BYTES;
 #[derive(Debug)]
 pub enum Error {
     Key(tofuri_key::Error),
@@ -12,8 +11,8 @@ pub enum Error {
 pub trait Transaction {
     fn get_output_address(&self) -> &[u8; 20];
     fn get_timestamp(&self) -> u32;
-    fn get_amount_bytes(&self) -> [u8; AMOUNT_BYTES];
-    fn get_fee_bytes(&self) -> [u8; AMOUNT_BYTES];
+    fn get_amount_bytes(&self) -> [u8; 4];
+    fn get_fee_bytes(&self) -> [u8; 4];
     fn hash(&self) -> [u8; 32];
     fn hash_input(&self) -> [u8; 32];
 }

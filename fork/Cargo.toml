@@ -8,7 +8,8 @@ repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 tofuri-address = { version = "0.1.1", path = "../address" }
-tofuri-int = { version = "0.1.0", path = "../int" }
+varint = { path = "../varint" }
+parseint = { path = "../parseint" }
 tofuri-block = { version = "0.1.0", path = "../block" }
 tofuri-checkpoint = { version = "0.1.0", path = "../checkpoint" }
 tofuri-db = { version = "0.1.0", path = "../db" }

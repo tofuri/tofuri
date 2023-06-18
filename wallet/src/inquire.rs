@@ -11,8 +11,8 @@ use lazy_static::lazy_static;
 use std::path::PathBuf;
 use std::process;
 use tofuri_address::address;
-use tofuri_int::DECIMAL_PLACES;
 use tofuri_key::Key;
+use varint::Varint;
 #[derive(Debug)]
 pub enum Error {
     Util(util::Error),
@@ -190,7 +190,7 @@ pub fn address() -> String {
             process::exit(0)
         })
 }
-const COIN: u128 = 10_u128.pow(DECIMAL_PLACES as u32);
+const COIN: u128 = 10_u128.pow(18);
 pub fn amount() -> u128 {
     (CustomType::<f64>::new("Amount:")
         .with_formatter(&|i| format!("{i:.18} tofuri"))
@@ -198,7 +198,7 @@ pub fn amount() -> u128 {
         .with_help_message("Type the amount to send using a decimal point as a separator")
         .with_parser(&|input| match input.parse::<f64>() {
             Ok(amount) => {
-                Ok(tofuri_int::floor((amount * COIN as f64) as u128) as f64 / COIN as f64)
+                Ok(Varint::<4>::floor((amount * COIN as f64) as u128) as f64 / COIN as f64)
             }
             Err(_) => Err(()),
         })
@@ -215,7 +215,7 @@ pub fn fee() -> u128 {
         .with_error_message("Please type a valid number")
         .with_help_message("Type the fee to use in satoshis")
         .with_parser(&|input| match input.parse::<u128>() {
-            Ok(fee) => Ok(tofuri_int::floor(fee)),
+            Ok(fee) => Ok(Varint::<4>::floor(fee)),
             Err(_) => Err(()),
         })
         .prompt()

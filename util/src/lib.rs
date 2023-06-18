@@ -7,7 +7,6 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::time::Duration;
 use tofuri_block::BlockB;
-use tofuri_int::DECIMAL_PLACES;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionB;
 use tokio::time::Instant;
@@ -59,7 +58,7 @@ pub fn penalty(index: usize) -> u128 {
     if index == 0 {
         return 0;
     }
-    10_u128.pow(DECIMAL_PLACES as u32) * 2u128.pow(index as u32 - 1)
+    10_u128.pow(18) * 2_u128.pow(index as u32 - 1)
 }
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32

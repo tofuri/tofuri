@@ -25,7 +25,7 @@ pub async fn root(State(args): State<Args>) -> impl IntoResponse {
 #[instrument(skip_all)]
 pub async fn balance(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance = tofuri_int::to_string(
+    let balance = parseint::to_string::<18>(
         tofuri_rpc::balance(&args.rpc, &address_bytes)
             .await
             .unwrap(),
@@ -38,7 +38,7 @@ pub async fn balance_pending_min(
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance_pending_min = tofuri_int::to_string(
+    let balance_pending_min = parseint::to_string::<18>(
         tofuri_rpc::balance_pending_min(&args.rpc, &address_bytes)
             .await
             .unwrap(),
@@ -51,7 +51,7 @@ pub async fn balance_pending_max(
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance_pending_max = tofuri_int::to_string(
+    let balance_pending_max = parseint::to_string::<18>(
         tofuri_rpc::balance_pending_max(&args.rpc, &address_bytes)
             .await
             .unwrap(),
@@ -62,7 +62,7 @@ pub async fn balance_pending_max(
 pub async fn staked(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
     let staked =
-        tofuri_int::to_string(tofuri_rpc::staked(&args.rpc, &address_bytes).await.unwrap());
+        parseint::to_string::<18>(tofuri_rpc::staked(&args.rpc, &address_bytes).await.unwrap());
     Json(staked)
 }
 #[instrument(skip_all)]
@@ -71,7 +71,7 @@ pub async fn staked_pending_min(
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked_pending_min = tofuri_int::to_string(
+    let staked_pending_min = parseint::to_string::<18>(
         tofuri_rpc::staked_pending_min(&args.rpc, &address_bytes)
             .await
             .unwrap(),
@@ -84,7 +84,7 @@ pub async fn staked_pending_max(
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked_pending_max = tofuri_int::to_string(
+    let staked_pending_max = parseint::to_string::<18>(
         tofuri_rpc::staked_pending_max(&args.rpc, &address_bytes)
             .await
             .unwrap(),

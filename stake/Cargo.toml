@@ -7,7 +7,8 @@ description = "Tofuri stake"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-int = { version = "0.1.0", path = "../int" }
+varint = { path = "../varint" }
+parseint = { path = "../parseint" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-address = { version = "0.1.1", path = "../address" }
 serde = { version = "1.0.163", features = ["derive"] }

@@ -69,11 +69,15 @@ impl Unstable {
             };
             if stake_a.deposit {
                 balance = balance
-                    .checked_sub(stake_a.amount + stake_a.fee)
+                    .checked_sub((stake_a.amount + stake_a.fee).into())
                     .ok_or(Error::Overflow)?;
             } else {
-                balance = balance.checked_sub(stake_a.fee).ok_or(Error::Overflow)?;
-                staked = staked.checked_sub(stake_a.amount).ok_or(Error::Overflow)?;
+                balance = balance
+                    .checked_sub(stake_a.fee.into())
+                    .ok_or(Error::Overflow)?;
+                staked = staked
+                    .checked_sub(stake_a.amount.into())
+                    .ok_or(Error::Overflow)?;
             }
             map_balance.insert(k, balance);
             map_staked.insert(k, staked);

@@ -7,6 +7,7 @@ use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_address::address;
 use tofuri_key::Key;
+use vint::floor;
 use vint::Vint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionA {
@@ -42,8 +43,8 @@ impl TransactionA {
         let mut transaction_a = TransactionA {
             input_address: [0; 20],
             output_address,
-            amount: Vint::<4>::floor(amount),
-            fee: Vint::<4>::floor(fee),
+            amount: floor!(amount, 4),
+            fee: floor!(fee, 4),
             timestamp,
             hash: [0; 32],
             signature: [0; 64],

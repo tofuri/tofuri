@@ -24,6 +24,7 @@ use tofuri_util::TRANSACTION_SIZE;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
+use vint::floor;
 use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
@@ -193,7 +194,7 @@ impl Blockchain {
                     stakes.pop();
                 }
                 (Some(transaction), Some(stake)) => {
-                    if transaction.fee < stake.fee {
+                    if transaction.fee < stake.fee.into() {
                         transactions.pop();
                     } else {
                         stakes.pop();
@@ -312,14 +313,14 @@ impl Blockchain {
         }
         let balance_pending_min = self.balance_pending_min(&stake_a.input_address);
         if stake_a.deposit {
-            if stake_a.amount + stake_a.fee > balance_pending_min {
+            if stake_a.amount + stake_a.fee > balance_pending_min.into() {
                 return Err(Error::StakeDepositTooExpensive);
             }
         } else {
-            if stake_a.fee > balance_pending_min {
+            if stake_a.fee > balance_pending_min.into() {
                 return Err(Error::StakeWithdrawFeeTooExpensive);
             }
-            if stake_a.amount > self.staked_pending_min(&stake_a.input_address) {
+            if stake_a.amount > self.staked_pending_min(&stake_a.input_address).into() {
                 return Err(Error::StakeWithdrawAmountTooExpensive);
             }
         }
@@ -370,10 +371,10 @@ impl Blockchain {
         if transaction_a.fee == 0 {
             return Err(Error::TransactionFeeZero);
         }
-        if transaction_a.amount != Vint::<4>::floor(transaction_a.amount) {
+        if transaction_a.amount != floor!(transaction_a.amount, 4) {
             return Err(Error::TransactionAmountFloor);
         }
-        if transaction_a.fee != Vint::<4>::floor(transaction_a.fee) {
+        if transaction_a.fee != floor!(transaction_a.fee, 4) {
             return Err(Error::TransactionFeeFloor);
         }
         if transaction_a.input_address == transaction_a.output_address {
@@ -391,16 +392,16 @@ impl Blockchain {
         Ok(())
     }
     fn validate_stake(unstable: &Unstable, stake_a: &StakeA, timestamp: u32) -> Result<(), Error> {
-        if stake_a.amount == 0 {
+        if u128::from(stake_a.amount) == 0 {
             return Err(Error::StakeAmountZero);
         }
-        if stake_a.fee == 0 {
+        if u128::from(stake_a.fee) == 0 {
             return Err(Error::StakeFeeZero);
         }
-        if stake_a.amount != Vint::<4>::floor(stake_a.amount) {
+        if u128::from(stake_a.amount) != floor!(u128::from(stake_a.amount), 4) {
             return Err(Error::StakeAmountFloor);
         }
-        if stake_a.fee != Vint::<4>::floor(stake_a.fee) {
+        if u128::from(stake_a.fee) != floor!(u128::from(stake_a.fee), 4) {
             return Err(Error::StakeFeeFloor);
         }
         if stake_a.timestamp > timestamp {

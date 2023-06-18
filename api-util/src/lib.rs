@@ -46,8 +46,8 @@ pub fn transaction(transaction_a: &TransactionA) -> Transaction {
 }
 pub fn stake(stake_a: &StakeA) -> Stake {
     Stake {
-        amount: parseint::to_string::<18>(stake_a.amount),
-        fee: parseint::to_string::<18>(stake_a.fee),
+        amount: parseint::to_string::<18>(stake_a.amount.into()),
+        fee: parseint::to_string::<18>(stake_a.fee.into()),
         deposit: stake_a.deposit,
         timestamp: stake_a.timestamp,
         signature: hex::encode(stake_a.signature),

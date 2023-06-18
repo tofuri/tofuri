@@ -22,8 +22,8 @@ impl TransactionB {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let transaction_a = TransactionA {
             output_address: self.output_address,
-            amount: self.amount.int(),
-            fee: self.fee.int(),
+            amount: self.amount.into(),
+            fee: self.fee.into(),
             timestamp: self.timestamp,
             signature: self.signature,
             input_address,

@@ -24,7 +24,7 @@ use tofuri_util::TRANSACTION_SIZE;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
-use varint::Varint;
+use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Block(tofuri_block::Error),
@@ -370,10 +370,10 @@ impl Blockchain {
         if transaction_a.fee == 0 {
             return Err(Error::TransactionFeeZero);
         }
-        if transaction_a.amount != Varint::<4>::floor(transaction_a.amount) {
+        if transaction_a.amount != Vint::<4>::floor(transaction_a.amount) {
             return Err(Error::TransactionAmountFloor);
         }
-        if transaction_a.fee != Varint::<4>::floor(transaction_a.fee) {
+        if transaction_a.fee != Vint::<4>::floor(transaction_a.fee) {
             return Err(Error::TransactionFeeFloor);
         }
         if transaction_a.input_address == transaction_a.output_address {
@@ -397,10 +397,10 @@ impl Blockchain {
         if stake_a.fee == 0 {
             return Err(Error::StakeFeeZero);
         }
-        if stake_a.amount != Varint::<4>::floor(stake_a.amount) {
+        if stake_a.amount != Vint::<4>::floor(stake_a.amount) {
             return Err(Error::StakeAmountFloor);
         }
-        if stake_a.fee != Varint::<4>::floor(stake_a.fee) {
+        if stake_a.fee != Vint::<4>::floor(stake_a.fee) {
             return Err(Error::StakeFeeFloor);
         }
         if stake_a.timestamp > timestamp {

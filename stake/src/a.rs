@@ -7,7 +7,7 @@ use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_address::address;
 use tofuri_key::Key;
-use varint::Varint;
+use vint::Vint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeA {
     pub amount: u128,
@@ -22,8 +22,8 @@ pub struct StakeA {
 impl StakeA {
     pub fn b(&self) -> StakeB {
         StakeB {
-            amount: Varint::from(self.amount),
-            fee: Varint::from(self.fee),
+            amount: Vint::from(self.amount),
+            fee: Vint::from(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -40,8 +40,8 @@ impl StakeA {
         key: &Key,
     ) -> Result<StakeA, Error> {
         let mut stake_a = StakeA {
-            amount: Varint::<4>::floor(amount),
-            fee: Varint::<4>::floor(fee),
+            amount: Vint::<4>::floor(amount),
+            fee: Vint::<4>::floor(fee),
             deposit,
             timestamp,
             signature: [0; 64],
@@ -62,7 +62,7 @@ impl Stake for StakeA {
         self.deposit
     }
     fn get_fee_bytes(&self) -> [u8; 4] {
-        Varint::from(self.fee).0
+        Vint::from(self.fee).0
     }
     fn hash(&self) -> [u8; 32] {
         crate::hash(self)

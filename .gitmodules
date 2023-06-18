@@ -1,6 +1,6 @@
 [submodule "parseint"]
 	path = parseint
 	url = https://github.com/zudo/parseint
-[submodule "varint"]
-	path = varint
-	url = https://github.com/zudo/varint
+[submodule "vint"]
+	path = vint
+	url = https://github.com/zudo/vint

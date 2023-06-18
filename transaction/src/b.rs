@@ -7,12 +7,12 @@ use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_address::address;
 use tofuri_key::Key;
-use varint::Varint;
+use vint::Vint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionB {
     pub output_address: [u8; 20],
-    pub amount: Varint<4>,
-    pub fee: Varint<4>,
+    pub amount: Vint<4>,
+    pub fee: Vint<4>,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: [u8; 64],
@@ -22,8 +22,8 @@ impl TransactionB {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let transaction_a = TransactionA {
             output_address: self.output_address,
-            amount: self.amount.u128(),
-            fee: self.fee.u128(),
+            amount: self.amount.int(),
+            fee: self.fee.int(),
             timestamp: self.timestamp,
             signature: self.signature,
             input_address,
@@ -65,8 +65,8 @@ impl Default for TransactionB {
     fn default() -> TransactionB {
         TransactionB {
             output_address: [0; 20],
-            amount: Varint([0; 4]),
-            fee: Varint([0; 4]),
+            amount: Vint([0; 4]),
+            fee: Vint([0; 4]),
             timestamp: 0,
             signature: [0; 64],
         }

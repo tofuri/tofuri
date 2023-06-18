@@ -7,7 +7,7 @@ use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_address::address;
 use tofuri_key::Key;
-use varint::Varint;
+use vint::Vint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionA {
     pub input_address: [u8; 20],
@@ -23,8 +23,8 @@ impl TransactionA {
     pub fn b(&self) -> TransactionB {
         TransactionB {
             output_address: self.output_address,
-            amount: Varint::from(self.amount),
-            fee: Varint::from(self.fee),
+            amount: Vint::from(self.amount),
+            fee: Vint::from(self.fee),
             timestamp: self.timestamp,
             signature: self.signature,
         }
@@ -42,8 +42,8 @@ impl TransactionA {
         let mut transaction_a = TransactionA {
             input_address: [0; 20],
             output_address,
-            amount: Varint::<4>::floor(amount),
-            fee: Varint::<4>::floor(fee),
+            amount: Vint::<4>::floor(amount),
+            fee: Vint::<4>::floor(fee),
             timestamp,
             hash: [0; 32],
             signature: [0; 64],
@@ -62,10 +62,10 @@ impl Transaction for TransactionA {
         self.timestamp
     }
     fn get_amount_bytes(&self) -> [u8; 4] {
-        Varint::from(self.amount).0
+        Vint::from(self.amount).0
     }
     fn get_fee_bytes(&self) -> [u8; 4] {
-        Varint::from(self.fee).0
+        Vint::from(self.fee).0
     }
     fn hash(&self) -> [u8; 32] {
         crate::hash(self)

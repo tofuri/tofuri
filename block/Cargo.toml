@@ -11,7 +11,7 @@ tofuri-key = { version = "0.1.0", path = "../key", features = ["vrf"] }
 tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
 tofuri-address = { version = "0.1.0", path = "../address" }
-varint = { path = "../varint" }
+vint = { path = "../vint" }
 parseint = { path = "../parseint" }
 serde = { version = "1.0.163", features = ["derive"] }
 serde-big-array = "0.5.1"

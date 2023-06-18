@@ -12,7 +12,7 @@ default-run = "tofuri"
 [dependencies]
 tofuri-address = { version = "0.1.1", path = "../address" }
 tofuri-rpc-core = { version = "0.1.0", path = "../rpc-core" }
-varint = { path = "../varint" }
+vint = { path = "../vint" }
 parseint = { path = "../parseint" }
 tofuri-block = { version = "0.1.0", path = "../block" }
 tofuri-blockchain = { version = "0.1.0", path = "../blockchain" }

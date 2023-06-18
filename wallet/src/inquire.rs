@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::process;
 use tofuri_address::address;
 use tofuri_key::Key;
-use varint::Varint;
+use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Util(util::Error),
@@ -197,9 +197,7 @@ pub fn amount() -> u128 {
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount to send using a decimal point as a separator")
         .with_parser(&|input| match input.parse::<f64>() {
-            Ok(amount) => {
-                Ok(Varint::<4>::floor((amount * COIN as f64) as u128) as f64 / COIN as f64)
-            }
+            Ok(amount) => Ok(Vint::<4>::floor((amount * COIN as f64) as u128) as f64 / COIN as f64),
             Err(_) => Err(()),
         })
         .prompt()
@@ -215,7 +213,7 @@ pub fn fee() -> u128 {
         .with_error_message("Please type a valid number")
         .with_help_message("Type the fee to use in satoshis")
         .with_parser(&|input| match input.parse::<u128>() {
-            Ok(fee) => Ok(Varint::<4>::floor(fee)),
+            Ok(fee) => Ok(Vint::<4>::floor(fee)),
             Err(_) => Err(()),
         })
         .prompt()

@@ -6,11 +6,11 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_key::Key;
-use varint::Varint;
+use vint::Vint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeB {
-    pub amount: Varint<4>,
-    pub fee: Varint<4>,
+    pub amount: Vint<4>,
+    pub fee: Vint<4>,
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
@@ -20,8 +20,8 @@ impl StakeB {
     pub fn a(&self, input_address: Option<[u8; 20]>) -> Result<StakeA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let stake_a = StakeA {
-            amount: self.amount.u128(),
-            fee: self.fee.u128(),
+            amount: self.amount.int(),
+            fee: self.fee.int(),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -61,8 +61,8 @@ impl Stake for StakeB {
 impl Default for StakeB {
     fn default() -> StakeB {
         StakeB {
-            amount: Varint([0; 4]),
-            fee: Varint([0; 4]),
+            amount: Vint([0; 4]),
+            fee: Vint([0; 4]),
             deposit: false,
             timestamp: 0,
             signature: [0; 64],

@@ -7,7 +7,7 @@ description = "Tofuri stake"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-varint = { path = "../varint" }
+vint = { path = "../vint" }
 parseint = { path = "../parseint" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-address = { version = "0.1.1", path = "../address" }

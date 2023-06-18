@@ -12,7 +12,7 @@ repository = "https://github.com/tofuri/tofuri"
 tofuri-api-core = { version = "0.1.0", path = "../api-core" }
 tofuri-api-util = { version = "0.1.0", path = "../api-util" }
 tofuri-address = { version = "0.1.1", path = "../address" }
-varint = { path = "../varint" }
+vint = { path = "../vint" }
 parseint = { path = "../parseint" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }

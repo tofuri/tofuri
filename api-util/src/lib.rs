@@ -8,7 +8,7 @@ use tofuri_stake::StakeA;
 use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
-use varint::Varint;
+use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Hex(hex::FromHexError),
@@ -58,12 +58,10 @@ pub fn stake(stake_a: &StakeA) -> Stake {
 pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
     let transaction_b = TransactionB {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
-        amount: Varint::from(
+        amount: Vint::from(
             parseint::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,
         ),
-        fee: Varint::from(
-            parseint::from_str::<18>(&transaction.fee).map_err(Error::ParseIntError)?,
-        ),
+        fee: Vint::from(parseint::from_str::<18>(&transaction.fee).map_err(Error::ParseIntError)?),
         timestamp: transaction.timestamp,
         signature: hex::decode(&transaction.signature)
             .map_err(Error::Hex)?
@@ -75,10 +73,8 @@ pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
 }
 pub fn stake_b(stake: &Stake) -> Result<StakeB, Error> {
     let stake_b = StakeB {
-        amount: Varint::from(
-            parseint::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?,
-        ),
-        fee: Varint::from(parseint::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),
+        amount: Vint::from(parseint::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?),
+        fee: Vint::from(parseint::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),
         deposit: stake.deposit,
         timestamp: stake.timestamp,
         signature: hex::decode(&stake.signature)

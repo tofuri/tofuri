@@ -4378,7 +4378,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "varint",
+ "vint",
  "void",
 ]
 
@@ -4411,7 +4411,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4432,7 +4432,7 @@ dependencies = [
  "tofuri-block",
  "tofuri-stake",
  "tofuri-transaction",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4449,7 +4449,7 @@ dependencies = [
  "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4472,7 +4472,7 @@ dependencies = [
  "tofuri-tree",
  "tofuri-util",
  "tracing",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4496,7 +4496,7 @@ dependencies = [
  "tofuri-transaction",
  "tofuri-tree",
  "tracing",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4515,7 +4515,7 @@ dependencies = [
  "tofuri-tree",
  "tofuri-util",
  "tracing",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4569,7 +4569,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4623,7 +4623,7 @@ dependencies = [
  "sha2 0.10.7",
  "tofuri-address",
  "tofuri-key",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4645,7 +4645,7 @@ dependencies = [
  "sha2 0.10.7",
  "tofuri-address",
  "tofuri-key",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4674,7 +4674,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uint",
- "varint",
+ "vint",
 ]
 
 [[package]]
@@ -4703,7 +4703,7 @@ dependencies = [
  "tofuri-util",
  "tokio",
  "tracing",
- "varint",
+ "vint",
  "zxcvbn",
 ]
 
@@ -5078,15 +5078,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 
 [[package]]
-name = "varint"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5097,6 +5088,15 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "vint"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "void"

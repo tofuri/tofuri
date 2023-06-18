@@ -7,7 +7,7 @@ description = "Tofuri database"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-varint = { path = "../varint" }
+vint = { path = "../vint" }
 parseint = { path = "../parseint" }
 tofuri-block = { version = "0.1.0", path = "../block" }
 tofuri-checkpoint = { version = "0.1.0", path = "../checkpoint" }

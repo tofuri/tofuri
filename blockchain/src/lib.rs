@@ -57,8 +57,6 @@ pub enum Error {
     StakeWithdrawAmountTooExpensive,
     StakeAmountZero,
     StakeFeeZero,
-    StakeAmountFloor,
-    StakeFeeFloor,
     StakeTimestampFuture,
     StakeTimestamp,
     StakeInChain,
@@ -397,12 +395,6 @@ impl Blockchain {
         }
         if u128::from(stake_a.fee) == 0 {
             return Err(Error::StakeFeeZero);
-        }
-        if u128::from(stake_a.amount) != floor!(u128::from(stake_a.amount), 4) {
-            return Err(Error::StakeAmountFloor);
-        }
-        if u128::from(stake_a.fee) != floor!(u128::from(stake_a.fee), 4) {
-            return Err(Error::StakeFeeFloor);
         }
         if stake_a.timestamp > timestamp {
             return Err(Error::StakeTimestampFuture);

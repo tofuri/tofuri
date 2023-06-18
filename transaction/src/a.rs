@@ -23,8 +23,8 @@ impl TransactionA {
     pub fn b(&self) -> TransactionB {
         TransactionB {
             output_address: self.output_address,
-            amount: Varint::from(self.amount).0,
-            fee: Varint::from(self.fee).0,
+            amount: Varint::from(self.amount),
+            fee: Varint::from(self.fee),
             timestamp: self.timestamp,
             signature: self.signature,
         }

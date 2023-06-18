@@ -11,8 +11,8 @@ use varint::Varint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionB {
     pub output_address: [u8; 20],
-    pub amount: [u8; 4],
-    pub fee: [u8; 4],
+    pub amount: Varint<4>,
+    pub fee: Varint<4>,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
     pub signature: [u8; 64],
@@ -22,8 +22,8 @@ impl TransactionB {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let transaction_a = TransactionA {
             output_address: self.output_address,
-            amount: Varint(self.amount).u128(),
-            fee: Varint(self.fee).u128(),
+            amount: self.amount.u128(),
+            fee: self.fee.u128(),
             timestamp: self.timestamp,
             signature: self.signature,
             input_address,
@@ -49,10 +49,10 @@ impl Transaction for TransactionB {
         self.timestamp
     }
     fn get_amount_bytes(&self) -> [u8; 4] {
-        self.amount
+        self.amount.0
     }
     fn get_fee_bytes(&self) -> [u8; 4] {
-        self.fee
+        self.fee.0
     }
     fn hash(&self) -> [u8; 32] {
         crate::hash(self)
@@ -65,8 +65,8 @@ impl Default for TransactionB {
     fn default() -> TransactionB {
         TransactionB {
             output_address: [0; 20],
-            amount: [0; 4],
-            fee: [0; 4],
+            amount: Varint([0; 4]),
+            fee: Varint([0; 4]),
             timestamp: 0,
             signature: [0; 64],
         }
@@ -76,8 +76,8 @@ impl fmt::Debug for TransactionB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TransactionB")
             .field("output_address", &address::encode(&self.output_address))
-            .field("amount", &hex::encode(self.amount))
-            .field("fee", &hex::encode(self.fee))
+            .field("amount", &hex::encode(self.amount.0))
+            .field("fee", &hex::encode(self.fee.0))
             .field("timestamp", &self.timestamp.to_string())
             .field("signature", &hex::encode(self.signature))
             .finish()

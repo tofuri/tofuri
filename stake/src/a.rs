@@ -22,8 +22,8 @@ pub struct StakeA {
 impl StakeA {
     pub fn b(&self) -> StakeB {
         StakeB {
-            amount: Varint::from(self.amount).0,
-            fee: Varint::from(self.fee).0,
+            amount: Varint::from(self.amount),
+            fee: Varint::from(self.fee),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,

@@ -9,8 +9,8 @@ use tofuri_key::Key;
 use varint::Varint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeB {
-    pub amount: [u8; 4],
-    pub fee: [u8; 4],
+    pub amount: Varint<4>,
+    pub fee: Varint<4>,
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
@@ -20,8 +20,8 @@ impl StakeB {
     pub fn a(&self, input_address: Option<[u8; 20]>) -> Result<StakeA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let stake_a = StakeA {
-            amount: Varint(self.amount).u128(),
-            fee: Varint(self.fee).u128(),
+            amount: self.amount.u128(),
+            fee: self.fee.u128(),
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -49,7 +49,7 @@ impl Stake for StakeB {
         self.deposit
     }
     fn get_fee_bytes(&self) -> [u8; 4] {
-        self.fee
+        self.fee.0
     }
     fn hash(&self) -> [u8; 32] {
         crate::hash(self)
@@ -61,8 +61,8 @@ impl Stake for StakeB {
 impl Default for StakeB {
     fn default() -> StakeB {
         StakeB {
-            amount: [0; 4],
-            fee: [0; 4],
+            amount: Varint([0; 4]),
+            fee: Varint([0; 4]),
             deposit: false,
             timestamp: 0,
             signature: [0; 64],
@@ -72,8 +72,8 @@ impl Default for StakeB {
 impl fmt::Debug for StakeB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("StakeB")
-            .field("amount", &hex::encode(self.amount))
-            .field("fee", &hex::encode(self.fee))
+            .field("amount", &hex::encode(self.amount.0))
+            .field("fee", &hex::encode(self.fee.0))
             .field("deposit", &self.deposit)
             .field("timestamp", &self.timestamp)
             .field("signature", &hex::encode(self.signature))

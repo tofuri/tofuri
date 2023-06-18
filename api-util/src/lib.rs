@@ -60,12 +60,10 @@ pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
         amount: Varint::from(
             parseint::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,
-        )
-        .0,
+        ),
         fee: Varint::from(
             parseint::from_str::<18>(&transaction.fee).map_err(Error::ParseIntError)?,
-        )
-        .0,
+        ),
         timestamp: transaction.timestamp,
         signature: hex::decode(&transaction.signature)
             .map_err(Error::Hex)?
@@ -79,9 +77,8 @@ pub fn stake_b(stake: &Stake) -> Result<StakeB, Error> {
     let stake_b = StakeB {
         amount: Varint::from(
             parseint::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?,
-        )
-        .0,
-        fee: Varint::from(parseint::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?).0,
+        ),
+        fee: Varint::from(parseint::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),
         deposit: stake.deposit,
         timestamp: stake.timestamp,
         signature: hex::decode(&stake.signature)

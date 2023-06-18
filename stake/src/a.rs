@@ -7,11 +7,12 @@ use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_address::address;
 use tofuri_key::Key;
+use vint::vint;
 use vint::Vint;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StakeA {
-    pub amount: u128,
-    pub fee: u128,
+    pub amount: Vint<4>,
+    pub fee: Vint<4>,
     pub deposit: bool,
     pub timestamp: u32,
     #[serde(with = "BigArray")]
@@ -22,8 +23,8 @@ pub struct StakeA {
 impl StakeA {
     pub fn b(&self) -> StakeB {
         StakeB {
-            amount: Vint::from(self.amount),
-            fee: Vint::from(self.fee),
+            amount: self.amount,
+            fee: self.fee,
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,
@@ -40,8 +41,8 @@ impl StakeA {
         key: &Key,
     ) -> Result<StakeA, Error> {
         let mut stake_a = StakeA {
-            amount: Vint::<4>::floor(amount),
-            fee: Vint::<4>::floor(fee),
+            amount: vint!(amount),
+            fee: vint!(fee),
             deposit,
             timestamp,
             signature: [0; 64],
@@ -74,8 +75,8 @@ impl Stake for StakeA {
 impl Default for StakeA {
     fn default() -> StakeA {
         StakeA {
-            amount: 0,
-            fee: 0,
+            amount: vint![0],
+            fee: vint![0],
             deposit: false,
             timestamp: 0,
             signature: [0; 64],
@@ -87,8 +88,8 @@ impl Default for StakeA {
 impl fmt::Debug for StakeA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("StakeA")
-            .field("amount", &parseint::to_string::<18>(self.amount))
-            .field("fee", &parseint::to_string::<18>(self.fee))
+            .field("amount", &parseint::to_string::<18>(self.amount.into()))
+            .field("fee", &parseint::to_string::<18>(self.fee.into()))
             .field("deposit", &self.deposit)
             .field("timestamp", &self.timestamp)
             .field("signature", &hex::encode(self.signature))

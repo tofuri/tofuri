@@ -20,8 +20,8 @@ impl StakeB {
     pub fn a(&self, input_address: Option<[u8; 20]>) -> Result<StakeA, Error> {
         let input_address = input_address.unwrap_or(self.input_address()?);
         let stake_a = StakeA {
-            amount: self.amount.int(),
-            fee: self.fee.int(),
+            amount: self.amount,
+            fee: self.fee,
             deposit: self.deposit,
             timestamp: self.timestamp,
             signature: self.signature,

@@ -78,7 +78,7 @@ impl fmt::Debug for Stake {
 mod tests {
     use super::*;
     #[test]
-    fn test_hash() {
+    fn hash() {
         assert_eq!(
             Stake::default().hash(),
             [
@@ -86,5 +86,9 @@ mod tests {
                 202, 124, 151, 154, 243, 86, 208, 163, 28, 188, 92, 133, 96, 92, 125
             ]
         );
+    }
+    #[test]
+    fn bincode_serialize() {
+        assert_eq!(bincode::serialize(&Stake::default()).unwrap().len(), 77);
     }
 }

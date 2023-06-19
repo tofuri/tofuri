@@ -18,10 +18,3 @@ pub fn get(db: &DB, hash: &[u8]) -> Result<Transaction, Error> {
         .ok_or(Error::NotFound)?;
     bincode::deserialize(&vec).map_err(Error::Bincode)
 }
-#[test]
-fn test_serialize_len() {
-    assert_eq!(
-        96,
-        bincode::serialize(&Transaction::default()).unwrap().len()
-    );
-}

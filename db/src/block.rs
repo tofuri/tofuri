@@ -80,7 +80,3 @@ impl Default for BlockDB {
         }
     }
 }
-#[test]
-fn test_serialize_len() {
-    assert_eq!(197, bincode::serialize(&BlockDB::default()).unwrap().len());
-}

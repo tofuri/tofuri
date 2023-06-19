@@ -124,7 +124,7 @@ impl fmt::Debug for Block {
 mod tests {
     use super::*;
     #[test]
-    fn test_hash() {
+    fn hash() {
         assert_eq!(
             Block::default().hash(),
             [
@@ -132,5 +132,9 @@ mod tests {
                 26, 208, 20, 86, 5, 216, 113, 32, 54, 141, 75, 147, 221, 219
             ]
         );
+    }
+    #[test]
+    fn bincode_serialize() {
+        assert_eq!(bincode::serialize(&Block::default()).unwrap().len(), 197);
     }
 }

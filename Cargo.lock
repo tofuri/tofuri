@@ -4430,6 +4430,7 @@ dependencies = [
  "tofuri-address",
  "tofuri-api-core",
  "tofuri-block",
+ "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
  "vint",

@@ -6,16 +6,11 @@ use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
 use std::fmt;
+use tofuri_key::Error;
 use tofuri_key::Key;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
 pub const GENESIS_BLOCK_BETA: [u8; 32] = [0; 32];
-#[derive(Debug)]
-pub enum Error {
-    Key(tofuri_key::Error),
-    Transaction(tofuri_transaction::Error),
-    Stake(tofuri_stake::Error),
-}
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Block {
     pub previous_hash: [u8; 32],
@@ -36,7 +31,7 @@ impl Block {
         key: &Key,
         previous_beta: &[u8; 32],
     ) -> Result<Block, Error> {
-        let pi = key.vrf_prove(previous_beta).map_err(Error::Key)?;
+        let pi = key.vrf_prove(previous_beta)?;
         let mut block_b = Block {
             previous_hash,
             timestamp,
@@ -45,7 +40,7 @@ impl Block {
             transactions,
             stakes,
         };
-        block_b.signature = key.sign(&block_b.hash()).map_err(Error::Key)?;
+        block_b.signature = key.sign(&block_b.hash())?;
         Ok(block_b)
     }
     pub fn input_address(&self) -> Result<[u8; 20], Error> {
@@ -71,7 +66,7 @@ impl Block {
         self.stakes.iter().map(|x| x.hash()).collect()
     }
     pub fn input_public_key(&self) -> Result<[u8; 33], Error> {
-        Key::recover(&self.hash(), &self.signature).map_err(Error::Key)
+        Key::recover(&self.hash(), &self.signature)
     }
     pub fn hash(&self) -> [u8; 32] {
         let mut array = [0; 181];
@@ -98,7 +93,7 @@ impl Block {
         <ExCBMT<[u8; 32], Hasher>>::build_merkle_root(hashes)
     }
     pub fn beta(&self) -> Result<[u8; 32], Error> {
-        Key::vrf_proof_to_hash(&self.pi).map_err(Error::Key)
+        Key::vrf_proof_to_hash(&self.pi)
     }
 }
 impl Default for Block {

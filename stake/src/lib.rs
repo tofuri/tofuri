@@ -4,13 +4,10 @@ use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
 use std::fmt;
+use tofuri_key::Error;
 use tofuri_key::Key;
 use vint::vint;
 use vint::Vint;
-#[derive(Debug)]
-pub enum Error {
-    Key(tofuri_key::Error),
-}
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Stake {
     pub amount: Vint<4>,
@@ -35,7 +32,7 @@ impl Stake {
             timestamp,
             signature: [0; 64],
         };
-        stake.signature = key.sign(&stake.hash()).map_err(Error::Key)?;
+        stake.signature = key.sign(&stake.hash())?;
         Ok(stake)
     }
     pub fn hash(&self) -> [u8; 32] {
@@ -52,7 +49,7 @@ impl Stake {
         Ok(input_address)
     }
     pub fn input_public_key(&self) -> Result<[u8; 33], Error> {
-        Key::recover(&self.hash(), &self.signature).map_err(Error::Key)
+        Key::recover(&self.hash(), &self.signature)
     }
 }
 impl Default for Stake {

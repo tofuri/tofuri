@@ -5,7 +5,6 @@ use tofuri_transaction::Transaction;
 use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
-    Transaction(tofuri_transaction::Error),
     RocksDB(rocksdb::Error),
     Bincode(bincode::Error),
     InputAddress(input_address::Error),

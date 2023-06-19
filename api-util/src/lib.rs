@@ -11,7 +11,7 @@ pub enum Error {
     ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
-pub fn block(block_b: &Block) -> Result<tofuri_api_core::Block, tofuri_block::Error> {
+pub fn block(block_b: &Block) -> Result<tofuri_api_core::Block, tofuri_key::Error> {
     Ok(tofuri_api_core::Block {
         hash: hex::encode(block_b.hash()),
         previous_hash: hex::encode(block_b.previous_hash),
@@ -34,7 +34,7 @@ pub fn block(block_b: &Block) -> Result<tofuri_api_core::Block, tofuri_block::Er
 }
 pub fn transaction(
     transaction_a: &Transaction,
-) -> Result<tofuri_api_core::Transaction, tofuri_transaction::Error> {
+) -> Result<tofuri_api_core::Transaction, tofuri_key::Error> {
     Ok(tofuri_api_core::Transaction {
         input_address: address::encode(&transaction_a.input_address()?),
         output_address: address::encode(&transaction_a.output_address),
@@ -45,7 +45,7 @@ pub fn transaction(
         signature: hex::encode(transaction_a.signature),
     })
 }
-pub fn stake(stake: &Stake) -> Result<tofuri_api_core::Stake, tofuri_stake::Error> {
+pub fn stake(stake: &Stake) -> Result<tofuri_api_core::Stake, tofuri_key::Error> {
     Ok(tofuri_api_core::Stake {
         amount: parseint::to_string::<18>(stake.amount.into()),
         fee: parseint::to_string::<18>(stake.fee.into()),

@@ -5,7 +5,6 @@ use tofuri_stake::Stake;
 use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
-    Stake(tofuri_stake::Error),
     RocksDB(rocksdb::Error),
     Bincode(bincode::Error),
     InputAddress(input_address::Error),

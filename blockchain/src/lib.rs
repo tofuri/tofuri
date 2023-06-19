@@ -23,9 +23,6 @@ use tracing::instrument;
 use tracing::warn;
 #[derive(Debug)]
 pub enum Error {
-    Block(tofuri_block::Error),
-    Transaction(tofuri_transaction::Error),
-    Stake(tofuri_stake::Error),
     DBTree(tofuri_db::tree::Error),
     DBBlock(tofuri_db::block::Error),
     Key(tofuri_key::Error),
@@ -283,7 +280,7 @@ impl Blockchain {
         }
         if transaction_a.amount + transaction_a.fee
             > self
-                .balance_pending_min(&transaction_a.input_address().map_err(Error::Transaction)?)
+                .balance_pending_min(&transaction_a.input_address().map_err(Error::Key)?)
                 .into()
         {
             return Err(Error::TransactionTooExpensive);
@@ -303,7 +300,7 @@ impl Blockchain {
             return Err(Error::StakePending);
         }
         let balance_pending_min =
-            self.balance_pending_min(&stake.input_address().map_err(Error::Stake)?);
+            self.balance_pending_min(&stake.input_address().map_err(Error::Key)?);
         if stake.deposit {
             if stake.amount + stake.fee > balance_pending_min.into() {
                 return Err(Error::StakeDepositTooExpensive);
@@ -314,7 +311,7 @@ impl Blockchain {
             }
             if stake.amount
                 > self
-                    .staked_pending_min(&stake.input_address().map_err(Error::Stake)?)
+                    .staked_pending_min(&stake.input_address().map_err(Error::Key)?)
                     .into()
             {
                 return Err(Error::StakeWithdrawAmountTooExpensive);
@@ -370,9 +367,7 @@ impl Blockchain {
         if transaction_a.fee == 0.into() {
             return Err(Error::TransactionFeeZero);
         }
-        if transaction_a.input_address().map_err(Error::Transaction)?
-            == transaction_a.output_address
-        {
+        if transaction_a.input_address().map_err(Error::Key)? == transaction_a.output_address {
             return Err(Error::TransactionInputOutput);
         }
         if transaction_a.timestamp > timestamp {
@@ -422,7 +417,7 @@ impl Blockchain {
         if block_a.timestamp > timestamp {
             return Err(Error::BlockTimestampFuture);
         }
-        let input_address = block_a.input_address().map_err(Error::Block)?;
+        let input_address = block_a.input_address().map_err(Error::Key)?;
         let unstable = self
             .forks
             .unstable(
@@ -439,9 +434,9 @@ impl Blockchain {
             return Err(Error::BlockTimestamp);
         }
         Key::vrf_verify(
-            &block_a.input_public_key().map_err(Error::Block)?,
+            &block_a.input_public_key().map_err(Error::Key)?,
             &block_a.pi,
-            &unstable.latest_block.beta().map_err(Error::Block)?,
+            &unstable.latest_block.beta().map_err(Error::Key)?,
         )
         .map_err(Error::Key)?;
         if let Some(staker) = unstable.next_staker(block_a.timestamp) {

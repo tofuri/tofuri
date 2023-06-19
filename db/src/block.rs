@@ -13,7 +13,6 @@ use tofuri_transaction::Transaction;
 use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
-    Block(tofuri_block::Error),
     RocksDB(rocksdb::Error),
     Bincode(bincode::Error),
     Transaction(transaction::Error),

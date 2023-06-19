@@ -5,13 +5,10 @@ use sha2::Digest;
 use sha2::Sha256;
 use std::fmt;
 use tofuri_address::address;
+use tofuri_key::Error;
 use tofuri_key::Key;
 use vint::vint;
 use vint::Vint;
-#[derive(Debug)]
-pub enum Error {
-    Key(tofuri_key::Error),
-}
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Transaction {
     pub output_address: [u8; 20],
@@ -36,7 +33,7 @@ impl Transaction {
             timestamp,
             signature: [0; 64],
         };
-        transaction.signature = key.sign(&transaction.hash()).map_err(Error::Key)?;
+        transaction.signature = key.sign(&transaction.hash())?;
         Ok(transaction)
     }
     pub fn hash(&self) -> [u8; 32] {
@@ -53,7 +50,7 @@ impl Transaction {
         Ok(Key::address(&self.input_public_key()?))
     }
     pub fn input_public_key(&self) -> Result<[u8; 33], Error> {
-        Key::recover(&self.hash(), &self.signature).map_err(Error::Key)
+        Key::recover(&self.hash(), &self.signature)
     }
 }
 impl Default for Transaction {

@@ -24,8 +24,8 @@ pub fn put(block_a: &BlockA, db: &DBWithThreadMode<SingleThreaded>) -> Result<()
     for transaction_a in block_a.transactions.iter() {
         transaction::put(transaction_a, db).map_err(Error::Transaction)?;
     }
-    for stake_a in block_a.stakes.iter() {
-        stake::put(stake_a, db).map_err(Error::Stake)?;
+    for stake in block_a.stakes.iter() {
+        stake::put(stake, db).map_err(Error::Stake)?;
     }
     let key = block_a.hash;
     let value = bincode::serialize(&block_a.b().c()).map_err(Error::Bincode)?;
@@ -41,7 +41,7 @@ pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block
         transactions.push(transaction::get_a(db, hash).map_err(Error::Transaction)?);
     }
     for hash in block_c.stake_hashes.iter() {
-        stakes.push(stake::get_a(db, hash).map_err(Error::Stake)?);
+        stakes.push(stake::get(db, hash).map_err(Error::Stake)?);
     }
     let beta = beta::get(db, hash).ok();
     let input_public_key = input_public_key::get(db, hash).ok();
@@ -66,7 +66,7 @@ pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block
     }
     let mut stakes = vec![];
     for hash in block_c.stake_hashes.iter() {
-        stakes.push(stake::get_b(db, hash).map_err(Error::Stake)?);
+        stakes.push(stake::get(db, hash).map_err(Error::Stake)?);
     }
     let block_b = block_c.b(transactions, stakes);
     Ok(block_b)

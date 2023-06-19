@@ -112,8 +112,8 @@ fn update_2<T: Fork>(fork: &mut T, block_a: &BlockA) {
         insert_balance(fork, transaction.output_address, balance_output);
     }
     for stake in block_a.stakes.iter() {
-        let mut balance = get_balance(fork, &stake.input_address);
-        let mut staked = get_staked(fork, &stake.input_address);
+        let mut balance = get_balance(fork, &stake.input_address().unwrap());
+        let mut staked = get_staked(fork, &stake.input_address().unwrap());
         if stake.deposit {
             balance -= stake.amount + stake.fee;
             staked += stake.amount;
@@ -121,13 +121,13 @@ fn update_2<T: Fork>(fork: &mut T, block_a: &BlockA) {
             balance += stake.amount - stake.fee;
             staked -= stake.amount;
         }
-        insert_balance(fork, stake.input_address, balance);
-        insert_staked(fork, stake.input_address, staked);
+        insert_balance(fork, stake.input_address().unwrap(), balance);
+        insert_staked(fork, stake.input_address().unwrap(), staked);
     }
 }
 fn update_3<T: Fork>(fork: &mut T, block_a: &BlockA) {
     for stake in block_a.stakes.iter() {
-        update_stakers(fork, stake.input_address);
+        update_stakers(fork, stake.input_address().unwrap());
     }
 }
 fn update<T: Fork>(fork: &mut T, block_a: &BlockA, previous_timestamp: u32, loading: bool) {

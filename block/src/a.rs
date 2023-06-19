@@ -6,7 +6,7 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_key::Key;
-use tofuri_stake::StakeA;
+use tofuri_stake::Stake;
 use tofuri_transaction::TransactionA;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockA {
@@ -21,7 +21,7 @@ pub struct BlockA {
     #[serde(with = "BigArray")]
     pub signature: [u8; 64],
     pub transactions: Vec<TransactionA>,
-    pub stakes: Vec<StakeA>,
+    pub stakes: Vec<Stake>,
 }
 impl BlockA {
     pub fn b(&self) -> BlockB {
@@ -31,14 +31,14 @@ impl BlockA {
             signature: self.signature,
             pi: self.pi,
             transactions: self.transactions.iter().map(|x| x.b()).collect(),
-            stakes: self.stakes.iter().map(|x| x.b()).collect(),
+            stakes: self.stakes.clone(),
         }
     }
     pub fn sign(
         previous_hash: [u8; 32],
         timestamp: u32,
         transactions: Vec<TransactionA>,
-        stakes: Vec<StakeA>,
+        stakes: Vec<Stake>,
         key: &Key,
         previous_beta: &[u8; 32],
     ) -> Result<BlockA, Error> {

@@ -4,8 +4,6 @@ use tofuri_api_core::Block;
 use tofuri_api_core::Stake;
 use tofuri_api_core::Transaction;
 use tofuri_block::BlockA;
-use tofuri_stake::StakeA;
-use tofuri_stake::StakeB;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
 use vint::Vint;
@@ -30,7 +28,11 @@ pub fn block(block_a: &BlockA) -> Block {
             .iter()
             .map(|x| hex::encode(x.hash))
             .collect(),
-        stakes: block_a.stakes.iter().map(|x| hex::encode(x.hash)).collect(),
+        stakes: block_a
+            .stakes
+            .iter()
+            .map(|x| hex::encode(x.hash()))
+            .collect(),
     }
 }
 pub fn transaction(transaction_a: &TransactionA) -> Transaction {
@@ -44,16 +46,16 @@ pub fn transaction(transaction_a: &TransactionA) -> Transaction {
         signature: hex::encode(transaction_a.signature),
     }
 }
-pub fn stake(stake_a: &StakeA) -> Stake {
-    Stake {
-        amount: parseint::to_string::<18>(stake_a.amount.into()),
-        fee: parseint::to_string::<18>(stake_a.fee.into()),
-        deposit: stake_a.deposit,
-        timestamp: stake_a.timestamp,
-        signature: hex::encode(stake_a.signature),
-        input_address: address::encode(&stake_a.input_address),
-        hash: hex::encode(stake_a.hash),
-    }
+pub fn stake(stake: &tofuri_stake::Stake) -> Result<Stake, tofuri_stake::Error> {
+    Ok(Stake {
+        amount: parseint::to_string::<18>(stake.amount.into()),
+        fee: parseint::to_string::<18>(stake.fee.into()),
+        deposit: stake.deposit,
+        timestamp: stake.timestamp,
+        signature: hex::encode(stake.signature),
+        input_address: address::encode(&stake.input_address()?),
+        hash: hex::encode(stake.hash()),
+    })
 }
 pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
     let transaction_b = TransactionB {
@@ -71,8 +73,8 @@ pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
     };
     Ok(transaction_b)
 }
-pub fn stake_b(stake: &Stake) -> Result<StakeB, Error> {
-    let stake_b = StakeB {
+pub fn stake_b(stake: &Stake) -> Result<tofuri_stake::Stake, Error> {
+    let stake = tofuri_stake::Stake {
         amount: Vint::from(parseint::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?),
         fee: Vint::from(parseint::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),
         deposit: stake.deposit,
@@ -83,5 +85,5 @@ pub fn stake_b(stake: &Stake) -> Result<StakeB, Error> {
             .try_into()
             .map_err(Error::TryFromSliceError)?,
     };
-    Ok(stake_b)
+    Ok(stake)
 }

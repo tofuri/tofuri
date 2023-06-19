@@ -8,7 +8,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_block::BlockA;
-use tofuri_stake::StakeA;
+use tofuri_stake::Stake;
 use tofuri_transaction::TransactionA;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Unstable {
@@ -39,7 +39,7 @@ impl Unstable {
     pub fn check_overflow(
         &self,
         transactions: &Vec<TransactionA>,
-        stakes: &Vec<StakeA>,
+        stakes: &Vec<Stake>,
     ) -> Result<(), Error> {
         let mut map_balance: HashMap<[u8; 20], u128> = HashMap::new();
         let mut map_staked: HashMap<[u8; 20], u128> = HashMap::new();
@@ -55,8 +55,8 @@ impl Unstable {
                 .ok_or(Error::Overflow)?;
             map_balance.insert(k, balance);
         }
-        for stake_a in stakes {
-            let k = stake_a.input_address;
+        for stake in stakes {
+            let k = stake.input_address().unwrap();
             let mut balance = if map_balance.contains_key(&k) {
                 *map_balance.get(&k).unwrap()
             } else {
@@ -67,16 +67,16 @@ impl Unstable {
             } else {
                 self.staked(&k)
             };
-            if stake_a.deposit {
+            if stake.deposit {
                 balance = balance
-                    .checked_sub((stake_a.amount + stake_a.fee).into())
+                    .checked_sub((stake.amount + stake.fee).into())
                     .ok_or(Error::Overflow)?;
             } else {
                 balance = balance
-                    .checked_sub(stake_a.fee.into())
+                    .checked_sub(stake.fee.into())
                     .ok_or(Error::Overflow)?;
                 staked = staked
-                    .checked_sub(stake_a.amount.into())
+                    .checked_sub(stake.amount.into())
                     .ok_or(Error::Overflow)?;
             }
             map_balance.insert(k, balance);
@@ -96,9 +96,9 @@ impl Unstable {
         }
         false
     }
-    pub fn stake_in_chain(&self, stake_a: &StakeA) -> bool {
+    pub fn stake_in_chain(&self, stake: &Stake) -> bool {
         for block_a in self.latest_blocks.iter() {
-            if block_a.stakes.iter().any(|a| a.hash == stake_a.hash) {
+            if block_a.stakes.iter().any(|a| a.hash() == stake.hash()) {
                 return true;
             }
         }

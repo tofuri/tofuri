@@ -10,8 +10,7 @@ use tofuri_block::BlockA;
 use tofuri_db as db;
 use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
-use tofuri_stake::StakeA;
-use tofuri_stake::StakeB;
+use tofuri_stake::Stake;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
 use tofuri_util::GIT_HASH;
@@ -197,9 +196,9 @@ fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<TransactionA, Er
     db::transaction::get_a(&node.db, &hash).map_err(Error::DBTransaction)
 }
 #[instrument(skip_all, level = "trace")]
-fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<StakeA, Error> {
+fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Stake, Error> {
     let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    db::stake::get_a(&node.db, &hash).map_err(Error::DBStake)
+    db::stake::get(&node.db, &hash).map_err(Error::DBStake)
 }
 #[instrument(skip_all, level = "trace")]
 fn peers(node: &mut Node) -> Result<Vec<&IpAddr>, Error> {
@@ -235,7 +234,7 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
 }
 #[instrument(skip_all, level = "trace")]
 fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
-    let stake_b: StakeB = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let stake_b: Stake = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let vec = bincode::serialize(&stake_b).unwrap();
     let status = match node
         .blockchain

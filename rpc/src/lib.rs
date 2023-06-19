@@ -2,8 +2,7 @@ use std::net::IpAddr;
 use tofuri_block::BlockA;
 use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
-use tofuri_stake::StakeA;
-use tofuri_stake::StakeB;
+use tofuri_stake::Stake;
 use tofuri_sync::Sync;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
@@ -146,7 +145,7 @@ pub async fn transaction_by_hash(addr: &str, hash: &[u8; 32]) -> Result<Transact
     )
     .map_err(Error::Bincode)
 }
-pub async fn stake_by_hash(addr: &str, hash: &[u8; 32]) -> Result<StakeA, Error> {
+pub async fn stake_by_hash(addr: &str, hash: &[u8; 32]) -> Result<Stake, Error> {
     bincode::deserialize(
         &request(
             Type::StakeByHash,
@@ -182,7 +181,7 @@ pub async fn transaction(addr: &str, transaction_b: &TransactionB) -> Result<Str
     )
     .map_err(Error::Bincode)
 }
-pub async fn stake(addr: &str, stake_b: &StakeB) -> Result<String, Error> {
+pub async fn stake(addr: &str, stake_b: &Stake) -> Result<String, Error> {
     bincode::deserialize(
         &request(
             Type::Stake,

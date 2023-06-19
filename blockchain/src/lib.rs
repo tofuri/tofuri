@@ -10,8 +10,7 @@ use tofuri_fork::Manager;
 use tofuri_fork::Stable;
 use tofuri_fork::Unstable;
 use tofuri_key::Key;
-use tofuri_stake::StakeA;
-use tofuri_stake::StakeB;
+use tofuri_stake::Stake;
 use tofuri_sync::Sync;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
@@ -70,7 +69,7 @@ pub struct Blockchain {
     pub forks: Manager,
     pub sync: Sync,
     pending_transactions: Vec<TransactionA>,
-    pending_stakes: Vec<StakeA>,
+    pending_stakes: Vec<Stake>,
     pending_blocks: Vec<BlockA>,
 }
 impl Blockchain {
@@ -171,7 +170,7 @@ impl Blockchain {
             .filter(|a| a.timestamp <= timestamp && !self.forks.unstable.transaction_in_chain(a))
             .cloned()
             .collect();
-        let mut stakes: Vec<StakeA> = self
+        let mut stakes: Vec<Stake> = self
             .pending_stakes
             .iter()
             .filter(|a| a.timestamp <= timestamp && !self.forks.unstable.stake_in_chain(a))
@@ -304,32 +303,36 @@ impl Blockchain {
         self.pending_transactions.push(transaction_a);
         Ok(())
     }
-    pub fn pending_stakes_push(&mut self, stake_b: StakeB, time_delta: u32) -> Result<(), Error> {
-        let stake_a = stake_b.a(None).map_err(Error::Stake)?;
-        if self.pending_stakes.iter().any(|x| x.hash == stake_a.hash) {
+    pub fn pending_stakes_push(&mut self, stake: Stake, time_delta: u32) -> Result<(), Error> {
+        if self.pending_stakes.iter().any(|x| x.hash() == stake.hash()) {
             return Err(Error::StakePending);
         }
-        let balance_pending_min = self.balance_pending_min(&stake_a.input_address);
-        if stake_a.deposit {
-            if stake_a.amount + stake_a.fee > balance_pending_min.into() {
+        let balance_pending_min =
+            self.balance_pending_min(&stake.input_address().map_err(Error::Stake)?);
+        if stake.deposit {
+            if stake.amount + stake.fee > balance_pending_min.into() {
                 return Err(Error::StakeDepositTooExpensive);
             }
         } else {
-            if stake_a.fee > balance_pending_min.into() {
+            if stake.fee > balance_pending_min.into() {
                 return Err(Error::StakeWithdrawFeeTooExpensive);
             }
-            if stake_a.amount > self.staked_pending_min(&stake_a.input_address).into() {
+            if stake.amount
+                > self
+                    .staked_pending_min(&stake.input_address().map_err(Error::Stake)?)
+                    .into()
+            {
                 return Err(Error::StakeWithdrawAmountTooExpensive);
             }
         }
         Blockchain::validate_stake(
             &self.forks.unstable,
-            &stake_a,
+            &stake,
             tofuri_util::timestamp() + time_delta,
         )?;
-        let hash = hex::encode(stake_a.hash);
+        let hash = hex::encode(stake.hash());
         info!(hash, "Stake");
-        self.pending_stakes.push(stake_a);
+        self.pending_stakes.push(stake);
         Ok(())
     }
     pub fn pending_blocks_push(
@@ -389,20 +392,20 @@ impl Blockchain {
         }
         Ok(())
     }
-    fn validate_stake(unstable: &Unstable, stake_a: &StakeA, timestamp: u32) -> Result<(), Error> {
-        if u128::from(stake_a.amount) == 0 {
+    fn validate_stake(unstable: &Unstable, stake: &Stake, timestamp: u32) -> Result<(), Error> {
+        if u128::from(stake.amount) == 0 {
             return Err(Error::StakeAmountZero);
         }
-        if u128::from(stake_a.fee) == 0 {
+        if u128::from(stake.fee) == 0 {
             return Err(Error::StakeFeeZero);
         }
-        if stake_a.timestamp > timestamp {
+        if stake.timestamp > timestamp {
             return Err(Error::StakeTimestampFuture);
         }
-        if tofuri_util::elapsed(stake_a.timestamp, unstable.latest_block.timestamp) {
+        if tofuri_util::elapsed(stake.timestamp, unstable.latest_block.timestamp) {
             return Err(Error::StakeTimestamp);
         }
-        if unstable.stake_in_chain(stake_a) {
+        if unstable.stake_in_chain(stake) {
             return Err(Error::StakeInChain);
         }
         Ok(())
@@ -452,8 +455,8 @@ impl Blockchain {
                 return Err(Error::BlockStakerAddress);
             }
         }
-        for stake_a in block_a.stakes.iter() {
-            Blockchain::validate_stake(&unstable, stake_a, block_a.timestamp)?;
+        for stake in block_a.stakes.iter() {
+            Blockchain::validate_stake(&unstable, stake, block_a.timestamp)?;
         }
         for transaction_a in block_a.transactions.iter() {
             Blockchain::validate_transaction(&unstable, transaction_a, block_a.timestamp)?;
@@ -473,13 +476,13 @@ impl Blockchain {
                 balance -= transaction_a.amount + transaction_a.fee;
             }
         }
-        for stake_a in self.pending_stakes.iter() {
-            if &stake_a.input_address == address {
-                if stake_a.deposit {
-                    balance -= stake_a.amount;
-                    balance -= stake_a.fee;
+        for stake in self.pending_stakes.iter() {
+            if &stake.input_address().unwrap() == address {
+                if stake.deposit {
+                    balance -= stake.amount;
+                    balance -= stake.fee;
                 } else {
-                    balance -= stake_a.fee;
+                    balance -= stake.fee;
                 }
             }
         }
@@ -492,10 +495,10 @@ impl Blockchain {
                 balance += transaction_a.amount;
             }
         }
-        for stake_a in self.pending_stakes.iter() {
-            if &stake_a.input_address == address && !stake_a.deposit {
-                balance += stake_a.amount;
-                balance -= stake_a.fee;
+        for stake in self.pending_stakes.iter() {
+            if &stake.input_address().unwrap() == address && !stake.deposit {
+                balance += stake.amount;
+                balance -= stake.fee;
             }
         }
         balance
@@ -505,18 +508,18 @@ impl Blockchain {
     }
     pub fn staked_pending_min(&self, address: &[u8; 20]) -> u128 {
         let mut staked = self.staked(address);
-        for stake_a in self.pending_stakes.iter() {
-            if &stake_a.input_address == address && !stake_a.deposit {
-                staked -= stake_a.amount;
+        for stake in self.pending_stakes.iter() {
+            if &stake.input_address().unwrap() == address && !stake.deposit {
+                staked -= stake.amount;
             }
         }
         staked
     }
     pub fn staked_pending_max(&self, address: &[u8; 20]) -> u128 {
         let mut staked = self.staked(address);
-        for stake_a in self.pending_stakes.iter() {
-            if &stake_a.input_address == address && stake_a.deposit {
-                staked += stake_a.amount;
+        for stake in self.pending_stakes.iter() {
+            if &stake.input_address().unwrap() == address && stake.deposit {
+                staked += stake.amount;
             }
         }
         staked

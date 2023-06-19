@@ -140,8 +140,8 @@ pub async fn transaction_by_hash(
 #[instrument(skip_all)]
 pub async fn stake_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-    let stake_a = tofuri_rpc::stake_by_hash(&args.rpc, &hash).await.unwrap();
-    let stake = tofuri_api_util::stake(&stake_a);
+    let stake = tofuri_rpc::stake_by_hash(&args.rpc, &hash).await.unwrap();
+    let stake = tofuri_api_util::stake(&stake).unwrap();
     Json(stake)
 }
 #[instrument(skip_all)]

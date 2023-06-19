@@ -6,8 +6,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use std::fmt;
-use tofuri_stake::StakeA;
-use tofuri_stake::StakeB;
+use tofuri_stake::Stake;
 use tofuri_transaction::TransactionA;
 use tofuri_transaction::TransactionB;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -25,14 +24,11 @@ impl BlockC {
     pub fn a(
         &self,
         transactions: Vec<TransactionA>,
-        stakes: Vec<StakeA>,
+        stakes: Vec<Stake>,
         beta: Option<[u8; 32]>,
         input_public_key: Option<[u8; 33]>,
     ) -> Result<BlockA, Error> {
-        let block_b = self.b(
-            transactions.iter().map(|x| x.b()).collect(),
-            stakes.iter().map(|x| x.b()).collect(),
-        );
+        let block_b = self.b(transactions.iter().map(|x| x.b()).collect(), stakes.clone());
         let beta = beta.unwrap_or(block_b.beta()?);
         let input_public_key = input_public_key.unwrap_or(block_b.input_public_key()?);
         let mut block_a = BlockA {
@@ -49,7 +45,7 @@ impl BlockC {
         block_a.hash = block_a.hash();
         Ok(block_a)
     }
-    pub fn b(&self, transactions: Vec<TransactionB>, stakes: Vec<StakeB>) -> BlockB {
+    pub fn b(&self, transactions: Vec<TransactionB>, stakes: Vec<Stake>) -> BlockB {
         BlockB {
             previous_hash: self.previous_hash,
             timestamp: self.timestamp,

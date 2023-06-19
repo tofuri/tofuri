@@ -1,6 +1,6 @@
 use tofuri_block::BlockA;
 use tofuri_key::Key;
-use tofuri_stake::StakeA;
+use tofuri_stake::Stake;
 use tofuri_transaction::TransactionA;
 fn main() {
     let key = Key::from_slice(&[0xcd; 32]).unwrap();
@@ -10,11 +10,11 @@ fn main() {
     let timestamp = 0;
     let transaction_a = TransactionA::sign(output_address, amount, fee, timestamp, &key).unwrap();
     let deposit = true;
-    let stake_a = StakeA::sign(deposit, amount, fee, timestamp, &key).unwrap();
+    let stake = Stake::sign(deposit, amount, fee, timestamp, &key).unwrap();
     let previous_hash = [0; 32];
     let previous_beta = [0; 32];
     let transactions = vec![transaction_a];
-    let stakes = vec![stake_a];
+    let stakes = vec![stake];
     let block_a = BlockA::sign(
         previous_hash,
         timestamp,

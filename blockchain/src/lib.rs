@@ -3,7 +3,6 @@ use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
 use tofuri_block::Block;
-use tofuri_block::GENESIS_BLOCK_BETA;
 use tofuri_fork::Manager;
 use tofuri_fork::Stable;
 use tofuri_fork::Unstable;
@@ -20,6 +19,7 @@ use tofuri_util::TRANSACTION_SIZE;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
+pub const GENESIS_BLOCK_BETA: [u8; 32] = [0; 32];
 #[derive(Debug)]
 pub enum Error {
     DB(tofuri_db::Error),

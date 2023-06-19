@@ -10,7 +10,6 @@ use tofuri_key::Error;
 use tofuri_key::Key;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
-pub const GENESIS_BLOCK_BETA: [u8; 32] = [0; 32];
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Block {
     pub previous_hash: [u8; 32],

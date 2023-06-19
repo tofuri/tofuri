@@ -1,8 +1,7 @@
 use crate::Error;
 use crate::Stable;
 use crate::Unstable;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
 use tofuri_tree::Tree;
@@ -15,7 +14,7 @@ pub struct Manager {
 impl Manager {
     pub fn unstable(
         &self,
-        db: &DBWithThreadMode<SingleThreaded>,
+        db: &DB,
         tree: &Tree,
         trust_fork_after_blocks: usize,
         previous_hash: &[u8; 32],
@@ -49,12 +48,7 @@ impl Manager {
         let unstable = Unstable::from(db, &hashes, &self.stable);
         Ok(unstable)
     }
-    pub fn update(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes_1: &[[u8; 32]],
-        trust_fork_after_blocks: usize,
-    ) {
+    pub fn update(&mut self, db: &DB, hashes_1: &[[u8; 32]], trust_fork_after_blocks: usize) {
         let hashes_0 = &self.unstable.hashes;
         if hashes_0.len() == trust_fork_after_blocks {
             let block_a = tofuri_db::block::get(db, hashes_0.first().unwrap()).unwrap();

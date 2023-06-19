@@ -1,6 +1,5 @@
 use crate::Fork;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -20,7 +19,7 @@ impl Stable {
     pub fn append_block(&mut self, block_a: &Block, previous_timestamp: u32) {
         crate::append_block(self, block_a, previous_timestamp, false)
     }
-    pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[[u8; 32]]) {
+    pub fn load(&mut self, db: &DB, hashes: &[[u8; 32]]) {
         crate::load(self, db, hashes)
     }
     pub fn checkpoint(&self) -> Checkpoint {

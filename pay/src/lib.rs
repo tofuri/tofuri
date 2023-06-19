@@ -2,9 +2,8 @@ pub mod router;
 use clap::Parser;
 use reqwest::Client;
 use reqwest::Url;
-use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use std::collections::HashMap;
 use std::num::ParseIntError;
 use tofuri_api_core::Block;
@@ -59,7 +58,7 @@ pub struct Args {
 }
 #[derive(Debug)]
 pub struct Pay {
-    pub db: DBWithThreadMode<SingleThreaded>,
+    pub db: DB,
     pub key: Key,
     pub args: Args,
     charges: HashMap<[u8; 20], Charge>,
@@ -68,7 +67,7 @@ pub struct Pay {
     client: Client,
 }
 impl Pay {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, args: Args) -> Pay {
+    pub fn new(db: DB, key: Key, args: Args) -> Pay {
         Pay {
             db,
             key,

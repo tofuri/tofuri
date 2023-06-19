@@ -1,6 +1,5 @@
 use colored::*;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
 use tofuri_block::Block;
@@ -65,11 +64,7 @@ pub struct Blockchain {
 }
 impl Blockchain {
     #[instrument(skip_all, level = "debug")]
-    pub fn load(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        trust_fork_after_blocks: usize,
-    ) -> Result<(), Error> {
+    pub fn load(&mut self, db: &DB, trust_fork_after_blocks: usize) -> Result<(), Error> {
         tofuri_db::tree::reload(&mut self.tree, db).map_err(Error::DBTree)?;
         let (mut stable_hashes, unstable_hashes) = self
             .tree
@@ -133,11 +128,7 @@ impl Blockchain {
             Ok(hash)
         }
     }
-    pub fn sync_block(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        index: usize,
-    ) -> Result<Block, Error> {
+    pub fn sync_block(&mut self, db: &DB, index: usize) -> Result<Block, Error> {
         if index >= self.height() {
             return Err(Error::SyncBlock);
         }
@@ -150,7 +141,7 @@ impl Blockchain {
     }
     pub fn forge_block(
         &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
+        db: &DB,
         key: &Key,
         timestamp: u32,
         trust_fork_after_blocks: usize,
@@ -216,7 +207,7 @@ impl Blockchain {
     }
     fn save_block(
         &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
+        db: &DB,
         block_a: &Block,
         forger: bool,
         trust_fork_after_blocks: usize,
@@ -247,11 +238,7 @@ impl Blockchain {
         };
         info!(height, fork, hash, transactions, stakes, "{}", text);
     }
-    pub fn save_blocks(
-        &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
-        trust_fork_after_blocks: usize,
-    ) {
+    pub fn save_blocks(&mut self, db: &DB, trust_fork_after_blocks: usize) {
         let timestamp = tofuri_util::timestamp();
         let mut vec = vec![];
         let mut i = 0;
@@ -329,7 +316,7 @@ impl Blockchain {
     }
     pub fn pending_blocks_push(
         &mut self,
-        db: &DBWithThreadMode<SingleThreaded>,
+        db: &DB,
         block_a: Block,
         time_delta: u32,
         trust_fork_after_blocks: usize,
@@ -401,7 +388,7 @@ impl Blockchain {
     }
     pub fn validate_block(
         &self,
-        db: &DBWithThreadMode<SingleThreaded>,
+        db: &DB,
         block_a: &Block,
         timestamp: u32,
         trust_fork_after_blocks: usize,

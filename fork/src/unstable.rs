@@ -1,8 +1,7 @@
 use crate::Error;
 use crate::Fork;
 use crate::Stable;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -20,11 +19,7 @@ pub struct Unstable {
     map_staked: HashMap<[u8; 20], u128>,
 }
 impl Unstable {
-    pub fn from(
-        db: &DBWithThreadMode<SingleThreaded>,
-        hashes: &[[u8; 32]],
-        stable: &Stable,
-    ) -> Unstable {
+    pub fn from(db: &DB, hashes: &[[u8; 32]], stable: &Stable) -> Unstable {
         let mut unstable = Unstable {
             hashes: vec![],
             stakers: stable.stakers.clone(),

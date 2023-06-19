@@ -2,8 +2,7 @@ use crate::beta;
 use crate::input_public_key;
 use crate::stake;
 use crate::transaction;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
@@ -20,7 +19,7 @@ pub enum Error {
     NotFound,
 }
 #[instrument(skip_all, level = "trace")]
-pub fn put(block: &Block, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
+pub fn put(block: &Block, db: &DB) -> Result<(), Error> {
     for transaction_a in block.transactions.iter() {
         transaction::put(transaction_a, db).map_err(Error::Transaction)?;
     }
@@ -33,7 +32,7 @@ pub fn put(block: &Block, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), E
         .map_err(Error::RocksDB)
 }
 #[instrument(skip_all, level = "trace")]
-pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block, Error> {
+pub fn get(db: &DB, hash: &[u8]) -> Result<Block, Error> {
     let key = hash;
     let vec = db
         .get_cf(crate::blocks(db), key)

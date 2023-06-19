@@ -1,5 +1,4 @@
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
@@ -7,18 +6,14 @@ pub enum Error {
     NotFound,
 }
 #[instrument(skip_all, level = "trace")]
-pub fn put(
-    hash: &[u8],
-    input_address: &[u8; 20],
-    db: &DBWithThreadMode<SingleThreaded>,
-) -> Result<(), Error> {
+pub fn put(hash: &[u8], input_address: &[u8; 20], db: &DB) -> Result<(), Error> {
     let key = hash;
     let value = input_address;
     db.put_cf(crate::input_addresses(db), key, value)
         .map_err(Error::RocksDB)
 }
 #[instrument(skip_all, level = "trace")]
-pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<[u8; 20], Error> {
+pub fn get(db: &DB, hash: &[u8]) -> Result<[u8; 20], Error> {
     let vec = db
         .get_cf(crate::input_addresses(db), hash)
         .map_err(Error::RocksDB)?

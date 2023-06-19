@@ -1,6 +1,5 @@
 use crate::input_address;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use tofuri_stake::Stake;
 use tracing::instrument;
 #[derive(Debug)]
@@ -11,14 +10,14 @@ pub enum Error {
     NotFound,
 }
 #[instrument(skip_all, level = "trace")]
-pub fn put(stake: &Stake, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
+pub fn put(stake: &Stake, db: &DB) -> Result<(), Error> {
     let key = stake.hash();
     let value = bincode::serialize(&stake).map_err(Error::Bincode)?;
     db.put_cf(crate::stakes(db), key, value)
         .map_err(Error::RocksDB)
 }
 #[instrument(skip_all, level = "trace")]
-pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Stake, Error> {
+pub fn get(db: &DB, hash: &[u8]) -> Result<Stake, Error> {
     let key = hash;
     let vec = db
         .get_cf(crate::stakes(db), key)

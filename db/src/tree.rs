@@ -1,7 +1,6 @@
 use crate::block::BlockDB;
-use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use std::collections::HashMap;
 use tofuri_tree::Tree;
 use tofuri_tree::GENESIS_BLOCK_PREVIOUS_HASH;
@@ -13,7 +12,7 @@ pub enum Error {
     GenesisBlockHashes,
 }
 #[instrument(skip_all, level = "debug")]
-pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
+pub fn reload(tree: &mut Tree, db: &DB) -> Result<(), Error> {
     tree.clear();
     let mut map: HashMap<[u8; 32], Vec<([u8; 32], u32)>> = HashMap::new();
     for res in db.iterator_cf(crate::blocks(db), IteratorMode::Start) {

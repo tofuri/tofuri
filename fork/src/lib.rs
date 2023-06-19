@@ -2,8 +2,7 @@ mod manager;
 mod stable;
 mod unstable;
 pub use manager::Manager;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 pub use stable::Stable;
 use std::collections::HashMap;
 use std::collections::VecDeque;
@@ -153,7 +152,7 @@ fn append_block<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32,
     fork.get_hashes_mut().push(block_a.hash());
     *fork.get_latest_block_mut() = block_a.clone();
 }
-fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[[u8; 32]]) {
+fn load<T: Fork>(fork: &mut T, db: &DB, hashes: &[[u8; 32]]) {
     let mut previous_timestamp = match hashes.first() {
         Some(hash) => tofuri_db::block::get(db, hash).unwrap().timestamp,
         None => 0,

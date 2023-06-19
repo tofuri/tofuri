@@ -1,6 +1,5 @@
 use crate::input_address;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use tofuri_transaction::Transaction;
 use tracing::instrument;
 #[derive(Debug)]
@@ -11,17 +10,14 @@ pub enum Error {
     NotFound,
 }
 #[instrument(skip_all, level = "trace")]
-pub fn put(
-    transaction_a: &Transaction,
-    db: &DBWithThreadMode<SingleThreaded>,
-) -> Result<(), Error> {
+pub fn put(transaction_a: &Transaction, db: &DB) -> Result<(), Error> {
     let key = transaction_a.hash();
     let value = bincode::serialize(&transaction_a).map_err(Error::Bincode)?;
     db.put_cf(crate::transactions(db), key, value)
         .map_err(Error::RocksDB)
 }
 #[instrument(skip_all, level = "trace")]
-pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Transaction, Error> {
+pub fn get(db: &DB, hash: &[u8]) -> Result<Transaction, Error> {
     let key = hash;
     let vec = db
         .get_cf(crate::transactions(db), key)

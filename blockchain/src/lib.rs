@@ -4,7 +4,6 @@ use rocksdb::SingleThreaded;
 use serde::Deserialize;
 use serde::Serialize;
 use tofuri_block::Block;
-use tofuri_block::BlockB;
 use tofuri_block::GENESIS_BLOCK_BETA;
 use tofuri_fork::Manager;
 use tofuri_fork::Stable;
@@ -65,7 +64,7 @@ pub struct Blockchain {
     pub sync: Sync,
     pending_transactions: Vec<Transaction>,
     pending_stakes: Vec<Stake>,
-    pending_blocks: Vec<BlockB>,
+    pending_blocks: Vec<Block>,
 }
 impl Blockchain {
     #[instrument(skip_all, level = "debug")]
@@ -141,7 +140,7 @@ impl Blockchain {
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
         index: usize,
-    ) -> Result<BlockB, Error> {
+    ) -> Result<Block, Error> {
         if index >= self.height() {
             return Err(Error::SyncBlock);
         }
@@ -150,7 +149,7 @@ impl Blockchain {
         } else {
             self.forks.unstable.hashes[index - self.forks.stable.hashes.len()]
         };
-        tofuri_db::block::get_b(db, &hash).map_err(Error::DBBlock)
+        tofuri_db::block::get(db, &hash).map_err(Error::DBBlock)
     }
     pub fn forge_block(
         &mut self,
@@ -158,7 +157,7 @@ impl Blockchain {
         key: &Key,
         timestamp: u32,
         trust_fork_after_blocks: usize,
-    ) -> BlockB {
+    ) -> Block {
         let mut transactions: Vec<Transaction> = self
             .pending_transactions
             .iter()
@@ -197,7 +196,7 @@ impl Blockchain {
         }
         let res = self.tree.main();
         let res = match res {
-            Some(main) => BlockB::sign(
+            Some(main) => Block::sign(
                 main.hash,
                 timestamp,
                 transactions,
@@ -205,7 +204,7 @@ impl Blockchain {
                 key,
                 &self.forks.unstable.latest_block.beta().unwrap(),
             ),
-            None => BlockB::sign(
+            None => Block::sign(
                 GENESIS_BLOCK_PREVIOUS_HASH,
                 timestamp,
                 transactions,
@@ -221,7 +220,7 @@ impl Blockchain {
     fn save_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        block_a: &BlockB,
+        block_a: &Block,
         forger: bool,
         trust_fork_after_blocks: usize,
     ) {
@@ -334,7 +333,7 @@ impl Blockchain {
     pub fn pending_blocks_push(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        block_a: BlockB,
+        block_a: Block,
         time_delta: u32,
         trust_fork_after_blocks: usize,
     ) -> Result<(), Error> {
@@ -408,7 +407,7 @@ impl Blockchain {
     pub fn validate_block(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        block_a: &BlockB,
+        block_a: &Block,
         timestamp: u32,
         trust_fork_after_blocks: usize,
     ) -> Result<(), Error> {

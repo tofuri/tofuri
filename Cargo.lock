@@ -4490,6 +4490,8 @@ dependencies = [
  "bincode",
  "parseint",
  "rocksdb",
+ "serde",
+ "serde-big-array",
  "tofuri-block",
  "tofuri-checkpoint",
  "tofuri-stake",

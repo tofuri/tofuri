@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_address::address;
 use tofuri_block::Block;
-use tofuri_block::BlockB;
 use tofuri_util::BLOCK_TIME;
 use tracing::debug;
 use tracing::warn;
@@ -27,12 +26,12 @@ pub trait Fork {
     fn get_map_balance_mut(&mut self) -> &mut HashMap<[u8; 20], u128>;
     fn get_map_staked(&self) -> &HashMap<[u8; 20], u128>;
     fn get_map_staked_mut(&mut self) -> &mut HashMap<[u8; 20], u128>;
-    fn get_latest_block(&self) -> &BlockB;
-    fn get_latest_block_mut(&mut self) -> &mut BlockB;
-    fn get_latest_blocks(&self) -> &Vec<BlockB>;
-    fn get_latest_blocks_mut(&mut self) -> &mut Vec<BlockB>;
+    fn get_latest_block(&self) -> &Block;
+    fn get_latest_block_mut(&mut self) -> &mut Block;
+    fn get_latest_blocks(&self) -> &Vec<Block>;
+    fn get_latest_blocks_mut(&mut self) -> &mut Vec<Block>;
     fn is_stable() -> bool;
-    fn append_block(&mut self, block_a: &BlockB, previous_timestamp: u32, loading: bool);
+    fn append_block(&mut self, block_a: &Block, previous_timestamp: u32, loading: bool);
 }
 fn get_balance<T: Fork>(fork: &T, address: &[u8; 20]) -> u128 {
     match fork.get_map_balance().get(address) {
@@ -68,7 +67,7 @@ fn update_stakers<T: Fork>(fork: &mut T, address: [u8; 20]) {
         fork.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }
-fn update_0<T: Fork>(fork: &mut T, block_a: &BlockB, previous_timestamp: u32, loading: bool) {
+fn update_0<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loading: bool) {
     let stakers = stakers_offline(fork, block_a.timestamp, previous_timestamp);
     for (index, staker) in stakers.iter().enumerate() {
         let mut staked = get_staked(fork, staker);
@@ -97,13 +96,13 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &BlockB, previous_timestamp: u32, lo
         }
     }
 }
-fn update_1<T: Fork>(fork: &mut T, block_a: &BlockB) {
+fn update_1<T: Fork>(fork: &mut T, block_a: &Block) {
     let input_address = block_a.input_address().unwrap();
     let mut balance = get_balance(fork, &input_address);
     balance += block_a.reward();
     insert_balance(fork, input_address, balance)
 }
-fn update_2<T: Fork>(fork: &mut T, block_a: &BlockB) {
+fn update_2<T: Fork>(fork: &mut T, block_a: &Block) {
     for transaction in block_a.transactions.iter() {
         let mut balance_input = get_balance(fork, &transaction.input_address().unwrap());
         let mut balance_output = get_balance(fork, &transaction.output_address);
@@ -126,18 +125,18 @@ fn update_2<T: Fork>(fork: &mut T, block_a: &BlockB) {
         insert_staked(fork, stake.input_address().unwrap(), staked);
     }
 }
-fn update_3<T: Fork>(fork: &mut T, block_a: &BlockB) {
+fn update_3<T: Fork>(fork: &mut T, block_a: &Block) {
     for stake in block_a.stakes.iter() {
         update_stakers(fork, stake.input_address().unwrap());
     }
 }
-fn update<T: Fork>(fork: &mut T, block_a: &BlockB, previous_timestamp: u32, loading: bool) {
+fn update<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loading: bool) {
     update_0(fork, block_a, previous_timestamp, loading);
     update_1(fork, block_a);
     update_2(fork, block_a);
     update_3(fork, block_a);
 }
-fn update_latest_blocks<T: Fork>(fork: &mut T, block_a: &BlockB) {
+fn update_latest_blocks<T: Fork>(fork: &mut T, block_a: &Block) {
     while fork.get_latest_blocks().first().is_some()
         && tofuri_util::elapsed(
             fork.get_latest_blocks().first().unwrap().timestamp,
@@ -148,7 +147,7 @@ fn update_latest_blocks<T: Fork>(fork: &mut T, block_a: &BlockB) {
     }
     (*fork.get_latest_blocks_mut()).push(block_a.clone());
 }
-fn append_block<T: Fork>(fork: &mut T, block_a: &BlockB, previous_timestamp: u32, loading: bool) {
+fn append_block<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loading: bool) {
     update(fork, block_a, previous_timestamp, loading);
     update_latest_blocks(fork, block_a);
     fork.get_hashes_mut().push(block_a.hash());
@@ -156,11 +155,11 @@ fn append_block<T: Fork>(fork: &mut T, block_a: &BlockB, previous_timestamp: u32
 }
 fn load<T: Fork>(fork: &mut T, db: &DBWithThreadMode<SingleThreaded>, hashes: &[[u8; 32]]) {
     let mut previous_timestamp = match hashes.first() {
-        Some(hash) => tofuri_db::block::get_b(db, hash).unwrap().timestamp,
+        Some(hash) => tofuri_db::block::get(db, hash).unwrap().timestamp,
         None => 0,
     };
     for hash in hashes.iter() {
-        let block_a = tofuri_db::block::get_b(db, hash).unwrap();
+        let block_a = tofuri_db::block::get(db, hash).unwrap();
         fork.append_block(&block_a, previous_timestamp, T::is_stable());
         previous_timestamp = block_a.timestamp;
     }

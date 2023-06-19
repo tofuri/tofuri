@@ -1,8 +1,8 @@
+use crate::block::BlockDB;
 use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
 use rocksdb::SingleThreaded;
 use std::collections::HashMap;
-use tofuri_block::BlockC;
 use tofuri_tree::Tree;
 use tofuri_tree::GENESIS_BLOCK_PREVIOUS_HASH;
 use tracing::instrument;
@@ -19,7 +19,7 @@ pub fn reload(tree: &mut Tree, db: &DBWithThreadMode<SingleThreaded>) -> Result<
     for res in db.iterator_cf(crate::blocks(db), IteratorMode::Start) {
         let (hash, bytes) = res.map_err(Error::RocksDB)?;
         let hash = hash.to_vec().try_into().unwrap();
-        let block_metadata: BlockC = bincode::deserialize(&bytes).map_err(Error::Bincode)?;
+        let block_metadata: BlockDB = bincode::deserialize(&bytes).map_err(Error::Bincode)?;
         match map.get(&block_metadata.previous_hash) {
             Some(vec) => {
                 let mut vec = vec.clone();

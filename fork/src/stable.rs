@@ -5,19 +5,19 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use tofuri_block::BlockB;
+use tofuri_block::Block;
 use tofuri_checkpoint::Checkpoint;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Stable {
-    pub latest_block: BlockB,
+    pub latest_block: Block,
     pub hashes: Vec<[u8; 32]>,
     pub stakers: VecDeque<[u8; 20]>,
-    latest_blocks: Vec<BlockB>,
+    latest_blocks: Vec<Block>,
     map_balance: HashMap<[u8; 20], u128>,
     map_staked: HashMap<[u8; 20], u128>,
 }
 impl Stable {
-    pub fn append_block(&mut self, block_a: &BlockB, previous_timestamp: u32) {
+    pub fn append_block(&mut self, block_a: &Block, previous_timestamp: u32) {
         crate::append_block(self, block_a, previous_timestamp, false)
     }
     pub fn load(&mut self, db: &DBWithThreadMode<SingleThreaded>, hashes: &[[u8; 32]]) {
@@ -66,22 +66,22 @@ impl Fork for Stable {
     fn get_map_staked_mut(&mut self) -> &mut HashMap<[u8; 20], u128> {
         &mut self.map_staked
     }
-    fn get_latest_block(&self) -> &BlockB {
+    fn get_latest_block(&self) -> &Block {
         &self.latest_block
     }
-    fn get_latest_block_mut(&mut self) -> &mut BlockB {
+    fn get_latest_block_mut(&mut self) -> &mut Block {
         &mut self.latest_block
     }
-    fn get_latest_blocks(&self) -> &Vec<BlockB> {
+    fn get_latest_blocks(&self) -> &Vec<Block> {
         &self.latest_blocks
     }
-    fn get_latest_blocks_mut(&mut self) -> &mut Vec<BlockB> {
+    fn get_latest_blocks_mut(&mut self) -> &mut Vec<Block> {
         &mut self.latest_blocks
     }
     fn is_stable() -> bool {
         true
     }
-    fn append_block(&mut self, block_a: &BlockB, previous_timestamp: u32, loading: bool) {
+    fn append_block(&mut self, block_a: &Block, previous_timestamp: u32, loading: bool) {
         crate::append_block(self, block_a, previous_timestamp, loading)
     }
 }

@@ -14,7 +14,7 @@ use libp2p::PeerId;
 use std::io::Error;
 use std::net::IpAddr;
 use std::num::NonZeroU32;
-use tofuri_block::BlockB;
+use tofuri_block::Block;
 use tofuri_db as db;
 use tofuri_p2p::behaviour::OutEvent;
 use tofuri_p2p::behaviour::Request;
@@ -156,8 +156,7 @@ fn gossipsub_message(
         }
         match endpoint {
             Endpoint::GossipsubMessageBlock => {
-                let block_b: BlockB =
-                    bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+                let block_b: Block = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)
                     .map_err(Error::Blockchain)?;
@@ -314,7 +313,7 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: Response) {
         Blockchain(tofuri_blockchain::Error),
     }
     fn inner(node: &mut Node, response: Response) -> Result<(), Error> {
-        for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0).map_err(Error::Bincode)? {
+        for block_b in bincode::deserialize::<Vec<Block>>(&response.0).map_err(Error::Bincode)? {
             node.blockchain
                 .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)
                 .map_err(Error::Blockchain)?;

@@ -7,15 +7,15 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use tofuri_block::BlockB;
+use tofuri_block::Block;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Unstable {
-    pub latest_block: BlockB,
+    pub latest_block: Block,
     pub hashes: Vec<[u8; 32]>,
     pub stakers: VecDeque<[u8; 20]>,
-    latest_blocks: Vec<BlockB>,
+    latest_blocks: Vec<Block>,
     map_balance: HashMap<[u8; 20], u128>,
     map_staked: HashMap<[u8; 20], u128>,
 }
@@ -30,7 +30,7 @@ impl Unstable {
             stakers: stable.stakers.clone(),
             map_balance: stable.get_map_balance().clone(),
             map_staked: stable.get_map_staked().clone(),
-            latest_block: BlockB::default(),
+            latest_block: Block::default(),
             latest_blocks: stable.get_latest_blocks().clone(),
         };
         crate::load(&mut unstable, db, hashes);
@@ -142,22 +142,22 @@ impl Fork for Unstable {
     fn get_map_staked_mut(&mut self) -> &mut HashMap<[u8; 20], u128> {
         &mut self.map_staked
     }
-    fn get_latest_block(&self) -> &BlockB {
+    fn get_latest_block(&self) -> &Block {
         &self.latest_block
     }
-    fn get_latest_block_mut(&mut self) -> &mut BlockB {
+    fn get_latest_block_mut(&mut self) -> &mut Block {
         &mut self.latest_block
     }
-    fn get_latest_blocks(&self) -> &Vec<BlockB> {
+    fn get_latest_blocks(&self) -> &Vec<Block> {
         &self.latest_blocks
     }
-    fn get_latest_blocks_mut(&mut self) -> &mut Vec<BlockB> {
+    fn get_latest_blocks_mut(&mut self) -> &mut Vec<Block> {
         &mut self.latest_blocks
     }
     fn is_stable() -> bool {
         false
     }
-    fn append_block(&mut self, block_a: &BlockB, previous_timestamp: u32, loading: bool) {
+    fn append_block(&mut self, block_a: &Block, previous_timestamp: u32, loading: bool) {
         crate::append_block(self, block_a, previous_timestamp, loading)
     }
 }

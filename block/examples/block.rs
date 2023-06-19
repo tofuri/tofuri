@@ -1,4 +1,4 @@
-use tofuri_block::BlockB;
+use tofuri_block::Block;
 use tofuri_key::Key;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
@@ -15,7 +15,7 @@ fn main() {
     let previous_beta = [0; 32];
     let transactions = vec![transaction_a];
     let stakes = vec![stake];
-    let block_b = BlockB::sign(
+    let block = Block::sign(
         previous_hash,
         timestamp,
         transactions,
@@ -24,7 +24,5 @@ fn main() {
         &previous_beta,
     )
     .unwrap();
-    println!("{:#?}", block_b);
-    let block_c = block_b.c();
-    println!("{:#?}", block_c);
+    println!("{:#?}", block);
 }

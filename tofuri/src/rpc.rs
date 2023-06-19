@@ -6,7 +6,7 @@ use std::io;
 use std::net::IpAddr;
 use std::net::SocketAddr;
 use std::time::Duration;
-use tofuri_block::BlockB;
+use tofuri_block::Block;
 use tofuri_db as db;
 use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
@@ -174,7 +174,7 @@ fn height_by_hash(node: &mut Node, bytes: &[u8]) -> Result<usize, Error> {
         .map_err(Error::Blockchain)
 }
 #[instrument(skip_all, level = "trace")]
-fn block_latest(node: &mut Node) -> Result<&BlockB, Error> {
+fn block_latest(node: &mut Node) -> Result<&Block, Error> {
     Ok(&node.blockchain.forks.unstable.latest_block)
 }
 #[instrument(skip_all, level = "trace")]
@@ -185,9 +185,9 @@ fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<[u8; 32], Error> {
         .map_err(Error::Blockchain)
 }
 #[instrument(skip_all, level = "trace")]
-fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockB, Error> {
+fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Block, Error> {
     let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    db::block::get_b(&node.db, &hash).map_err(Error::DBBlock)
+    db::block::get(&node.db, &hash).map_err(Error::DBBlock)
 }
 #[instrument(skip_all, level = "trace")]
 fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Transaction, Error> {

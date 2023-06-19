@@ -1,7 +1,6 @@
 use std::num::ParseIntError;
 use tofuri_address::address;
 use tofuri_block::Block;
-use tofuri_block::BlockB;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
 use vint::Vint;
@@ -12,7 +11,7 @@ pub enum Error {
     ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
-pub fn block(block_b: &BlockB) -> Result<tofuri_api_core::Block, tofuri_block::Error> {
+pub fn block(block_b: &Block) -> Result<tofuri_api_core::Block, tofuri_block::Error> {
     Ok(tofuri_api_core::Block {
         hash: hex::encode(block_b.hash()),
         previous_hash: hex::encode(block_b.previous_hash),

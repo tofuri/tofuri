@@ -6,7 +6,7 @@ use sha2::Sha256;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::time::Duration;
-use tofuri_block::BlockB;
+use tofuri_block::Block;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
 use tokio::time::Instant;
@@ -25,7 +25,7 @@ pub const MAINNET_PORT: u16 = 2020;
 pub const TESTNET_PORT: u16 = 3030;
 pub const BLOCK_TIME: u32 = 60;
 lazy_static! {
-    pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
+    pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&Block::default()).unwrap().len();
     pub static ref TRANSACTION_SIZE: usize =
         bincode::serialize(&Transaction::default()).unwrap().len();
     pub static ref STAKE_SIZE: usize = bincode::serialize(&Stake::default()).unwrap().len();

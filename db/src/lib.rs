@@ -1,8 +1,5 @@
-pub mod beta;
 pub mod block;
 pub mod checkpoint;
-pub mod input_address;
-pub mod input_public_key;
 pub mod peer;
 pub mod stake;
 pub mod transaction;
@@ -48,15 +45,6 @@ pub fn stakes(db: &DB) -> &ColumnFamily {
 }
 pub fn peers(db: &DB) -> &ColumnFamily {
     db.cf_handle("peers").unwrap()
-}
-pub fn input_addresses(db: &DB) -> &ColumnFamily {
-    db.cf_handle("input addresses").unwrap()
-}
-pub fn input_public_keys(db: &DB) -> &ColumnFamily {
-    db.cf_handle("input public keys").unwrap()
-}
-pub fn betas(db: &DB) -> &ColumnFamily {
-    db.cf_handle("betas").unwrap()
 }
 pub fn checkpoint(db: &DB) -> &ColumnFamily {
     db.cf_handle("checkpoint").unwrap()

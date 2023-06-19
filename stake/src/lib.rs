@@ -45,8 +45,7 @@ impl Stake {
         hasher.finalize().into()
     }
     pub fn input_address(&self) -> Result<[u8; 20], Error> {
-        let input_address = Key::address(&self.input_public_key()?);
-        Ok(input_address)
+        Ok(Key::address(&self.input_public_key()?))
     }
     pub fn input_public_key(&self) -> Result<[u8; 33], Error> {
         Key::recover(&self.hash(), &self.signature)

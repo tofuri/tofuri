@@ -1,10 +1,6 @@
+use crate::Error;
 use rocksdb::DB;
 use tracing::instrument;
-#[derive(Debug)]
-pub enum Error {
-    RocksDB(rocksdb::Error),
-    NotFound,
-}
 #[instrument(skip_all, level = "trace")]
 pub fn put(hash: &[u8], input_address: &[u8; 20], db: &DB) -> Result<(), Error> {
     let key = hash;
@@ -18,6 +14,6 @@ pub fn get(db: &DB, hash: &[u8]) -> Result<[u8; 20], Error> {
         .get_cf(crate::input_addresses(db), hash)
         .map_err(Error::RocksDB)?
         .ok_or(Error::NotFound)?;
-    let input_address = vec.try_into().unwrap();
+    let input_address = bincode::deserialize(&vec).map_err(Error::Bincode)?;
     Ok(input_address)
 }

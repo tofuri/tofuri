@@ -1,12 +1,8 @@
+use crate::Error;
 use rocksdb::IteratorMode;
 use rocksdb::DB;
 use std::net::IpAddr;
 use tracing::instrument;
-#[derive(Debug)]
-pub enum Error {
-    RocksDB(rocksdb::Error),
-    Bincode(bincode::Error),
-}
 #[instrument(skip_all, level = "trace")]
 pub fn put(ip_addr: &IpAddr, db: &DB) -> Result<(), Error> {
     let key = bincode::serialize(ip_addr).map_err(Error::Bincode)?;

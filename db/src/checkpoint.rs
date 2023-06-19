@@ -1,12 +1,7 @@
+use crate::Error;
 use rocksdb::DB;
 use tofuri_checkpoint::Checkpoint;
 use tracing::instrument;
-#[derive(Debug)]
-pub enum Error {
-    RocksDB(rocksdb::Error),
-    Bincode(bincode::Error),
-    NotFound,
-}
 #[instrument(skip_all, level = "trace")]
 pub fn put(db: &DB, checkpoint: &Checkpoint) -> Result<(), Error> {
     let key = [];

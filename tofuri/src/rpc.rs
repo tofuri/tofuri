@@ -7,7 +7,6 @@ use std::net::IpAddr;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tofuri_block::Block;
-use tofuri_db as db;
 use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
 use tofuri_stake::Stake;
@@ -23,9 +22,7 @@ use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
     Blockchain(tofuri_blockchain::Error),
-    DBBlock(tofuri_db::block::Error),
-    DBTransaction(tofuri_db::transaction::Error),
-    DBStake(tofuri_db::stake::Error),
+    DB(tofuri_db::Error),
     Bincode(bincode::Error),
     Io(std::io::Error),
     Elapsed(tokio::time::error::Elapsed),
@@ -187,17 +184,17 @@ fn hash_by_height(node: &mut Node, bytes: &[u8]) -> Result<[u8; 32], Error> {
 #[instrument(skip_all, level = "trace")]
 fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Block, Error> {
     let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    db::block::get(&node.db, &hash).map_err(Error::DBBlock)
+    tofuri_db::block::get(&node.db, &hash).map_err(Error::DB)
 }
 #[instrument(skip_all, level = "trace")]
 fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Transaction, Error> {
     let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    db::transaction::get(&node.db, &hash).map_err(Error::DBTransaction)
+    tofuri_db::transaction::get(&node.db, &hash).map_err(Error::DB)
 }
 #[instrument(skip_all, level = "trace")]
 fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Stake, Error> {
     let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    db::stake::get(&node.db, &hash).map_err(Error::DBStake)
+    tofuri_db::stake::get(&node.db, &hash).map_err(Error::DB)
 }
 #[instrument(skip_all, level = "trace")]
 fn peers(node: &mut Node) -> Result<Vec<&IpAddr>, Error> {

@@ -1,24 +1,19 @@
 use crate::block::BlockDB;
+use crate::Error;
 use rocksdb::IteratorMode;
 use rocksdb::DB;
 use std::collections::HashMap;
 use tofuri_tree::Tree;
 use tofuri_tree::GENESIS_BLOCK_PREVIOUS_HASH;
 use tracing::instrument;
-#[derive(Debug)]
-pub enum Error {
-    RocksDB(rocksdb::Error),
-    Bincode(bincode::Error),
-    GenesisBlockHashes,
-}
 #[instrument(skip_all, level = "debug")]
 pub fn reload(tree: &mut Tree, db: &DB) -> Result<(), Error> {
     tree.clear();
     let mut map: HashMap<[u8; 32], Vec<([u8; 32], u32)>> = HashMap::new();
     for res in db.iterator_cf(crate::blocks(db), IteratorMode::Start) {
-        let (hash, bytes) = res.map_err(Error::RocksDB)?;
-        let hash = hash.to_vec().try_into().unwrap();
-        let block_metadata: BlockDB = bincode::deserialize(&bytes).map_err(Error::Bincode)?;
+        let (key, value) = res.map_err(Error::RocksDB)?;
+        let hash = bincode::deserialize(&key).map_err(Error::Bincode)?;
+        let block_metadata: BlockDB = bincode::deserialize(&value).map_err(Error::Bincode)?;
         match map.get(&block_metadata.previous_hash) {
             Some(vec) => {
                 let mut vec = vec.clone();
@@ -39,7 +34,7 @@ pub fn reload(tree: &mut Tree, db: &DB) -> Result<(), Error> {
     let previous_hash = GENESIS_BLOCK_PREVIOUS_HASH;
     let mut previous_hashes = vec![previous_hash];
     let mut hashes_0 = vec![];
-    for (hash, timestamp) in map.get(&previous_hash).ok_or(Error::GenesisBlockHashes)? {
+    for (hash, timestamp) in map.get(&previous_hash).expect("genesis block hashes") {
         hashes_0.push((*hash, *timestamp));
     }
     let mut vec = vec![];

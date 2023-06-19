@@ -12,6 +12,12 @@ use rocksdb::ColumnFamilyDescriptor;
 use rocksdb::Options;
 use rocksdb::DB;
 use std::path::Path;
+#[derive(Debug)]
+pub enum Error {
+    RocksDB(rocksdb::Error),
+    Bincode(bincode::Error),
+    NotFound,
+}
 pub fn open(path: impl AsRef<Path>) -> DB {
     let mut options = Options::default();
     options.create_missing_column_families(true);

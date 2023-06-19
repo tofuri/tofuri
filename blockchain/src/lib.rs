@@ -22,8 +22,7 @@ use tracing::instrument;
 use tracing::warn;
 #[derive(Debug)]
 pub enum Error {
-    DBTree(tofuri_db::tree::Error),
-    DBBlock(tofuri_db::block::Error),
+    DB(tofuri_db::Error),
     Key(tofuri_key::Error),
     Fork(tofuri_fork::Error),
     BlockPending,
@@ -65,7 +64,7 @@ pub struct Blockchain {
 impl Blockchain {
     #[instrument(skip_all, level = "debug")]
     pub fn load(&mut self, db: &DB, trust_fork_after_blocks: usize) -> Result<(), Error> {
-        tofuri_db::tree::reload(&mut self.tree, db).map_err(Error::DBTree)?;
+        tofuri_db::tree::reload(&mut self.tree, db).map_err(Error::DB)?;
         let (mut stable_hashes, unstable_hashes) = self
             .tree
             .stable_and_unstable_hashes(trust_fork_after_blocks);
@@ -137,7 +136,7 @@ impl Blockchain {
         } else {
             self.forks.unstable.hashes[index - self.forks.stable.hashes.len()]
         };
-        tofuri_db::block::get(db, &hash).map_err(Error::DBBlock)
+        tofuri_db::block::get(db, &hash).map_err(Error::DB)
     }
     pub fn forge_block(
         &mut self,

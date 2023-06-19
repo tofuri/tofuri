@@ -1,14 +1,7 @@
-use crate::input_address;
+use crate::Error;
 use rocksdb::DB;
 use tofuri_stake::Stake;
 use tracing::instrument;
-#[derive(Debug)]
-pub enum Error {
-    RocksDB(rocksdb::Error),
-    Bincode(bincode::Error),
-    InputAddress(input_address::Error),
-    NotFound,
-}
 #[instrument(skip_all, level = "trace")]
 pub fn put(stake: &Stake, db: &DB) -> Result<(), Error> {
     let key = stake.hash();

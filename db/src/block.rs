@@ -1,30 +1,19 @@
-use crate::beta;
-use crate::input_public_key;
 use crate::stake;
 use crate::transaction;
+use crate::Error;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use tofuri_block::Block;
 use tracing::instrument;
-#[derive(Debug)]
-pub enum Error {
-    RocksDB(rocksdb::Error),
-    Bincode(bincode::Error),
-    Transaction(transaction::Error),
-    Stake(stake::Error),
-    Beta(beta::Error),
-    InputPublicKey(input_public_key::Error),
-    NotFound,
-}
 #[instrument(skip_all, level = "trace")]
 pub fn put(block: &Block, db: &DB) -> Result<(), Error> {
     for transaction_a in block.transactions.iter() {
-        transaction::put(transaction_a, db).map_err(Error::Transaction)?;
+        transaction::put(transaction_a, db)?;
     }
     for stake in block.stakes.iter() {
-        stake::put(stake, db).map_err(Error::Stake)?;
+        stake::put(stake, db)?;
     }
     let key = block.hash();
     let value = bincode::serialize(&BlockDB::from(block)).map_err(Error::Bincode)?;
@@ -41,11 +30,11 @@ pub fn get(db: &DB, hash: &[u8]) -> Result<Block, Error> {
     let block_db: BlockDB = bincode::deserialize(&vec).map_err(Error::Bincode)?;
     let mut transactions = vec![];
     for hash in block_db.transaction_hashes.iter() {
-        transactions.push(transaction::get(db, hash).map_err(Error::Transaction)?);
+        transactions.push(transaction::get(db, hash)?);
     }
     let mut stakes = vec![];
     for hash in block_db.stake_hashes.iter() {
-        stakes.push(stake::get(db, hash).map_err(Error::Stake)?);
+        stakes.push(stake::get(db, hash)?);
     }
     Ok(Block {
         previous_hash: block_db.previous_hash,

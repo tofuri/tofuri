@@ -110,7 +110,7 @@ impl Default for Block {
 }
 impl fmt::Debug for Block {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BlockB")
+        f.debug_struct("Block")
             .field("previous_hash", &hex::encode(self.previous_hash))
             .field("timestamp", &self.timestamp)
             .field("signature", &hex::encode(self.signature))

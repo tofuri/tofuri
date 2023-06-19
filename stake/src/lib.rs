@@ -65,7 +65,7 @@ impl Default for Stake {
 }
 impl fmt::Debug for Stake {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("StakeB")
+        f.debug_struct("Stake")
             .field("amount", &hex::encode(self.amount.0))
             .field("fee", &hex::encode(self.fee.0))
             .field("deposit", &self.deposit)

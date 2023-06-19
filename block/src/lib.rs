@@ -5,12 +5,11 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
-use std::fmt;
 use tofuri_key::Error;
 use tofuri_key::Key;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Block {
     pub previous_hash: [u8; 32],
     pub timestamp: u32,
@@ -105,18 +104,6 @@ impl Default for Block {
             transactions: vec![],
             stakes: vec![],
         }
-    }
-}
-impl fmt::Debug for Block {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Block")
-            .field("previous_hash", &hex::encode(self.previous_hash))
-            .field("timestamp", &self.timestamp)
-            .field("signature", &hex::encode(self.signature))
-            .field("pi", &hex::encode(self.pi))
-            .field("transactions", &self.transactions)
-            .field("stakes", &self.stakes)
-            .finish()
     }
 }
 #[cfg(test)]

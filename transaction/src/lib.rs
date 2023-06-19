@@ -3,13 +3,11 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
-use std::fmt;
-use tofuri_address::address;
 use tofuri_key::Error;
 use tofuri_key::Key;
 use vint::vint;
 use vint::Vint;
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Transaction {
     pub output_address: [u8; 20],
     pub amount: Vint<4>,
@@ -62,22 +60,6 @@ impl Default for Transaction {
             timestamp: 0,
             signature: [0; 64],
         }
-    }
-}
-impl fmt::Debug for Transaction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Transaction")
-            .field(
-                "input_address",
-                &address::encode(&self.input_address().unwrap()),
-            )
-            .field("output_address", &address::encode(&self.output_address))
-            .field("amount", &parseint::to_string::<18>(self.amount.into()))
-            .field("fee", &parseint::to_string::<18>(self.fee.into()))
-            .field("timestamp", &self.timestamp.to_string())
-            .field("hash", &hex::encode(self.hash()))
-            .field("signature", &hex::encode(self.signature))
-            .finish()
     }
 }
 #[cfg(test)]

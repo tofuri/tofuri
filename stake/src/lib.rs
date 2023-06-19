@@ -3,12 +3,11 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
-use std::fmt;
 use tofuri_key::Error;
 use tofuri_key::Key;
 use vint::vint;
 use vint::Vint;
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Stake {
     pub amount: Vint<4>,
     pub fee: Vint<4>,
@@ -60,17 +59,6 @@ impl Default for Stake {
             timestamp: 0,
             signature: [0; 64],
         }
-    }
-}
-impl fmt::Debug for Stake {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Stake")
-            .field("amount", &hex::encode(self.amount.0))
-            .field("fee", &hex::encode(self.fee.0))
-            .field("deposit", &self.deposit)
-            .field("timestamp", &self.timestamp)
-            .field("signature", &hex::encode(self.signature))
-            .finish()
     }
 }
 #[cfg(test)]

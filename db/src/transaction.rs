@@ -3,9 +3,9 @@ use rocksdb::DB;
 use tofuri_transaction::Transaction;
 use tracing::instrument;
 #[instrument(skip_all, level = "trace")]
-pub fn put(transaction_a: &Transaction, db: &DB) -> Result<(), Error> {
-    let key = transaction_a.hash();
-    let value = bincode::serialize(&transaction_a).map_err(Error::Bincode)?;
+pub fn put(transaction: &Transaction, db: &DB) -> Result<(), Error> {
+    let key = transaction.hash();
+    let value = bincode::serialize(&transaction).map_err(Error::Bincode)?;
     db.put_cf(crate::transactions(db), key, value)
         .map_err(Error::RocksDB)
 }

@@ -163,10 +163,10 @@ fn gossipsub_message(
                 node.blockchain.save_blocks(&node.db, node.args.trust);
             }
             Endpoint::GossipsubMessageTransaction => {
-                let transaction_b: Transaction =
+                let transaction: Transaction =
                     bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
-                    .pending_transactions_push(transaction_b, node.args.time_delta)
+                    .pending_transactions_push(transaction, node.args.time_delta)
                     .map_err(Error::Blockchain)?;
             }
             Endpoint::GossipsubMessageStake => {

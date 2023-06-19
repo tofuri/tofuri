@@ -131,10 +131,10 @@ pub async fn transaction_by_hash(
     hash: Path<String>,
 ) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-    let transaction_a = tofuri_rpc::transaction_by_hash(&args.rpc, &hash)
+    let transaction = tofuri_rpc::transaction_by_hash(&args.rpc, &hash)
         .await
         .unwrap();
-    let transaction = tofuri_api_util::transaction(&transaction_a).unwrap();
+    let transaction = tofuri_api_util::transaction(&transaction).unwrap();
     Json(transaction)
 }
 #[instrument(skip_all)]

@@ -254,31 +254,31 @@ impl Blockchain {
     }
     pub fn pending_transactions_push(
         &mut self,
-        transaction_a: Transaction,
+        transaction: Transaction,
         time_delta: u32,
     ) -> Result<(), Error> {
         if self
             .pending_transactions
             .iter()
-            .any(|x| x.hash() == transaction_a.hash())
+            .any(|x| x.hash() == transaction.hash())
         {
             return Err(Error::TransactionPending);
         }
-        if transaction_a.amount + transaction_a.fee
+        if transaction.amount + transaction.fee
             > self
-                .balance_pending_min(&transaction_a.input_address().map_err(Error::Key)?)
+                .balance_pending_min(&transaction.input_address().map_err(Error::Key)?)
                 .into()
         {
             return Err(Error::TransactionTooExpensive);
         }
         Blockchain::validate_transaction(
             &self.forks.unstable,
-            &transaction_a,
+            &transaction,
             tofuri_util::timestamp() + time_delta,
         )?;
-        let hash = hex::encode(transaction_a.hash());
+        let hash = hex::encode(transaction.hash());
         info!(hash, "Transaction");
-        self.pending_transactions.push(transaction_a);
+        self.pending_transactions.push(transaction);
         Ok(())
     }
     pub fn pending_stakes_push(&mut self, stake: Stake, time_delta: u32) -> Result<(), Error> {
@@ -344,25 +344,25 @@ impl Blockchain {
     }
     fn validate_transaction(
         unstable: &Unstable,
-        transaction_a: &Transaction,
+        transaction: &Transaction,
         timestamp: u32,
     ) -> Result<(), Error> {
-        if transaction_a.amount == 0.into() {
+        if transaction.amount == 0.into() {
             return Err(Error::TransactionAmountZero);
         }
-        if transaction_a.fee == 0.into() {
+        if transaction.fee == 0.into() {
             return Err(Error::TransactionFeeZero);
         }
-        if transaction_a.input_address().map_err(Error::Key)? == transaction_a.output_address {
+        if transaction.input_address().map_err(Error::Key)? == transaction.output_address {
             return Err(Error::TransactionInputOutput);
         }
-        if transaction_a.timestamp > timestamp {
+        if transaction.timestamp > timestamp {
             return Err(Error::TransactionTimestampFuture);
         }
-        if tofuri_util::elapsed(transaction_a.timestamp, unstable.latest_block.timestamp) {
+        if tofuri_util::elapsed(transaction.timestamp, unstable.latest_block.timestamp) {
             return Err(Error::TransactionTimestamp);
         }
-        if unstable.transaction_in_chain(transaction_a) {
+        if unstable.transaction_in_chain(transaction) {
             return Err(Error::TransactionInChain);
         }
         Ok(())
@@ -433,8 +433,8 @@ impl Blockchain {
         for stake in block_a.stakes.iter() {
             Blockchain::validate_stake(&unstable, stake, block_a.timestamp)?;
         }
-        for transaction_a in block_a.transactions.iter() {
-            Blockchain::validate_transaction(&unstable, transaction_a, block_a.timestamp)?;
+        for transaction in block_a.transactions.iter() {
+            Blockchain::validate_transaction(&unstable, transaction, block_a.timestamp)?;
         }
         unstable
             .check_overflow(&block_a.transactions, &block_a.stakes)
@@ -446,9 +446,9 @@ impl Blockchain {
     }
     pub fn balance_pending_min(&self, address: &[u8; 20]) -> u128 {
         let mut balance = self.balance(address);
-        for transaction_a in self.pending_transactions.iter() {
-            if &transaction_a.input_address().unwrap() == address {
-                balance -= transaction_a.amount + transaction_a.fee;
+        for transaction in self.pending_transactions.iter() {
+            if &transaction.input_address().unwrap() == address {
+                balance -= transaction.amount + transaction.fee;
             }
         }
         for stake in self.pending_stakes.iter() {
@@ -465,9 +465,9 @@ impl Blockchain {
     }
     pub fn balance_pending_max(&self, address: &[u8; 20]) -> u128 {
         let mut balance = self.balance(address);
-        for transaction_a in self.pending_transactions.iter() {
-            if &transaction_a.output_address == address {
-                balance += transaction_a.amount;
+        for transaction in self.pending_transactions.iter() {
+            if &transaction.output_address == address {
+                balance += transaction.amount;
             }
         }
         for stake in self.pending_stakes.iter() {

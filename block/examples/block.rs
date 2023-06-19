@@ -8,12 +8,12 @@ fn main() {
     let amount = 1_000_000_000_000_000_000;
     let fee = 1_000_000_000_000_000;
     let timestamp = 0;
-    let transaction_a = Transaction::sign(output_address, amount, fee, timestamp, &key).unwrap();
+    let transaction = Transaction::sign(output_address, amount, fee, timestamp, &key).unwrap();
     let deposit = true;
     let stake = Stake::sign(deposit, amount, fee, timestamp, &key).unwrap();
     let previous_hash = [0; 32];
     let previous_beta = [0; 32];
-    let transactions = vec![transaction_a];
+    let transactions = vec![transaction];
     let stakes = vec![stake];
     let block = Block::sign(
         previous_hash,

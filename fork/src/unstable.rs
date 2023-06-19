@@ -38,15 +38,15 @@ impl Unstable {
     ) -> Result<(), Error> {
         let mut map_balance: HashMap<[u8; 20], u128> = HashMap::new();
         let mut map_staked: HashMap<[u8; 20], u128> = HashMap::new();
-        for transaction_a in transactions {
-            let k = transaction_a.input_address().unwrap();
+        for transaction in transactions {
+            let k = transaction.input_address().unwrap();
             let mut balance = if map_balance.contains_key(&k) {
                 *map_balance.get(&k).unwrap()
             } else {
                 self.balance(&k)
             };
             balance = balance
-                .checked_sub(u128::from(transaction_a.amount + transaction_a.fee))
+                .checked_sub(u128::from(transaction.amount + transaction.fee))
                 .ok_or(Error::Overflow)?;
             map_balance.insert(k, balance);
         }
@@ -79,12 +79,12 @@ impl Unstable {
         }
         Ok(())
     }
-    pub fn transaction_in_chain(&self, transaction_a: &Transaction) -> bool {
+    pub fn transaction_in_chain(&self, transaction: &Transaction) -> bool {
         for block_a in self.latest_blocks.iter() {
             if block_a
                 .transactions
                 .iter()
-                .any(|a| a.hash() == transaction_a.hash())
+                .any(|a| a.hash() == transaction.hash())
             {
                 return true;
             }

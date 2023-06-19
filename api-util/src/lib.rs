@@ -33,16 +33,16 @@ pub fn block(block_b: &Block) -> Result<tofuri_api_core::Block, tofuri_key::Erro
     })
 }
 pub fn transaction(
-    transaction_a: &Transaction,
+    transaction: &Transaction,
 ) -> Result<tofuri_api_core::Transaction, tofuri_key::Error> {
     Ok(tofuri_api_core::Transaction {
-        input_address: address::encode(&transaction_a.input_address()?),
-        output_address: address::encode(&transaction_a.output_address),
-        amount: parseint::to_string::<18>(transaction_a.amount.into()),
-        fee: parseint::to_string::<18>(transaction_a.fee.into()),
-        timestamp: transaction_a.timestamp,
-        hash: hex::encode(transaction_a.hash()),
-        signature: hex::encode(transaction_a.signature),
+        input_address: address::encode(&transaction.input_address()?),
+        output_address: address::encode(&transaction.output_address),
+        amount: parseint::to_string::<18>(transaction.amount.into()),
+        fee: parseint::to_string::<18>(transaction.fee.into()),
+        timestamp: transaction.timestamp,
+        hash: hex::encode(transaction.hash()),
+        signature: hex::encode(transaction.signature),
     })
 }
 pub fn stake(stake: &Stake) -> Result<tofuri_api_core::Stake, tofuri_key::Error> {
@@ -57,7 +57,7 @@ pub fn stake(stake: &Stake) -> Result<tofuri_api_core::Stake, tofuri_key::Error>
     })
 }
 pub fn transaction_b(transaction: &tofuri_api_core::Transaction) -> Result<Transaction, Error> {
-    let transaction_b = Transaction {
+    let transaction = Transaction {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
         amount: Vint::from(
             parseint::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,
@@ -70,7 +70,7 @@ pub fn transaction_b(transaction: &tofuri_api_core::Transaction) -> Result<Trans
             .try_into()
             .map_err(Error::TryFromSliceError)?,
     };
-    Ok(transaction_b)
+    Ok(transaction)
 }
 pub fn stake_b(stake: &tofuri_api_core::Stake) -> Result<Stake, Error> {
     let stake = Stake {

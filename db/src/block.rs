@@ -9,8 +9,8 @@ use tofuri_block::Block;
 use tracing::instrument;
 #[instrument(skip_all, level = "trace")]
 pub fn put(block: &Block, db: &DB) -> Result<(), Error> {
-    for transaction_a in block.transactions.iter() {
-        transaction::put(transaction_a, db)?;
+    for transaction in block.transactions.iter() {
+        transaction::put(transaction, db)?;
     }
     for stake in block.stakes.iter() {
         stake::put(stake, db)?;

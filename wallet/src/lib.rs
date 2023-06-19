@@ -212,7 +212,7 @@ impl Wallet {
         } {
             return Ok(());
         }
-        let transaction_a = tofuri_transaction::Transaction::sign(
+        let transaction = tofuri_transaction::Transaction::sign(
             address::decode(&address).unwrap(),
             amount,
             fee,
@@ -220,11 +220,11 @@ impl Wallet {
             self.key.as_ref().unwrap(),
         )
         .unwrap();
-        println!("[u8; 32]: {}", hex::encode(transaction_a.hash()).cyan());
+        println!("[u8; 32]: {}", hex::encode(transaction.hash()).cyan());
         let res: String = self
             .client
             .post(format!("{}transaction", self.args.api.to_string()))
-            .json(&tofuri_api_util::transaction(&transaction_a).unwrap())
+            .json(&tofuri_api_util::transaction(&transaction).unwrap())
             .send()
             .await
             .map_err(Error::Reqwest)?

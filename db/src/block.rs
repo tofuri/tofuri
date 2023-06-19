@@ -8,8 +8,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use tofuri_block::Block;
-use tofuri_stake::Stake;
-use tofuri_transaction::Transaction;
 use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
@@ -50,8 +48,14 @@ pub fn get(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block, 
     for hash in block_db.stake_hashes.iter() {
         stakes.push(stake::get(db, hash).map_err(Error::Stake)?);
     }
-    let block_b = block_db.block(transactions, stakes);
-    Ok(block_b)
+    Ok(Block {
+        previous_hash: block_db.previous_hash,
+        timestamp: block_db.timestamp,
+        signature: block_db.signature,
+        pi: block_db.pi,
+        transactions,
+        stakes,
+    })
 }
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockDB {
@@ -63,18 +67,6 @@ pub struct BlockDB {
     pub pi: [u8; 81],
     pub transaction_hashes: Vec<[u8; 32]>,
     pub stake_hashes: Vec<[u8; 32]>,
-}
-impl BlockDB {
-    pub fn block(&self, transactions: Vec<Transaction>, stakes: Vec<Stake>) -> Block {
-        Block {
-            previous_hash: self.previous_hash,
-            timestamp: self.timestamp,
-            signature: self.signature,
-            pi: self.pi,
-            transactions,
-            stakes,
-        }
-    }
 }
 impl From<&Block> for BlockDB {
     fn from(block: &Block) -> BlockDB {

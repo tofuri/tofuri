@@ -134,7 +134,7 @@ pub async fn transaction_by_hash(
     let transaction_a = tofuri_rpc::transaction_by_hash(&args.rpc, &hash)
         .await
         .unwrap();
-    let transaction = tofuri_api_util::transaction(&transaction_a);
+    let transaction = tofuri_api_util::transaction(&transaction_a).unwrap();
     Json(transaction)
 }
 #[instrument(skip_all)]

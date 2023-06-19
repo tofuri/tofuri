@@ -4,8 +4,6 @@ use tofuri_api_core::Block;
 use tofuri_api_core::Stake;
 use tofuri_api_core::Transaction;
 use tofuri_block::BlockA;
-use tofuri_transaction::TransactionA;
-use tofuri_transaction::TransactionB;
 use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
@@ -26,7 +24,7 @@ pub fn block(block_a: &BlockA) -> Block {
         transactions: block_a
             .transactions
             .iter()
-            .map(|x| hex::encode(x.hash))
+            .map(|x| hex::encode(x.hash()))
             .collect(),
         stakes: block_a
             .stakes
@@ -35,16 +33,18 @@ pub fn block(block_a: &BlockA) -> Block {
             .collect(),
     }
 }
-pub fn transaction(transaction_a: &TransactionA) -> Transaction {
-    Transaction {
-        input_address: address::encode(&transaction_a.input_address),
+pub fn transaction(
+    transaction_a: &tofuri_transaction::Transaction,
+) -> Result<Transaction, tofuri_transaction::Error> {
+    Ok(Transaction {
+        input_address: address::encode(&transaction_a.input_address()?),
         output_address: address::encode(&transaction_a.output_address),
-        amount: parseint::to_string::<18>(transaction_a.amount),
-        fee: parseint::to_string::<18>(transaction_a.fee),
+        amount: parseint::to_string::<18>(transaction_a.amount.into()),
+        fee: parseint::to_string::<18>(transaction_a.fee.into()),
         timestamp: transaction_a.timestamp,
-        hash: hex::encode(transaction_a.hash),
+        hash: hex::encode(transaction_a.hash()),
         signature: hex::encode(transaction_a.signature),
-    }
+    })
 }
 pub fn stake(stake: &tofuri_stake::Stake) -> Result<Stake, tofuri_stake::Error> {
     Ok(Stake {
@@ -57,8 +57,8 @@ pub fn stake(stake: &tofuri_stake::Stake) -> Result<Stake, tofuri_stake::Error> 
         hash: hex::encode(stake.hash()),
     })
 }
-pub fn transaction_b(transaction: &Transaction) -> Result<TransactionB, Error> {
-    let transaction_b = TransactionB {
+pub fn transaction_b(transaction: &Transaction) -> Result<tofuri_transaction::Transaction, Error> {
+    let transaction_b = tofuri_transaction::Transaction {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
         amount: Vint::from(
             parseint::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,

@@ -12,8 +12,7 @@ use tofuri_fork::Unstable;
 use tofuri_key::Key;
 use tofuri_stake::Stake;
 use tofuri_sync::Sync;
-use tofuri_transaction::TransactionA;
-use tofuri_transaction::TransactionB;
+use tofuri_transaction::Transaction;
 use tofuri_tree::Tree;
 use tofuri_tree::GENESIS_BLOCK_PREVIOUS_HASH;
 use tofuri_util::BLOCK_SIZE_LIMIT;
@@ -23,8 +22,6 @@ use tofuri_util::TRANSACTION_SIZE;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
-use vint::floor;
-use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Block(tofuri_block::Error),
@@ -44,8 +41,6 @@ pub enum Error {
     TransactionTooExpensive,
     TransactionAmountZero,
     TransactionFeeZero,
-    TransactionAmountFloor,
-    TransactionFeeFloor,
     TransactionInputOutput,
     TransactionTimestampFuture,
     TransactionTimestamp,
@@ -68,7 +63,7 @@ pub struct Blockchain {
     pub tree: Tree,
     pub forks: Manager,
     pub sync: Sync,
-    pending_transactions: Vec<TransactionA>,
+    pending_transactions: Vec<Transaction>,
     pending_stakes: Vec<Stake>,
     pending_blocks: Vec<BlockA>,
 }
@@ -164,7 +159,7 @@ impl Blockchain {
         timestamp: u32,
         trust_fork_after_blocks: usize,
     ) -> BlockA {
-        let mut transactions: Vec<TransactionA> = self
+        let mut transactions: Vec<Transaction> = self
             .pending_transactions
             .iter()
             .filter(|a| a.timestamp <= timestamp && !self.forks.unstable.transaction_in_chain(a))
@@ -277,19 +272,20 @@ impl Blockchain {
     }
     pub fn pending_transactions_push(
         &mut self,
-        transaction_b: TransactionB,
+        transaction_a: Transaction,
         time_delta: u32,
     ) -> Result<(), Error> {
-        let transaction_a = transaction_b.a(None).map_err(Error::Transaction)?;
         if self
             .pending_transactions
             .iter()
-            .any(|x| x.hash == transaction_a.hash)
+            .any(|x| x.hash() == transaction_a.hash())
         {
             return Err(Error::TransactionPending);
         }
         if transaction_a.amount + transaction_a.fee
-            > self.balance_pending_min(&transaction_a.input_address)
+            > self
+                .balance_pending_min(&transaction_a.input_address().map_err(Error::Transaction)?)
+                .into()
         {
             return Err(Error::TransactionTooExpensive);
         }
@@ -298,7 +294,7 @@ impl Blockchain {
             &transaction_a,
             tofuri_util::timestamp() + time_delta,
         )?;
-        let hash = hex::encode(transaction_a.hash);
+        let hash = hex::encode(transaction_a.hash());
         info!(hash, "Transaction");
         self.pending_transactions.push(transaction_a);
         Ok(())
@@ -363,22 +359,18 @@ impl Blockchain {
     }
     fn validate_transaction(
         unstable: &Unstable,
-        transaction_a: &TransactionA,
+        transaction_a: &Transaction,
         timestamp: u32,
     ) -> Result<(), Error> {
-        if transaction_a.amount == 0 {
+        if transaction_a.amount == 0.into() {
             return Err(Error::TransactionAmountZero);
         }
-        if transaction_a.fee == 0 {
+        if transaction_a.fee == 0.into() {
             return Err(Error::TransactionFeeZero);
         }
-        if transaction_a.amount != floor!(transaction_a.amount, 4) {
-            return Err(Error::TransactionAmountFloor);
-        }
-        if transaction_a.fee != floor!(transaction_a.fee, 4) {
-            return Err(Error::TransactionFeeFloor);
-        }
-        if transaction_a.input_address == transaction_a.output_address {
+        if transaction_a.input_address().map_err(Error::Transaction)?
+            == transaction_a.output_address
+        {
             return Err(Error::TransactionInputOutput);
         }
         if transaction_a.timestamp > timestamp {
@@ -393,10 +385,10 @@ impl Blockchain {
         Ok(())
     }
     fn validate_stake(unstable: &Unstable, stake: &Stake, timestamp: u32) -> Result<(), Error> {
-        if u128::from(stake.amount) == 0 {
+        if stake.amount == 0.into() {
             return Err(Error::StakeAmountZero);
         }
-        if u128::from(stake.fee) == 0 {
+        if stake.fee == 0.into() {
             return Err(Error::StakeFeeZero);
         }
         if stake.timestamp > timestamp {
@@ -472,7 +464,7 @@ impl Blockchain {
     pub fn balance_pending_min(&self, address: &[u8; 20]) -> u128 {
         let mut balance = self.balance(address);
         for transaction_a in self.pending_transactions.iter() {
-            if &transaction_a.input_address == address {
+            if &transaction_a.input_address().unwrap() == address {
                 balance -= transaction_a.amount + transaction_a.fee;
             }
         }

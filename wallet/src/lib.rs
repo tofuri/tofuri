@@ -28,7 +28,6 @@ use tofuri_api_core::Root;
 use tofuri_api_core::Stake;
 use tofuri_api_core::Transaction;
 use tofuri_key::Key;
-use tofuri_transaction::TransactionA;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
@@ -213,7 +212,7 @@ impl Wallet {
         } {
             return Ok(());
         }
-        let transaction_a = TransactionA::sign(
+        let transaction_a = tofuri_transaction::Transaction::sign(
             address::decode(&address).unwrap(),
             amount,
             fee,
@@ -221,11 +220,11 @@ impl Wallet {
             self.key.as_ref().unwrap(),
         )
         .unwrap();
-        println!("[u8; 32]: {}", hex::encode(transaction_a.hash).cyan());
+        println!("[u8; 32]: {}", hex::encode(transaction_a.hash()).cyan());
         let res: String = self
             .client
             .post(format!("{}transaction", self.args.api.to_string()))
-            .json(&tofuri_api_util::transaction(&transaction_a))
+            .json(&tofuri_api_util::transaction(&transaction_a).unwrap())
             .send()
             .await
             .map_err(Error::Reqwest)?

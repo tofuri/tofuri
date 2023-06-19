@@ -38,7 +38,7 @@ pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block
     let mut transactions = vec![];
     let mut stakes = vec![];
     for hash in block_c.transaction_hashes.iter() {
-        transactions.push(transaction::get_a(db, hash).map_err(Error::Transaction)?);
+        transactions.push(transaction::get(db, hash).map_err(Error::Transaction)?);
     }
     for hash in block_c.stake_hashes.iter() {
         stakes.push(stake::get(db, hash).map_err(Error::Stake)?);
@@ -62,7 +62,7 @@ pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<Block
     let block_c = get_c(db, hash)?;
     let mut transactions = vec![];
     for hash in block_c.transaction_hashes.iter() {
-        transactions.push(transaction::get_b(db, hash).map_err(Error::Transaction)?);
+        transactions.push(transaction::get(db, hash).map_err(Error::Transaction)?);
     }
     let mut stakes = vec![];
     for hash in block_c.stake_hashes.iter() {

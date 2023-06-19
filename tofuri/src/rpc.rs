@@ -11,8 +11,7 @@ use tofuri_db as db;
 use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
 use tofuri_stake::Stake;
-use tofuri_transaction::TransactionA;
-use tofuri_transaction::TransactionB;
+use tofuri_transaction::Transaction;
 use tofuri_util::GIT_HASH;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
@@ -191,9 +190,9 @@ fn block_by_hash(node: &mut Node, bytes: &[u8]) -> Result<BlockA, Error> {
     db::block::get_a(&node.db, &hash).map_err(Error::DBBlock)
 }
 #[instrument(skip_all, level = "trace")]
-fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<TransactionA, Error> {
+fn transaction_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Transaction, Error> {
     let hash: [u8; 32] = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    db::transaction::get_a(&node.db, &hash).map_err(Error::DBTransaction)
+    db::transaction::get(&node.db, &hash).map_err(Error::DBTransaction)
 }
 #[instrument(skip_all, level = "trace")]
 fn stake_by_hash(node: &mut Node, bytes: &[u8]) -> Result<Stake, Error> {
@@ -213,7 +212,7 @@ fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Error> {
 }
 #[instrument(skip_all, level = "trace")]
 fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
-    let transaction_b: TransactionB = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let transaction_b: Transaction = bincode::deserialize(bytes).map_err(Error::Bincode)?;
     let vec = bincode::serialize(&transaction_b).unwrap();
     let status = match node
         .blockchain

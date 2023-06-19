@@ -23,7 +23,7 @@ use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_p2p::MAX_TRANSMIT_SIZE;
 use tofuri_stake::Stake;
-use tofuri_transaction::TransactionB;
+use tofuri_transaction::Transaction;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -164,7 +164,7 @@ fn gossipsub_message(
                 node.blockchain.save_blocks(&node.db, node.args.trust);
             }
             Endpoint::GossipsubMessageTransaction => {
-                let transaction_b: TransactionB =
+                let transaction_b: Transaction =
                     bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_transactions_push(transaction_b, node.args.time_delta)

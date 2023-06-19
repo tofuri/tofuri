@@ -8,7 +8,7 @@ use serde_big_array::BigArray;
 use std::fmt;
 use tofuri_key::Key;
 use tofuri_stake::Stake;
-use tofuri_transaction::TransactionB;
+use tofuri_transaction::Transaction;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockB {
     pub previous_hash: [u8; 32],
@@ -17,15 +17,11 @@ pub struct BlockB {
     pub signature: [u8; 64],
     #[serde(with = "BigArray")]
     pub pi: [u8; 81],
-    pub transactions: Vec<TransactionB>,
+    pub transactions: Vec<Transaction>,
     pub stakes: Vec<Stake>,
 }
 impl BlockB {
     pub fn a(&self) -> Result<BlockA, Error> {
-        let mut transactions = vec![];
-        for transaction in self.transactions.iter() {
-            transactions.push(transaction.a(None).map_err(Error::Transaction)?)
-        }
         let block_a = BlockA {
             hash: self.hash(),
             previous_hash: self.previous_hash,
@@ -34,7 +30,7 @@ impl BlockB {
             pi: self.pi,
             input_public_key: self.input_public_key()?,
             signature: self.signature,
-            transactions,
+            transactions: self.transactions.clone(),
             stakes: self.stakes.clone(),
         };
         Ok(block_a)

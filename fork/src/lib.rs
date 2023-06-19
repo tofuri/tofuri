@@ -104,11 +104,11 @@ fn update_1<T: Fork>(fork: &mut T, block_a: &BlockA) {
 }
 fn update_2<T: Fork>(fork: &mut T, block_a: &BlockA) {
     for transaction in block_a.transactions.iter() {
-        let mut balance_input = get_balance(fork, &transaction.input_address);
+        let mut balance_input = get_balance(fork, &transaction.input_address().unwrap());
         let mut balance_output = get_balance(fork, &transaction.output_address);
         balance_input -= transaction.amount + transaction.fee;
         balance_output += transaction.amount;
-        insert_balance(fork, transaction.input_address, balance_input);
+        insert_balance(fork, transaction.input_address().unwrap(), balance_input);
         insert_balance(fork, transaction.output_address, balance_output);
     }
     for stake in block_a.stakes.iter() {

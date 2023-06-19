@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_block::BlockA;
 use tofuri_stake::Stake;
-use tofuri_transaction::TransactionA;
+use tofuri_transaction::Transaction;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Unstable {
     pub latest_block: BlockA,
@@ -38,20 +38,20 @@ impl Unstable {
     }
     pub fn check_overflow(
         &self,
-        transactions: &Vec<TransactionA>,
+        transactions: &Vec<Transaction>,
         stakes: &Vec<Stake>,
     ) -> Result<(), Error> {
         let mut map_balance: HashMap<[u8; 20], u128> = HashMap::new();
         let mut map_staked: HashMap<[u8; 20], u128> = HashMap::new();
         for transaction_a in transactions {
-            let k = transaction_a.input_address;
+            let k = transaction_a.input_address().unwrap();
             let mut balance = if map_balance.contains_key(&k) {
                 *map_balance.get(&k).unwrap()
             } else {
                 self.balance(&k)
             };
             balance = balance
-                .checked_sub(transaction_a.amount + transaction_a.fee)
+                .checked_sub(u128::from(transaction_a.amount + transaction_a.fee))
                 .ok_or(Error::Overflow)?;
             map_balance.insert(k, balance);
         }
@@ -84,12 +84,12 @@ impl Unstable {
         }
         Ok(())
     }
-    pub fn transaction_in_chain(&self, transaction_a: &TransactionA) -> bool {
+    pub fn transaction_in_chain(&self, transaction_a: &Transaction) -> bool {
         for block_a in self.latest_blocks.iter() {
             if block_a
                 .transactions
                 .iter()
-                .any(|a| a.hash == transaction_a.hash)
+                .any(|a| a.hash() == transaction_a.hash())
             {
                 return true;
             }

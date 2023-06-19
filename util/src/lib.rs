@@ -8,7 +8,7 @@ use std::io::BufReader;
 use std::time::Duration;
 use tofuri_block::BlockB;
 use tofuri_stake::Stake;
-use tofuri_transaction::TransactionB;
+use tofuri_transaction::Transaction;
 use tokio::time::Instant;
 use tokio::time::Interval;
 use tokio::time::MissedTickBehavior::Skip;
@@ -27,7 +27,7 @@ pub const BLOCK_TIME: u32 = 60;
 lazy_static! {
     pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&BlockB::default()).unwrap().len();
     pub static ref TRANSACTION_SIZE: usize =
-        bincode::serialize(&TransactionB::default()).unwrap().len();
+        bincode::serialize(&Transaction::default()).unwrap().len();
     pub static ref STAKE_SIZE: usize = bincode::serialize(&Stake::default()).unwrap().len();
     pub static ref MAINNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", MAINNET_PORT)
         .parse()

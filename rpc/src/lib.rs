@@ -4,8 +4,7 @@ use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
 use tofuri_stake::Stake;
 use tofuri_sync::Sync;
-use tofuri_transaction::TransactionA;
-use tofuri_transaction::TransactionB;
+use tofuri_transaction::Transaction;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
@@ -134,7 +133,7 @@ pub async fn block_by_hash(addr: &str, hash: &[u8; 32]) -> Result<BlockA, Error>
     )
     .map_err(Error::Bincode)
 }
-pub async fn transaction_by_hash(addr: &str, hash: &[u8; 32]) -> Result<TransactionA, Error> {
+pub async fn transaction_by_hash(addr: &str, hash: &[u8; 32]) -> Result<Transaction, Error> {
     bincode::deserialize(
         &request(
             Type::TransactionByHash,
@@ -170,7 +169,7 @@ pub async fn peer(addr: &str, ip_addr: &IpAddr) -> Result<(), Error> {
     )
     .map_err(Error::Bincode)
 }
-pub async fn transaction(addr: &str, transaction_b: &TransactionB) -> Result<String, Error> {
+pub async fn transaction(addr: &str, transaction_b: &Transaction) -> Result<String, Error> {
     bincode::deserialize(
         &request(
             Type::Transaction,

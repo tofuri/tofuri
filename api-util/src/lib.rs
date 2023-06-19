@@ -1,9 +1,9 @@
 use std::num::ParseIntError;
 use tofuri_address::address;
-use tofuri_api_core::Block;
-use tofuri_api_core::Stake;
-use tofuri_api_core::Transaction;
-use tofuri_block::BlockA;
+use tofuri_block::Block;
+use tofuri_block::BlockB;
+use tofuri_stake::Stake;
+use tofuri_transaction::Transaction;
 use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
@@ -12,31 +12,31 @@ pub enum Error {
     ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
-pub fn block(block_a: &BlockA) -> Block {
-    Block {
-        hash: hex::encode(block_a.hash),
-        previous_hash: hex::encode(block_a.previous_hash),
-        timestamp: block_a.timestamp,
-        beta: hex::encode(block_a.beta),
-        pi: hex::encode(block_a.pi),
-        forger_address: address::encode(&block_a.input_address()),
-        signature: hex::encode(block_a.signature),
-        transactions: block_a
+pub fn block(block_b: &BlockB) -> Result<tofuri_api_core::Block, tofuri_block::Error> {
+    Ok(tofuri_api_core::Block {
+        hash: hex::encode(block_b.hash()),
+        previous_hash: hex::encode(block_b.previous_hash),
+        timestamp: block_b.timestamp,
+        beta: hex::encode(block_b.beta()?),
+        pi: hex::encode(block_b.pi),
+        forger_address: address::encode(&block_b.input_address()?),
+        signature: hex::encode(block_b.signature),
+        transactions: block_b
             .transactions
             .iter()
             .map(|x| hex::encode(x.hash()))
             .collect(),
-        stakes: block_a
+        stakes: block_b
             .stakes
             .iter()
             .map(|x| hex::encode(x.hash()))
             .collect(),
-    }
+    })
 }
 pub fn transaction(
-    transaction_a: &tofuri_transaction::Transaction,
-) -> Result<Transaction, tofuri_transaction::Error> {
-    Ok(Transaction {
+    transaction_a: &Transaction,
+) -> Result<tofuri_api_core::Transaction, tofuri_transaction::Error> {
+    Ok(tofuri_api_core::Transaction {
         input_address: address::encode(&transaction_a.input_address()?),
         output_address: address::encode(&transaction_a.output_address),
         amount: parseint::to_string::<18>(transaction_a.amount.into()),
@@ -46,8 +46,8 @@ pub fn transaction(
         signature: hex::encode(transaction_a.signature),
     })
 }
-pub fn stake(stake: &tofuri_stake::Stake) -> Result<Stake, tofuri_stake::Error> {
-    Ok(Stake {
+pub fn stake(stake: &Stake) -> Result<tofuri_api_core::Stake, tofuri_stake::Error> {
+    Ok(tofuri_api_core::Stake {
         amount: parseint::to_string::<18>(stake.amount.into()),
         fee: parseint::to_string::<18>(stake.fee.into()),
         deposit: stake.deposit,
@@ -57,8 +57,8 @@ pub fn stake(stake: &tofuri_stake::Stake) -> Result<Stake, tofuri_stake::Error> 
         hash: hex::encode(stake.hash()),
     })
 }
-pub fn transaction_b(transaction: &Transaction) -> Result<tofuri_transaction::Transaction, Error> {
-    let transaction_b = tofuri_transaction::Transaction {
+pub fn transaction_b(transaction: &tofuri_api_core::Transaction) -> Result<Transaction, Error> {
+    let transaction_b = Transaction {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
         amount: Vint::from(
             parseint::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,
@@ -73,8 +73,8 @@ pub fn transaction_b(transaction: &Transaction) -> Result<tofuri_transaction::Tr
     };
     Ok(transaction_b)
 }
-pub fn stake_b(stake: &Stake) -> Result<tofuri_stake::Stake, Error> {
-    let stake = tofuri_stake::Stake {
+pub fn stake_b(stake: &tofuri_api_core::Stake) -> Result<Stake, Error> {
+    let stake = Stake {
         amount: Vint::from(parseint::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?),
         fee: Vint::from(parseint::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),
         deposit: stake.deposit,

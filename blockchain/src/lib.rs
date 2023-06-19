@@ -3,7 +3,7 @@ use rocksdb::DBWithThreadMode;
 use rocksdb::SingleThreaded;
 use serde::Deserialize;
 use serde::Serialize;
-use tofuri_block::BlockA;
+use tofuri_block::Block;
 use tofuri_block::BlockB;
 use tofuri_block::GENESIS_BLOCK_BETA;
 use tofuri_fork::Manager;
@@ -65,7 +65,7 @@ pub struct Blockchain {
     pub sync: Sync,
     pending_transactions: Vec<Transaction>,
     pending_stakes: Vec<Stake>,
-    pending_blocks: Vec<BlockA>,
+    pending_blocks: Vec<BlockB>,
 }
 impl Blockchain {
     #[instrument(skip_all, level = "debug")]
@@ -158,7 +158,7 @@ impl Blockchain {
         key: &Key,
         timestamp: u32,
         trust_fork_after_blocks: usize,
-    ) -> BlockA {
+    ) -> BlockB {
         let mut transactions: Vec<Transaction> = self
             .pending_transactions
             .iter()
@@ -197,15 +197,15 @@ impl Blockchain {
         }
         let res = self.tree.main();
         let res = match res {
-            Some(main) => BlockA::sign(
+            Some(main) => BlockB::sign(
                 main.hash,
                 timestamp,
                 transactions,
                 stakes,
                 key,
-                &self.forks.unstable.latest_block.beta,
+                &self.forks.unstable.latest_block.beta().unwrap(),
             ),
-            None => BlockA::sign(
+            None => BlockB::sign(
                 GENESIS_BLOCK_PREVIOUS_HASH,
                 timestamp,
                 transactions,
@@ -221,17 +221,17 @@ impl Blockchain {
     fn save_block(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        block_a: &BlockA,
+        block_a: &BlockB,
         forger: bool,
         trust_fork_after_blocks: usize,
     ) {
         tofuri_db::block::put(block_a, db).unwrap();
         let fork = self
             .tree
-            .insert(block_a.hash, block_a.previous_hash, block_a.timestamp);
+            .insert(block_a.hash(), block_a.previous_hash, block_a.timestamp);
         self.tree.sort_branches();
         if let Some(main) = self.tree.main() {
-            if block_a.hash == main.hash && !forger {
+            if block_a.hash() == main.hash && !forger {
                 self.sync.new += 1.0;
             }
         }
@@ -241,7 +241,7 @@ impl Blockchain {
             trust_fork_after_blocks,
         );
         let height = self.height();
-        let hash = hex::encode(block_a.hash);
+        let hash = hex::encode(block_a.hash());
         let transactions = block_a.transactions.len();
         let stakes = block_a.stakes.len();
         let text = if forger {
@@ -334,12 +334,15 @@ impl Blockchain {
     pub fn pending_blocks_push(
         &mut self,
         db: &DBWithThreadMode<SingleThreaded>,
-        block_b: BlockB,
+        block_a: BlockB,
         time_delta: u32,
         trust_fork_after_blocks: usize,
     ) -> Result<(), Error> {
-        let block_a = block_b.a().map_err(Error::Block)?;
-        if self.pending_blocks.iter().any(|a| a.hash == block_a.hash) {
+        if self
+            .pending_blocks
+            .iter()
+            .any(|a| a.hash() == block_a.hash())
+        {
             return Err(Error::BlockPending);
         }
         self.validate_block(
@@ -405,11 +408,11 @@ impl Blockchain {
     pub fn validate_block(
         &self,
         db: &DBWithThreadMode<SingleThreaded>,
-        block_a: &BlockA,
+        block_a: &BlockB,
         timestamp: u32,
         trust_fork_after_blocks: usize,
     ) -> Result<(), Error> {
-        if self.tree.get(&block_a.hash).is_some() {
+        if self.tree.get(&block_a.hash()).is_some() {
             return Err(Error::BlockHashInTree);
         }
         if block_a.previous_hash != GENESIS_BLOCK_PREVIOUS_HASH
@@ -420,7 +423,7 @@ impl Blockchain {
         if block_a.timestamp > timestamp {
             return Err(Error::BlockTimestampFuture);
         }
-        let input_address = block_a.input_address();
+        let input_address = block_a.input_address().map_err(Error::Block)?;
         let unstable = self
             .forks
             .unstable(
@@ -437,9 +440,9 @@ impl Blockchain {
             return Err(Error::BlockTimestamp);
         }
         Key::vrf_verify(
-            &block_a.input_public_key,
+            &block_a.input_public_key().map_err(Error::Block)?,
             &block_a.pi,
-            &unstable.latest_block.beta,
+            &unstable.latest_block.beta().map_err(Error::Block)?,
         )
         .map_err(Error::Key)?;
         if let Some(staker) = unstable.next_staker(block_a.timestamp) {

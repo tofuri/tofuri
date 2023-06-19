@@ -105,7 +105,7 @@ pub async fn height_by_hash(State(args): State<Args>, hash: Path<String>) -> imp
 #[instrument(skip_all)]
 pub async fn block_latest(State(args): State<Args>) -> impl IntoResponse {
     let block_a = tofuri_rpc::block_latest(&args.rpc).await.unwrap();
-    let block = tofuri_api_util::block(&block_a);
+    let block = tofuri_api_util::block(&block_a).unwrap();
     Json(block)
 }
 #[instrument(skip_all)]
@@ -122,7 +122,7 @@ pub async fn hash_by_height(State(args): State<Args>, height: Path<String>) -> i
 pub async fn block_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let block_a = tofuri_rpc::block_by_hash(&args.rpc, &hash).await.unwrap();
-    let block = tofuri_api_util::block(&block_a);
+    let block = tofuri_api_util::block(&block_a).unwrap();
     Json(block)
 }
 #[instrument(skip_all)]

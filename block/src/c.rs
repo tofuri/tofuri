@@ -1,7 +1,4 @@
-use crate::a::BlockA;
 use crate::b::BlockB;
-use crate::Block;
-use crate::Error;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
@@ -20,30 +17,6 @@ pub struct BlockC {
     pub stake_hashes: Vec<[u8; 32]>,
 }
 impl BlockC {
-    pub fn a(
-        &self,
-        transactions: Vec<Transaction>,
-        stakes: Vec<Stake>,
-        beta: Option<[u8; 32]>,
-        input_public_key: Option<[u8; 33]>,
-    ) -> Result<BlockA, Error> {
-        let block_b = self.b(transactions.clone(), stakes.clone());
-        let beta = beta.unwrap_or(block_b.beta()?);
-        let input_public_key = input_public_key.unwrap_or(block_b.input_public_key()?);
-        let mut block_a = BlockA {
-            hash: [0; 32],
-            previous_hash: self.previous_hash,
-            timestamp: self.timestamp,
-            beta,
-            pi: self.pi,
-            input_public_key,
-            signature: self.signature,
-            transactions,
-            stakes,
-        };
-        block_a.hash = block_a.hash();
-        Ok(block_a)
-    }
     pub fn b(&self, transactions: Vec<Transaction>, stakes: Vec<Stake>) -> BlockB {
         BlockB {
             previous_hash: self.previous_hash,

@@ -1,5 +1,5 @@
 use std::net::IpAddr;
-use tofuri_block::BlockA;
+use tofuri_block::BlockB;
 use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
 use tofuri_stake::Stake;
@@ -108,7 +108,7 @@ pub async fn height_by_hash(addr: &str, hash: &[u8; 32]) -> Result<usize, Error>
     )
     .map_err(Error::Bincode)
 }
-pub async fn block_latest(addr: &str) -> Result<BlockA, Error> {
+pub async fn block_latest(addr: &str) -> Result<BlockB, Error> {
     bincode::deserialize(&request(Type::BlockLatest, addr, None).await?).map_err(Error::Bincode)
 }
 pub async fn hash_by_height(addr: &str, height: &usize) -> Result<[u8; 32], Error> {
@@ -122,7 +122,7 @@ pub async fn hash_by_height(addr: &str, height: &usize) -> Result<[u8; 32], Erro
     )
     .map_err(Error::Bincode)
 }
-pub async fn block_by_hash(addr: &str, hash: &[u8; 32]) -> Result<BlockA, Error> {
+pub async fn block_by_hash(addr: &str, hash: &[u8; 32]) -> Result<BlockB, Error> {
     bincode::deserialize(
         &request(
             Type::BlockByHash,

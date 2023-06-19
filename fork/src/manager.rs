@@ -57,7 +57,7 @@ impl Manager {
     ) {
         let hashes_0 = &self.unstable.hashes;
         if hashes_0.len() == trust_fork_after_blocks {
-            let block_a = tofuri_db::block::get_a(db, hashes_0.first().unwrap()).unwrap();
+            let block_a = tofuri_db::block::get_b(db, hashes_0.first().unwrap()).unwrap();
             self.stable.append_block(
                 &block_a,
                 match tofuri_db::block::get_b(db, &block_a.previous_hash) {

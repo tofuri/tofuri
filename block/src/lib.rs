@@ -1,7 +1,5 @@
-mod a;
 mod b;
 mod c;
-pub use a::BlockA;
 pub use b::BlockB;
 pub use c::BlockC;
 use merkle_cbt::merkle_tree::Merge;

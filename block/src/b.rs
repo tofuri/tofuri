@@ -1,4 +1,3 @@
-use crate::a::BlockA;
 use crate::c::BlockC;
 use crate::Block;
 use crate::Error;
@@ -21,19 +20,41 @@ pub struct BlockB {
     pub stakes: Vec<Stake>,
 }
 impl BlockB {
-    pub fn a(&self) -> Result<BlockA, Error> {
-        let block_a = BlockA {
-            hash: self.hash(),
-            previous_hash: self.previous_hash,
-            timestamp: self.timestamp,
-            beta: self.beta()?,
-            pi: self.pi,
-            input_public_key: self.input_public_key()?,
-            signature: self.signature,
-            transactions: self.transactions.clone(),
-            stakes: self.stakes.clone(),
+    pub fn sign(
+        previous_hash: [u8; 32],
+        timestamp: u32,
+        transactions: Vec<Transaction>,
+        stakes: Vec<Stake>,
+        key: &Key,
+        previous_beta: &[u8; 32],
+    ) -> Result<BlockB, Error> {
+        let pi = key.vrf_prove(previous_beta).map_err(Error::Key)?;
+        let mut block_b = BlockB {
+            previous_hash,
+            timestamp,
+            pi,
+            signature: [0; 64],
+            transactions,
+            stakes,
         };
-        Ok(block_a)
+        block_b.signature = key.sign(&block_b.hash()).map_err(Error::Key)?;
+        Ok(block_b)
+    }
+    pub fn input_address(&self) -> Result<[u8; 20], Error> {
+        Ok(Key::address(&self.input_public_key()?))
+    }
+    pub fn reward(&self) -> u128 {
+        self.fees() + 10_u128.pow(18)
+    }
+    pub fn fees(&self) -> u128 {
+        let mut fees = 0;
+        for transaction in self.transactions.iter() {
+            fees += transaction.fee;
+        }
+        for stake in self.stakes.iter() {
+            fees += stake.fee;
+        }
+        fees
     }
     pub fn c(&self) -> BlockC {
         BlockC {

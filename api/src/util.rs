@@ -9,7 +9,7 @@ use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Hex(hex::FromHexError),
-    Address(tofuri_address::public::Error),
+    Address(tofuri_address::Error),
     ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }

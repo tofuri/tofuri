@@ -17,7 +17,7 @@ use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Util(util::Error),
-    Secret(tofuri_address::secret::Error),
+    Address(tofuri_address::Error),
     Key(tofuri_key::Error),
     Io(std::io::Error),
 }
@@ -148,7 +148,7 @@ pub fn import() -> Result<Key, Error> {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    Key::from_slice(&tofuri_address::secret::decode(&secret).map_err(Error::Secret)?)
+    Key::from_slice(&tofuri_address::secret::decode(&secret).map_err(Error::Address)?)
         .map_err(Error::Key)
 }
 pub fn send() -> bool {

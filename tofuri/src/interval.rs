@@ -84,7 +84,10 @@ fn share(node: &mut Node) {
 }
 #[instrument(skip_all, level = "debug")]
 fn grow(node: &mut Node) {
-    let timestamp = tofuri_util::block_timestamp();
+    let timestamp = {
+        let timestamp = tofuri_util::timestamp();
+        timestamp - (timestamp % BLOCK_TIME)
+    };
     let blockchain = &mut node.blockchain;
     blockchain.pending_retain(timestamp);
     blockchain.save_blocks(&node.db, node.args.trust);

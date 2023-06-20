@@ -4372,7 +4372,6 @@ dependencies = [
  "tofuri-p2p",
  "tofuri-rpc",
  "tofuri-stake",
- "tofuri-sync",
  "tofuri-transaction",
  "tofuri-tree",
  "tokio",
@@ -4450,7 +4449,6 @@ dependencies = [
  "tofuri-fork",
  "tofuri-key",
  "tofuri-stake",
- "tofuri-sync",
  "tofuri-transaction",
  "tofuri-tree",
  "tracing",
@@ -4583,8 +4581,8 @@ dependencies = [
  "bincode",
  "serde",
  "tofuri-block",
+ "tofuri-blockchain",
  "tofuri-stake",
- "tofuri-sync",
  "tofuri-transaction",
  "tokio",
 ]
@@ -4602,14 +4600,6 @@ dependencies = [
  "tofuri-address",
  "tofuri-key",
  "vint",
-]
-
-[[package]]
-name = "tofuri-sync"
-version = "0.1.0"
-dependencies = [
- "lazy_static",
- "serde",
 ]
 
 [[package]]

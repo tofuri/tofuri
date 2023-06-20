@@ -4,6 +4,7 @@ use std::net::IpAddr;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tofuri_block::Block;
+use tofuri_blockchain::sync::Sync;
 use tofuri_rpc::Request;
 use tofuri_rpc::Type;
 use tofuri_stake::Stake;
@@ -278,7 +279,7 @@ fn tree_size(node: &mut Node) -> usize {
     node.blockchain.tree.size()
 }
 #[instrument(skip_all, level = "trace")]
-fn sync(node: &mut Node) -> &tofuri_sync::Sync {
+fn sync(node: &mut Node) -> &Sync {
     &node.blockchain.sync
 }
 #[instrument(skip_all, level = "trace")]

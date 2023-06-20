@@ -1,13 +1,54 @@
+use serde::Deserialize;
+use serde::Serialize;
 use std::net::IpAddr;
 use tofuri_block::Block;
-use tofuri_rpc_core::Request;
-use tofuri_rpc_core::Type;
 use tofuri_stake::Stake;
 use tofuri_sync::Sync;
 use tofuri_transaction::Transaction;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Type {
+    Balance,
+    BalancePendingMin,
+    BalancePendingMax,
+    Staked,
+    StakedPendingMin,
+    StakedPendingMax,
+    Height,
+    HeightByHash,
+    BlockLatest,
+    HashByHeight,
+    BlockByHash,
+    TransactionByHash,
+    StakeByHash,
+    Peers,
+    Peer,
+    Transaction,
+    Stake,
+    CargoPkgName,
+    CargoPkgVersion,
+    CargoPkgRepository,
+    GitHash,
+    Address,
+    Ticks,
+    Time,
+    TreeSize,
+    Sync,
+    RandomQueue,
+    UnstableHashes,
+    UnstableLatestHashes,
+    UnstableStakers,
+    StableHashes,
+    StableLatestHashes,
+    StableStakers,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Request {
+    pub t: Type,
+    pub v: Vec<u8>,
+}
 #[derive(Debug)]
 pub enum Error {
     Bincode(bincode::Error),

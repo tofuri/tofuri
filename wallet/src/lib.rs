@@ -24,10 +24,10 @@ use std::path::Path;
 use std::process;
 use tofuri_address::address;
 use tofuri_address::secret;
-use tofuri_api_core::Block;
-use tofuri_api_core::Root;
-use tofuri_api_core::Stake;
-use tofuri_api_core::Transaction;
+use tofuri_api::Block;
+use tofuri_api::Root;
+use tofuri_api::Stake;
+use tofuri_api::Transaction;
 use tofuri_key::Key;
 pub const EXTENSION: &str = "tofuri";
 const INCORRECT: &str = "Incorrect passphrase";
@@ -222,7 +222,7 @@ impl Wallet {
         let res: String = self
             .client
             .post(format!("{}transaction", self.args.api.to_string()))
-            .json(&tofuri_api_util::transaction(&transaction).unwrap())
+            .json(&tofuri_api::util::transaction(&transaction).unwrap())
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -259,7 +259,7 @@ impl Wallet {
         let res: String = self
             .client
             .post(format!("{}stake", self.args.api.to_string()))
-            .json(&tofuri_api_util::stake(&stake).unwrap())
+            .json(&tofuri_api::util::stake(&stake).unwrap())
             .send()
             .await
             .map_err(Error::Reqwest)?

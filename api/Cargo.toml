@@ -9,10 +9,9 @@ repository = "https://github.com/tofuri/tofuri"
 [dependencies]
 tofuri-address = { version = "0.1.1", path = "../address" }
 tofuri-rpc = { version = "0.1.0", path = "../rpc" }
-tofuri-api-core = { version = "0.1.0", path = "../api-core" }
-tofuri-api-util = { version = "0.1.0", path = "../api-util" }
 tofuri-block = { version = "0.1.0", path = "../block" }
 tofuri-fork = { version = "0.1.0", path = "../fork" }
+tofuri-key = { version = "0.1.0", path = "../key" }
 vint = { path = "../vint" }
 decimal = { path = "../decimal" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }

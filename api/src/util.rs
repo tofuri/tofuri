@@ -13,8 +13,8 @@ pub enum Error {
     ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
-pub fn block(block_b: &Block) -> Result<tofuri_api_core::Block, tofuri_key::Error> {
-    Ok(tofuri_api_core::Block {
+pub fn block(block_b: &Block) -> Result<crate::Block, tofuri_key::Error> {
+    Ok(crate::Block {
         hash: hex::encode(block_b.hash()),
         previous_hash: hex::encode(block_b.previous_hash),
         timestamp: block_b.timestamp,
@@ -34,10 +34,8 @@ pub fn block(block_b: &Block) -> Result<tofuri_api_core::Block, tofuri_key::Erro
             .collect(),
     })
 }
-pub fn transaction(
-    transaction: &Transaction,
-) -> Result<tofuri_api_core::Transaction, tofuri_key::Error> {
-    Ok(tofuri_api_core::Transaction {
+pub fn transaction(transaction: &Transaction) -> Result<crate::Transaction, tofuri_key::Error> {
+    Ok(crate::Transaction {
         input_address: address::encode(&transaction.input_address()?),
         output_address: address::encode(&transaction.output_address),
         amount: u128::from(transaction.amount).decimal::<18>(),
@@ -47,8 +45,8 @@ pub fn transaction(
         signature: hex::encode(transaction.signature),
     })
 }
-pub fn stake(stake: &Stake) -> Result<tofuri_api_core::Stake, tofuri_key::Error> {
-    Ok(tofuri_api_core::Stake {
+pub fn stake(stake: &Stake) -> Result<crate::Stake, tofuri_key::Error> {
+    Ok(crate::Stake {
         amount: u128::from(stake.amount).decimal::<18>(),
         fee: u128::from(stake.fee).decimal::<18>(),
         deposit: stake.deposit,
@@ -58,7 +56,7 @@ pub fn stake(stake: &Stake) -> Result<tofuri_api_core::Stake, tofuri_key::Error>
         hash: hex::encode(stake.hash()),
     })
 }
-pub fn transaction_b(transaction: &tofuri_api_core::Transaction) -> Result<Transaction, Error> {
+pub fn transaction_b(transaction: &crate::Transaction) -> Result<Transaction, Error> {
     let transaction = Transaction {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
         amount: Vint::from(
@@ -74,7 +72,7 @@ pub fn transaction_b(transaction: &tofuri_api_core::Transaction) -> Result<Trans
     };
     Ok(transaction)
 }
-pub fn stake_b(stake: &tofuri_api_core::Stake) -> Result<Stake, Error> {
+pub fn stake_b(stake: &crate::Stake) -> Result<Stake, Error> {
     let stake = Stake {
         amount: Vint::from(u128::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?),
         fee: Vint::from(u128::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),

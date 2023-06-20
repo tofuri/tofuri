@@ -2,9 +2,7 @@
 members = [
     "address",
     "api",
-    "api-core",
     "rpc",
-    "api-util",
     "block",
     "blockchain",
     "sync",

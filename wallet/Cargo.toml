@@ -9,8 +9,7 @@ categories = ["cryptography::cryptocurrencies"]
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-api-core = { version = "0.1.0", path = "../api-core" }
-tofuri-api-util = { version = "0.1.0", path = "../api-util" }
+tofuri-api = { version = "0.1.0", path = "../api" }
 tofuri-address = { version = "0.1.1", path = "../address" }
 vint = { path = "../vint" }
 decimal = { path = "../decimal" }

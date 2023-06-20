@@ -1,3 +1,4 @@
+use crate::util;
 use crate::Args;
 use axum::extract::Path;
 use axum::extract::State;
@@ -6,9 +7,6 @@ use axum::Json;
 use chrono::offset::Utc;
 use decimal::Decimal;
 use tofuri_address::address;
-use tofuri_api_core::Root;
-use tofuri_api_core::Stake;
-use tofuri_api_core::Transaction;
 use tofuri_fork::BLOCK_TIME;
 use tracing::instrument;
 #[instrument(skip_all)]
@@ -17,7 +15,7 @@ pub async fn root(State(args): State<Args>) -> impl IntoResponse {
     let cargo_pkg_version = tofuri_rpc::cargo_pkg_version(&args.rpc).await.unwrap();
     let cargo_pkg_repository = tofuri_rpc::cargo_pkg_repository(&args.rpc).await.unwrap();
     let git_hash = tofuri_rpc::git_hash(&args.rpc).await.unwrap();
-    Json(Root {
+    Json(crate::Root {
         cargo_pkg_name,
         cargo_pkg_version,
         cargo_pkg_repository,
@@ -104,7 +102,7 @@ pub async fn height_by_hash(State(args): State<Args>, hash: Path<String>) -> imp
 #[instrument(skip_all)]
 pub async fn block_latest(State(args): State<Args>) -> impl IntoResponse {
     let block_a = tofuri_rpc::block_latest(&args.rpc).await.unwrap();
-    let block = tofuri_api_util::block(&block_a).unwrap();
+    let block = util::block(&block_a).unwrap();
     Json(block)
 }
 #[instrument(skip_all)]
@@ -121,7 +119,7 @@ pub async fn hash_by_height(State(args): State<Args>, height: Path<String>) -> i
 pub async fn block_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let block_a = tofuri_rpc::block_by_hash(&args.rpc, &hash).await.unwrap();
-    let block = tofuri_api_util::block(&block_a).unwrap();
+    let block = util::block(&block_a).unwrap();
     Json(block)
 }
 #[instrument(skip_all)]
@@ -133,14 +131,14 @@ pub async fn transaction_by_hash(
     let transaction = tofuri_rpc::transaction_by_hash(&args.rpc, &hash)
         .await
         .unwrap();
-    let transaction = tofuri_api_util::transaction(&transaction).unwrap();
+    let transaction = util::transaction(&transaction).unwrap();
     Json(transaction)
 }
 #[instrument(skip_all)]
 pub async fn stake_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let stake = tofuri_rpc::stake_by_hash(&args.rpc, &hash).await.unwrap();
-    let stake = tofuri_api_util::stake(&stake).unwrap();
+    let stake = util::stake(&stake).unwrap();
     Json(stake)
 }
 #[instrument(skip_all)]
@@ -158,17 +156,17 @@ pub async fn peer(State(args): State<Args>, Path(ip_addr): Path<String>) -> impl
 #[instrument(skip_all)]
 pub async fn transaction(
     State(args): State<Args>,
-    Json(transaction): Json<Transaction>,
+    Json(transaction): Json<crate::Transaction>,
 ) -> impl IntoResponse {
-    let transaction_b = tofuri_api_util::transaction_b(&transaction).unwrap();
+    let transaction_b = util::transaction_b(&transaction).unwrap();
     let status = tofuri_rpc::transaction(&args.rpc, &transaction_b)
         .await
         .unwrap();
     Json(status)
 }
 #[instrument(skip_all)]
-pub async fn stake(State(args): State<Args>, Json(stake): Json<Stake>) -> impl IntoResponse {
-    let stake_b = tofuri_api_util::stake_b(&stake).unwrap();
+pub async fn stake(State(args): State<Args>, Json(stake): Json<crate::Stake>) -> impl IntoResponse {
+    let stake_b = util::stake_b(&stake).unwrap();
     let status = tofuri_rpc::stake(&args.rpc, &stake_b).await.unwrap();
     Json(status)
 }

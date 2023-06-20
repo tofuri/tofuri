@@ -4401,10 +4401,9 @@ dependencies = [
  "hex",
  "serde",
  "tofuri-address",
- "tofuri-api-core",
- "tofuri-api-util",
  "tofuri-block",
  "tofuri-fork",
+ "tofuri-key",
  "tofuri-rpc",
  "tofuri-stake",
  "tofuri-transaction",
@@ -4412,28 +4411,6 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "vint",
-]
-
-[[package]]
-name = "tofuri-api-core"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "tofuri-api-util"
-version = "0.1.0"
-dependencies = [
- "decimal",
- "hex",
- "tofuri-address",
- "tofuri-api-core",
- "tofuri-block",
- "tofuri-key",
- "tofuri-stake",
- "tofuri-transaction",
  "vint",
 ]
 
@@ -4567,7 +4544,7 @@ dependencies = [
  "serde_json",
  "tempdir",
  "tofuri-address",
- "tofuri-api-core",
+ "tofuri-api",
  "tofuri-key",
  "tofuri-pay-core",
  "tofuri-pay-db",
@@ -4676,8 +4653,7 @@ dependencies = [
  "rand 0.8.5",
  "reqwest",
  "tofuri-address",
- "tofuri-api-core",
- "tofuri-api-util",
+ "tofuri-api",
  "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",

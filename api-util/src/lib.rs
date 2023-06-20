@@ -1,3 +1,5 @@
+use decimal::Decimal;
+use decimal::FromStr;
 use std::num::ParseIntError;
 use tofuri_address::address;
 use tofuri_block::Block;
@@ -38,8 +40,8 @@ pub fn transaction(
     Ok(tofuri_api_core::Transaction {
         input_address: address::encode(&transaction.input_address()?),
         output_address: address::encode(&transaction.output_address),
-        amount: parseint::to_string::<18>(transaction.amount.into()),
-        fee: parseint::to_string::<18>(transaction.fee.into()),
+        amount: u128::from(transaction.amount).decimal::<18>(),
+        fee: u128::from(transaction.fee).decimal::<18>(),
         timestamp: transaction.timestamp,
         hash: hex::encode(transaction.hash()),
         signature: hex::encode(transaction.signature),
@@ -47,8 +49,8 @@ pub fn transaction(
 }
 pub fn stake(stake: &Stake) -> Result<tofuri_api_core::Stake, tofuri_key::Error> {
     Ok(tofuri_api_core::Stake {
-        amount: parseint::to_string::<18>(stake.amount.into()),
-        fee: parseint::to_string::<18>(stake.fee.into()),
+        amount: u128::from(stake.amount).decimal::<18>(),
+        fee: u128::from(stake.fee).decimal::<18>(),
         deposit: stake.deposit,
         timestamp: stake.timestamp,
         signature: hex::encode(stake.signature),
@@ -60,9 +62,9 @@ pub fn transaction_b(transaction: &tofuri_api_core::Transaction) -> Result<Trans
     let transaction = Transaction {
         output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
         amount: Vint::from(
-            parseint::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,
+            u128::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,
         ),
-        fee: Vint::from(parseint::from_str::<18>(&transaction.fee).map_err(Error::ParseIntError)?),
+        fee: Vint::from(u128::from_str::<18>(&transaction.fee).map_err(Error::ParseIntError)?),
         timestamp: transaction.timestamp,
         signature: hex::decode(&transaction.signature)
             .map_err(Error::Hex)?
@@ -74,8 +76,8 @@ pub fn transaction_b(transaction: &tofuri_api_core::Transaction) -> Result<Trans
 }
 pub fn stake_b(stake: &tofuri_api_core::Stake) -> Result<Stake, Error> {
     let stake = Stake {
-        amount: Vint::from(parseint::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?),
-        fee: Vint::from(parseint::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),
+        amount: Vint::from(u128::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?),
+        fee: Vint::from(u128::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),
         deposit: stake.deposit,
         timestamp: stake.timestamp,
         signature: hex::decode(&stake.signature)

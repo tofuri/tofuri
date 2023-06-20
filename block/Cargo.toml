@@ -12,7 +12,7 @@ tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
 tofuri-address = { version = "0.1.0", path = "../address" }
 vint = { path = "../vint" }
-parseint = { path = "../parseint" }
+decimal = { path = "../decimal" }
 serde = { version = "1.0.163", features = ["derive"] }
 serde-big-array = "0.5.1"
 sha2 = "0.10.6"

@@ -3,6 +3,7 @@ use axum::extract::Path;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::Json;
+use decimal::Decimal;
 use tofuri_address::address;
 use tofuri_api_core::Root;
 use tofuri_api_core::Stake;
@@ -25,11 +26,10 @@ pub async fn root(State(args): State<Args>) -> impl IntoResponse {
 #[instrument(skip_all)]
 pub async fn balance(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance = parseint::to_string::<18>(
-        tofuri_rpc::balance(&args.rpc, &address_bytes)
-            .await
-            .unwrap(),
-    );
+    let balance = tofuri_rpc::balance(&args.rpc, &address_bytes)
+        .await
+        .unwrap()
+        .decimal::<18>();
     Json(balance)
 }
 #[instrument(skip_all)]
@@ -38,11 +38,10 @@ pub async fn balance_pending_min(
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance_pending_min = parseint::to_string::<18>(
-        tofuri_rpc::balance_pending_min(&args.rpc, &address_bytes)
-            .await
-            .unwrap(),
-    );
+    let balance_pending_min = tofuri_rpc::balance_pending_min(&args.rpc, &address_bytes)
+        .await
+        .unwrap()
+        .decimal::<18>();
     Json(balance_pending_min)
 }
 #[instrument(skip_all)]
@@ -51,18 +50,19 @@ pub async fn balance_pending_max(
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let balance_pending_max = parseint::to_string::<18>(
-        tofuri_rpc::balance_pending_max(&args.rpc, &address_bytes)
-            .await
-            .unwrap(),
-    );
+    let balance_pending_max = tofuri_rpc::balance_pending_max(&args.rpc, &address_bytes)
+        .await
+        .unwrap()
+        .decimal::<18>();
     Json(balance_pending_max)
 }
 #[instrument(skip_all)]
 pub async fn staked(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked =
-        parseint::to_string::<18>(tofuri_rpc::staked(&args.rpc, &address_bytes).await.unwrap());
+    let staked = tofuri_rpc::staked(&args.rpc, &address_bytes)
+        .await
+        .unwrap()
+        .decimal::<18>();
     Json(staked)
 }
 #[instrument(skip_all)]
@@ -71,11 +71,10 @@ pub async fn staked_pending_min(
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked_pending_min = parseint::to_string::<18>(
-        tofuri_rpc::staked_pending_min(&args.rpc, &address_bytes)
-            .await
-            .unwrap(),
-    );
+    let staked_pending_min = tofuri_rpc::staked_pending_min(&args.rpc, &address_bytes)
+        .await
+        .unwrap()
+        .decimal::<18>();
     Json(staked_pending_min)
 }
 #[instrument(skip_all)]
@@ -84,11 +83,10 @@ pub async fn staked_pending_max(
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = address::decode(&address).unwrap();
-    let staked_pending_max = parseint::to_string::<18>(
-        tofuri_rpc::staked_pending_max(&args.rpc, &address_bytes)
-            .await
-            .unwrap(),
-    );
+    let staked_pending_max = tofuri_rpc::staked_pending_max(&args.rpc, &address_bytes)
+        .await
+        .unwrap()
+        .decimal::<18>();
     Json(staked_pending_max)
 }
 #[instrument(skip_all)]

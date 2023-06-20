@@ -1065,6 +1065,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "decimal"
+version = "0.1.0"
+
+[[package]]
 name = "der"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3065,10 +3069,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "parseint"
-version = "0.1.0"
-
-[[package]]
 name = "password-hash"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4354,9 +4354,9 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
+ "decimal",
  "hex",
  "libp2p",
- "parseint",
  "rand 0.8.5",
  "rocksdb",
  "serde",
@@ -4396,8 +4396,8 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "clap",
+ "decimal",
  "hex",
- "parseint",
  "serde",
  "tofuri-address",
  "tofuri-api-core",
@@ -4425,8 +4425,8 @@ dependencies = [
 name = "tofuri-api-util"
 version = "0.1.0"
 dependencies = [
+ "decimal",
  "hex",
- "parseint",
  "tofuri-address",
  "tofuri-api-core",
  "tofuri-block",
@@ -4441,9 +4441,9 @@ name = "tofuri-block"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "decimal",
  "hex",
  "merkle-cbt",
- "parseint",
  "serde",
  "serde-big-array",
  "sha2 0.10.7",
@@ -4459,8 +4459,8 @@ name = "tofuri-blockchain"
 version = "0.1.0"
 dependencies = [
  "colored",
+ "decimal",
  "hex",
- "parseint",
  "rocksdb",
  "serde",
  "tofuri-address",
@@ -4490,7 +4490,7 @@ name = "tofuri-db"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "parseint",
+ "decimal",
  "rocksdb",
  "serde",
  "serde-big-array",
@@ -4507,7 +4507,7 @@ dependencies = [
 name = "tofuri-fork"
 version = "0.1.0"
 dependencies = [
- "parseint",
+ "decimal",
  "rocksdb",
  "serde",
  "tofuri-address",
@@ -4554,9 +4554,9 @@ dependencies = [
  "bincode",
  "chrono",
  "clap",
+ "decimal",
  "hex",
  "lazy_static",
- "parseint",
  "regex",
  "reqwest",
  "rocksdb",
@@ -4621,8 +4621,8 @@ name = "tofuri-stake"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "decimal",
  "hex",
- "parseint",
  "serde",
  "serde-big-array",
  "sha2 0.10.7",
@@ -4644,8 +4644,8 @@ name = "tofuri-transaction"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "decimal",
  "hex",
- "parseint",
  "serde",
  "serde-big-array",
  "sha2 0.10.7",
@@ -4669,9 +4669,9 @@ dependencies = [
  "bincode",
  "chrono",
  "colored",
+ "decimal",
  "lazy_static",
  "multiaddr",
- "parseint",
  "sha2 0.10.7",
  "tofuri-block",
  "tofuri-stake",
@@ -4694,10 +4694,10 @@ dependencies = [
  "clap",
  "colored",
  "crossterm 0.26.1",
+ "decimal",
  "hex",
  "inquire",
  "lazy_static",
- "parseint",
  "rand 0.8.5",
  "reqwest",
  "tofuri-address",

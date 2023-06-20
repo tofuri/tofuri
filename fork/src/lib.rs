@@ -1,6 +1,7 @@
 mod manager;
 mod stable;
 mod unstable;
+use decimal::Decimal;
 pub use manager::Manager;
 use rocksdb::DB;
 pub use stable::Stable;
@@ -76,7 +77,7 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loa
         update_stakers(fork, *staker);
         if !loading && !T::is_stable() {
             warn!(
-                amount = parseint::to_string::<18>(penalty),
+                amount = u128::from(penalty).decimal::<18>(),
                 address = address::encode(staker),
                 "Slashed"
             );

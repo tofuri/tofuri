@@ -1,5 +1,6 @@
 pub mod router;
 use clap::Parser;
+use decimal::FromStr;
 use reqwest::Client;
 use reqwest::Url;
 use rocksdb::IteratorMode;
@@ -138,7 +139,7 @@ impl Pay {
                     map.insert(
                         address,
                         amount
-                            + parseint::from_str::<18>(&transaction.amount)
+                            + u128::from_str::<18>(&transaction.amount)
                                 .map_err(Error::ParseIntError)?,
                     );
                 }

@@ -8,7 +8,7 @@ repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 vint = { path = "../vint" }
-parseint = { path = "../parseint" }
+decimal = { path = "../decimal" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-address = { version = "0.1.1", path = "../address" }
 serde = { version = "1.0.163", features = ["derive"] }

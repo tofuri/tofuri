@@ -1,4 +1,5 @@
 use crate::Node;
+use decimal::Decimal;
 use std::process;
 use tofuri_address::address;
 use tofuri_p2p::multiaddr;
@@ -53,7 +54,7 @@ fn balance(node: &mut Node, args: &[&str]) {
         Ok(x) => x,
         Err(_) => return error!("{}", "Invalid address"),
     };
-    let balance = parseint::to_string::<18>(node.blockchain.balance(&address_bytes));
+    let balance = node.blockchain.balance(&address_bytes).decimal::<18>();
     info!(balance);
 }
 fn staked(node: &mut Node, args: &[&str]) {
@@ -65,7 +66,7 @@ fn staked(node: &mut Node, args: &[&str]) {
         Ok(x) => x,
         Err(_) => return error!("{}", "Invalid address"),
     };
-    let staked = parseint::to_string::<18>(node.blockchain.staked(&address_bytes));
+    let staked = node.blockchain.staked(&address_bytes).decimal::<18>();
     info!(staked);
 }
 fn dial(node: &mut Node, args: &[&str]) {

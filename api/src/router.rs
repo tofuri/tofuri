@@ -3,6 +3,7 @@ use axum::extract::Path;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::Json;
+use chrono::offset::Utc;
 use decimal::Decimal;
 use tofuri_address::address;
 use tofuri_api_core::Root;
@@ -266,8 +267,7 @@ pub async fn sync_remaining(State(args): State<Args>) -> impl IntoResponse {
         return Json(-1.0);
     }
     let block_a = tofuri_rpc::block_latest(&args.rpc).await.unwrap();
-    let mut diff =
-        (chrono::offset::Utc::now().timestamp() as u32).saturating_sub(block_a.timestamp) as f32;
+    let mut diff = (Utc::now().timestamp() as u32).saturating_sub(block_a.timestamp) as f32;
     diff /= BLOCK_TIME as f32;
     diff /= sync.bps;
     Json(diff)

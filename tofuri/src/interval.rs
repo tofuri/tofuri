@@ -1,5 +1,6 @@
 use crate::Node;
 use crate::SHARE_PEERS_MAX_LEN;
+use chrono::Utc;
 use rand::prelude::*;
 use std::net::IpAddr;
 use tofuri_fork::BLOCK_TIME;
@@ -84,7 +85,7 @@ fn share(node: &mut Node) {
 #[instrument(skip_all, level = "debug")]
 fn grow(node: &mut Node) {
     let timestamp = {
-        let timestamp = chrono::offset::Utc::now().timestamp() as u32;
+        let timestamp = Utc::now().timestamp() as u32;
         timestamp - (timestamp % BLOCK_TIME)
     };
     let blockchain = &mut node.blockchain;
@@ -126,7 +127,7 @@ fn grow(node: &mut Node) {
 #[instrument(skip_all, level = "debug")]
 fn sync_request(node: &mut Node) {
     if node.blockchain.forks.unstable.latest_block.timestamp
-        >= chrono::offset::Utc::now().timestamp() as u32 - BLOCK_TIME
+        >= Utc::now().timestamp() as u32 - BLOCK_TIME
     {
         return;
     }

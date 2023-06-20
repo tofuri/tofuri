@@ -1,4 +1,5 @@
 pub mod router;
+use chrono::Utc;
 use clap::Parser;
 use decimal::FromStr;
 use reqwest::Client;
@@ -90,7 +91,7 @@ impl Pay {
     pub fn charge(&mut self, amount: u128) -> Result<Payment, Error> {
         let charge = Charge {
             amount,
-            timestamp: chrono::offset::Utc::now().timestamp() as u32,
+            timestamp: Utc::now().timestamp() as u32,
             status: ChargeStatus::Pending,
             subkey_n: self.subkey_n,
         };
@@ -157,8 +158,7 @@ impl Pay {
                 tofuri_pay_db::charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
                 charges.push(charge);
             } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending)
-                && charge.timestamp
-                    < chrono::offset::Utc::now().timestamp() as u32 - self.args.expires
+                && charge.timestamp < Utc::now().timestamp() as u32 - self.args.expires
             {
                 charge.status = ChargeStatus::Expired;
                 tofuri_pay_db::charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
@@ -195,9 +195,7 @@ impl Pay {
             self.reload_chain().await?;
         }
         while match self.chain.first() {
-            Some(block) => {
-                block.timestamp < chrono::offset::Utc::now().timestamp() as u32 - self.args.expires
-            }
+            Some(block) => block.timestamp < Utc::now().timestamp() as u32 - self.args.expires,
             None => false,
         } {
             self.chain.remove(0);
@@ -238,8 +236,7 @@ impl Pay {
             }
             if block.previous_hash
                 == "0000000000000000000000000000000000000000000000000000000000000000"
-                || block.timestamp
-                    < chrono::offset::Utc::now().timestamp() as u32 - self.args.expires
+                || block.timestamp < Utc::now().timestamp() as u32 - self.args.expires
             {
                 break;
             }

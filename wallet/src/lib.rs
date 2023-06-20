@@ -11,6 +11,7 @@ use argon2::Version;
 use chacha20poly1305::aead::Aead;
 use chacha20poly1305::aead::KeyInit;
 use chacha20poly1305::ChaCha20Poly1305;
+use chrono::Utc;
 use clap::Parser;
 use colored::*;
 use crossterm::event;
@@ -213,7 +214,7 @@ impl Wallet {
             address::decode(&address).unwrap(),
             amount,
             fee,
-            chrono::offset::Utc::now().timestamp() as u32,
+            Utc::now().timestamp() as u32,
             self.key.as_ref().unwrap(),
         )
         .unwrap();
@@ -250,7 +251,7 @@ impl Wallet {
             deposit,
             amount,
             fee,
-            chrono::offset::Utc::now().timestamp() as u32,
+            Utc::now().timestamp() as u32,
             self.key.as_ref().unwrap(),
         )
         .unwrap();

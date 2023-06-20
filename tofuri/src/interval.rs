@@ -2,11 +2,11 @@ use crate::Node;
 use crate::SHARE_PEERS_MAX_LEN;
 use rand::prelude::*;
 use std::net::IpAddr;
+use tofuri_fork::BLOCK_TIME;
 use tofuri_p2p::behaviour::Request;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_util;
-use tofuri_util::BLOCK_TIME;
 use tokio::time::Duration;
 use tokio::time::Instant;
 use tokio::time::Interval;
@@ -100,7 +100,7 @@ fn grow(node: &mut Node) {
     if !sync.completed {
         return;
     }
-    if !tofuri_util::validate_block_timestamp(timestamp, unstable.latest_block.timestamp) {
+    if !tofuri_blockchain::validate_block_timestamp(timestamp, unstable.latest_block.timestamp) {
         return;
     }
     let key = match &node.key {

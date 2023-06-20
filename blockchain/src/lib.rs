@@ -6,6 +6,7 @@ use tofuri_block::Block;
 use tofuri_fork::Manager;
 use tofuri_fork::Stable;
 use tofuri_fork::Unstable;
+use tofuri_fork::BLOCK_TIME;
 use tofuri_key::Key;
 use tofuri_stake::Stake;
 use tofuri_sync::Sync;
@@ -94,7 +95,7 @@ impl Blockchain {
         let timestamp = self.forks.unstable.latest_block.timestamp;
         let diff = tofuri_util::timestamp().saturating_sub(timestamp);
         let now = "just now";
-        let mut string = tofuri_util::duration_to_string(diff, now);
+        let mut string = duration_to_string(diff, now);
         if string != now {
             string.push_str(" ago");
         }
@@ -413,10 +414,7 @@ impl Blockchain {
                 &block_a.previous_hash,
             )
             .map_err(Error::Fork)?;
-        if !tofuri_util::validate_block_timestamp(
-            block_a.timestamp,
-            unstable.latest_block.timestamp,
-        ) {
+        if !validate_block_timestamp(block_a.timestamp, unstable.latest_block.timestamp) {
             return Err(Error::BlockTimestamp);
         }
         Key::vrf_verify(
@@ -499,4 +497,39 @@ impl Blockchain {
         }
         staked
     }
+}
+pub fn validate_block_timestamp(timestamp: u32, previous_timestamp: u32) -> bool {
+    !(timestamp.saturating_sub(previous_timestamp) == 0 || timestamp % BLOCK_TIME != 0)
+}
+pub fn duration_to_string(seconds: u32, now: &str) -> String {
+    if seconds == 0 {
+        return now.to_string();
+    }
+    let mut string = "".to_string();
+    let mut i = 0;
+    for (str, num) in [
+        ("week", seconds / 604800),
+        ("day", seconds / 86400 % 7),
+        ("hour", seconds / 3600 % 24),
+        ("minute", seconds / 60 % 60),
+        ("second", seconds % 60),
+    ] {
+        if num == 0 {
+            continue;
+        }
+        if i == 1 {
+            string.push_str(" and ");
+        }
+        string.push_str(&format!(
+            "{} {}{}",
+            num,
+            str,
+            if num == 1 { "" } else { "s" }
+        ));
+        if i == 1 {
+            break;
+        }
+        i += 1;
+    }
+    string
 }

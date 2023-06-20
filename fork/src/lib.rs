@@ -11,11 +11,12 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_address::address;
 use tofuri_block::Block;
-use tofuri_util::BLOCK_TIME;
 use tracing::debug;
 use tracing::warn;
 use uint::construct_uint;
 pub use unstable::Unstable;
+pub const BLOCK_TIME: u32 = 60;
+pub const ELAPSED: u32 = 90;
 #[derive(Debug)]
 pub enum Error {
     NotAllowedToForkStableChain,
@@ -74,7 +75,7 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loa
     let stakers = stakers_offline(fork, block_a.timestamp, previous_timestamp);
     for (index, staker) in stakers.iter().enumerate() {
         let mut staked = get_staked(fork, staker);
-        let penalty = tofuri_util::penalty(index + 1);
+        let penalty = penalty(index + 1);
         staked = staked.saturating_sub(penalty);
         insert_staked(fork, *staker, staked);
         update_stakers(fork, *staker);
@@ -189,7 +190,7 @@ fn stakers_n<T: Fork>(fork: &T, n: usize) -> (Vec<[u8; 20]>, bool) {
     vec.sort_by(|a, b| b.1.cmp(&a.1));
     let mut random_queue = vec![];
     for index in 0..(n + 1) {
-        let penalty = tofuri_util::penalty(index);
+        let penalty = penalty(index);
         modulo = modulo.saturating_sub(penalty);
         if modulo == 0 {
             return (random_queue, true);
@@ -239,7 +240,12 @@ pub fn hash_beta_n(beta: &[u8; 32], n: u128) -> [u8; 32] {
 pub fn random(beta: &[u8; 32], n: u128, modulo: u128) -> u128 {
     u256_modulo(&hash_beta_n(beta, n), modulo)
 }
-pub const ELAPSED: u32 = 90;
 pub fn elapsed(timestamp: u32, latest_block_timestamp: u32) -> bool {
     ELAPSED + timestamp < latest_block_timestamp
+}
+pub fn penalty(index: usize) -> u128 {
+    if index == 0 {
+        return 0;
+    }
+    10_u128.pow(18) * 2_u128.pow(index as u32 - 1)
 }

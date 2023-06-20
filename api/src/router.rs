@@ -8,7 +8,7 @@ use tofuri_address::address;
 use tofuri_api_core::Root;
 use tofuri_api_core::Stake;
 use tofuri_api_core::Transaction;
-use tofuri_util::BLOCK_TIME;
+use tofuri_fork::BLOCK_TIME;
 use tracing::instrument;
 #[instrument(skip_all)]
 pub async fn root(State(args): State<Args>) -> impl IntoResponse {

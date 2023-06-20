@@ -12,6 +12,7 @@ tofuri-rpc = { version = "0.1.0", path = "../rpc" }
 tofuri-api-core = { version = "0.1.0", path = "../api-core" }
 tofuri-api-util = { version = "0.1.0", path = "../api-util" }
 tofuri-block = { version = "0.1.0", path = "../block" }
+tofuri-fork = { version = "0.1.0", path = "../fork" }
 vint = { path = "../vint" }
 decimal = { path = "../decimal" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }

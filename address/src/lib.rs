@@ -1,17 +1,7 @@
 use sha2::Digest;
 use sha2::Sha256;
-pub const PREFIX_ADDRESS: &str = "0x";
-pub const PREFIX_SECRET_KEY: &str = "SECRETx";
-#[derive(Debug)]
-pub enum Error {
-    Hex(hex::FromHexError),
-    InvalidAddress,
-    InvalidAddressChecksum,
-    AddressChecksumMismatch,
-    InvalidSecretKey,
-    InvalidSecretKeyChecksum,
-    SecretKeyChecksumMismatch,
-}
+pub const PREFIX_PUBLIC: &str = "0x";
+pub const PREFIX_SECRET: &str = "SECRETx";
 pub fn checksum(bytes: &[u8]) -> [u8; 4] {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
@@ -20,27 +10,29 @@ pub fn checksum(bytes: &[u8]) -> [u8; 4] {
     checksum.copy_from_slice(&hash[..4]);
     checksum
 }
-pub mod address {
+pub mod public {
     use super::*;
+    #[derive(Debug)]
+    pub enum Error {
+        Hex(hex::FromHexError),
+        Length,
+        Checksum,
+    }
     pub fn encode(address: &[u8; 20]) -> String {
         [
-            PREFIX_ADDRESS,
+            PREFIX_PUBLIC,
             &hex::encode(address),
             &hex::encode(checksum(address)),
         ]
         .concat()
     }
     pub fn decode(str: &str) -> Result<[u8; 20], Error> {
-        let decoded = hex::decode(str.replacen(PREFIX_ADDRESS, "", 1)).map_err(Error::Hex)?;
-        let address_bytes: [u8; 20] = decoded
-            .get(0..20)
-            .ok_or(Error::InvalidAddress)?
-            .try_into()
-            .unwrap();
-        if checksum(&address_bytes) == decoded.get(20..).ok_or(Error::InvalidAddressChecksum)? {
+        let decoded = hex::decode(str.replacen(PREFIX_PUBLIC, "", 1)).map_err(Error::Hex)?;
+        let address_bytes: [u8; 20] = decoded.get(0..20).ok_or(Error::Length)?.try_into().unwrap();
+        if checksum(&address_bytes) == decoded.get(20..).ok_or(Error::Length)? {
             Ok(address_bytes)
         } else {
-            Err(Error::AddressChecksumMismatch)
+            Err(Error::Checksum)
         }
     }
     #[cfg(test)]
@@ -64,27 +56,28 @@ pub mod address {
 }
 pub mod secret {
     use super::*;
+    #[derive(Debug)]
+    pub enum Error {
+        Hex(hex::FromHexError),
+        Length,
+        Checksum,
+    }
     pub fn encode(secret_key: &[u8; 32]) -> String {
         [
-            PREFIX_SECRET_KEY,
+            PREFIX_SECRET,
             &hex::encode(secret_key),
             &hex::encode(checksum(secret_key)),
         ]
         .concat()
     }
     pub fn decode(str: &str) -> Result<[u8; 32], Error> {
-        let decoded = hex::decode(str.replacen(PREFIX_SECRET_KEY, "", 1)).map_err(Error::Hex)?;
-        let secret_key_bytes: [u8; 32] = decoded
-            .get(0..32)
-            .ok_or(Error::InvalidSecretKey)?
-            .try_into()
-            .unwrap();
-        if checksum(&secret_key_bytes)
-            == decoded.get(32..).ok_or(Error::InvalidSecretKeyChecksum)?
-        {
+        let decoded = hex::decode(str.replacen(PREFIX_SECRET, "", 1)).map_err(Error::Hex)?;
+        let secret_key_bytes: [u8; 32] =
+            decoded.get(0..32).ok_or(Error::Length)?.try_into().unwrap();
+        if checksum(&secret_key_bytes) == decoded.get(32..).ok_or(Error::Length)? {
             Ok(secret_key_bytes)
         } else {
-            Err(Error::SecretKeyChecksumMismatch)
+            Err(Error::Checksum)
         }
     }
     #[cfg(test)]

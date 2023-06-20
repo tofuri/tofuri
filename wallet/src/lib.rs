@@ -22,7 +22,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_address::secret;
 use tofuri_api::Block;
 use tofuri_api::Root;
@@ -158,7 +158,7 @@ impl Wallet {
         Ok(())
     }
     async fn balance(&self) -> Result<(), Error> {
-        let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
+        let address = public::encode(&self.key.as_ref().unwrap().address_bytes());
         let balance: String = self
             .client
             .get(format!("{}balance/{}", self.args.api.to_string(), address))
@@ -211,7 +211,7 @@ impl Wallet {
             return Ok(());
         }
         let transaction = tofuri_transaction::Transaction::sign(
-            address::decode(&address).unwrap(),
+            public::decode(&address).unwrap(),
             amount,
             fee,
             Utc::now().timestamp() as u32,
@@ -278,7 +278,7 @@ impl Wallet {
     }
     async fn search(&self) -> Result<(), Error> {
         let search = inquire::search();
-        if address::decode(&search).is_ok() {
+        if public::decode(&search).is_ok() {
             let balance: String = self
                 .client
                 .get(format!("{}balance/{}", self.args.api.to_string(), search))
@@ -365,7 +365,7 @@ impl Wallet {
     fn address(&self) {
         println!(
             "{}",
-            address::encode(&self.key.as_ref().unwrap().address_bytes()).green()
+            public::encode(&self.key.as_ref().unwrap().address_bytes()).green()
         );
     }
     fn key(&self) {

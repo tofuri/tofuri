@@ -1,7 +1,7 @@
 use decimal::Decimal;
 use decimal::FromStr;
 use std::num::ParseIntError;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_block::Block;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
@@ -9,7 +9,7 @@ use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Hex(hex::FromHexError),
-    Address(tofuri_address::Error),
+    Address(tofuri_address::public::Error),
     ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
@@ -20,7 +20,7 @@ pub fn block(block_b: &Block) -> Result<crate::Block, tofuri_key::Error> {
         timestamp: block_b.timestamp,
         beta: hex::encode(block_b.beta()?),
         pi: hex::encode(block_b.pi),
-        forger_address: address::encode(&block_b.input_address()?),
+        forger_address: public::encode(&block_b.input_address()?),
         signature: hex::encode(block_b.signature),
         transactions: block_b
             .transactions
@@ -36,8 +36,8 @@ pub fn block(block_b: &Block) -> Result<crate::Block, tofuri_key::Error> {
 }
 pub fn transaction(transaction: &Transaction) -> Result<crate::Transaction, tofuri_key::Error> {
     Ok(crate::Transaction {
-        input_address: address::encode(&transaction.input_address()?),
-        output_address: address::encode(&transaction.output_address),
+        input_address: public::encode(&transaction.input_address()?),
+        output_address: public::encode(&transaction.output_address),
         amount: u128::from(transaction.amount).decimal::<18>(),
         fee: u128::from(transaction.fee).decimal::<18>(),
         timestamp: transaction.timestamp,
@@ -52,13 +52,13 @@ pub fn stake(stake: &Stake) -> Result<crate::Stake, tofuri_key::Error> {
         deposit: stake.deposit,
         timestamp: stake.timestamp,
         signature: hex::encode(stake.signature),
-        input_address: address::encode(&stake.input_address()?),
+        input_address: public::encode(&stake.input_address()?),
         hash: hex::encode(stake.hash()),
     })
 }
 pub fn transaction_b(transaction: &crate::Transaction) -> Result<Transaction, Error> {
     let transaction = Transaction {
-        output_address: address::decode(&transaction.output_address).map_err(Error::Address)?,
+        output_address: public::decode(&transaction.output_address).map_err(Error::Address)?,
         amount: Vint::from(
             u128::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,
         ),

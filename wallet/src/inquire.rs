@@ -10,14 +10,14 @@ use inquire::Select;
 use lazy_static::lazy_static;
 use std::path::PathBuf;
 use std::process;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_key::Key;
 use vint::floor;
 use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Util(util::Error),
-    Address(tofuri_address::Error),
+    Secret(tofuri_address::secret::Error),
     Key(tofuri_key::Error),
     Io(std::io::Error),
 }
@@ -148,7 +148,7 @@ pub fn import() -> Result<Key, Error> {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    Key::from_slice(&tofuri_address::secret::decode(&secret).map_err(Error::Address)?)
+    Key::from_slice(&tofuri_address::secret::decode(&secret).map_err(Error::Secret)?)
         .map_err(Error::Key)
 }
 pub fn send() -> bool {
@@ -165,7 +165,7 @@ pub fn search() -> String {
         .with_error_message("Please enter a valid Address, [u8; 32] or Number.")
         .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
         .with_parser(&|input| {
-            if address::decode(input).is_ok() || input.len() == 64 || input.parse::<usize>().is_ok()
+            if public::decode(input).is_ok() || input.len() == 64 || input.parse::<usize>().is_ok()
             {
                 return Ok(input.to_string());
             }
@@ -181,8 +181,8 @@ pub fn address() -> String {
     CustomType::<String>::new("Address:")
         .with_error_message("Please enter a valid address")
         .with_help_message("Type the hex encoded address with 0x as prefix")
-        .with_parser(&|input| match address::decode(input) {
-            Ok(address_bytes) => Ok(address::encode(&address_bytes)),
+        .with_parser(&|input| match public::decode(input) {
+            Ok(address_bytes) => Ok(public::encode(&address_bytes)),
             Err(_) => Err(()),
         })
         .prompt()

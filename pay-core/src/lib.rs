@@ -31,7 +31,7 @@ impl Charge {
         key.subkey(self.subkey_n).unwrap().address_bytes()
     }
     pub fn payment(&self, key: &Key) -> Payment {
-        let address = tofuri_address::address::encode(&self.address_bytes(key));
+        let address = tofuri_address::public::encode(&self.address_bytes(key));
         let status = status(&self.status);
         Payment {
             address,

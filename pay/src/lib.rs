@@ -128,7 +128,7 @@ impl Pay {
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
             for charge in self.charges.values() {
-                let address = tofuri_address::address::encode(&charge.address_bytes(&self.key));
+                let address = tofuri_address::public::encode(&charge.address_bytes(&self.key));
                 if transaction.output_address == address {
                     let amount = match map.get(&address) {
                         Some(a) => *a,
@@ -145,7 +145,7 @@ impl Pay {
         }
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
-            let address = tofuri_address::address::encode(&charge.address_bytes(&self.key));
+            let address = tofuri_address::public::encode(&charge.address_bytes(&self.key));
             let res = {
                 let amount = match map.get(&address) {
                     Some(a) => *a,

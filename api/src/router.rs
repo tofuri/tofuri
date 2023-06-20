@@ -6,7 +6,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use chrono::offset::Utc;
 use decimal::Decimal;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_fork::BLOCK_TIME;
 use tracing::instrument;
 #[instrument(skip_all)]
@@ -24,7 +24,7 @@ pub async fn root(State(args): State<Args>) -> impl IntoResponse {
 }
 #[instrument(skip_all)]
 pub async fn balance(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
-    let address_bytes = address::decode(&address).unwrap();
+    let address_bytes = public::decode(&address).unwrap();
     let balance = tofuri_rpc::balance(&args.rpc, &address_bytes)
         .await
         .unwrap()
@@ -36,7 +36,7 @@ pub async fn balance_pending_min(
     State(args): State<Args>,
     address: Path<String>,
 ) -> impl IntoResponse {
-    let address_bytes = address::decode(&address).unwrap();
+    let address_bytes = public::decode(&address).unwrap();
     let balance_pending_min = tofuri_rpc::balance_pending_min(&args.rpc, &address_bytes)
         .await
         .unwrap()
@@ -48,7 +48,7 @@ pub async fn balance_pending_max(
     State(args): State<Args>,
     address: Path<String>,
 ) -> impl IntoResponse {
-    let address_bytes = address::decode(&address).unwrap();
+    let address_bytes = public::decode(&address).unwrap();
     let balance_pending_max = tofuri_rpc::balance_pending_max(&args.rpc, &address_bytes)
         .await
         .unwrap()
@@ -57,7 +57,7 @@ pub async fn balance_pending_max(
 }
 #[instrument(skip_all)]
 pub async fn staked(State(args): State<Args>, address: Path<String>) -> impl IntoResponse {
-    let address_bytes = address::decode(&address).unwrap();
+    let address_bytes = public::decode(&address).unwrap();
     let staked = tofuri_rpc::staked(&args.rpc, &address_bytes)
         .await
         .unwrap()
@@ -69,7 +69,7 @@ pub async fn staked_pending_min(
     State(args): State<Args>,
     address: Path<String>,
 ) -> impl IntoResponse {
-    let address_bytes = address::decode(&address).unwrap();
+    let address_bytes = public::decode(&address).unwrap();
     let staked_pending_min = tofuri_rpc::staked_pending_min(&args.rpc, &address_bytes)
         .await
         .unwrap()
@@ -81,7 +81,7 @@ pub async fn staked_pending_max(
     State(args): State<Args>,
     address: Path<String>,
 ) -> impl IntoResponse {
-    let address_bytes = address::decode(&address).unwrap();
+    let address_bytes = public::decode(&address).unwrap();
     let staked_pending_max = tofuri_rpc::staked_pending_max(&args.rpc, &address_bytes)
         .await
         .unwrap()
@@ -193,7 +193,7 @@ pub async fn git_hash(State(args): State<Args>) -> impl IntoResponse {
 #[instrument(skip_all)]
 pub async fn address(State(args): State<Args>) -> impl IntoResponse {
     let address = tofuri_rpc::address(&args.rpc).await.unwrap();
-    let address = address.map(|x| address::encode(&x));
+    let address = address.map(|x| public::encode(&x));
     Json(address)
 }
 #[instrument(skip_all)]
@@ -219,7 +219,7 @@ pub async fn sync(State(args): State<Args>) -> impl IntoResponse {
 #[instrument(skip_all)]
 pub async fn random_queue(State(args): State<Args>) -> impl IntoResponse {
     let random_queue = tofuri_rpc::random_queue(&args.rpc).await.unwrap();
-    let random_queue: Vec<String> = random_queue.iter().map(address::encode).collect();
+    let random_queue: Vec<String> = random_queue.iter().map(public::encode).collect();
     Json(random_queue)
 }
 #[instrument(skip_all)]

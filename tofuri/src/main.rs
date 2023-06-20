@@ -12,7 +12,7 @@ use tofuri::rpc;
 use tofuri::swarm;
 use tofuri::Args;
 use tofuri::Node;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
@@ -59,7 +59,7 @@ async fn main() {
         }
     });
     if let Some(key) = &key {
-        let address = address::encode(&key.address_bytes());
+        let address = public::encode(&key.address_bytes());
         info!(address);
     }
     let tempdir = TempDir::new("tofuri-db").unwrap();

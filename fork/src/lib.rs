@@ -9,7 +9,7 @@ use sha2::Sha256;
 pub use stable::Stable;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_block::Block;
 use tracing::debug;
 use tracing::warn;
@@ -82,7 +82,7 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loa
         if !loading && !T::is_stable() {
             warn!(
                 amount = penalty.decimal::<18>(),
-                address = address::encode(staker),
+                address = public::encode(staker),
                 "Slashed"
             );
         }
@@ -91,7 +91,7 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loa
         let input_address = block_a.input_address().unwrap();
         insert_staked(fork, input_address, 10_u128.pow(18));
         update_stakers(fork, input_address);
-        let address = address::encode(&input_address);
+        let address = public::encode(&input_address);
         if !loading && !T::is_stable() {
             warn!(address, "Minted")
         }

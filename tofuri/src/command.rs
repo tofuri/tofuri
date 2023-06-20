@@ -1,7 +1,7 @@
 use crate::Node;
 use decimal::Decimal;
 use std::process;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_p2p::multiaddr;
 use tracing::error;
 use tracing::info;
@@ -36,7 +36,7 @@ fn stop() {
 }
 fn address(node: &mut Node) {
     let address = match &node.key {
-        Some(key) => address::encode(&key.address_bytes()),
+        Some(key) => public::encode(&key.address_bytes()),
         None => return error!("{}", "No key"),
     };
     info!(address)
@@ -50,7 +50,7 @@ fn balance(node: &mut Node, args: &[&str]) {
         Some(x) => *x,
         None => return error!("{}", "Missing argument"),
     };
-    let address_bytes = match address::decode(arg1) {
+    let address_bytes = match public::decode(arg1) {
         Ok(x) => x,
         Err(_) => return error!("{}", "Invalid address"),
     };
@@ -62,7 +62,7 @@ fn staked(node: &mut Node, args: &[&str]) {
         Some(x) => *x,
         None => return error!("{}", "Missing argument"),
     };
-    let address_bytes = match address::decode(arg1) {
+    let address_bytes = match public::decode(arg1) {
         Ok(x) => x,
         Err(_) => return error!("{}", "Invalid address"),
     };

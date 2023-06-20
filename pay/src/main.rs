@@ -4,7 +4,7 @@ use clap::Parser;
 use std::sync::Arc;
 use std::time::Duration;
 use tempdir::TempDir;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_address::secret;
 use tofuri_key::Key;
 use tofuri_pay::router;
@@ -41,7 +41,7 @@ async fn main() {
     debug!("{:?}", args);
     let addr = args.pay_api.parse().unwrap();
     let key = Key::from_slice(&secret::decode(&args.secret).unwrap()).unwrap();
-    let address = address::encode(&key.address_bytes());
+    let address = public::encode(&key.address_bytes());
     info!(address);
     let tempdir = TempDir::new("tofuri-pay-db").unwrap();
     let path: &str = match args.tempdb {

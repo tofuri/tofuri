@@ -2,15 +2,7 @@ use rocksdb::IteratorMode;
 use tofuri_db as db;
 fn main() {
     let db = db::open("./tofuri-db");
-    for name in [
-        "blocks",
-        "transactions",
-        "stakes",
-        "peers",
-        "input addresses",
-        "input public keys",
-        "betas",
-    ] {
+    for name in ["blocks", "transactions", "stakes", "peers"] {
         println!(
             "{}: {}",
             name,

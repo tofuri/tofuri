@@ -4,8 +4,6 @@ use libp2p::futures::StreamExt;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
-use tokio::time::Instant;
-use tokio::time::Interval;
 // use tofuri::command;
 use tofuri::interval;
 use tofuri::rpc;
@@ -20,7 +18,6 @@ use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
-use tokio::time::MissedTickBehavior::Skip;
 // use tokio::io::AsyncBufReadExt;
 // use tokio::io::BufReader;
 use tokio::net::TcpListener;
@@ -102,10 +99,10 @@ async fn main() {
     info!(local_addr, "RPC");
     // let mut reader = BufReader::new(tokio::io::stdin());
     // let mut line = String::new();
-    let mut interval_1s = interval_at(Duration::from_secs(1));
-    let mut interval_10s = interval_at(Duration::from_secs(10));
-    let mut interval_1m = interval_at(Duration::from_secs(60));
-    let mut interval_10m = interval_at(Duration::from_secs(600));
+    let mut interval_1s = interval::at(Duration::from_secs(1));
+    let mut interval_10s = interval::at(Duration::from_secs(10));
+    let mut interval_1m = interval::at(Duration::from_secs(60));
+    let mut interval_10m = interval::at(Duration::from_secs(600));
     loop {
         node.ticks += 1;
         tokio::select! {
@@ -118,12 +115,4 @@ async fn main() {
             // _ = reader.read_line(&mut line) => command::command(&mut node, &mut line, &reload_handle),
         }
     }
-}
-pub fn interval_at(period: Duration) -> Interval {
-    let nanos = period.as_nanos() as u64;
-    let start = Instant::now()
-        + Duration::from_nanos(nanos - chrono::offset::Utc::now().timestamp_nanos() as u64 % nanos);
-    let mut interval = tokio::time::interval_at(start, period);
-    interval.set_missed_tick_behavior(Skip);
-    interval
 }

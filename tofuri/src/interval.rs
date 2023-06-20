@@ -7,11 +7,22 @@ use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
 use tofuri_util;
 use tofuri_util::BLOCK_TIME;
+use tokio::time::Duration;
+use tokio::time::Instant;
+use tokio::time::Interval;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
+pub fn at(period: Duration) -> Interval {
+    let nanos = period.as_nanos() as u64;
+    let start = Instant::now()
+        + Duration::from_nanos(nanos - chrono::offset::Utc::now().timestamp_nanos() as u64 % nanos);
+    let mut interval = tokio::time::interval_at(start, period);
+    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    interval
+}
 #[instrument(skip_all, level = "debug")]
 pub fn interval_1s(node: &mut Node) {
     sync_request(node);

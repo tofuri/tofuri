@@ -10,9 +10,6 @@ use tofuri_key::Key;
 use tofuri_pay::router;
 use tofuri_pay::Args;
 use tofuri_pay::Pay;
-use tofuri_pay::CARGO_PKG_NAME;
-use tofuri_pay::CARGO_PKG_REPOSITORY;
-use tofuri_pay::CARGO_PKG_VERSION;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 use tracing::debug;
@@ -26,10 +23,6 @@ use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
-    println!(
-        "{}",
-        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
-    );
     let args = Args::parse();
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())

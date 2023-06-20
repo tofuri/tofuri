@@ -4,9 +4,6 @@ use axum::Router;
 use clap::Parser;
 use tofuri_api::router;
 use tofuri_api::Args;
-use tofuri_api::CARGO_PKG_NAME;
-use tofuri_api::CARGO_PKG_REPOSITORY;
-use tofuri_api::CARGO_PKG_VERSION;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing::debug;
@@ -18,10 +15,6 @@ use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
-    println!(
-        "{}",
-        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
-    );
     let args = Args::parse();
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())

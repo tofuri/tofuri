@@ -1,7 +1,4 @@
 use crate::Node;
-use crate::CARGO_PKG_NAME;
-use crate::CARGO_PKG_REPOSITORY;
-use crate::CARGO_PKG_VERSION;
 use std::io;
 use std::net::IpAddr;
 use std::net::SocketAddr;
@@ -11,7 +8,6 @@ use tofuri_rpc_core::Request;
 use tofuri_rpc_core::Type;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
-use tofuri_util::GIT_HASH;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
@@ -251,19 +247,19 @@ fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
 }
 #[instrument(skip_all, level = "trace")]
 fn cargo_pkg_name() -> &'static str {
-    CARGO_PKG_NAME
+    env!("CARGO_PKG_NAME")
 }
 #[instrument(skip_all, level = "trace")]
 fn cargo_pkg_version() -> &'static str {
-    CARGO_PKG_VERSION
+    env!("CARGO_PKG_VERSION")
 }
 #[instrument(skip_all, level = "trace")]
 fn cargo_pkg_repository() -> &'static str {
-    CARGO_PKG_REPOSITORY
+    env!("CARGO_PKG_REPOSITORY")
 }
 #[instrument(skip_all, level = "trace")]
 fn git_hash() -> &'static str {
-    GIT_HASH
+    env!("GIT_HASH")
 }
 #[instrument(skip_all, level = "trace")]
 fn address(node: &mut Node) -> Option<[u8; 20]> {

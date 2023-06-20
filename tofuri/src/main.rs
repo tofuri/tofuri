@@ -4,6 +4,8 @@ use libp2p::futures::StreamExt;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
+use tofuri_p2p::MAINNET_PORT;
+use tofuri_p2p::TESTNET_PORT;
 // use tofuri::command;
 use tofuri::interval;
 use tofuri::rpc;
@@ -90,8 +92,12 @@ async fn main() {
     node.p2p
         .swarm
         .listen_on(match args.testnet {
-            true => tofuri_util::TESTNET.clone(),
-            false => tofuri_util::MAINNET.clone(),
+            true => format!("/ip4/0.0.0.0/tcp/{}", TESTNET_PORT)
+                .parse()
+                .unwrap(),
+            false => format!("/ip4/0.0.0.0/tcp/{}", MAINNET_PORT)
+                .parse()
+                .unwrap(),
         })
         .unwrap();
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();

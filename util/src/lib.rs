@@ -1,6 +1,4 @@
 use colored::*;
-use lazy_static::lazy_static;
-use multiaddr::Multiaddr;
 use std::io::BufRead;
 use std::io::BufReader;
 use tracing::error;
@@ -9,16 +7,6 @@ use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Registry;
 pub const GIT_HASH: &str = env!("GIT_HASH");
-pub const MAINNET_PORT: u16 = 2020;
-pub const TESTNET_PORT: u16 = 3030;
-lazy_static! {
-    pub static ref MAINNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", MAINNET_PORT)
-        .parse()
-        .unwrap();
-    pub static ref TESTNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", TESTNET_PORT)
-        .parse()
-        .unwrap();
-}
 pub fn timestamp() -> u32 {
     chrono::offset::Utc::now().timestamp() as u32
 }

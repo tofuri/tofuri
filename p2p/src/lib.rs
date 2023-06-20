@@ -32,6 +32,8 @@ pub const P2P_RATELIMIT_GOSSIPSUB_MESSAGE_BLOCK: usize = 1 + 1;
 pub const P2P_RATELIMIT_GOSSIPSUB_MESSAGE_TRANSACTION: usize = 60 * 100;
 pub const P2P_RATELIMIT_GOSSIPSUB_MESSAGE_STAKE: usize = 60 * 100;
 pub const P2P_RATELIMIT_GOSSIPSUB_MESSAGE_PEERS: usize = 1 + 1;
+pub const MAINNET_PORT: u16 = 2020;
+pub const TESTNET_PORT: u16 = 3030;
 #[derive(Debug)]
 pub enum Error {
     PublishError(PublishError),

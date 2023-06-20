@@ -1,8 +1,8 @@
+use crate::MAINNET_PORT;
+use crate::TESTNET_PORT;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
 use std::net::IpAddr;
-use tofuri_util::MAINNET_PORT;
-use tofuri_util::TESTNET_PORT;
 pub fn to_ip_addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
     match multiaddr.iter().collect::<Vec<_>>().first() {
         Some(Protocol::Ip4(ip)) => Some(IpAddr::V4(*ip)),

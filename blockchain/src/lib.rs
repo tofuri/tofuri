@@ -178,7 +178,7 @@ impl Blockchain {
                     stakes.pop();
                 }
                 (Some(transaction), Some(stake)) => {
-                    if transaction.fee < stake.fee.into() {
+                    if transaction.fee < stake.fee {
                         transactions.pop();
                     } else {
                         stakes.pop();

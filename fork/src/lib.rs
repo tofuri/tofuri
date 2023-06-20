@@ -81,7 +81,7 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loa
         update_stakers(fork, *staker);
         if !loading && !T::is_stable() {
             warn!(
-                amount = u128::from(penalty).decimal::<18>(),
+                amount = penalty.decimal::<18>(),
                 address = address::encode(staker),
                 "Slashed"
             );

@@ -13,12 +13,12 @@ fn hash(b: &mut Bencher) {
 }
 #[bench]
 fn u256(b: &mut Bencher) {
-    b.iter(|| tofuri_util::u256(&[0xff; 32]));
+    b.iter(|| tofuri_fork::u256(&[0xff; 32]));
 }
 #[bench]
 fn random(b: &mut Bencher) {
     let mut hasher = Sha256::new();
     hasher.update([0; 32]);
     let beta: [u8; 32] = hasher.finalize().into();
-    b.iter(|| tofuri_util::random(&beta, 0, 10));
+    b.iter(|| tofuri_fork::random(&beta, 0, 10));
 }

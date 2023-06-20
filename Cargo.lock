@@ -4510,6 +4510,7 @@ dependencies = [
  "decimal",
  "rocksdb",
  "serde",
+ "sha2 0.10.7",
  "tofuri-address",
  "tofuri-block",
  "tofuri-checkpoint",
@@ -4519,6 +4520,7 @@ dependencies = [
  "tofuri-tree",
  "tofuri-util",
  "tracing",
+ "uint",
  "vint",
 ]
 
@@ -4672,13 +4674,11 @@ dependencies = [
  "decimal",
  "lazy_static",
  "multiaddr",
- "sha2 0.10.7",
  "tofuri-block",
  "tofuri-stake",
  "tofuri-transaction",
  "tracing",
  "tracing-subscriber",
- "uint",
  "vint",
 ]
 

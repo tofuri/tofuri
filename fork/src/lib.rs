@@ -4,6 +4,8 @@ mod unstable;
 use decimal::Decimal;
 pub use manager::Manager;
 use rocksdb::DB;
+use sha2::Digest;
+use sha2::Sha256;
 pub use stable::Stable;
 use std::collections::HashMap;
 use std::collections::VecDeque;
@@ -12,6 +14,7 @@ use tofuri_block::Block;
 use tofuri_util::BLOCK_TIME;
 use tracing::debug;
 use tracing::warn;
+use uint::construct_uint;
 pub use unstable::Unstable;
 #[derive(Debug)]
 pub enum Error {
@@ -166,7 +169,7 @@ fn load<T: Fork>(fork: &mut T, db: &DB, hashes: &[[u8; 32]]) {
 }
 fn stakers_n<T: Fork>(fork: &T, n: usize) -> (Vec<[u8; 20]>, bool) {
     fn random_n(slice: &[([u8; 20], u128)], beta: &[u8; 32], n: u128, modulo: u128) -> usize {
-        let random = tofuri_util::random(beta, n, modulo);
+        let random = random(beta, n, modulo);
         let mut counter = 0;
         for (index, (_, staked)) in slice.iter().enumerate() {
             counter += staked;
@@ -217,4 +220,22 @@ fn stakers_offline<T: Fork>(fork: &T, timestamp: u32, previous_timestamp: u32) -
         0 => vec![],
         n => stakers_n(fork, n - 1).0,
     }
+}
+construct_uint! {
+    pub struct U256(4);
+}
+pub fn u256(hash: &[u8; 32]) -> U256 {
+    U256::from_big_endian(hash)
+}
+pub fn u256_modulo(hash: &[u8; 32], modulo: u128) -> u128 {
+    (u256(hash) % modulo).as_u128()
+}
+pub fn hash_beta_n(beta: &[u8; 32], n: u128) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(beta);
+    hasher.update(n.to_be_bytes());
+    hasher.finalize().into()
+}
+pub fn random(beta: &[u8; 32], n: u128, modulo: u128) -> u128 {
+    u256_modulo(&hash_beta_n(beta, n), modulo)
 }

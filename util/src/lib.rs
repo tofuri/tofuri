@@ -1,8 +1,6 @@
 use colored::*;
 use lazy_static::lazy_static;
 use multiaddr::Multiaddr;
-use sha2::Digest;
-use sha2::Sha256;
 use std::io::BufRead;
 use std::io::BufReader;
 use tofuri_block::Block;
@@ -13,7 +11,6 @@ use tracing::info;
 use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Registry;
-use uint::construct_uint;
 pub const BLOCK_SIZE_LIMIT: usize = 57797;
 pub const GIT_HASH: &str = env!("GIT_HASH");
 pub const ELAPSED: u32 = 90;
@@ -31,24 +28,6 @@ lazy_static! {
     pub static ref TESTNET: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", TESTNET_PORT)
         .parse()
         .unwrap();
-}
-construct_uint! {
-    pub struct U256(4);
-}
-pub fn u256(hash: &[u8; 32]) -> U256 {
-    U256::from_big_endian(hash)
-}
-pub fn u256_modulo(hash: &[u8; 32], modulo: u128) -> u128 {
-    (u256(hash) % modulo).as_u128()
-}
-pub fn hash_beta_n(beta: &[u8; 32], n: u128) -> [u8; 32] {
-    let mut hasher = Sha256::new();
-    hasher.update(beta);
-    hasher.update(n.to_be_bytes());
-    hasher.finalize().into()
-}
-pub fn random(beta: &[u8; 32], n: u128, modulo: u128) -> u128 {
-    u256_modulo(&hash_beta_n(beta, n), modulo)
 }
 pub fn penalty(index: usize) -> u128 {
     if index == 0 {

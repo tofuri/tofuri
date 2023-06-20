@@ -4460,9 +4460,11 @@ dependencies = [
 name = "tofuri-blockchain"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "colored",
  "decimal",
  "hex",
+ "lazy_static",
  "rocksdb",
  "serde",
  "tofuri-address",

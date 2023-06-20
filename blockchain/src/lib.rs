@@ -1,4 +1,5 @@
 use colored::*;
+use lazy_static::lazy_static;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
@@ -13,14 +14,17 @@ use tofuri_sync::Sync;
 use tofuri_transaction::Transaction;
 use tofuri_tree::Tree;
 use tofuri_tree::GENESIS_BLOCK_PREVIOUS_HASH;
-use tofuri_util::BLOCK_SIZE_LIMIT;
-use tofuri_util::EMPTY_BLOCK_SIZE;
-use tofuri_util::STAKE_SIZE;
-use tofuri_util::TRANSACTION_SIZE;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
+pub const BLOCK_SIZE_LIMIT: usize = 57797;
 pub const GENESIS_BLOCK_BETA: [u8; 32] = [0; 32];
+lazy_static! {
+    pub static ref EMPTY_BLOCK_SIZE: usize = bincode::serialize(&Block::default()).unwrap().len();
+    pub static ref TRANSACTION_SIZE: usize =
+        bincode::serialize(&Transaction::default()).unwrap().len();
+    pub static ref STAKE_SIZE: usize = bincode::serialize(&Stake::default()).unwrap().len();
+}
 #[derive(Debug)]
 pub enum Error {
     DB(tofuri_db::Error),
@@ -532,4 +536,15 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
         i += 1;
     }
     string
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_block_size_limit() {
+        assert_eq!(
+            BLOCK_SIZE_LIMIT,
+            *EMPTY_BLOCK_SIZE + *TRANSACTION_SIZE * 600
+        );
+    }
 }

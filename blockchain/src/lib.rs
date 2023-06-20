@@ -338,9 +338,9 @@ impl Blockchain {
     }
     pub fn pending_retain(&mut self, timestamp: u32) {
         self.pending_transactions
-            .retain(|a| !tofuri_util::elapsed(a.timestamp, timestamp));
+            .retain(|a| !tofuri_fork::elapsed(a.timestamp, timestamp));
         self.pending_stakes
-            .retain(|a| !tofuri_util::elapsed(a.timestamp, timestamp));
+            .retain(|a| !tofuri_fork::elapsed(a.timestamp, timestamp));
     }
     fn validate_transaction(
         unstable: &Unstable,
@@ -359,7 +359,7 @@ impl Blockchain {
         if transaction.timestamp > timestamp {
             return Err(Error::TransactionTimestampFuture);
         }
-        if tofuri_util::elapsed(transaction.timestamp, unstable.latest_block.timestamp) {
+        if tofuri_fork::elapsed(transaction.timestamp, unstable.latest_block.timestamp) {
             return Err(Error::TransactionTimestamp);
         }
         if unstable.transaction_in_chain(transaction) {
@@ -377,7 +377,7 @@ impl Blockchain {
         if stake.timestamp > timestamp {
             return Err(Error::StakeTimestampFuture);
         }
-        if tofuri_util::elapsed(stake.timestamp, unstable.latest_block.timestamp) {
+        if tofuri_fork::elapsed(stake.timestamp, unstable.latest_block.timestamp) {
             return Err(Error::StakeTimestamp);
         }
         if unstable.stake_in_chain(stake) {

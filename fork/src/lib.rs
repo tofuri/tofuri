@@ -141,7 +141,7 @@ fn update<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loadi
 }
 fn update_latest_blocks<T: Fork>(fork: &mut T, block_a: &Block) {
     while fork.get_latest_blocks().first().is_some()
-        && tofuri_util::elapsed(
+        && elapsed(
             fork.get_latest_blocks().first().unwrap().timestamp,
             block_a.timestamp,
         )
@@ -238,4 +238,8 @@ pub fn hash_beta_n(beta: &[u8; 32], n: u128) -> [u8; 32] {
 }
 pub fn random(beta: &[u8; 32], n: u128, modulo: u128) -> u128 {
     u256_modulo(&hash_beta_n(beta, n), modulo)
+}
+pub const ELAPSED: u32 = 90;
+pub fn elapsed(timestamp: u32, latest_block_timestamp: u32) -> bool {
+    ELAPSED + timestamp < latest_block_timestamp
 }

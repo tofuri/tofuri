@@ -13,7 +13,6 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Registry;
 pub const BLOCK_SIZE_LIMIT: usize = 57797;
 pub const GIT_HASH: &str = env!("GIT_HASH");
-pub const ELAPSED: u32 = 90;
 pub const MAINNET_PORT: u16 = 2020;
 pub const TESTNET_PORT: u16 = 3030;
 pub const BLOCK_TIME: u32 = 60;
@@ -69,9 +68,6 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
         i += 1;
     }
     string
-}
-pub fn elapsed(timestamp: u32, latest_block_timestamp: u32) -> bool {
-    ELAPSED + timestamp < latest_block_timestamp
 }
 pub fn build(cargo_pkg_name: &str, cargo_pkg_version: &str, cargo_pkg_repository: &str) -> String {
     format!(

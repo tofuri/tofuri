@@ -5,13 +5,9 @@ use sha2::Digest;
 use sha2::Sha256;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::time::Duration;
 use tofuri_block::Block;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
-use tokio::time::Instant;
-use tokio::time::Interval;
-use tokio::time::MissedTickBehavior::Skip;
 use tracing::error;
 use tracing::info;
 use tracing_subscriber::reload;
@@ -101,16 +97,6 @@ pub fn duration_to_string(seconds: u32, now: &str) -> String {
 }
 pub fn elapsed(timestamp: u32, latest_block_timestamp: u32) -> bool {
     ELAPSED + timestamp < latest_block_timestamp
-}
-pub fn duration_until_next_tick(duration: Duration) -> Duration {
-    let nanos = duration.as_nanos() as u64;
-    Duration::from_nanos(nanos - chrono::offset::Utc::now().timestamp_nanos() as u64 % nanos)
-}
-pub fn interval_at(duration: Duration) -> Interval {
-    let start = Instant::now() + duration_until_next_tick(duration);
-    let mut interval = tokio::time::interval_at(start, duration);
-    interval.set_missed_tick_behavior(Skip);
-    interval
 }
 pub fn build(cargo_pkg_name: &str, cargo_pkg_version: &str, cargo_pkg_repository: &str) -> String {
     format!(

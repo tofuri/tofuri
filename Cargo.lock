@@ -4676,7 +4676,6 @@ dependencies = [
  "tofuri-block",
  "tofuri-stake",
  "tofuri-transaction",
- "tokio",
  "tracing",
  "tracing-subscriber",
  "uint",

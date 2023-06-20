@@ -17,7 +17,6 @@ tofuri-pay-core = { version = "0.1.0", path = "../pay-core" }
 tofuri-pay-db = { version = "0.1.0", path = "../pay-db" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
-tofuri-util = { version = "0.1.0", path = "../util" }
 hex = "0.4.3"
 clap = { version = "4.2.7", features = ["derive", "env"] }
 lazy_static = "1.4.0"

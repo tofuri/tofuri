@@ -6,7 +6,6 @@ use tofuri_fork::BLOCK_TIME;
 use tofuri_p2p::behaviour::Request;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
-use tofuri_util;
 use tokio::time::Duration;
 use tokio::time::Instant;
 use tokio::time::Interval;
@@ -85,7 +84,7 @@ fn share(node: &mut Node) {
 #[instrument(skip_all, level = "debug")]
 fn grow(node: &mut Node) {
     let timestamp = {
-        let timestamp = tofuri_util::timestamp();
+        let timestamp = chrono::offset::Utc::now().timestamp() as u32;
         timestamp - (timestamp % BLOCK_TIME)
     };
     let blockchain = &mut node.blockchain;
@@ -127,7 +126,7 @@ fn grow(node: &mut Node) {
 #[instrument(skip_all, level = "debug")]
 fn sync_request(node: &mut Node) {
     if node.blockchain.forks.unstable.latest_block.timestamp
-        >= tofuri_util::timestamp() - BLOCK_TIME
+        >= chrono::offset::Utc::now().timestamp() as u32 - BLOCK_TIME
     {
         return;
     }

@@ -21,7 +21,6 @@ members = [
     "stake",
     "transaction",
     "tree",
-    "util",
     "vint",
     "wallet",
 ]

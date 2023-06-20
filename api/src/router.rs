@@ -266,7 +266,8 @@ pub async fn sync_remaining(State(args): State<Args>) -> impl IntoResponse {
         return Json(-1.0);
     }
     let block_a = tofuri_rpc::block_latest(&args.rpc).await.unwrap();
-    let mut diff = tofuri_util::timestamp().saturating_sub(block_a.timestamp) as f32;
+    let mut diff =
+        (chrono::offset::Utc::now().timestamp() as u32).saturating_sub(block_a.timestamp) as f32;
     diff /= BLOCK_TIME as f32;
     diff /= sync.bps;
     Json(diff)

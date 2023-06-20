@@ -76,7 +76,7 @@ impl Timeout {
             Endpoint::Response => &mut self.response,
             _ => unimplemented!(),
         };
-        map.insert(ip_addr, tofuri_util::timestamp());
+        map.insert(ip_addr, chrono::offset::Utc::now().timestamp() as u32);
     }
     pub fn has(&self, ip_addr: IpAddr, endpoint: Endpoint) -> bool {
         let map = match endpoint {
@@ -90,6 +90,6 @@ impl Timeout {
             _ => unimplemented!(),
         };
         let timestamp = map.get(&ip_addr).unwrap_or(&0);
-        tofuri_util::timestamp() - timestamp < limit
+        chrono::offset::Utc::now().timestamp() as u32 - timestamp < limit
     }
 }

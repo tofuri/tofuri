@@ -213,7 +213,7 @@ impl Wallet {
             address::decode(&address).unwrap(),
             amount,
             fee,
-            tofuri_util::timestamp(),
+            chrono::offset::Utc::now().timestamp() as u32,
             self.key.as_ref().unwrap(),
         )
         .unwrap();
@@ -250,7 +250,7 @@ impl Wallet {
             deposit,
             amount,
             fee,
-            tofuri_util::timestamp(),
+            chrono::offset::Utc::now().timestamp() as u32,
             self.key.as_ref().unwrap(),
         )
         .unwrap();

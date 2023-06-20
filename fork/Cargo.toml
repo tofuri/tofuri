@@ -16,7 +16,6 @@ tofuri-db = { version = "0.1.0", path = "../db" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
 tofuri-tree = { version = "0.1.0", path = "../tree" }
-tofuri-util = { version = "0.1.0", path = "../util" }
 rocksdb = "0.21.0"
 tracing = "0.1.37"
 serde = "1.0.163"

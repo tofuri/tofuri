@@ -4375,7 +4375,6 @@ dependencies = [
  "tofuri-sync",
  "tofuri-transaction",
  "tofuri-tree",
- "tofuri-util",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -4396,6 +4395,7 @@ name = "tofuri-api"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "chrono",
  "clap",
  "decimal",
  "hex",
@@ -4408,7 +4408,6 @@ dependencies = [
  "tofuri-rpc",
  "tofuri-stake",
  "tofuri-transaction",
- "tofuri-util",
  "tokio",
  "tower-http",
  "tracing",
@@ -4461,6 +4460,7 @@ name = "tofuri-blockchain"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "chrono",
  "colored",
  "decimal",
  "hex",
@@ -4476,7 +4476,6 @@ dependencies = [
  "tofuri-sync",
  "tofuri-transaction",
  "tofuri-tree",
- "tofuri-util",
  "tracing",
  "vint",
 ]
@@ -4522,7 +4521,6 @@ dependencies = [
  "tofuri-stake",
  "tofuri-transaction",
  "tofuri-tree",
- "tofuri-util",
  "tracing",
  "uint",
  "vint",
@@ -4543,10 +4541,10 @@ name = "tofuri-p2p"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
  "futures",
  "libp2p",
  "serde",
- "tofuri-util",
  "tokio",
  "tracing",
  "void",
@@ -4574,7 +4572,6 @@ dependencies = [
  "tofuri-pay-core",
  "tofuri-pay-db",
  "tofuri-transaction",
- "tofuri-util",
  "tokio",
  "tower-http",
  "tracing",
@@ -4669,24 +4666,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tofuri-util"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "chrono",
- "colored",
- "decimal",
- "lazy_static",
- "multiaddr",
- "tofuri-block",
- "tofuri-stake",
- "tofuri-transaction",
- "tracing",
- "tracing-subscriber",
- "vint",
-]
-
-[[package]]
 name = "tofuri-wallet"
 version = "0.1.0"
 dependencies = [
@@ -4709,7 +4688,6 @@ dependencies = [
  "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
- "tofuri-util",
  "tokio",
  "tracing",
  "vint",

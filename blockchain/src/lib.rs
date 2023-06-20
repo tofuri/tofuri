@@ -97,7 +97,7 @@ impl Blockchain {
             return "never".to_string();
         }
         let timestamp = self.forks.unstable.latest_block.timestamp;
-        let diff = tofuri_util::timestamp().saturating_sub(timestamp);
+        let diff = (chrono::offset::Utc::now().timestamp() as u32).saturating_sub(timestamp);
         let now = "just now";
         let mut string = duration_to_string(diff, now);
         if string != now {
@@ -243,7 +243,7 @@ impl Blockchain {
         info!(height, fork, hash, transactions, stakes, "{}", text);
     }
     pub fn save_blocks(&mut self, db: &DB, trust_fork_after_blocks: usize) {
-        let timestamp = tofuri_util::timestamp();
+        let timestamp = chrono::offset::Utc::now().timestamp() as u32;
         let mut vec = vec![];
         let mut i = 0;
         while i < self.pending_blocks.len() {
@@ -279,7 +279,7 @@ impl Blockchain {
         Blockchain::validate_transaction(
             &self.forks.unstable,
             &transaction,
-            tofuri_util::timestamp() + time_delta,
+            chrono::offset::Utc::now().timestamp() as u32 + time_delta,
         )?;
         let hash = hex::encode(transaction.hash());
         info!(hash, "Transaction");
@@ -311,7 +311,7 @@ impl Blockchain {
         Blockchain::validate_stake(
             &self.forks.unstable,
             &stake,
-            tofuri_util::timestamp() + time_delta,
+            chrono::offset::Utc::now().timestamp() as u32 + time_delta,
         )?;
         let hash = hex::encode(stake.hash());
         info!(hash, "Stake");
@@ -335,7 +335,7 @@ impl Blockchain {
         self.validate_block(
             db,
             &block_a,
-            tofuri_util::timestamp() + time_delta,
+            chrono::offset::Utc::now().timestamp() as u32 + time_delta,
             trust_fork_after_blocks,
         )?;
         self.pending_blocks.push(block_a);

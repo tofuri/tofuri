@@ -4370,7 +4370,7 @@ dependencies = [
  "tofuri-fork",
  "tofuri-key",
  "tofuri-p2p",
- "tofuri-rpc-core",
+ "tofuri-rpc",
  "tofuri-stake",
  "tofuri-sync",
  "tofuri-transaction",
@@ -4604,19 +4604,12 @@ name = "tofuri-rpc"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "serde",
  "tofuri-block",
- "tofuri-rpc-core",
  "tofuri-stake",
  "tofuri-sync",
  "tofuri-transaction",
  "tokio",
-]
-
-[[package]]
-name = "tofuri-rpc-core"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]

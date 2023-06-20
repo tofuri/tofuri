@@ -11,7 +11,7 @@ default-run = "tofuri"
 
 [dependencies]
 tofuri-address = { version = "0.1.1", path = "../address" }
-tofuri-rpc-core = { version = "0.1.0", path = "../rpc-core" }
+tofuri-rpc = { version = "0.1.0", path = "../rpc" }
 vint = { path = "../vint" }
 decimal = { path = "../decimal" }
 tofuri-block = { version = "0.1.0", path = "../block" }

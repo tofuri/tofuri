@@ -4,7 +4,6 @@ members = [
     "api",
     "api-core",
     "rpc",
-    "rpc-core",
     "api-util",
     "block",
     "blockchain",

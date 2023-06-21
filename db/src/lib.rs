@@ -15,14 +15,11 @@ pub enum Error {
     NotFound,
 }
 pub fn open(path: impl AsRef<Path>) -> DB {
-    let mut options = Options::default();
-    options.create_missing_column_families(true);
-    options.create_if_missing(true);
-    DB::open_cf_descriptors(&options, path, descriptors()).unwrap()
-}
-fn descriptors() -> Vec<ColumnFamilyDescriptor> {
+    let mut opts = Options::default();
+    opts.create_missing_column_families(true);
+    opts.create_if_missing(true);
     let options = Options::default();
-    vec![
+    let cfs = vec![
         ColumnFamilyDescriptor::new("blocks", options.clone()),
         ColumnFamilyDescriptor::new("transactions", options.clone()),
         ColumnFamilyDescriptor::new("stakes", options.clone()),
@@ -31,5 +28,6 @@ fn descriptors() -> Vec<ColumnFamilyDescriptor> {
         ColumnFamilyDescriptor::new("input public keys", options.clone()),
         ColumnFamilyDescriptor::new("betas", options.clone()),
         ColumnFamilyDescriptor::new("checkpoint", options),
-    ]
+    ];
+    DB::open_cf_descriptors(&opts, path, cfs).unwrap()
 }

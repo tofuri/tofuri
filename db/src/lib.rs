@@ -20,13 +20,10 @@ pub fn open_cf_descriptors(path: impl AsRef<Path>) -> DB {
     opts.create_if_missing(true);
     let options = Options::default();
     let cfs = vec![
-        ColumnFamilyDescriptor::new("blocks", options.clone()),
-        ColumnFamilyDescriptor::new("transactions", options.clone()),
-        ColumnFamilyDescriptor::new("stakes", options.clone()),
-        ColumnFamilyDescriptor::new("peers", options.clone()),
-        ColumnFamilyDescriptor::new("input addresses", options.clone()),
-        ColumnFamilyDescriptor::new("input public keys", options.clone()),
-        ColumnFamilyDescriptor::new("betas", options.clone()),
+        ColumnFamilyDescriptor::new("block", options.clone()),
+        ColumnFamilyDescriptor::new("transaction", options.clone()),
+        ColumnFamilyDescriptor::new("stake", options.clone()),
+        ColumnFamilyDescriptor::new("peer", options.clone()),
         ColumnFamilyDescriptor::new("checkpoint", options),
     ];
     DB::open_cf_descriptors(&opts, path, cfs).unwrap()

@@ -250,7 +250,7 @@ impl Pay {
     pub fn load(&mut self) -> Result<(), Error> {
         for res in self
             .db
-            .iterator_cf(tofuri_pay_db::charges(&self.db), IteratorMode::Start)
+            .iterator_cf(tofuri_pay_db::charge::cf(&self.db), IteratorMode::Start)
         {
             self.subkey_n += 1;
             let (hash, bytes) = res.map_err(Error::RocksDB)?;

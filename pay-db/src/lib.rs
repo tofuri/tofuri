@@ -1,5 +1,4 @@
 pub mod charge;
-use rocksdb::ColumnFamily;
 use rocksdb::ColumnFamilyDescriptor;
 use rocksdb::Options;
 use rocksdb::DB;
@@ -10,16 +9,11 @@ pub enum Error {
     Bincode(bincode::Error),
     NotFound,
 }
-pub fn open(path: impl AsRef<Path>) -> DB {
-    let mut options = Options::default();
-    options.create_missing_column_families(true);
-    options.create_if_missing(true);
-    DB::open_cf_descriptors(&options, path, descriptors()).unwrap()
-}
-fn descriptors() -> Vec<ColumnFamilyDescriptor> {
+pub fn open_cf_descriptors(path: impl AsRef<Path>) -> DB {
+    let mut opts = Options::default();
+    opts.create_missing_column_families(true);
+    opts.create_if_missing(true);
     let options = Options::default();
-    vec![ColumnFamilyDescriptor::new("charges", options)]
-}
-pub fn charges(db: &DB) -> &ColumnFamily {
-    db.cf_handle("charges").unwrap()
+    let cfs = vec![ColumnFamilyDescriptor::new("charge", options)];
+    DB::open_cf_descriptors(&opts, path, cfs).unwrap()
 }

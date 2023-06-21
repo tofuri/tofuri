@@ -48,7 +48,7 @@ async fn main() {
         true => tempdir.path().to_str().unwrap(),
         false => "./tofuri-pay-db",
     };
-    let db = tofuri_pay_db::open(path);
+    let db = tofuri_pay_db::open_cf_descriptors(path);
     let pay = Arc::new(Mutex::new(Pay::new(db, key, args)));
     let cors = CorsLayer::permissive();
     let app = Router::new()

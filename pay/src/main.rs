@@ -7,6 +7,7 @@ use tempdir::TempDir;
 use tofuri_address::public;
 use tofuri_address::secret;
 use tofuri_key::Key;
+use tofuri_pay::db;
 use tofuri_pay::router;
 use tofuri_pay::Args;
 use tofuri_pay::Pay;
@@ -48,7 +49,7 @@ async fn main() {
         true => tempdir.path().to_str().unwrap(),
         false => "./tofuri-pay-db",
     };
-    let db = tofuri_pay_db::open_cf_descriptors(path);
+    let db = db::open_cf_descriptors(path);
     let pay = Arc::new(Mutex::new(Pay::new(db, key, args)));
     let cors = CorsLayer::permissive();
     let app = Router::new()

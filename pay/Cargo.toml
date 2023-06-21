@@ -13,8 +13,6 @@ tofuri-address = { version = "0.1.1", path = "../address" }
 vint = { path = "../vint" }
 decimal = { path = "../decimal" }
 tofuri-api = { version = "0.1.0", path = "../api" }
-tofuri-pay-core = { version = "0.1.0", path = "../pay-core" }
-tofuri-pay-db = { version = "0.1.0", path = "../pay-db" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
 hex = "0.4.3"
@@ -32,3 +30,5 @@ tokio = { version = "1.28.1", features = ["full"] }
 axum = "0.6.18"
 tower-http = { version = "0.4.0", features = ["cors"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+serde = { version = "1.0.163", features = ["derive"] }
+sha2 = "0.10.6"

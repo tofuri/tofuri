@@ -11,8 +11,6 @@ members = [
     "key",
     "p2p",
     "pay",
-    "pay-core",
-    "pay-db",
     "tofuri",
     "stake",
     "transaction",

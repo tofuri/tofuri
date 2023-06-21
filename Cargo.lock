@@ -4529,39 +4529,19 @@ dependencies = [
  "regex",
  "reqwest",
  "rocksdb",
+ "serde",
  "serde_json",
+ "sha2 0.10.7",
  "tempdir",
  "tofuri-address",
  "tofuri-api",
  "tofuri-key",
- "tofuri-pay-core",
- "tofuri-pay-db",
  "tofuri-transaction",
  "tokio",
  "tower-http",
  "tracing",
  "tracing-subscriber",
  "vint",
-]
-
-[[package]]
-name = "tofuri-pay-core"
-version = "0.1.0"
-dependencies = [
- "serde",
- "sha2 0.10.7",
- "tofuri-address",
- "tofuri-key",
-]
-
-[[package]]
-name = "tofuri-pay-db"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "rocksdb",
- "tofuri-key",
- "tofuri-pay-core",
 ]
 
 [[package]]

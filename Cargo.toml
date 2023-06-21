@@ -14,7 +14,6 @@ members = [
     "tofuri",
     "stake",
     "transaction",
-    "tree",
     "vint",
     "wallet",
 ]

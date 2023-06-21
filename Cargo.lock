@@ -4373,7 +4373,6 @@ dependencies = [
  "tofuri-rpc",
  "tofuri-stake",
  "tofuri-transaction",
- "tofuri-tree",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -4450,7 +4449,6 @@ dependencies = [
  "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
- "tofuri-tree",
  "tracing",
  "vint",
 ]
@@ -4461,13 +4459,13 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "decimal",
+ "hex",
  "rocksdb",
  "serde",
  "serde-big-array",
  "tofuri-block",
  "tofuri-stake",
  "tofuri-transaction",
- "tofuri-tree",
  "tracing",
  "vint",
 ]
@@ -4485,7 +4483,6 @@ dependencies = [
  "tofuri-db",
  "tofuri-stake",
  "tofuri-transaction",
- "tofuri-tree",
  "tracing",
  "uint",
  "vint",
@@ -4585,14 +4582,6 @@ dependencies = [
  "tofuri-address",
  "tofuri-key",
  "vint",
-]
-
-[[package]]
-name = "tofuri-tree"
-version = "0.1.0"
-dependencies = [
- "hex",
- "serde",
 ]
 
 [[package]]

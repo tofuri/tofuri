@@ -4,8 +4,8 @@ use crate::Unstable;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
-use tofuri_tree::Tree;
-use tofuri_tree::GENESIS_BLOCK_PREVIOUS_HASH;
+use tofuri_db::tree::Tree;
+use tofuri_db::tree::GENESIS_BLOCK_PREVIOUS_HASH;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Manager {
     pub stable: Stable,

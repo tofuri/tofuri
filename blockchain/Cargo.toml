@@ -16,7 +16,6 @@ tofuri-fork = { version = "0.1.0", path = "../fork" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
-tofuri-tree = { version = "0.1.0", path = "../tree" }
 rocksdb = "0.21.0"
 colored = "2.0.0"
 tracing = "0.1.37"

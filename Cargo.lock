@@ -4456,14 +4456,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tofuri-checkpoint"
-version = "0.1.0"
-dependencies = [
- "serde",
- "tofuri-block",
-]
-
-[[package]]
 name = "tofuri-db"
 version = "0.1.0"
 dependencies = [
@@ -4473,7 +4465,6 @@ dependencies = [
  "serde",
  "serde-big-array",
  "tofuri-block",
- "tofuri-checkpoint",
  "tofuri-stake",
  "tofuri-transaction",
  "tofuri-tree",
@@ -4491,7 +4482,6 @@ dependencies = [
  "sha2 0.10.7",
  "tofuri-address",
  "tofuri-block",
- "tofuri-checkpoint",
  "tofuri-db",
  "tofuri-stake",
  "tofuri-transaction",

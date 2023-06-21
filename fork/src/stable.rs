@@ -5,7 +5,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_block::Block;
-use tofuri_checkpoint::Checkpoint;
+use tofuri_db::checkpoint::CheckpointDB;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Stable {
     pub latest_block: Block,
@@ -22,8 +22,8 @@ impl Stable {
     pub fn load(&mut self, db: &DB, hashes: &[[u8; 32]]) {
         crate::load(self, db, hashes)
     }
-    pub fn checkpoint(&self) -> Checkpoint {
-        Checkpoint {
+    pub fn checkpoint(&self) -> CheckpointDB {
+        CheckpointDB {
             height: self.hashes.len(),
             latest_block: self.latest_block.clone(),
             stakers: self.stakers.clone(),
@@ -32,7 +32,7 @@ impl Stable {
             map_staked: self.map_staked.clone(),
         }
     }
-    pub fn from_checkpoint(hashes: Vec<[u8; 32]>, checkpoint: Checkpoint) -> Stable {
+    pub fn from_checkpoint(hashes: Vec<[u8; 32]>, checkpoint: CheckpointDB) -> Stable {
         Stable {
             latest_block: checkpoint.latest_block,
             hashes,

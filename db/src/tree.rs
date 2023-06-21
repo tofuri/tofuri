@@ -11,7 +11,7 @@ use tracing::instrument;
 pub fn reload(tree: &mut Tree, db: &DB) -> Result<(), Error> {
     tree.clear();
     let mut map: HashMap<[u8; 32], Vec<([u8; 32], u32)>> = HashMap::new();
-    for res in db.iterator_cf(block::cf_handle(db), IteratorMode::Start) {
+    for res in db.iterator_cf(block::cf(db), IteratorMode::Start) {
         let (key, value) = res.map_err(Error::RocksDB)?;
         let hash = bincode::deserialize(&key).map_err(Error::Bincode)?;
         let block_metadata: BlockDB = bincode::deserialize(&value).map_err(Error::Bincode)?;

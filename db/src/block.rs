@@ -8,7 +8,7 @@ use serde::Serialize;
 use serde_big_array::BigArray;
 use tofuri_block::Block;
 use tracing::instrument;
-pub fn cf_handle(db: &DB) -> &ColumnFamily {
+pub fn cf(db: &DB) -> &ColumnFamily {
     db.cf_handle("block").unwrap()
 }
 #[instrument(skip_all, level = "trace")]
@@ -21,13 +21,13 @@ pub fn put(block: &Block, db: &DB) -> Result<(), Error> {
     }
     let key = block.hash();
     let value = bincode::serialize(&BlockDB::from(block)).map_err(Error::Bincode)?;
-    db.put_cf(cf_handle(db), key, value).map_err(Error::RocksDB)
+    db.put_cf(cf(db), key, value).map_err(Error::RocksDB)
 }
 #[instrument(skip_all, level = "trace")]
 pub fn get(db: &DB, hash: &[u8]) -> Result<Block, Error> {
     let key = hash;
     let vec = db
-        .get_cf(cf_handle(db), key)
+        .get_cf(cf(db), key)
         .map_err(Error::RocksDB)?
         .ok_or(Error::NotFound)?;
     let block_db: BlockDB = bincode::deserialize(&vec).map_err(Error::Bincode)?;

@@ -14,7 +14,7 @@ pub enum Error {
     Bincode(bincode::Error),
     NotFound,
 }
-pub fn open(path: impl AsRef<Path>) -> DB {
+pub fn open_cf_descriptors(path: impl AsRef<Path>) -> DB {
     let mut opts = Options::default();
     opts.create_missing_column_families(true);
     opts.create_if_missing(true);

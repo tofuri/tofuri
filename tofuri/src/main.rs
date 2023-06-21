@@ -67,7 +67,7 @@ async fn main() {
         true => tempdir.path().to_str().unwrap(),
         false => "./tofuri-db",
     };
-    let db = tofuri_db::open(path);
+    let db = tofuri_db::open_cf_descriptors(path);
     let mut connections_known = HashSet::new();
     if let Some(ip_addr) = args.peer {
         connections_known.insert(ip_addr);

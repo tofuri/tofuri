@@ -9,15 +9,13 @@ categories = ["cryptography::cryptocurrencies"]
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-tofuri-api-core = { version = "0.1.0", path = "../api-core" }
-tofuri-core = { version = "0.1.2", path = "../core" }
-tofuri-api-util = { version = "0.1.0", path = "../api-util" }
+tofuri-api = { version = "0.1.0", path = "../api" }
 tofuri-address = { version = "0.1.1", path = "../address" }
-tofuri-int = { version = "0.1.0", path = "../int" }
+vint = { path = "../vint" }
+decimal = { path = "../decimal" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
-tofuri-util = { version = "0.1.0", path = "../util" }
 chacha20poly1305 = "0.10.1"
 inquire = "0.6.2"
 colored = "2.0.0"

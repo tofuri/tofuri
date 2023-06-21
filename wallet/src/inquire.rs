@@ -1,4 +1,5 @@
 use crate::util;
+use crate::EXTENSION;
 use colored::*;
 use inquire::validator::Validation;
 use inquire::Confirm;
@@ -9,9 +10,10 @@ use inquire::Select;
 use lazy_static::lazy_static;
 use std::path::PathBuf;
 use std::process;
-use tofuri_address::address;
-use tofuri_core::*;
+use tofuri_address::public;
 use tofuri_key::Key;
+use vint::floor;
+use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Util(util::Error),
@@ -160,10 +162,10 @@ pub fn send() -> bool {
 }
 pub fn search() -> String {
     CustomType::<String>::new("Search:")
-        .with_error_message("Please enter a valid Address, Hash or Number.")
+        .with_error_message("Please enter a valid Address, [u8; 32] or Number.")
         .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
         .with_parser(&|input| {
-            if address::decode(input).is_ok() || input.len() == 64 || input.parse::<usize>().is_ok()
+            if public::decode(input).is_ok() || input.len() == 64 || input.parse::<usize>().is_ok()
             {
                 return Ok(input.to_string());
             }
@@ -179,8 +181,8 @@ pub fn address() -> String {
     CustomType::<String>::new("Address:")
         .with_error_message("Please enter a valid address")
         .with_help_message("Type the hex encoded address with 0x as prefix")
-        .with_parser(&|input| match address::decode(input) {
-            Ok(address_bytes) => Ok(address::encode(&address_bytes)),
+        .with_parser(&|input| match public::decode(input) {
+            Ok(address_bytes) => Ok(public::encode(&address_bytes)),
             Err(_) => Err(()),
         })
         .prompt()
@@ -189,15 +191,14 @@ pub fn address() -> String {
             process::exit(0)
         })
 }
+const COIN: u128 = 10_u128.pow(18);
 pub fn amount() -> u128 {
     (CustomType::<f64>::new("Amount:")
         .with_formatter(&|i| format!("{i:.18} tofuri"))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount to send using a decimal point as a separator")
         .with_parser(&|input| match input.parse::<f64>() {
-            Ok(amount) => {
-                Ok(tofuri_int::floor((amount * COIN as f64) as u128) as f64 / COIN as f64)
-            }
+            Ok(amount) => Ok(floor!((amount * COIN as f64), 4) as f64 / COIN as f64),
             Err(_) => Err(()),
         })
         .prompt()
@@ -213,7 +214,7 @@ pub fn fee() -> u128 {
         .with_error_message("Please type a valid number")
         .with_help_message("Type the fee to use in satoshis")
         .with_parser(&|input| match input.parse::<u128>() {
-            Ok(fee) => Ok(tofuri_int::floor(fee)),
+            Ok(fee) => Ok(floor!(fee, 4)),
             Err(_) => Err(()),
         })
         .prompt()

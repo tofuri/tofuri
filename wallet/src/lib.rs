@@ -11,6 +11,7 @@ use argon2::Version;
 use chacha20poly1305::aead::Aead;
 use chacha20poly1305::aead::KeyInit;
 use chacha20poly1305::ChaCha20Poly1305;
+use chrono::Utc;
 use clap::Parser;
 use colored::*;
 use crossterm::event;
@@ -21,19 +22,14 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_address::secret;
-use tofuri_api_core::Block;
-use tofuri_api_core::Root;
-use tofuri_api_core::Stake;
-use tofuri_api_core::Transaction;
-use tofuri_core::*;
+use tofuri_api::Block;
+use tofuri_api::Root;
+use tofuri_api::Stake;
+use tofuri_api::Transaction;
 use tofuri_key::Key;
-use tofuri_stake::StakeA;
-use tofuri_transaction::TransactionA;
-pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
-pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
+pub const EXTENSION: &str = "tofuri";
 const INCORRECT: &str = "Incorrect passphrase";
 pub type Salt = [u8; 32];
 pub type Nonce = [u8; 12];
@@ -162,7 +158,7 @@ impl Wallet {
         Ok(())
     }
     async fn balance(&self) -> Result<(), Error> {
-        let address = address::encode(&self.key.as_ref().unwrap().address_bytes());
+        let address = public::encode(&self.key.as_ref().unwrap().address_bytes());
         let balance: String = self
             .client
             .get(format!("{}balance/{}", self.args.api.to_string(), address))
@@ -214,19 +210,19 @@ impl Wallet {
         } {
             return Ok(());
         }
-        let transaction_a = TransactionA::sign(
-            address::decode(&address).unwrap(),
+        let transaction = tofuri_transaction::Transaction::sign(
+            public::decode(&address).unwrap(),
             amount,
             fee,
-            tofuri_util::timestamp(),
+            Utc::now().timestamp() as u32,
             self.key.as_ref().unwrap(),
         )
         .unwrap();
-        println!("Hash: {}", hex::encode(transaction_a.hash).cyan());
+        println!("[u8; 32]: {}", hex::encode(transaction.hash()).cyan());
         let res: String = self
             .client
             .post(format!("{}transaction", self.args.api.to_string()))
-            .json(&tofuri_api_util::transaction(&transaction_a))
+            .json(&tofuri_api::util::transaction(&transaction).unwrap())
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -251,19 +247,19 @@ impl Wallet {
         if !send {
             return Ok(());
         }
-        let stake_a = StakeA::sign(
+        let stake = tofuri_stake::Stake::sign(
             deposit,
             amount,
             fee,
-            tofuri_util::timestamp(),
+            Utc::now().timestamp() as u32,
             self.key.as_ref().unwrap(),
         )
         .unwrap();
-        println!("Hash: {}", hex::encode(stake_a.hash).cyan());
+        println!("[u8; 32]: {}", hex::encode(stake.hash()).cyan());
         let res: String = self
             .client
             .post(format!("{}stake", self.args.api.to_string()))
-            .json(&tofuri_api_util::stake(&stake_a))
+            .json(&tofuri_api::util::stake(&stake).unwrap())
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -282,7 +278,7 @@ impl Wallet {
     }
     async fn search(&self) -> Result<(), Error> {
         let search = inquire::search();
-        if address::decode(&search).is_ok() {
+        if public::decode(&search).is_ok() {
             let balance: String = self
                 .client
                 .get(format!("{}balance/{}", self.args.api.to_string(), search))
@@ -369,7 +365,7 @@ impl Wallet {
     fn address(&self) {
         println!(
             "{}",
-            address::encode(&self.key.as_ref().unwrap().address_bytes()).green()
+            public::encode(&self.key.as_ref().unwrap().address_bytes()).green()
         );
     }
     fn key(&self) {
@@ -402,7 +398,7 @@ impl Wallet {
         );
     }
 }
-pub fn argon2_key_derivation(password: &[u8], salt: &[u8; 32]) -> Hash {
+pub fn argon2_key_derivation(password: &[u8], salt: &[u8; 32]) -> [u8; 32] {
     let mut params_builder = ParamsBuilder::new();
     params_builder.m_cost(1024);
     params_builder.t_cost(1);

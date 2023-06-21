@@ -1,3 +1,6 @@
+use crate::MAX_TRANSMIT_SIZE;
+use crate::PROTOCOL_NAME;
+use crate::PROTOCOL_VERSION;
 use async_trait::async_trait;
 use futures::prelude::*;
 use libp2p::autonat;
@@ -14,7 +17,6 @@ use libp2p::mdns;
 use libp2p::request_response;
 use libp2p::request_response::ProtocolSupport;
 use libp2p::swarm::NetworkBehaviour;
-use tofuri_core::*;
 use tokio::io;
 #[derive(Debug)]
 pub enum Error {

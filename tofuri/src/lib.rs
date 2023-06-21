@@ -3,17 +3,14 @@ pub mod interval;
 pub mod rpc;
 pub mod swarm;
 use clap::Parser;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use std::net::IpAddr;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
-pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
-pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
+pub const SHARE_PEERS_MAX_LEN: usize = 100;
 pub struct Node {
-    pub db: DBWithThreadMode<SingleThreaded>,
+    pub db: DB,
     pub key: Option<Key>,
     pub args: Args,
     pub p2p: P2p,
@@ -21,13 +18,7 @@ pub struct Node {
     pub ticks: usize,
 }
 impl Node {
-    pub fn new(
-        db: DBWithThreadMode<SingleThreaded>,
-        key: Option<Key>,
-        args: Args,
-        p2p: P2p,
-        blockchain: Blockchain,
-    ) -> Node {
+    pub fn new(db: DB, key: Option<Key>, args: Args, p2p: P2p, blockchain: Blockchain) -> Node {
         Node {
             db,
             key,

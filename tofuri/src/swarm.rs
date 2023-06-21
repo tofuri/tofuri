@@ -1,4 +1,5 @@
 use crate::Node;
+use crate::SHARE_PEERS_MAX_LEN;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::gossipsub;
 use libp2p::gossipsub::MessageAcceptance;
@@ -13,16 +14,16 @@ use libp2p::PeerId;
 use std::io::Error;
 use std::net::IpAddr;
 use std::num::NonZeroU32;
-use tofuri_block::BlockB;
-use tofuri_core::*;
+use tofuri_block::Block;
 use tofuri_db as db;
 use tofuri_p2p::behaviour::OutEvent;
 use tofuri_p2p::behaviour::Request;
 use tofuri_p2p::behaviour::Response;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
-use tofuri_stake::StakeB;
-use tofuri_transaction::TransactionB;
+use tofuri_p2p::MAX_TRANSMIT_SIZE;
+use tofuri_stake::Stake;
+use tofuri_transaction::Transaction;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -155,23 +156,21 @@ fn gossipsub_message(
         }
         match endpoint {
             Endpoint::GossipsubMessageBlock => {
-                let block_b: BlockB =
-                    bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+                let block_b: Block = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)
                     .map_err(Error::Blockchain)?;
                 node.blockchain.save_blocks(&node.db, node.args.trust);
             }
             Endpoint::GossipsubMessageTransaction => {
-                let transaction_b: TransactionB =
+                let transaction: Transaction =
                     bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
-                    .pending_transactions_push(transaction_b, node.args.time_delta)
+                    .pending_transactions_push(transaction, node.args.time_delta)
                     .map_err(Error::Blockchain)?;
             }
             Endpoint::GossipsubMessageStake => {
-                let stake_b: StakeB =
-                    bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+                let stake_b: Stake = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
                     .pending_stakes_push(stake_b, node.args.time_delta)
                     .map_err(Error::Blockchain)?;
@@ -314,7 +313,7 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: Response) {
         Blockchain(tofuri_blockchain::Error),
     }
     fn inner(node: &mut Node, response: Response) -> Result<(), Error> {
-        for block_b in bincode::deserialize::<Vec<BlockB>>(&response.0).map_err(Error::Bincode)? {
+        for block_b in bincode::deserialize::<Vec<Block>>(&response.0).map_err(Error::Bincode)? {
             node.blockchain
                 .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)
                 .map_err(Error::Blockchain)?;

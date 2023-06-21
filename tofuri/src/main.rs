@@ -4,16 +4,15 @@ use libp2p::futures::StreamExt;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
+use tofuri_p2p::MAINNET_PORT;
+use tofuri_p2p::TESTNET_PORT;
 // use tofuri::command;
 use tofuri::interval;
 use tofuri::rpc;
 use tofuri::swarm;
 use tofuri::Args;
 use tofuri::Node;
-use tofuri::CARGO_PKG_NAME;
-use tofuri::CARGO_PKG_REPOSITORY;
-use tofuri::CARGO_PKG_VERSION;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
@@ -32,10 +31,6 @@ use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
-    println!(
-        "{}",
-        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
-    );
     let args = Args::parse();
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
@@ -64,7 +59,7 @@ async fn main() {
         }
     });
     if let Some(key) = &key {
-        let address = address::encode(&key.address_bytes());
+        let address = public::encode(&key.address_bytes());
         info!(address);
     }
     let tempdir = TempDir::new("tofuri-db").unwrap();
@@ -72,7 +67,7 @@ async fn main() {
         true => tempdir.path().to_str().unwrap(),
         false => "./tofuri-db",
     };
-    let db = tofuri_db::open(path);
+    let db = tofuri_db::open_cf_descriptors(path);
     let mut connections_known = HashSet::new();
     if let Some(ip_addr) = args.peer {
         connections_known.insert(ip_addr);
@@ -90,8 +85,12 @@ async fn main() {
     node.p2p
         .swarm
         .listen_on(match args.testnet {
-            true => tofuri_util::TESTNET.clone(),
-            false => tofuri_util::MAINNET.clone(),
+            true => format!("/ip4/0.0.0.0/tcp/{}", TESTNET_PORT)
+                .parse()
+                .unwrap(),
+            false => format!("/ip4/0.0.0.0/tcp/{}", MAINNET_PORT)
+                .parse()
+                .unwrap(),
         })
         .unwrap();
     let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
@@ -99,10 +98,10 @@ async fn main() {
     info!(local_addr, "RPC");
     // let mut reader = BufReader::new(tokio::io::stdin());
     // let mut line = String::new();
-    let mut interval_1s = tofuri_util::interval_at(Duration::from_secs(1));
-    let mut interval_10s = tofuri_util::interval_at(Duration::from_secs(10));
-    let mut interval_1m = tofuri_util::interval_at(Duration::from_secs(60));
-    let mut interval_10m = tofuri_util::interval_at(Duration::from_secs(600));
+    let mut interval_1s = interval::at(Duration::from_secs(1));
+    let mut interval_10s = interval::at(Duration::from_secs(10));
+    let mut interval_1m = interval::at(Duration::from_secs(60));
+    let mut interval_10m = interval::at(Duration::from_secs(600));
     loop {
         node.ticks += 1;
         tokio::select! {

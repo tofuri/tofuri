@@ -21,6 +21,19 @@ use std::collections::HashSet;
 use std::net::IpAddr;
 use std::time::Duration;
 use tracing::log::warn;
+pub const MAX_TRANSMIT_SIZE: usize = 100_000;
+pub const PROTOCOL_VERSION: &str = "tofuri/1.0.0";
+pub const PROTOCOL_NAME: &str = "/sync/1";
+pub const P2P_RATELIMIT_REQUEST_TIMEOUT: u32 = 3600;
+pub const P2P_RATELIMIT_RESPONSE_TIMEOUT: u32 = 3600;
+pub const P2P_RATELIMIT_REQUEST: usize = 60 + 1;
+pub const P2P_RATELIMIT_RESPONSE: usize = 60 + 1;
+pub const P2P_RATELIMIT_GOSSIPSUB_MESSAGE_BLOCK: usize = 1 + 1;
+pub const P2P_RATELIMIT_GOSSIPSUB_MESSAGE_TRANSACTION: usize = 60 * 100;
+pub const P2P_RATELIMIT_GOSSIPSUB_MESSAGE_STAKE: usize = 60 * 100;
+pub const P2P_RATELIMIT_GOSSIPSUB_MESSAGE_PEERS: usize = 1 + 1;
+pub const MAINNET_PORT: u16 = 2020;
+pub const TESTNET_PORT: u16 = 3030;
 #[derive(Debug)]
 pub enum Error {
     PublishError(PublishError),

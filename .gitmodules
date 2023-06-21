@@ -1,0 +1,6 @@
+[submodule "decimal"]
+	path = decimal
+	url = https://github.com/zudo/decimal
+[submodule "vint"]
+	path = vint
+	url = https://github.com/zudo/vint

@@ -1,31 +1,28 @@
+pub mod db;
 pub mod router;
+use chrono::Utc;
 use clap::Parser;
+use db::charge;
+use decimal::FromStr;
 use reqwest::Client;
 use reqwest::Url;
-use rocksdb::DBWithThreadMode;
 use rocksdb::IteratorMode;
-use rocksdb::SingleThreaded;
+use rocksdb::DB;
 use std::collections::HashMap;
-use tofuri_api_core::Block;
-use tofuri_api_core::Transaction;
-use tofuri_core::*;
+use std::num::ParseIntError;
+use tofuri_api::Block;
+use tofuri_api::Transaction;
 use tofuri_key::Key;
-use tofuri_pay_core::Charge;
-use tofuri_pay_core::ChargeStatus;
-use tofuri_pay_core::Payment;
 use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
     Reqwest(reqwest::Error),
     RocksDB(rocksdb::Error),
-    DB(tofuri_pay_db::Error),
+    DB(db::Error),
     Bincode(bincode::Error),
-    Int(tofuri_int::Error),
+    ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
-pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
-pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 #[derive(Parser, Debug, Clone)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
@@ -59,16 +56,16 @@ pub struct Args {
 }
 #[derive(Debug)]
 pub struct Pay {
-    pub db: DBWithThreadMode<SingleThreaded>,
+    pub db: DB,
     pub key: Key,
     pub args: Args,
-    charges: HashMap<AddressBytes, Charge>,
+    charges: HashMap<[u8; 20], Charge>,
     chain: Vec<Block>,
     subkey_n: u128,
     client: Client,
 }
 impl Pay {
-    pub fn new(db: DBWithThreadMode<SingleThreaded>, key: Key, args: Args) -> Pay {
+    pub fn new(db: DB, key: Key, args: Args) -> Pay {
         Pay {
             db,
             key,
@@ -93,12 +90,12 @@ impl Pay {
     pub fn charge(&mut self, amount: u128) -> Result<Payment, Error> {
         let charge = Charge {
             amount,
-            timestamp: tofuri_util::timestamp(),
+            timestamp: Utc::now().timestamp() as u32,
             status: ChargeStatus::Pending,
             subkey_n: self.subkey_n,
         };
         let payment = charge.payment(&self.key);
-        tofuri_pay_db::charge::put(&self.db, &self.key, &charge).map_err(Error::DB)?;
+        charge::put(&self.db, &self.key, &charge).map_err(Error::DB)?;
         self.charges.insert(charge.address_bytes(&self.key), charge);
         self.subkey_n += 1;
         Ok(payment)
@@ -130,7 +127,7 @@ impl Pay {
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
             for charge in self.charges.values() {
-                let address = tofuri_address::address::encode(&charge.address_bytes(&self.key));
+                let address = tofuri_address::public::encode(&charge.address_bytes(&self.key));
                 if transaction.output_address == address {
                     let amount = match map.get(&address) {
                         Some(a) => *a,
@@ -138,14 +135,16 @@ impl Pay {
                     };
                     map.insert(
                         address,
-                        amount + tofuri_int::from_str(&transaction.amount).map_err(Error::Int)?,
+                        amount
+                            + u128::from_str::<18>(&transaction.amount)
+                                .map_err(Error::ParseIntError)?,
                     );
                 }
             }
         }
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
-            let address = tofuri_address::address::encode(&charge.address_bytes(&self.key));
+            let address = tofuri_address::public::encode(&charge.address_bytes(&self.key));
             let res = {
                 let amount = match map.get(&address) {
                     Some(a) => *a,
@@ -155,13 +154,13 @@ impl Pay {
             };
             if res {
                 charge.status = ChargeStatus::Completed;
-                tofuri_pay_db::charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
+                charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
                 charges.push(charge);
             } else if matches!(charge.status, ChargeStatus::New | ChargeStatus::Pending)
-                && charge.timestamp < tofuri_util::timestamp() - self.args.expires
+                && charge.timestamp < Utc::now().timestamp() as u32 - self.args.expires
             {
                 charge.status = ChargeStatus::Expired;
-                tofuri_pay_db::charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
+                charge::put(&self.db, &self.key, charge).map_err(Error::DB)?;
             }
         }
         let mut payments = vec![];
@@ -195,7 +194,7 @@ impl Pay {
             self.reload_chain().await?;
         }
         while match self.chain.first() {
-            Some(block) => block.timestamp < tofuri_util::timestamp() - self.args.expires,
+            Some(block) => block.timestamp < Utc::now().timestamp() as u32 - self.args.expires,
             None => false,
         } {
             self.chain.remove(0);
@@ -236,7 +235,7 @@ impl Pay {
             }
             if block.previous_hash
                 == "0000000000000000000000000000000000000000000000000000000000000000"
-                || block.timestamp < tofuri_util::timestamp() - self.args.expires
+                || block.timestamp < Utc::now().timestamp() as u32 - self.args.expires
             {
                 break;
             }
@@ -250,7 +249,7 @@ impl Pay {
     pub fn load(&mut self) -> Result<(), Error> {
         for res in self
             .db
-            .iterator_cf(tofuri_pay_db::charges(&self.db), IteratorMode::Start)
+            .iterator_cf(charge::cf(&self.db), IteratorMode::Start)
         {
             self.subkey_n += 1;
             let (hash, bytes) = res.map_err(Error::RocksDB)?;
@@ -262,4 +261,53 @@ impl Pay {
         }
         Ok(())
     }
+}
+use serde::Deserialize;
+use serde::Serialize;
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub enum ChargeStatus {
+    #[default]
+    New,
+    Pending,
+    Expired,
+    Completed,
+    Cancelled,
+}
+pub fn status(status: &ChargeStatus) -> String {
+    match *status {
+        ChargeStatus::New => "NEW".to_string(),
+        ChargeStatus::Pending => "PENDING".to_string(),
+        ChargeStatus::Expired => "EXPIRED".to_string(),
+        ChargeStatus::Completed => "COMPLETED".to_string(),
+        ChargeStatus::Cancelled => "CANCELLED".to_string(),
+    }
+}
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Charge {
+    pub amount: u128,
+    pub timestamp: u32,
+    pub status: ChargeStatus,
+    pub subkey_n: u128,
+}
+impl Charge {
+    pub fn address_bytes(&self, key: &Key) -> [u8; 20] {
+        key.subkey(self.subkey_n).unwrap().address_bytes()
+    }
+    pub fn payment(&self, key: &Key) -> Payment {
+        let address = tofuri_address::public::encode(&self.address_bytes(key));
+        let status = status(&self.status);
+        Payment {
+            address,
+            amount: self.amount,
+            timestamp: self.timestamp,
+            status,
+        }
+    }
+}
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Payment {
+    pub address: String,
+    pub amount: u128,
+    pub timestamp: u32,
+    pub status: String,
 }

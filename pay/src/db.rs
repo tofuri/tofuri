@@ -1,9 +1,4 @@
-pub mod block;
-pub mod checkpoint;
-pub mod peer;
-pub mod stake;
-pub mod transaction;
-pub mod tree;
+pub mod charge;
 use rocksdb::ColumnFamilyDescriptor;
 use rocksdb::Options;
 use rocksdb::DB;
@@ -19,12 +14,6 @@ pub fn open_cf_descriptors(path: impl AsRef<Path>) -> DB {
     opts.create_missing_column_families(true);
     opts.create_if_missing(true);
     let options = Options::default();
-    let cfs = vec![
-        ColumnFamilyDescriptor::new("block", options.clone()),
-        ColumnFamilyDescriptor::new("transaction", options.clone()),
-        ColumnFamilyDescriptor::new("stake", options.clone()),
-        ColumnFamilyDescriptor::new("peer", options.clone()),
-        ColumnFamilyDescriptor::new("checkpoint", options),
-    ];
+    let cfs = vec![ColumnFamilyDescriptor::new("charge", options)];
     DB::open_cf_descriptors(&opts, path, cfs).unwrap()
 }

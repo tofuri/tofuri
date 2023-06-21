@@ -4,15 +4,13 @@ use clap::Parser;
 use std::sync::Arc;
 use std::time::Duration;
 use tempdir::TempDir;
-use tofuri_address::address;
+use tofuri_address::public;
 use tofuri_address::secret;
 use tofuri_key::Key;
+use tofuri_pay::db;
 use tofuri_pay::router;
 use tofuri_pay::Args;
 use tofuri_pay::Pay;
-use tofuri_pay::CARGO_PKG_NAME;
-use tofuri_pay::CARGO_PKG_REPOSITORY;
-use tofuri_pay::CARGO_PKG_VERSION;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 use tracing::debug;
@@ -26,10 +24,6 @@ use tracing_subscriber::reload;
 use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
-    println!(
-        "{}",
-        tofuri_util::build(CARGO_PKG_NAME, CARGO_PKG_VERSION, CARGO_PKG_REPOSITORY)
-    );
     let args = Args::parse();
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
@@ -48,14 +42,14 @@ async fn main() {
     debug!("{:?}", args);
     let addr = args.pay_api.parse().unwrap();
     let key = Key::from_slice(&secret::decode(&args.secret).unwrap()).unwrap();
-    let address = address::encode(&key.address_bytes());
+    let address = public::encode(&key.address_bytes());
     info!(address);
     let tempdir = TempDir::new("tofuri-pay-db").unwrap();
     let path: &str = match args.tempdb {
         true => tempdir.path().to_str().unwrap(),
         false => "./tofuri-pay-db",
     };
-    let db = tofuri_pay_db::open(path);
+    let db = db::open_cf_descriptors(path);
     let pay = Arc::new(Mutex::new(Pay::new(db, key, args)));
     let cors = CorsLayer::permissive();
     let app = Router::new()

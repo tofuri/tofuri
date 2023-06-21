@@ -1,86 +1,85 @@
-use crate::beta;
-use crate::input_public_key;
 use crate::stake;
 use crate::transaction;
-use rocksdb::DBWithThreadMode;
-use rocksdb::SingleThreaded;
-use tofuri_block::BlockA;
-use tofuri_block::BlockB;
-use tofuri_block::BlockC;
+use crate::Error;
+use rocksdb::ColumnFamily;
+use rocksdb::DB;
+use serde::Deserialize;
+use serde::Serialize;
+use serde_big_array::BigArray;
+use tofuri_block::Block;
 use tracing::instrument;
-#[derive(Debug)]
-pub enum Error {
-    Block(tofuri_block::Error),
-    RocksDB(rocksdb::Error),
-    Bincode(bincode::Error),
-    Transaction(transaction::Error),
-    Stake(stake::Error),
-    Beta(beta::Error),
-    InputPublicKey(input_public_key::Error),
-    NotFound,
+pub fn cf(db: &DB) -> &ColumnFamily {
+    db.cf_handle("block").unwrap()
 }
 #[instrument(skip_all, level = "trace")]
-pub fn put(block_a: &BlockA, db: &DBWithThreadMode<SingleThreaded>) -> Result<(), Error> {
-    for transaction_a in block_a.transactions.iter() {
-        transaction::put(transaction_a, db).map_err(Error::Transaction)?;
+pub fn put(block: &Block, db: &DB) -> Result<(), Error> {
+    for transaction in block.transactions.iter() {
+        transaction::put(transaction, db)?;
     }
-    for stake_a in block_a.stakes.iter() {
-        stake::put(stake_a, db).map_err(Error::Stake)?;
+    for stake in block.stakes.iter() {
+        stake::put(stake, db)?;
     }
-    let key = block_a.hash;
-    let value = bincode::serialize(&block_a.b().c()).map_err(Error::Bincode)?;
-    db.put_cf(crate::blocks(db), key, value)
-        .map_err(Error::RocksDB)
+    let key = block.hash();
+    let value = bincode::serialize(&BlockDB::from(block)).map_err(Error::Bincode)?;
+    db.put_cf(cf(db), key, value).map_err(Error::RocksDB)
 }
 #[instrument(skip_all, level = "trace")]
-pub fn get_a(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockA, Error> {
-    let block_c = get_c(db, hash)?;
-    let mut transactions = vec![];
-    let mut stakes = vec![];
-    for hash in block_c.transaction_hashes.iter() {
-        transactions.push(transaction::get_a(db, hash).map_err(Error::Transaction)?);
-    }
-    for hash in block_c.stake_hashes.iter() {
-        stakes.push(stake::get_a(db, hash).map_err(Error::Stake)?);
-    }
-    let beta = beta::get(db, hash).ok();
-    let input_public_key = input_public_key::get(db, hash).ok();
-    let block_a = block_c
-        .a(transactions, stakes, beta, input_public_key)
-        .map_err(Error::Block)?;
-    if beta.is_none() {
-        beta::put(hash, &block_a.beta, db).map_err(Error::Beta)?;
-    }
-    if input_public_key.is_none() {
-        input_public_key::put(hash, &block_a.input_public_key, db)
-            .map_err(Error::InputPublicKey)?;
-    }
-    Ok(block_a)
-}
-#[instrument(skip_all, level = "trace")]
-pub fn get_b(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockB, Error> {
-    let block_c = get_c(db, hash)?;
-    let mut transactions = vec![];
-    for hash in block_c.transaction_hashes.iter() {
-        transactions.push(transaction::get_b(db, hash).map_err(Error::Transaction)?);
-    }
-    let mut stakes = vec![];
-    for hash in block_c.stake_hashes.iter() {
-        stakes.push(stake::get_b(db, hash).map_err(Error::Stake)?);
-    }
-    let block_b = block_c.b(transactions, stakes);
-    Ok(block_b)
-}
-#[instrument(skip_all, level = "trace")]
-pub fn get_c(db: &DBWithThreadMode<SingleThreaded>, hash: &[u8]) -> Result<BlockC, Error> {
+pub fn get(db: &DB, hash: &[u8]) -> Result<Block, Error> {
     let key = hash;
     let vec = db
-        .get_cf(crate::blocks(db), key)
+        .get_cf(cf(db), key)
         .map_err(Error::RocksDB)?
         .ok_or(Error::NotFound)?;
-    bincode::deserialize(&vec).map_err(Error::Bincode)
+    let block_db: BlockDB = bincode::deserialize(&vec).map_err(Error::Bincode)?;
+    let mut transactions = vec![];
+    for hash in block_db.transaction_hashes.iter() {
+        transactions.push(transaction::get(db, hash)?);
+    }
+    let mut stakes = vec![];
+    for hash in block_db.stake_hashes.iter() {
+        stakes.push(stake::get(db, hash)?);
+    }
+    Ok(Block {
+        previous_hash: block_db.previous_hash,
+        timestamp: block_db.timestamp,
+        signature: block_db.signature,
+        pi: block_db.pi,
+        transactions,
+        stakes,
+    })
 }
-#[test]
-fn test_serialize_len() {
-    assert_eq!(197, bincode::serialize(&BlockC::default()).unwrap().len());
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub struct BlockDB {
+    pub previous_hash: [u8; 32],
+    pub timestamp: u32,
+    #[serde(with = "BigArray")]
+    pub signature: [u8; 64],
+    #[serde(with = "BigArray")]
+    pub pi: [u8; 81],
+    pub transaction_hashes: Vec<[u8; 32]>,
+    pub stake_hashes: Vec<[u8; 32]>,
+}
+impl From<&Block> for BlockDB {
+    fn from(block: &Block) -> BlockDB {
+        BlockDB {
+            previous_hash: block.previous_hash,
+            timestamp: block.timestamp,
+            signature: block.signature,
+            pi: block.pi,
+            transaction_hashes: block.transaction_hashes(),
+            stake_hashes: block.stake_hashes(),
+        }
+    }
+}
+impl Default for BlockDB {
+    fn default() -> BlockDB {
+        BlockDB {
+            previous_hash: [0; 32],
+            timestamp: 0,
+            signature: [0; 64],
+            pi: [0; 81],
+            transaction_hashes: vec![],
+            stake_hashes: vec![],
+        }
+    }
 }

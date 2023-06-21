@@ -1,16 +1,28 @@
 use crate::Node;
+use crate::SHARE_PEERS_MAX_LEN;
+use chrono::Utc;
 use rand::prelude::*;
 use std::net::IpAddr;
-use tofuri_core::*;
+use tofuri_blockchain::fork::BLOCK_TIME;
 use tofuri_p2p::behaviour::Request;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;
-use tofuri_util;
+use tokio::time::Duration;
+use tokio::time::Instant;
+use tokio::time::Interval;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
+pub fn at(period: Duration) -> Interval {
+    let nanos = period.as_nanos() as u64;
+    let start = Instant::now()
+        + Duration::from_nanos(nanos - chrono::offset::Utc::now().timestamp_nanos() as u64 % nanos);
+    let mut interval = tokio::time::interval_at(start, period);
+    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    interval
+}
 #[instrument(skip_all, level = "debug")]
 pub fn interval_1s(node: &mut Node) {
     sync_request(node);
@@ -72,7 +84,10 @@ fn share(node: &mut Node) {
 }
 #[instrument(skip_all, level = "debug")]
 fn grow(node: &mut Node) {
-    let timestamp = tofuri_util::block_timestamp();
+    let timestamp = {
+        let timestamp = Utc::now().timestamp() as u32;
+        timestamp - (timestamp % BLOCK_TIME)
+    };
     let blockchain = &mut node.blockchain;
     blockchain.pending_retain(timestamp);
     blockchain.save_blocks(&node.db, node.args.trust);
@@ -85,7 +100,7 @@ fn grow(node: &mut Node) {
     if !sync.completed {
         return;
     }
-    if !tofuri_util::validate_block_timestamp(timestamp, unstable.latest_block.timestamp) {
+    if !tofuri_blockchain::validate_block_timestamp(timestamp, unstable.latest_block.timestamp) {
         return;
     }
     let key = match &node.key {
@@ -104,7 +119,7 @@ fn grow(node: &mut Node) {
         .forge_block(&node.db, key, timestamp, node.args.trust);
     if let Err(e) = node
         .p2p
-        .gossipsub_publish("block", bincode::serialize(&block_a.b()).unwrap())
+        .gossipsub_publish("block", bincode::serialize(&block_a).unwrap())
     {
         error!(?e);
     }
@@ -112,7 +127,7 @@ fn grow(node: &mut Node) {
 #[instrument(skip_all, level = "debug")]
 fn sync_request(node: &mut Node) {
     if node.blockchain.forks.unstable.latest_block.timestamp
-        >= tofuri_util::timestamp() - BLOCK_TIME
+        >= Utc::now().timestamp() as u32 - BLOCK_TIME
     {
         return;
     }

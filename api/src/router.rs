@@ -7,7 +7,7 @@ use axum::Json;
 use chrono::offset::Utc;
 use decimal::Decimal;
 use tofuri_address::public;
-use tofuri_fork::BLOCK_TIME;
+use tofuri_blockchain::fork::BLOCK_TIME;
 use tracing::instrument;
 #[instrument(skip_all)]
 pub async fn root(State(args): State<Args>) -> impl IntoResponse {

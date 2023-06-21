@@ -1,6 +1,6 @@
-use crate::Error;
-use crate::Fork;
-use crate::Stable;
+use super::Error;
+use super::Fork;
+use super::Stable;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
@@ -28,7 +28,7 @@ impl Unstable {
             latest_block: Block::default(),
             latest_blocks: stable.get_latest_blocks().clone(),
         };
-        crate::load(&mut unstable, db, hashes);
+        super::load(&mut unstable, db, hashes);
         unstable
     }
     pub fn check_overflow(
@@ -100,19 +100,19 @@ impl Unstable {
         false
     }
     pub fn balance(&self, address: &[u8; 20]) -> u128 {
-        crate::get_balance(self, address)
+        super::get_balance(self, address)
     }
     pub fn staked(&self, address: &[u8; 20]) -> u128 {
-        crate::get_staked(self, address)
+        super::get_staked(self, address)
     }
     pub fn next_staker(&self, timestamp: u32) -> Option<[u8; 20]> {
-        crate::next_staker(self, timestamp)
+        super::next_staker(self, timestamp)
     }
     pub fn stakers_offline(&self, timestamp: u32, previous_timestamp: u32) -> Vec<[u8; 20]> {
-        crate::stakers_offline(self, timestamp, previous_timestamp)
+        super::stakers_offline(self, timestamp, previous_timestamp)
     }
     pub fn stakers_n(&self, n: usize) -> Vec<[u8; 20]> {
-        crate::stakers_n(self, n).0
+        super::stakers_n(self, n).0
     }
 }
 impl Fork for Unstable {
@@ -153,6 +153,6 @@ impl Fork for Unstable {
         false
     }
     fn append_block(&mut self, block_a: &Block, previous_timestamp: u32, loading: bool) {
-        crate::append_block(self, block_a, previous_timestamp, loading)
+        super::append_block(self, block_a, previous_timestamp, loading)
     }
 }

@@ -1,4 +1,4 @@
-use crate::Fork;
+use super::Fork;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
@@ -17,10 +17,10 @@ pub struct Stable {
 }
 impl Stable {
     pub fn append_block(&mut self, block_a: &Block, previous_timestamp: u32) {
-        crate::append_block(self, block_a, previous_timestamp, false)
+        super::append_block(self, block_a, previous_timestamp, false)
     }
     pub fn load(&mut self, db: &DB, hashes: &[[u8; 32]]) {
-        crate::load(self, db, hashes)
+        super::load(self, db, hashes)
     }
     pub fn checkpoint(&self) -> CheckpointDB {
         CheckpointDB {
@@ -81,6 +81,6 @@ impl Fork for Stable {
         true
     }
     fn append_block(&mut self, block_a: &Block, previous_timestamp: u32, loading: bool) {
-        crate::append_block(self, block_a, previous_timestamp, loading)
+        super::append_block(self, block_a, previous_timestamp, loading)
     }
 }

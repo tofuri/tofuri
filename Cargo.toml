@@ -7,7 +7,6 @@ members = [
     "blockchain",
     "db",
     "decimal",
-    "fork",
     "key",
     "p2p",
     "pay",

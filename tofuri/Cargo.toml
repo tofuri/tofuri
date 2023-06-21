@@ -21,7 +21,6 @@ tofuri-p2p = { version = "0.1.0", path = "../p2p" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
-tofuri-fork = { version = "0.1.0", path = "../fork" }
 rocksdb = "0.21.0"
 colored = "2.0.0"
 bincode = "1.3.3"

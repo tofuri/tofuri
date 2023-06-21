@@ -4367,7 +4367,6 @@ dependencies = [
  "tofuri-block",
  "tofuri-blockchain",
  "tofuri-db",
- "tofuri-fork",
  "tofuri-key",
  "tofuri-p2p",
  "tofuri-rpc",
@@ -4400,7 +4399,7 @@ dependencies = [
  "serde",
  "tofuri-address",
  "tofuri-block",
- "tofuri-fork",
+ "tofuri-blockchain",
  "tofuri-key",
  "tofuri-rpc",
  "tofuri-stake",
@@ -4442,14 +4441,15 @@ dependencies = [
  "lazy_static",
  "rocksdb",
  "serde",
+ "sha2 0.10.7",
  "tofuri-address",
  "tofuri-block",
  "tofuri-db",
- "tofuri-fork",
  "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
  "tracing",
+ "uint",
  "vint",
 ]
 
@@ -4467,24 +4467,6 @@ dependencies = [
  "tofuri-stake",
  "tofuri-transaction",
  "tracing",
- "vint",
-]
-
-[[package]]
-name = "tofuri-fork"
-version = "0.1.0"
-dependencies = [
- "decimal",
- "rocksdb",
- "serde",
- "sha2 0.10.7",
- "tofuri-address",
- "tofuri-block",
- "tofuri-db",
- "tofuri-stake",
- "tofuri-transaction",
- "tracing",
- "uint",
  "vint",
 ]
 

@@ -3,7 +3,7 @@ use crate::SHARE_PEERS_MAX_LEN;
 use chrono::Utc;
 use rand::prelude::*;
 use std::net::IpAddr;
-use tofuri_fork::BLOCK_TIME;
+use tofuri_blockchain::fork::BLOCK_TIME;
 use tofuri_p2p::behaviour::Request;
 use tofuri_p2p::multiaddr;
 use tofuri_p2p::ratelimit::Endpoint;

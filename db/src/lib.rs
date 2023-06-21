@@ -4,7 +4,6 @@ pub mod peer;
 pub mod stake;
 pub mod transaction;
 pub mod tree;
-use rocksdb::ColumnFamily;
 use rocksdb::ColumnFamilyDescriptor;
 use rocksdb::Options;
 use rocksdb::DB;
@@ -33,19 +32,4 @@ fn descriptors() -> Vec<ColumnFamilyDescriptor> {
         ColumnFamilyDescriptor::new("betas", options.clone()),
         ColumnFamilyDescriptor::new("checkpoint", options),
     ]
-}
-pub fn blocks(db: &DB) -> &ColumnFamily {
-    db.cf_handle("blocks").unwrap()
-}
-pub fn transactions(db: &DB) -> &ColumnFamily {
-    db.cf_handle("transactions").unwrap()
-}
-pub fn stakes(db: &DB) -> &ColumnFamily {
-    db.cf_handle("stakes").unwrap()
-}
-pub fn peers(db: &DB) -> &ColumnFamily {
-    db.cf_handle("peers").unwrap()
-}
-pub fn checkpoint(db: &DB) -> &ColumnFamily {
-    db.cf_handle("checkpoint").unwrap()
 }

@@ -1,4 +1,5 @@
 use crate::Error;
+use rocksdb::ColumnFamily;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
@@ -6,18 +7,20 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use tofuri_block::Block;
 use tracing::instrument;
+pub fn cf_handle(db: &DB) -> &ColumnFamily {
+    db.cf_handle("checkpoint").unwrap()
+}
 #[instrument(skip_all, level = "trace")]
 pub fn put(db: &DB, checkpoint: &CheckpointDB) -> Result<(), Error> {
     let key = [];
     let value = bincode::serialize(checkpoint).map_err(Error::Bincode)?;
-    db.put_cf(crate::checkpoint(db), key, value)
-        .map_err(Error::RocksDB)
+    db.put_cf(cf_handle(db), key, value).map_err(Error::RocksDB)
 }
 #[instrument(skip_all, level = "trace")]
 pub fn get(db: &DB) -> Result<CheckpointDB, Error> {
     let key = [];
     let vec = db
-        .get_cf(crate::checkpoint(db), key)
+        .get_cf(cf_handle(db), key)
         .map_err(Error::RocksDB)?
         .ok_or(Error::NotFound)?;
     bincode::deserialize(&vec).map_err(Error::Bincode)

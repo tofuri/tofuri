@@ -6,13 +6,11 @@ members = [
     "block",
     "blockchain",
     "db",
-    "decimal",
     "key",
     "p2p",
     "pay",
     "tofuri",
     "stake",
     "transaction",
-    "vint",
     "wallet",
 ]

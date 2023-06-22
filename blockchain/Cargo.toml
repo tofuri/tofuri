@@ -8,8 +8,8 @@ repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
 tofuri-address = { version = "0.1.1", path = "../address" }
-vint = { path = "../vint" }
-decimal = { path = "../decimal" }
+vint = { git = "https://github.com/zudo/vint" }
+decimal = { git = "https://github.com/zudo/decimal" }
 tofuri-block = { version = "0.1.0", path = "../block" }
 tofuri-db = { version = "0.1.0", path = "../db" }
 tofuri-key = { version = "0.1.0", path = "../key" }

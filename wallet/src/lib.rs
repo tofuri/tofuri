@@ -24,10 +24,10 @@ use std::path::Path;
 use std::process;
 use tofuri_address::public;
 use tofuri_address::secret;
-use tofuri_api::Block;
+use tofuri_api::BlockHex;
 use tofuri_api::Root;
-use tofuri_api::Stake;
-use tofuri_api::Transaction;
+use tofuri_api::StakeHex;
+use tofuri_api::TransactionHex;
 use tofuri_key::Key;
 pub const EXTENSION: &str = "tofuri";
 const INCORRECT: &str = "Incorrect passphrase";
@@ -219,10 +219,11 @@ impl Wallet {
         )
         .unwrap();
         println!("[u8; 32]: {}", hex::encode(transaction.hash()).cyan());
+        let transaction_hex: TransactionHex = transaction.try_into().unwrap();
         let res: String = self
             .client
             .post(format!("{}transaction", self.args.api.to_string()))
-            .json(&tofuri_api::util::transaction(&transaction).unwrap())
+            .json(&transaction_hex)
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -256,10 +257,11 @@ impl Wallet {
         )
         .unwrap();
         println!("[u8; 32]: {}", hex::encode(stake.hash()).cyan());
+        let stake_hex: StakeHex = stake.try_into().unwrap();
         let res: String = self
             .client
             .post(format!("{}stake", self.args.api.to_string()))
-            .json(&tofuri_api::util::stake(&stake).unwrap())
+            .json(&stake_hex)
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -310,7 +312,7 @@ impl Wallet {
                 .send()
                 .await
             {
-                let block: Block = res.json().await.map_err(Error::Reqwest)?;
+                let block: BlockHex = res.json().await.map_err(Error::Reqwest)?;
                 println!("Block found\n{block:?}");
                 return Ok(());
             }
@@ -324,7 +326,7 @@ impl Wallet {
                 .send()
                 .await
             {
-                let transaction: Transaction = res.json().await.map_err(Error::Reqwest)?;
+                let transaction: TransactionHex = res.json().await.map_err(Error::Reqwest)?;
                 println!("Transaction found\n{transaction:?}");
                 return Ok(());
             }
@@ -334,7 +336,7 @@ impl Wallet {
                 .send()
                 .await
             {
-                let stake: Stake = res.json().await.map_err(Error::Reqwest)?;
+                let stake: StakeHex = res.json().await.map_err(Error::Reqwest)?;
                 println!("Stake found\n{stake:?}");
                 return Ok(());
             }
@@ -352,7 +354,7 @@ impl Wallet {
                     .send()
                     .await
                 {
-                    let block: Block = res.json().await.map_err(Error::Reqwest)?;
+                    let block: BlockHex = res.json().await.map_err(Error::Reqwest)?;
                     println!("Block found\n{block:?}");
                     return Ok(());
                 }

@@ -7,8 +7,8 @@ description = "Tofuri transaction"
 repository = "https://github.com/tofuri/tofuri"
 
 [dependencies]
-vint = { path = "../vint" }
-decimal = { path = "../decimal" }
+vint = { git = "https://github.com/zudo/vint" }
+decimal = { git = "https://github.com/zudo/decimal" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-address = { version = "0.1.1", path = "../address" }
 serde = { version = "1.0.163", features = ["derive"] }

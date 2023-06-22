@@ -16,8 +16,8 @@ pub struct Stable {
     map_staked: HashMap<[u8; 20], u128>,
 }
 impl Stable {
-    pub fn append_block(&mut self, block_a: &Block, previous_timestamp: u32) {
-        super::append_block(self, block_a, previous_timestamp, false)
+    pub fn append_block(&mut self, block: &Block, previous_timestamp: u32) {
+        super::append_block(self, block, previous_timestamp, false)
     }
     pub fn load(&mut self, db: &DB, hashes: &[[u8; 32]]) {
         super::load(self, db, hashes)
@@ -80,7 +80,7 @@ impl Fork for Stable {
     fn is_stable() -> bool {
         true
     }
-    fn append_block(&mut self, block_a: &Block, previous_timestamp: u32, loading: bool) {
-        super::append_block(self, block_a, previous_timestamp, loading)
+    fn append_block(&mut self, block: &Block, previous_timestamp: u32, loading: bool) {
+        super::append_block(self, block, previous_timestamp, loading)
     }
 }

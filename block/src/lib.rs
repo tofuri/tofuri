@@ -30,7 +30,7 @@ impl Block {
         previous_beta: &[u8; 32],
     ) -> Result<Block, Error> {
         let pi = key.vrf_prove(previous_beta)?;
-        let mut block_b = Block {
+        let mut block = Block {
             previous_hash,
             timestamp,
             pi,
@@ -38,8 +38,8 @@ impl Block {
             transactions,
             stakes,
         };
-        block_b.signature = key.sign(&block_b.hash())?;
-        Ok(block_b)
+        block.signature = key.sign(&block.hash())?;
+        Ok(block)
     }
     pub fn input_address(&self) -> Result<[u8; 20], Error> {
         Ok(Key::address(&self.input_public_key()?))

@@ -208,24 +208,18 @@ impl Blockchain {
                 &GENESIS_BLOCK_BETA,
             ),
         };
-        let block_a = res.unwrap();
-        self.save_block(db, &block_a, true, trust_fork_after_blocks);
-        block_a
+        let block = res.unwrap();
+        self.save_block(db, &block, true, trust_fork_after_blocks);
+        block
     }
-    fn save_block(
-        &mut self,
-        db: &DB,
-        block_a: &Block,
-        forger: bool,
-        trust_fork_after_blocks: usize,
-    ) {
-        tofuri_db::block::put(block_a, db).unwrap();
+    fn save_block(&mut self, db: &DB, block: &Block, forger: bool, trust_fork_after_blocks: usize) {
+        tofuri_db::block::put(block, db).unwrap();
         let fork = self
             .tree
-            .insert(block_a.hash(), block_a.previous_hash, block_a.timestamp);
+            .insert(block.hash(), block.previous_hash, block.timestamp);
         self.tree.sort_branches();
         if let Some(main) = self.tree.main() {
-            if block_a.hash() == main.hash && !forger {
+            if block.hash() == main.hash && !forger {
                 self.sync.new += 1.0;
             }
         }
@@ -235,9 +229,9 @@ impl Blockchain {
             trust_fork_after_blocks,
         );
         let height = self.height();
-        let hash = hex::encode(block_a.hash());
-        let transactions = block_a.transactions.len();
-        let stakes = block_a.stakes.len();
+        let hash = hex::encode(block.hash());
+        let transactions = block.transactions.len();
+        let stakes = block.stakes.len();
         let text = if forger {
             "Forged".magenta()
         } else {
@@ -256,8 +250,8 @@ impl Blockchain {
                 i += 1;
             }
         }
-        for block_a in vec {
-            self.save_block(db, &block_a, false, trust_fork_after_blocks);
+        for block in vec {
+            self.save_block(db, &block, false, trust_fork_after_blocks);
         }
     }
     pub fn pending_transactions_push(
@@ -324,24 +318,20 @@ impl Blockchain {
     pub fn pending_blocks_push(
         &mut self,
         db: &DB,
-        block_a: Block,
+        block: Block,
         time_delta: u32,
         trust_fork_after_blocks: usize,
     ) -> Result<(), Error> {
-        if self
-            .pending_blocks
-            .iter()
-            .any(|a| a.hash() == block_a.hash())
-        {
+        if self.pending_blocks.iter().any(|a| a.hash() == block.hash()) {
             return Err(Error::BlockPending);
         }
         self.validate_block(
             db,
-            &block_a,
+            &block,
             Utc::now().timestamp() as u32 + time_delta,
             trust_fork_after_blocks,
         )?;
-        self.pending_blocks.push(block_a);
+        self.pending_blocks.push(block);
         Ok(())
     }
     pub fn pending_retain(&mut self, timestamp: u32) {
@@ -396,53 +386,53 @@ impl Blockchain {
     pub fn validate_block(
         &self,
         db: &DB,
-        block_a: &Block,
+        block: &Block,
         timestamp: u32,
         trust_fork_after_blocks: usize,
     ) -> Result<(), Error> {
-        if self.tree.get(&block_a.hash()).is_some() {
+        if self.tree.get(&block.hash()).is_some() {
             return Err(Error::BlockHashInTree);
         }
-        if block_a.previous_hash != GENESIS_BLOCK_PREVIOUS_HASH
-            && self.tree.get(&block_a.previous_hash).is_none()
+        if block.previous_hash != GENESIS_BLOCK_PREVIOUS_HASH
+            && self.tree.get(&block.previous_hash).is_none()
         {
             return Err(Error::BlockPreviousHashNotInTree);
         }
-        if block_a.timestamp > timestamp {
+        if block.timestamp > timestamp {
             return Err(Error::BlockTimestampFuture);
         }
-        let input_address = block_a.input_address().map_err(Error::Key)?;
+        let input_address = block.input_address().map_err(Error::Key)?;
         let unstable = self
             .forks
             .unstable(
                 db,
                 &self.tree,
                 trust_fork_after_blocks,
-                &block_a.previous_hash,
+                &block.previous_hash,
             )
             .map_err(Error::Fork)?;
-        if !validate_block_timestamp(block_a.timestamp, unstable.latest_block.timestamp) {
+        if !validate_block_timestamp(block.timestamp, unstable.latest_block.timestamp) {
             return Err(Error::BlockTimestamp);
         }
         Key::vrf_verify(
-            &block_a.input_public_key().map_err(Error::Key)?,
-            &block_a.pi,
+            &block.input_public_key().map_err(Error::Key)?,
+            &block.pi,
             &unstable.latest_block.beta().map_err(Error::Key)?,
         )
         .map_err(Error::Key)?;
-        if let Some(staker) = unstable.next_staker(block_a.timestamp) {
+        if let Some(staker) = unstable.next_staker(block.timestamp) {
             if staker != input_address {
                 return Err(Error::BlockStakerAddress);
             }
         }
-        for stake in block_a.stakes.iter() {
-            Blockchain::validate_stake(&unstable, stake, block_a.timestamp)?;
+        for stake in block.stakes.iter() {
+            Blockchain::validate_stake(&unstable, stake, block.timestamp)?;
         }
-        for transaction in block_a.transactions.iter() {
-            Blockchain::validate_transaction(&unstable, transaction, block_a.timestamp)?;
+        for transaction in block.transactions.iter() {
+            Blockchain::validate_transaction(&unstable, transaction, block.timestamp)?;
         }
         unstable
-            .check_overflow(&block_a.transactions, &block_a.stakes)
+            .check_overflow(&block.transactions, &block.stakes)
             .map_err(Error::Fork)?;
         Ok(())
     }

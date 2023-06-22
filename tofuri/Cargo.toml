@@ -12,8 +12,8 @@ default-run = "tofuri"
 [dependencies]
 tofuri-address = { version = "0.1.1", path = "../address" }
 tofuri-rpc = { version = "0.1.0", path = "../rpc" }
-vint = { path = "../vint" }
-decimal = { path = "../decimal" }
+vint = { git = "https://github.com/zudo/vint" }
+decimal = { git = "https://github.com/zudo/decimal" }
 tofuri-block = { version = "0.1.0", path = "../block" }
 tofuri-blockchain = { version = "0.1.0", path = "../blockchain" }
 tofuri-db = { version = "0.1.0", path = "../db" }

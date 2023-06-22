@@ -114,12 +114,12 @@ fn grow(node: &mut Node) {
     } else {
         warn!("No stakers");
     }
-    let block_a = node
+    let block = node
         .blockchain
         .forge_block(&node.db, key, timestamp, node.args.trust);
     if let Err(e) = node
         .p2p
-        .gossipsub_publish("block", bincode::serialize(&block_a).unwrap())
+        .gossipsub_publish("block", bincode::serialize(&block).unwrap())
     {
         error!(?e);
     }

@@ -156,9 +156,9 @@ fn gossipsub_message(
         }
         match endpoint {
             Endpoint::GossipsubMessageBlock => {
-                let block_b: Block = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+                let block: Block = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
-                    .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)
+                    .pending_blocks_push(&node.db, block, node.args.time_delta, node.args.trust)
                     .map_err(Error::Blockchain)?;
                 node.blockchain.save_blocks(&node.db, node.args.trust);
             }
@@ -170,9 +170,9 @@ fn gossipsub_message(
                     .map_err(Error::Blockchain)?;
             }
             Endpoint::GossipsubMessageStake => {
-                let stake_b: Stake = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+                let stake: Stake = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
-                    .pending_stakes_push(stake_b, node.args.time_delta)
+                    .pending_stakes_push(stake, node.args.time_delta)
                     .map_err(Error::Blockchain)?;
             }
             Endpoint::GossipsubMessagePeers => {
@@ -268,12 +268,12 @@ fn sync_request(
             if let Err(tofuri_blockchain::Error::SyncBlock) = res {
                 break;
             }
-            let block_b = res.map_err(Error::Blockchain)?;
-            size += bincode::serialize(&block_b).map_err(Error::Bincode)?.len();
+            let block = res.map_err(Error::Blockchain)?;
+            size += bincode::serialize(&block).map_err(Error::Bincode)?.len();
             if size > MAX_TRANSMIT_SIZE {
                 break;
             }
-            vec.push(block_b);
+            vec.push(block);
         }
         let vec = bincode::serialize(&vec).map_err(Error::Bincode)?;
         node.p2p
@@ -313,9 +313,9 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: Response) {
         Blockchain(tofuri_blockchain::Error),
     }
     fn inner(node: &mut Node, response: Response) -> Result<(), Error> {
-        for block_b in bincode::deserialize::<Vec<Block>>(&response.0).map_err(Error::Bincode)? {
+        for block in bincode::deserialize::<Vec<Block>>(&response.0).map_err(Error::Bincode)? {
             node.blockchain
-                .pending_blocks_push(&node.db, block_b, node.args.time_delta, node.args.trust)
+                .pending_blocks_push(&node.db, block, node.args.time_delta, node.args.trust)
                 .map_err(Error::Blockchain)?;
             node.blockchain.save_blocks(&node.db, node.args.trust);
         }

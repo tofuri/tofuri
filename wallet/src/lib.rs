@@ -24,10 +24,10 @@ use std::path::Path;
 use std::process;
 use tofuri_address::public;
 use tofuri_address::secret;
-use tofuri_api::Block;
+use tofuri_api::BlockHex;
 use tofuri_api::Root;
-use tofuri_api::Stake;
-use tofuri_api::Transaction;
+use tofuri_api::StakeHex;
+use tofuri_api::TransactionHex;
 use tofuri_key::Key;
 pub const EXTENSION: &str = "tofuri";
 const INCORRECT: &str = "Incorrect passphrase";
@@ -310,7 +310,7 @@ impl Wallet {
                 .send()
                 .await
             {
-                let block: Block = res.json().await.map_err(Error::Reqwest)?;
+                let block: BlockHex = res.json().await.map_err(Error::Reqwest)?;
                 println!("Block found\n{block:?}");
                 return Ok(());
             }
@@ -324,7 +324,7 @@ impl Wallet {
                 .send()
                 .await
             {
-                let transaction: Transaction = res.json().await.map_err(Error::Reqwest)?;
+                let transaction: TransactionHex = res.json().await.map_err(Error::Reqwest)?;
                 println!("Transaction found\n{transaction:?}");
                 return Ok(());
             }
@@ -334,7 +334,7 @@ impl Wallet {
                 .send()
                 .await
             {
-                let stake: Stake = res.json().await.map_err(Error::Reqwest)?;
+                let stake: StakeHex = res.json().await.map_err(Error::Reqwest)?;
                 println!("Stake found\n{stake:?}");
                 return Ok(());
             }
@@ -352,7 +352,7 @@ impl Wallet {
                     .send()
                     .await
                 {
-                    let block: Block = res.json().await.map_err(Error::Reqwest)?;
+                    let block: BlockHex = res.json().await.map_err(Error::Reqwest)?;
                     println!("Block found\n{block:?}");
                     return Ok(());
                 }

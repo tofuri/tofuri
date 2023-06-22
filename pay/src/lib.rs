@@ -10,8 +10,8 @@ use rocksdb::IteratorMode;
 use rocksdb::DB;
 use std::collections::HashMap;
 use std::num::ParseIntError;
-use tofuri_api::Block;
-use tofuri_api::Transaction;
+use tofuri_api::BlockHex;
+use tofuri_api::TransactionHex;
 use tofuri_key::Key;
 use tracing::instrument;
 #[derive(Debug)]
@@ -60,7 +60,7 @@ pub struct Pay {
     pub key: Key,
     pub args: Args,
     charges: HashMap<[u8; 20], Charge>,
-    chain: Vec<Block>,
+    chain: Vec<BlockHex>,
     subkey_n: u128,
     client: Client,
 }
@@ -108,7 +108,7 @@ impl Pay {
                 continue;
             }
             for hash in block.transactions.iter() {
-                let transaction: Transaction = self
+                let transaction: TransactionHex = self
                     .client
                     .get(format!(
                         "{}transaction/{}",
@@ -170,7 +170,7 @@ impl Pay {
         Ok(payments)
     }
     async fn update_chain(&mut self) -> Result<(), Error> {
-        let latest_block: Block = self
+        let latest_block: BlockHex = self
             .client
             .get(format!("{}block", &self.args.api.to_string()))
             .send()
@@ -209,12 +209,12 @@ impl Pay {
             .send()
             .await
             .map_err(Error::Reqwest)?
-            .json::<Block>()
+            .json::<BlockHex>()
             .await
             .map_err(Error::Reqwest)?
             .hash;
         loop {
-            let block: Block = self
+            let block: BlockHex = self
                 .client
                 .get(format!(
                     "{}block/{}",

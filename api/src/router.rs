@@ -1,5 +1,7 @@
-use crate::util;
 use crate::Args;
+use crate::BlockHex;
+use crate::StakeHex;
+use crate::TransactionHex;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::response::IntoResponse;
@@ -8,6 +10,8 @@ use chrono::offset::Utc;
 use decimal::Decimal;
 use tofuri_address::public;
 use tofuri_blockchain::fork::BLOCK_TIME;
+use tofuri_stake::Stake;
+use tofuri_transaction::Transaction;
 use tracing::instrument;
 #[instrument(skip_all)]
 pub async fn root(State(args): State<Args>) -> impl IntoResponse {
@@ -102,7 +106,7 @@ pub async fn height_by_hash(State(args): State<Args>, hash: Path<String>) -> imp
 #[instrument(skip_all)]
 pub async fn block_latest(State(args): State<Args>) -> impl IntoResponse {
     let block = tofuri_rpc::block_latest(&args.rpc).await.unwrap();
-    let block = util::block(&block).unwrap();
+    let block: BlockHex = block.try_into().unwrap();
     Json(block)
 }
 #[instrument(skip_all)]
@@ -119,7 +123,7 @@ pub async fn hash_by_height(State(args): State<Args>, height: Path<String>) -> i
 pub async fn block_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let block = tofuri_rpc::block_by_hash(&args.rpc, &hash).await.unwrap();
-    let block = util::block(&block).unwrap();
+    let block: BlockHex = block.try_into().unwrap();
     Json(block)
 }
 #[instrument(skip_all)]
@@ -131,14 +135,14 @@ pub async fn transaction_by_hash(
     let transaction = tofuri_rpc::transaction_by_hash(&args.rpc, &hash)
         .await
         .unwrap();
-    let transaction = util::transaction(&transaction).unwrap();
+    let transaction: TransactionHex = transaction.try_into().unwrap();
     Json(transaction)
 }
 #[instrument(skip_all)]
 pub async fn stake_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
     let stake = tofuri_rpc::stake_by_hash(&args.rpc, &hash).await.unwrap();
-    let stake = util::stake(&stake).unwrap();
+    let stake: StakeHex = stake.try_into().unwrap();
     Json(stake)
 }
 #[instrument(skip_all)]
@@ -156,17 +160,20 @@ pub async fn peer(State(args): State<Args>, Path(ip_addr): Path<String>) -> impl
 #[instrument(skip_all)]
 pub async fn transaction(
     State(args): State<Args>,
-    Json(transaction): Json<crate::Transaction>,
+    Json(transaction): Json<crate::TransactionHex>,
 ) -> impl IntoResponse {
-    let transaction = util::transaction_from_json(&transaction).unwrap();
+    let transaction: Transaction = transaction.try_into().unwrap();
     let status = tofuri_rpc::transaction(&args.rpc, &transaction)
         .await
         .unwrap();
     Json(status)
 }
 #[instrument(skip_all)]
-pub async fn stake(State(args): State<Args>, Json(stake): Json<crate::Stake>) -> impl IntoResponse {
-    let stake = util::stake_from_json(&stake).unwrap();
+pub async fn stake(
+    State(args): State<Args>,
+    Json(stake): Json<crate::StakeHex>,
+) -> impl IntoResponse {
+    let stake: Stake = stake.try_into().unwrap();
     let status = tofuri_rpc::stake(&args.rpc, &stake).await.unwrap();
     Json(status)
 }

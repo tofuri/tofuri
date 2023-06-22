@@ -52,7 +52,7 @@ pub fn stake(stake: &Stake) -> Result<crate::Stake, tofuri_key::Error> {
         hash: hex::encode(stake.hash()),
     })
 }
-pub fn transaction_b(transaction: &crate::Transaction) -> Result<Transaction, Error> {
+pub fn transaction_from_json(transaction: &crate::Transaction) -> Result<Transaction, Error> {
     let transaction = Transaction {
         output_address: public::decode(&transaction.output_address).map_err(Error::Address)?,
         amount: Vint::from(
@@ -68,7 +68,7 @@ pub fn transaction_b(transaction: &crate::Transaction) -> Result<Transaction, Er
     };
     Ok(transaction)
 }
-pub fn stake_b(stake: &crate::Stake) -> Result<Stake, Error> {
+pub fn stake_from_json(stake: &crate::Stake) -> Result<Stake, Error> {
     let stake = Stake {
         amount: Vint::from(u128::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?),
         fee: Vint::from(u128::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),

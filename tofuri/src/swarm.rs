@@ -170,9 +170,9 @@ fn gossipsub_message(
                     .map_err(Error::Blockchain)?;
             }
             Endpoint::GossipsubMessageStake => {
-                let stake_b: Stake = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
+                let stake: Stake = bincode::deserialize(&message.data).map_err(Error::Bincode)?;
                 node.blockchain
-                    .pending_stakes_push(stake_b, node.args.time_delta)
+                    .pending_stakes_push(stake, node.args.time_delta)
                     .map_err(Error::Blockchain)?;
             }
             Endpoint::GossipsubMessagePeers => {

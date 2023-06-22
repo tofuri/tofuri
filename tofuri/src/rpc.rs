@@ -206,11 +206,11 @@ fn peer(node: &mut Node, bytes: &[u8]) -> Result<(), Error> {
 }
 #[instrument(skip_all, level = "trace")]
 fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
-    let transaction_b: Transaction = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    let vec = bincode::serialize(&transaction_b).unwrap();
+    let transaction: Transaction = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let vec = bincode::serialize(&transaction).unwrap();
     let status = match node
         .blockchain
-        .pending_transactions_push(transaction_b, node.args.time_delta)
+        .pending_transactions_push(transaction, node.args.time_delta)
     {
         Ok(()) => {
             if let Err(e) = node.p2p.gossipsub_publish("transaction", vec) {
@@ -227,11 +227,11 @@ fn transaction(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
 }
 #[instrument(skip_all, level = "trace")]
 fn stake(node: &mut Node, bytes: &[u8]) -> Result<String, Error> {
-    let stake_b: Stake = bincode::deserialize(bytes).map_err(Error::Bincode)?;
-    let vec = bincode::serialize(&stake_b).unwrap();
+    let stake: Stake = bincode::deserialize(bytes).map_err(Error::Bincode)?;
+    let vec = bincode::serialize(&stake).unwrap();
     let status = match node
         .blockchain
-        .pending_stakes_push(stake_b, node.args.time_delta)
+        .pending_stakes_push(stake, node.args.time_delta)
     {
         Ok(()) => {
             if let Err(e) = node.p2p.gossipsub_publish("stake", vec) {

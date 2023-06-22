@@ -210,23 +210,23 @@ pub async fn peer(addr: &str, ip_addr: &IpAddr) -> Result<(), Error> {
     )
     .map_err(Error::Bincode)
 }
-pub async fn transaction(addr: &str, transaction_b: &Transaction) -> Result<String, Error> {
+pub async fn transaction(addr: &str, transaction: &Transaction) -> Result<String, Error> {
     bincode::deserialize(
         &request(
             Type::Transaction,
             addr,
-            Some(bincode::serialize(transaction_b).map_err(Error::Bincode)?),
+            Some(bincode::serialize(transaction).map_err(Error::Bincode)?),
         )
         .await?,
     )
     .map_err(Error::Bincode)
 }
-pub async fn stake(addr: &str, stake_b: &Stake) -> Result<String, Error> {
+pub async fn stake(addr: &str, stake: &Stake) -> Result<String, Error> {
     bincode::deserialize(
         &request(
             Type::Stake,
             addr,
-            Some(bincode::serialize(stake_b).map_err(Error::Bincode)?),
+            Some(bincode::serialize(stake).map_err(Error::Bincode)?),
         )
         .await?,
     )

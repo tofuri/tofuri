@@ -158,16 +158,16 @@ pub async fn transaction(
     State(args): State<Args>,
     Json(transaction): Json<crate::Transaction>,
 ) -> impl IntoResponse {
-    let transaction_b = util::transaction_b(&transaction).unwrap();
-    let status = tofuri_rpc::transaction(&args.rpc, &transaction_b)
+    let transaction = util::transaction_from_json(&transaction).unwrap();
+    let status = tofuri_rpc::transaction(&args.rpc, &transaction)
         .await
         .unwrap();
     Json(status)
 }
 #[instrument(skip_all)]
 pub async fn stake(State(args): State<Args>, Json(stake): Json<crate::Stake>) -> impl IntoResponse {
-    let stake_b = util::stake_b(&stake).unwrap();
-    let status = tofuri_rpc::stake(&args.rpc, &stake_b).await.unwrap();
+    let stake = util::stake_from_json(&stake).unwrap();
+    let status = tofuri_rpc::stake(&args.rpc, &stake).await.unwrap();
     Json(status)
 }
 #[instrument(skip_all)]

@@ -13,25 +13,21 @@ pub enum Error {
     ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
-pub fn block(block_b: &Block) -> Result<crate::Block, tofuri_key::Error> {
+pub fn block(block: &Block) -> Result<crate::Block, tofuri_key::Error> {
     Ok(crate::Block {
-        hash: hex::encode(block_b.hash()),
-        previous_hash: hex::encode(block_b.previous_hash),
-        timestamp: block_b.timestamp,
-        beta: hex::encode(block_b.beta()?),
-        pi: hex::encode(block_b.pi),
-        forger_address: public::encode(&block_b.input_address()?),
-        signature: hex::encode(block_b.signature),
-        transactions: block_b
+        hash: hex::encode(block.hash()),
+        previous_hash: hex::encode(block.previous_hash),
+        timestamp: block.timestamp,
+        beta: hex::encode(block.beta()?),
+        pi: hex::encode(block.pi),
+        forger_address: public::encode(&block.input_address()?),
+        signature: hex::encode(block.signature),
+        transactions: block
             .transactions
             .iter()
             .map(|x| hex::encode(x.hash()))
             .collect(),
-        stakes: block_b
-            .stakes
-            .iter()
-            .map(|x| hex::encode(x.hash()))
-            .collect(),
+        stakes: block.stakes.iter().map(|x| hex::encode(x.hash())).collect(),
     })
 }
 pub fn transaction(transaction: &Transaction) -> Result<crate::Transaction, tofuri_key::Error> {

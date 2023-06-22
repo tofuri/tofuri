@@ -35,7 +35,7 @@ pub trait Fork {
     fn get_latest_blocks(&self) -> &Vec<Block>;
     fn get_latest_blocks_mut(&mut self) -> &mut Vec<Block>;
     fn is_stable() -> bool;
-    fn append_block(&mut self, block_a: &Block, previous_timestamp: u32, loading: bool);
+    fn append_block(&mut self, block: &Block, previous_timestamp: u32, loading: bool);
 }
 fn get_balance<T: Fork>(fork: &T, address: &[u8; 20]) -> u128 {
     match fork.get_map_balance().get(address) {
@@ -71,8 +71,8 @@ fn update_stakers<T: Fork>(fork: &mut T, address: [u8; 20]) {
         fork.get_stakers_mut().remove(index.unwrap()).unwrap();
     }
 }
-fn update_0<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loading: bool) {
-    let stakers = stakers_offline(fork, block_a.timestamp, previous_timestamp);
+fn update_0<T: Fork>(fork: &mut T, block: &Block, previous_timestamp: u32, loading: bool) {
+    let stakers = stakers_offline(fork, block.timestamp, previous_timestamp);
     for (index, staker) in stakers.iter().enumerate() {
         let mut staked = get_staked(fork, staker);
         let penalty = penalty(index + 1);
@@ -87,8 +87,8 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loa
             );
         }
     }
-    if stakers_n(fork, offline(block_a.timestamp, previous_timestamp)).1 {
-        let input_address = block_a.input_address().unwrap();
+    if stakers_n(fork, offline(block.timestamp, previous_timestamp)).1 {
+        let input_address = block.input_address().unwrap();
         insert_staked(fork, input_address, 10_u128.pow(18));
         update_stakers(fork, input_address);
         let address = public::encode(&input_address);
@@ -100,14 +100,14 @@ fn update_0<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loa
         }
     }
 }
-fn update_1<T: Fork>(fork: &mut T, block_a: &Block) {
-    let input_address = block_a.input_address().unwrap();
+fn update_1<T: Fork>(fork: &mut T, block: &Block) {
+    let input_address = block.input_address().unwrap();
     let mut balance = get_balance(fork, &input_address);
-    balance += block_a.reward();
+    balance += block.reward();
     insert_balance(fork, input_address, balance)
 }
-fn update_2<T: Fork>(fork: &mut T, block_a: &Block) {
-    for transaction in block_a.transactions.iter() {
+fn update_2<T: Fork>(fork: &mut T, block: &Block) {
+    for transaction in block.transactions.iter() {
         let mut balance_input = get_balance(fork, &transaction.input_address().unwrap());
         let mut balance_output = get_balance(fork, &transaction.output_address);
         balance_input -= transaction.amount + transaction.fee;
@@ -115,7 +115,7 @@ fn update_2<T: Fork>(fork: &mut T, block_a: &Block) {
         insert_balance(fork, transaction.input_address().unwrap(), balance_input);
         insert_balance(fork, transaction.output_address, balance_output);
     }
-    for stake in block_a.stakes.iter() {
+    for stake in block.stakes.iter() {
         let mut balance = get_balance(fork, &stake.input_address().unwrap());
         let mut staked = get_staked(fork, &stake.input_address().unwrap());
         if stake.deposit {
@@ -129,33 +129,33 @@ fn update_2<T: Fork>(fork: &mut T, block_a: &Block) {
         insert_staked(fork, stake.input_address().unwrap(), staked);
     }
 }
-fn update_3<T: Fork>(fork: &mut T, block_a: &Block) {
-    for stake in block_a.stakes.iter() {
+fn update_3<T: Fork>(fork: &mut T, block: &Block) {
+    for stake in block.stakes.iter() {
         update_stakers(fork, stake.input_address().unwrap());
     }
 }
-fn update<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loading: bool) {
-    update_0(fork, block_a, previous_timestamp, loading);
-    update_1(fork, block_a);
-    update_2(fork, block_a);
-    update_3(fork, block_a);
+fn update<T: Fork>(fork: &mut T, block: &Block, previous_timestamp: u32, loading: bool) {
+    update_0(fork, block, previous_timestamp, loading);
+    update_1(fork, block);
+    update_2(fork, block);
+    update_3(fork, block);
 }
-fn update_latest_blocks<T: Fork>(fork: &mut T, block_a: &Block) {
+fn update_latest_blocks<T: Fork>(fork: &mut T, block: &Block) {
     while fork.get_latest_blocks().first().is_some()
         && elapsed(
             fork.get_latest_blocks().first().unwrap().timestamp,
-            block_a.timestamp,
+            block.timestamp,
         )
     {
         (*fork.get_latest_blocks_mut()).remove(0);
     }
-    (*fork.get_latest_blocks_mut()).push(block_a.clone());
+    (*fork.get_latest_blocks_mut()).push(block.clone());
 }
-fn append_block<T: Fork>(fork: &mut T, block_a: &Block, previous_timestamp: u32, loading: bool) {
-    update(fork, block_a, previous_timestamp, loading);
-    update_latest_blocks(fork, block_a);
-    fork.get_hashes_mut().push(block_a.hash());
-    *fork.get_latest_block_mut() = block_a.clone();
+fn append_block<T: Fork>(fork: &mut T, block: &Block, previous_timestamp: u32, loading: bool) {
+    update(fork, block, previous_timestamp, loading);
+    update_latest_blocks(fork, block);
+    fork.get_hashes_mut().push(block.hash());
+    *fork.get_latest_block_mut() = block.clone();
 }
 fn load<T: Fork>(fork: &mut T, db: &DB, hashes: &[[u8; 32]]) {
     let mut previous_timestamp = match hashes.first() {
@@ -163,9 +163,9 @@ fn load<T: Fork>(fork: &mut T, db: &DB, hashes: &[[u8; 32]]) {
         None => 0,
     };
     for hash in hashes.iter() {
-        let block_a = tofuri_db::block::get(db, hash).unwrap();
-        fork.append_block(&block_a, previous_timestamp, T::is_stable());
-        previous_timestamp = block_a.timestamp;
+        let block = tofuri_db::block::get(db, hash).unwrap();
+        fork.append_block(&block, previous_timestamp, T::is_stable());
+        previous_timestamp = block.timestamp;
     }
 }
 fn stakers_n<T: Fork>(fork: &T, n: usize) -> (Vec<[u8; 20]>, bool) {

@@ -80,8 +80,8 @@ impl Unstable {
         Ok(())
     }
     pub fn transaction_in_chain(&self, transaction: &Transaction) -> bool {
-        for block_a in self.latest_blocks.iter() {
-            if block_a
+        for block in self.latest_blocks.iter() {
+            if block
                 .transactions
                 .iter()
                 .any(|a| a.hash() == transaction.hash())
@@ -92,8 +92,8 @@ impl Unstable {
         false
     }
     pub fn stake_in_chain(&self, stake: &Stake) -> bool {
-        for block_a in self.latest_blocks.iter() {
-            if block_a.stakes.iter().any(|a| a.hash() == stake.hash()) {
+        for block in self.latest_blocks.iter() {
+            if block.stakes.iter().any(|a| a.hash() == stake.hash()) {
                 return true;
             }
         }
@@ -152,7 +152,7 @@ impl Fork for Unstable {
     fn is_stable() -> bool {
         false
     }
-    fn append_block(&mut self, block_a: &Block, previous_timestamp: u32, loading: bool) {
-        super::append_block(self, block_a, previous_timestamp, loading)
+    fn append_block(&mut self, block: &Block, previous_timestamp: u32, loading: bool) {
+        super::append_block(self, block, previous_timestamp, loading)
     }
 }

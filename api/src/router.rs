@@ -101,8 +101,8 @@ pub async fn height_by_hash(State(args): State<Args>, hash: Path<String>) -> imp
 }
 #[instrument(skip_all)]
 pub async fn block_latest(State(args): State<Args>) -> impl IntoResponse {
-    let block_a = tofuri_rpc::block_latest(&args.rpc).await.unwrap();
-    let block = util::block(&block_a).unwrap();
+    let block = tofuri_rpc::block_latest(&args.rpc).await.unwrap();
+    let block = util::block(&block).unwrap();
     Json(block)
 }
 #[instrument(skip_all)]
@@ -118,8 +118,8 @@ pub async fn hash_by_height(State(args): State<Args>, height: Path<String>) -> i
 #[instrument(skip_all)]
 pub async fn block_by_hash(State(args): State<Args>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-    let block_a = tofuri_rpc::block_by_hash(&args.rpc, &hash).await.unwrap();
-    let block = util::block(&block_a).unwrap();
+    let block = tofuri_rpc::block_by_hash(&args.rpc, &hash).await.unwrap();
+    let block = util::block(&block).unwrap();
     Json(block)
 }
 #[instrument(skip_all)]
@@ -264,8 +264,8 @@ pub async fn sync_remaining(State(args): State<Args>) -> impl IntoResponse {
     if !sync.downloading() {
         return Json(-1.0);
     }
-    let block_a = tofuri_rpc::block_latest(&args.rpc).await.unwrap();
-    let mut diff = (Utc::now().timestamp() as u32).saturating_sub(block_a.timestamp) as f32;
+    let block = tofuri_rpc::block_latest(&args.rpc).await.unwrap();
+    let mut diff = (Utc::now().timestamp() as u32).saturating_sub(block.timestamp) as f32;
     diff /= BLOCK_TIME as f32;
     diff /= sync.bps;
     Json(diff)

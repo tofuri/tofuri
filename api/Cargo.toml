@@ -12,8 +12,8 @@ tofuri-rpc = { version = "0.1.0", path = "../rpc" }
 tofuri-block = { version = "0.1.0", path = "../block" }
 tofuri-blockchain = { version = "0.1.0", path = "../blockchain" }
 tofuri-key = { version = "0.1.0", path = "../key" }
-vint = { path = "../vint" }
-decimal = { path = "../decimal" }
+vint = { git = "https://github.com/zudo/vint" }
+decimal = { git = "https://github.com/zudo/decimal" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
 serde = { version = "1.0.163", features = ["derive"] }

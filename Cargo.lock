@@ -1069,6 +1069,11 @@ name = "decimal"
 version = "0.1.0"
 
 [[package]]
+name = "decimal"
+version = "0.1.0"
+source = "git+https://github.com/zudo/decimal#9eb93ef6f402f095276335a079853bd8a778aaae"
+
+[[package]]
 name = "der"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4354,7 +4359,7 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
- "decimal",
+ "decimal 0.1.0 (git+https://github.com/zudo/decimal)",
  "hex",
  "libp2p",
  "rand 0.8.5",
@@ -4375,7 +4380,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "vint",
+ "vint 0.1.0 (git+https://github.com/zudo/vint)",
  "void",
 ]
 
@@ -4394,7 +4399,7 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
- "decimal",
+ "decimal 0.1.0 (git+https://github.com/zudo/decimal)",
  "hex",
  "serde",
  "tofuri-address",
@@ -4408,7 +4413,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "vint",
+ "vint 0.1.0 (git+https://github.com/zudo/vint)",
 ]
 
 [[package]]
@@ -4416,7 +4421,7 @@ name = "tofuri-block"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "decimal",
+ "decimal 0.1.0 (git+https://github.com/zudo/decimal)",
  "hex",
  "merkle-cbt",
  "serde",
@@ -4426,7 +4431,7 @@ dependencies = [
  "tofuri-key",
  "tofuri-stake",
  "tofuri-transaction",
- "vint",
+ "vint 0.1.0 (git+https://github.com/zudo/vint)",
 ]
 
 [[package]]
@@ -4436,7 +4441,7 @@ dependencies = [
  "bincode",
  "chrono",
  "colored",
- "decimal",
+ "decimal 0.1.0 (git+https://github.com/zudo/decimal)",
  "hex",
  "lazy_static",
  "rocksdb",
@@ -4450,7 +4455,7 @@ dependencies = [
  "tofuri-transaction",
  "tracing",
  "uint",
- "vint",
+ "vint 0.1.0 (git+https://github.com/zudo/vint)",
 ]
 
 [[package]]
@@ -4458,7 +4463,7 @@ name = "tofuri-db"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "decimal",
+ "decimal 0.1.0 (git+https://github.com/zudo/decimal)",
  "hex",
  "rocksdb",
  "serde",
@@ -4467,7 +4472,7 @@ dependencies = [
  "tofuri-stake",
  "tofuri-transaction",
  "tracing",
- "vint",
+ "vint 0.1.0 (git+https://github.com/zudo/vint)",
 ]
 
 [[package]]
@@ -4502,7 +4507,7 @@ dependencies = [
  "bincode",
  "chrono",
  "clap",
- "decimal",
+ "decimal 0.1.0 (git+https://github.com/zudo/decimal)",
  "hex",
  "lazy_static",
  "regex",
@@ -4520,7 +4525,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "vint",
+ "vint 0.1.0 (git+https://github.com/zudo/vint)",
 ]
 
 [[package]]
@@ -4541,14 +4546,14 @@ name = "tofuri-stake"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "decimal",
+ "decimal 0.1.0 (git+https://github.com/zudo/decimal)",
  "hex",
  "serde",
  "serde-big-array",
  "sha2 0.10.7",
  "tofuri-address",
  "tofuri-key",
- "vint",
+ "vint 0.1.0 (git+https://github.com/zudo/vint)",
 ]
 
 [[package]]
@@ -4556,14 +4561,14 @@ name = "tofuri-transaction"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "decimal",
+ "decimal 0.1.0 (git+https://github.com/zudo/decimal)",
  "hex",
  "serde",
  "serde-big-array",
  "sha2 0.10.7",
  "tofuri-address",
  "tofuri-key",
- "vint",
+ "vint 0.1.0 (git+https://github.com/zudo/vint)",
 ]
 
 [[package]]
@@ -4577,7 +4582,7 @@ dependencies = [
  "clap",
  "colored",
  "crossterm 0.26.1",
- "decimal",
+ "decimal 0.1.0 (git+https://github.com/zudo/decimal)",
  "hex",
  "inquire",
  "lazy_static",
@@ -4590,7 +4595,7 @@ dependencies = [
  "tofuri-transaction",
  "tokio",
  "tracing",
- "vint",
+ "vint 0.1.0 (git+https://github.com/zudo/vint)",
  "zxcvbn",
 ]
 
@@ -4983,6 +4988,14 @@ dependencies = [
  "bincode",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "vint"
+version = "0.1.0"
+source = "git+https://github.com/zudo/vint#428f7eba9bf02a8767c171f7838ff6d5f3faa541"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

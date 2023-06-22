@@ -219,10 +219,11 @@ impl Wallet {
         )
         .unwrap();
         println!("[u8; 32]: {}", hex::encode(transaction.hash()).cyan());
+        let transaction_hex: TransactionHex = transaction.try_into().unwrap();
         let res: String = self
             .client
             .post(format!("{}transaction", self.args.api.to_string()))
-            .json(&tofuri_api::util::transaction(&transaction).unwrap())
+            .json(&transaction_hex)
             .send()
             .await
             .map_err(Error::Reqwest)?
@@ -256,10 +257,11 @@ impl Wallet {
         )
         .unwrap();
         println!("[u8; 32]: {}", hex::encode(stake.hash()).cyan());
+        let stake_hex: StakeHex = stake.try_into().unwrap();
         let res: String = self
             .client
             .post(format!("{}stake", self.args.api.to_string()))
-            .json(&tofuri_api::util::stake(&stake).unwrap())
+            .json(&stake_hex)
             .send()
             .await
             .map_err(Error::Reqwest)?

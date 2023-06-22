@@ -4,3 +4,12 @@
 [submodule "vint"]
 	path = vint
 	url = https://github.com/zudo/vint
+[submodule "stealth-address"]
+	path = stealth-address
+	url = https://github.com/zudo/stealth-address
+[submodule "vrf"]
+	path = vrf
+	url = https://github.com/zudo/vrf
+[submodule "ring-signature"]
+	path = ring-signature
+	url = https://github.com/zudo/ring-signature

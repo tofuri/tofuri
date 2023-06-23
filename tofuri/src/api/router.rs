@@ -1,8 +1,4 @@
-use super::BlockHex;
 use super::Call;
-use super::Root;
-use super::StakeHex;
-use super::TransactionHex;
 use super::S;
 use crate::CARGO_PKG_NAME;
 use crate::CARGO_PKG_REPOSITORY;
@@ -20,6 +16,10 @@ use hex;
 use std::convert::TryInto;
 use std::net::IpAddr;
 use tofuri_address::public;
+use tofuri_api::BlockHex;
+use tofuri_api::Root;
+use tofuri_api::StakeHex;
+use tofuri_api::TransactionHex;
 use tofuri_block::Block;
 use tofuri_blockchain::fork::BLOCK_TIME;
 use tofuri_blockchain::sync::Sync;
@@ -72,10 +72,10 @@ pub fn router(s: S) -> Router {
 }
 async fn root() -> impl IntoResponse {
     Json(Root {
-        cargo_pkg_name: CARGO_PKG_NAME,
-        cargo_pkg_version: CARGO_PKG_VERSION,
-        cargo_pkg_repository: CARGO_PKG_REPOSITORY,
-        git_hash: GIT_HASH,
+        cargo_pkg_name: CARGO_PKG_NAME.to_string(),
+        cargo_pkg_version: CARGO_PKG_VERSION.to_string(),
+        cargo_pkg_repository: CARGO_PKG_REPOSITORY.to_string(),
+        git_hash: GIT_HASH.to_string(),
     })
 }
 async fn cargo_pkg_name() -> impl IntoResponse {

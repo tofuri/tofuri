@@ -11,7 +11,7 @@ default-run = "tofuri"
 
 [dependencies]
 tofuri-address = { version = "0.1.1", path = "../address" }
-tofuri-rpc = { version = "0.1.0", path = "../rpc" }
+tofuri-api = { version = "0.1.0", path = "../api" }
 vint = { git = "https://github.com/zudo/vint" }
 decimal = { git = "https://github.com/zudo/decimal" }
 tofuri-block = { version = "0.1.0", path = "../block" }
@@ -38,4 +38,4 @@ rand = "0.8.5"
 chrono = "0.4.24"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 axum = "0.6.18"
-tower-http = "0.4.1"
+tower-http = { version = "0.4.0", features = ["cors", "trace"] }

@@ -1,3 +1,4 @@
+pub mod internal;
 pub mod router;
 use axum::Router;
 use axum::Server;

@@ -10,7 +10,6 @@ use tofuri_p2p::MAINNET_PORT;
 use tofuri_p2p::TESTNET_PORT;
 // use tofuri::command;
 use tofuri::interval;
-use tofuri::rpc;
 use tofuri::swarm;
 use tofuri::Args;
 use tofuri::Node;
@@ -113,7 +112,7 @@ async fn main() {
             _ = interval_1m.tick() => interval::interval_1m(&mut node),
             _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
-            Some(request) = rx.recv() => rpc::accept(&mut node, request).await,
+            Some(request) = rx.recv() => api::internal::accept(&mut node, request).await,
             // _ = reader.read_line(&mut line) => command::command(&mut node, &mut line, &reload_handle),
         }
     }

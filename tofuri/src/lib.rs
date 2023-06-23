@@ -1,7 +1,6 @@
 pub mod api;
 pub mod command;
 pub mod interval;
-pub mod rpc;
 pub mod swarm;
 use clap::Parser;
 use rocksdb::DB;

@@ -4,6 +4,8 @@ use libp2p::futures::StreamExt;
 use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
+use tofuri::api;
+use tofuri::api::S;
 use tofuri_p2p::MAINNET_PORT;
 use tofuri_p2p::TESTNET_PORT;
 // use tofuri::command;
@@ -19,7 +21,6 @@ use tofuri_key::Key;
 use tofuri_p2p::P2p;
 // use tokio::io::AsyncBufReadExt;
 // use tokio::io::BufReader;
-use tokio::net::TcpListener;
 use tracing::debug;
 use tracing::info;
 use tracing::warn;
@@ -93,9 +94,11 @@ async fn main() {
                 .unwrap(),
         })
         .unwrap();
-    let listener = TcpListener::bind(&node.args.rpc).await.unwrap();
-    let local_addr = listener.local_addr().unwrap().to_string();
-    info!(local_addr, "RPC");
+    let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+    let s = S { tx };
+    let router = api::router::router(s);
+    let api = args.api.clone();
+    tokio::spawn(async { api::serve(router, api).await });
     // let mut reader = BufReader::new(tokio::io::stdin());
     // let mut line = String::new();
     let mut interval_1s = interval::at(Duration::from_secs(1));
@@ -110,7 +113,7 @@ async fn main() {
             _ = interval_1m.tick() => interval::interval_1m(&mut node),
             _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
-            res = listener.accept() => rpc::accept(&mut node, res).await,
+            Some(request) = rx.recv() => rpc::accept(&mut node, request).await,
             // _ = reader.read_line(&mut line) => command::command(&mut node, &mut line, &reload_handle),
         }
     }

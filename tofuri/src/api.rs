@@ -1,5 +1,5 @@
+pub mod external;
 pub mod internal;
-pub mod router;
 use axum::Router;
 use axum::Server;
 use serde::de::DeserializeOwned;

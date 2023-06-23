@@ -95,7 +95,7 @@ async fn main() {
         .unwrap();
     let (tx, mut rx) = tokio::sync::mpsc::channel(1);
     let s = S { tx };
-    let router = api::router::router(s);
+    let router = api::external::router(s);
     let api = args.api.clone();
     tokio::spawn(async { api::serve(router, api).await });
     // let mut reader = BufReader::new(tokio::io::stdin());

@@ -1,6 +1,6 @@
-use crate::MAX_TRANSMIT_SIZE;
-use crate::PROTOCOL_NAME;
-use crate::PROTOCOL_VERSION;
+use super::MAX_TRANSMIT_SIZE;
+use super::PROTOCOL_NAME;
+use super::PROTOCOL_VERSION;
 use async_trait::async_trait;
 use futures::prelude::*;
 use libp2p::autonat;

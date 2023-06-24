@@ -1,8 +1,8 @@
+use crate::p2p::multiaddr;
 use crate::Node;
 use decimal::Decimal;
 use std::process;
 use tofuri_address::public;
-use tofuri_p2p::multiaddr;
 use tracing::error;
 use tracing::info;
 use tracing_subscriber::reload;

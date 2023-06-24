@@ -1,5 +1,5 @@
-use crate::MAINNET_PORT;
-use crate::TESTNET_PORT;
+use super::MAINNET_PORT;
+use super::TESTNET_PORT;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
 use std::net::IpAddr;

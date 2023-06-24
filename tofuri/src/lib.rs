@@ -1,13 +1,14 @@
 pub mod api;
 pub mod command;
 pub mod interval;
+pub mod p2p;
 pub mod swarm;
 use clap::Parser;
+use p2p::P2P;
 use rocksdb::DB;
 use std::net::IpAddr;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
-use tofuri_p2p::P2p;
 pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
@@ -17,12 +18,12 @@ pub struct Node {
     pub db: DB,
     pub key: Option<Key>,
     pub args: Args,
-    pub p2p: P2p,
+    pub p2p: P2P,
     pub blockchain: Blockchain,
     pub ticks: usize,
 }
 impl Node {
-    pub fn new(db: DB, key: Option<Key>, args: Args, p2p: P2p, blockchain: Blockchain) -> Node {
+    pub fn new(db: DB, key: Option<Key>, args: Args, p2p: P2P, blockchain: Blockchain) -> Node {
         Node {
             db,
             key,

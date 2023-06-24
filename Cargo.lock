@@ -2089,7 +2089,6 @@ dependencies = [
  "libp2p-identity",
  "libp2p-mdns",
  "libp2p-metrics",
- "libp2p-mplex",
  "libp2p-noise",
  "libp2p-quic",
  "libp2p-request-response",
@@ -2290,24 +2289,6 @@ dependencies = [
  "libp2p-identify",
  "libp2p-swarm",
  "prometheus-client",
-]
-
-[[package]]
-name = "libp2p-mplex"
-version = "0.39.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d34780b514b159e6f3fd70ba3e72664ec89da28dca2d1e7856ee55e2c7031ba"
-dependencies = [
- "asynchronous-codec",
- "bytes",
- "futures",
- "libp2p-core",
- "log",
- "nohash-hasher",
- "parking_lot 0.12.1",
- "rand 0.8.5",
- "smallvec",
- "unsigned-varint",
 ]
 
 [[package]]
@@ -4357,12 +4338,14 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 name = "tofuri"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum",
  "bincode",
  "chrono",
  "clap",
  "colored",
  "decimal",
+ "futures",
  "hex",
  "libp2p",
  "rand 0.8.5",
@@ -4377,7 +4360,6 @@ dependencies = [
  "tofuri-blockchain",
  "tofuri-db",
  "tofuri-key",
- "tofuri-p2p",
  "tofuri-stake",
  "tofuri-transaction",
  "tokio",
@@ -4479,20 +4461,6 @@ dependencies = [
  "secp256k1",
  "sha2 0.10.7",
  "vrf",
-]
-
-[[package]]
-name = "tofuri-p2p"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "chrono",
- "futures",
- "libp2p",
- "serde",
- "tokio",
- "tracing",
- "void",
 ]
 
 [[package]]

@@ -40,20 +40,20 @@ pub enum Error {
     Behaviour(behaviour::Error),
     SubscriptionError(SubscriptionError),
 }
-pub struct P2p {
+pub struct P2P {
     pub swarm: Swarm<Behaviour>,
     pub connections: HashMap<PeerId, IpAddr>,
     pub connections_unknown: HashSet<IpAddr>,
     pub connections_known: HashSet<IpAddr>,
     pub ratelimit: Ratelimit,
 }
-impl P2p {
+impl P2P {
     pub async fn new(
         max_established: Option<u32>,
         timeout: u64,
         connections_known: HashSet<IpAddr>,
-    ) -> Result<P2p, Error> {
-        let p2p = P2p {
+    ) -> Result<P2P, Error> {
+        let p2p = P2P {
             swarm: swarm(max_established, timeout).await?,
             connections: HashMap::new(),
             connections_unknown: HashSet::new(),

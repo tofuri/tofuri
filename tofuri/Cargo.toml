@@ -17,7 +17,6 @@ decimal = { git = "https://github.com/zudo/decimal" }
 tofuri-block = { version = "0.1.0", path = "../block" }
 tofuri-blockchain = { version = "0.1.0", path = "../blockchain" }
 tofuri-db = { version = "0.1.0", path = "../db" }
-tofuri-p2p = { version = "0.1.0", path = "../p2p" }
 tofuri-key = { version = "0.1.0", path = "../key" }
 tofuri-stake = { version = "0.1.0", path = "../stake" }
 tofuri-transaction = { version = "0.1.0", path = "../transaction" }
@@ -32,10 +31,23 @@ tempdir = "0.3.7"
 clap = { version = "4.2.7", features = ["derive", "env"] }
 void = "1.0.2"
 tokio = { version = "1.28.1", features = ["full"] }
-libp2p = { version = "0.51.3", features = ["noise", "mplex", "tcp"] }
 sha2 = "0.10.6"
 rand = "0.8.5"
 chrono = "0.4.24"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 axum = "0.6.18"
 tower-http = { version = "0.4.0", features = ["cors", "trace"] }
+libp2p = { version = "0.51.3", features = [
+    "yamux",
+    "noise",
+    "tcp",
+    "request-response",
+    "autonat",
+    "macros",
+    "identify",
+    "mdns",
+    "gossipsub",
+    "tokio",
+] }
+async-trait = "0.1.68"
+futures = "0.3.28"

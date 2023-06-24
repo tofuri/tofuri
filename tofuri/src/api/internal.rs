@@ -1,11 +1,10 @@
-use crate::api::Get;
+use super::Request;
+use super::Response;
+use crate::api::Call;
 use crate::Node;
-use serde::de::DeserializeOwned;
 use std::net::IpAddr;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
-use tokio::sync::mpsc;
-use tokio::sync::oneshot;
 use tracing::error;
 #[derive(Debug)]
 pub enum Error {
@@ -13,51 +12,36 @@ pub enum Error {
     DB(tofuri_db::Error),
     Bincode(bincode::Error),
 }
-pub struct Request {
-    pub get: Get,
-    pub tx: oneshot::Sender<Response>,
-}
-pub struct Response(pub Vec<u8>);
-#[derive(Clone)]
-pub struct Internal(pub mpsc::Sender<Request>);
-impl Internal {
-    pub async fn get<T: DeserializeOwned>(&self, get: Get) -> T {
-        let (tx, rx) = oneshot::channel();
-        let _ = self.0.send(Request { get, tx }).await;
-        let response = rx.await.unwrap();
-        bincode::deserialize(&response.0).unwrap()
-    }
-}
 pub async fn accept(node: &mut Node, request: Request) {
-    let res = match request.get {
-        Get::Balance(a) => balance(node, a),
-        Get::BalancePendingMin(a) => balance_pending_min(node, a),
-        Get::BalancePendingMax(a) => balance_pending_max(node, a),
-        Get::Staked(a) => staked(node, a),
-        Get::StakedPendingMin(a) => staked_pending_min(node, a),
-        Get::StakedPendingMax(a) => staked_pending_max(node, a),
-        Get::Height => height(node),
-        Get::HeightByHash(a) => height_by_hash(node, a),
-        Get::BlockLatest => block_latest(node),
-        Get::HashByHeight(a) => hash_by_height(node, a),
-        Get::BlockByHash(a) => block_by_hash(node, a),
-        Get::TransactionByHash(a) => transaction_by_hash(node, a),
-        Get::StakeByHash(a) => stake_by_hash(node, a),
-        Get::Peers => peers(node),
-        Get::Peer(a) => peer(node, a),
-        Get::Transaction(a) => transaction(node, a),
-        Get::Stake(a) => stake(node, a),
-        Get::Address => address(node),
-        Get::Ticks => ticks(node),
-        Get::TreeSize => tree_size(node),
-        Get::Sync => sync(node),
-        Get::RandomQueue => random_queue(node),
-        Get::UnstableHashes => unstable_hashes(node),
-        Get::UnstableLatestHashes => unstable_latest_hashes(node),
-        Get::UnstableStakers => unstable_stakers(node),
-        Get::StableHashes => stable_hashes(node),
-        Get::StableLatestHashes => stable_latest_hashes(node),
-        Get::StableStakers => stable_stakers(node),
+    let res = match request.call {
+        Call::Balance(a) => balance(node, a),
+        Call::BalancePendingMin(a) => balance_pending_min(node, a),
+        Call::BalancePendingMax(a) => balance_pending_max(node, a),
+        Call::Staked(a) => staked(node, a),
+        Call::StakedPendingMin(a) => staked_pending_min(node, a),
+        Call::StakedPendingMax(a) => staked_pending_max(node, a),
+        Call::Height => height(node),
+        Call::HeightByHash(a) => height_by_hash(node, a),
+        Call::BlockLatest => block_latest(node),
+        Call::HashByHeight(a) => hash_by_height(node, a),
+        Call::BlockByHash(a) => block_by_hash(node, a),
+        Call::TransactionByHash(a) => transaction_by_hash(node, a),
+        Call::StakeByHash(a) => stake_by_hash(node, a),
+        Call::Peers => peers(node),
+        Call::Peer(a) => peer(node, a),
+        Call::Transaction(a) => transaction(node, a),
+        Call::Stake(a) => stake(node, a),
+        Call::Address => address(node),
+        Call::Ticks => ticks(node),
+        Call::TreeSize => tree_size(node),
+        Call::Sync => sync(node),
+        Call::RandomQueue => random_queue(node),
+        Call::UnstableHashes => unstable_hashes(node),
+        Call::UnstableLatestHashes => unstable_latest_hashes(node),
+        Call::UnstableStakers => unstable_stakers(node),
+        Call::StableHashes => stable_hashes(node),
+        Call::StableLatestHashes => stable_latest_hashes(node),
+        Call::StableStakers => stable_stakers(node),
     };
     match res {
         Ok(vec) => {

@@ -1,12 +1,12 @@
 pub mod external;
 pub mod internal;
-use self::internal::Internal;
-use self::internal::Request;
+use serde::de::DeserializeOwned;
 use std::net::IpAddr;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
 use tokio::sync::mpsc;
-pub enum Get {
+use tokio::sync::oneshot;
+pub enum Call {
     Balance([u8; 20]),
     BalancePendingMin([u8; 20]),
     BalancePendingMax([u8; 20]),
@@ -36,15 +36,30 @@ pub enum Get {
     StableLatestHashes,
     StableStakers,
 }
-pub struct API {
+pub struct Server {
     pub rx: mpsc::Receiver<Request>,
 }
-impl API {
-    pub fn spawn(buffer: usize, api: &str) -> API {
+impl Server {
+    pub fn spawn(buffer: usize, api: &str) -> Server {
         let (tx, rx) = mpsc::channel(buffer);
-        let internal = Internal(tx);
+        let internal = Client(tx);
         let api = api.to_string();
         tokio::spawn(async { external::serve(internal, api).await });
-        API { rx }
+        Server { rx }
     }
 }
+#[derive(Clone)]
+pub struct Client(pub mpsc::Sender<Request>);
+impl Client {
+    pub async fn call<T: DeserializeOwned>(&self, call: Call) -> T {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.0.send(Request { call, tx }).await;
+        let response = rx.await.unwrap();
+        bincode::deserialize(&response.0).unwrap()
+    }
+}
+pub struct Request {
+    pub call: Call,
+    pub tx: oneshot::Sender<Response>,
+}
+pub struct Response(pub Vec<u8>);

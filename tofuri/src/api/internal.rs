@@ -1,9 +1,9 @@
 use crate::api::Call;
-use crate::api::Request;
 use crate::Node;
 use std::net::IpAddr;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
+use tokio::sync::oneshot;
 use tracing::error;
 #[derive(Debug)]
 pub enum Error {
@@ -11,8 +11,8 @@ pub enum Error {
     DB(tofuri_db::Error),
     Bincode(bincode::Error),
 }
-pub async fn accept(node: &mut Node, request: Request) {
-    let res = match request.call {
+pub async fn accept(node: &mut Node, call: Call, tx: oneshot::Sender<Vec<u8>>) {
+    let res = match call {
         Call::Balance(a) => balance(node, a),
         Call::BalancePendingMin(a) => balance_pending_min(node, a),
         Call::BalancePendingMax(a) => balance_pending_max(node, a),
@@ -44,7 +44,7 @@ pub async fn accept(node: &mut Node, request: Request) {
     };
     match res {
         Ok(vec) => {
-            let _ = request.oneshot_sender.send(vec);
+            let _ = tx.send(vec);
         }
         Err(e) => {
             error!(?e);

@@ -2,14 +2,14 @@ use super::Request;
 use super::Response;
 use crate::api::Call;
 use crate::Node;
+use stake::Stake;
 use std::net::IpAddr;
-use tofuri_stake::Stake;
-use tofuri_transaction::Transaction;
 use tracing::error;
+use transaction::Transaction;
 #[derive(Debug)]
 pub enum Error {
-    Blockchain(tofuri_blockchain::Error),
-    DB(tofuri_db::Error),
+    Blockchain(blockchain::Error),
+    DB(db::Error),
     Bincode(bincode::Error),
 }
 pub async fn accept(node: &mut Node, request: Request) {
@@ -95,16 +95,14 @@ fn hash_by_height(node: &mut Node, height: usize) -> Result<Vec<u8>, Error> {
     .map_err(Error::Bincode)
 }
 fn block_by_hash(node: &mut Node, hash: [u8; 32]) -> Result<Vec<u8>, Error> {
-    bincode::serialize(&tofuri_db::block::get(&node.db, &hash).map_err(Error::DB)?)
-        .map_err(Error::Bincode)
+    bincode::serialize(&db::block::get(&node.db, &hash).map_err(Error::DB)?).map_err(Error::Bincode)
 }
 fn transaction_by_hash(node: &mut Node, hash: [u8; 32]) -> Result<Vec<u8>, Error> {
-    bincode::serialize(&tofuri_db::transaction::get(&node.db, &hash).map_err(Error::DB)?)
+    bincode::serialize(&db::transaction::get(&node.db, &hash).map_err(Error::DB)?)
         .map_err(Error::Bincode)
 }
 fn stake_by_hash(node: &mut Node, hash: [u8; 32]) -> Result<Vec<u8>, Error> {
-    bincode::serialize(&tofuri_db::stake::get(&node.db, &hash).map_err(Error::DB)?)
-        .map_err(Error::Bincode)
+    bincode::serialize(&db::stake::get(&node.db, &hash).map_err(Error::DB)?).map_err(Error::Bincode)
 }
 fn peers(node: &mut Node) -> Result<Vec<u8>, Error> {
     bincode::serialize(&node.p2p.connections.values().collect::<Vec<_>>()).map_err(Error::Bincode)

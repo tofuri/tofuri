@@ -1,5 +1,6 @@
 use crate::util;
 use crate::EXTENSION;
+use address::public;
 use colored::*;
 use inquire::validator::Validation;
 use inquire::Confirm;
@@ -7,18 +8,17 @@ use inquire::CustomType;
 use inquire::Password;
 use inquire::PasswordDisplayMode;
 use inquire::Select;
+use key::Key;
 use lazy_static::lazy_static;
 use std::path::PathBuf;
 use std::process;
-use tofuri_address::public;
-use tofuri_key::Key;
 use vint::floor;
 use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Util(util::Error),
-    Address(tofuri_address::Error),
-    Key(tofuri_key::Error),
+    Address(address::Error),
+    Key(key::Error),
     Io(std::io::Error),
 }
 lazy_static! {
@@ -136,20 +136,17 @@ pub fn import() -> Result<Key, Error> {
     let secret = Password::new("Enter secret key:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
-        .with_validator(
-            move |input: &str| match tofuri_address::secret::decode(input) {
-                Ok(_) => Ok(Validation::Valid),
-                Err(_) => Ok(Validation::Invalid("Invalid secret key.".into())),
-            },
-        )
+        .with_validator(move |input: &str| match address::secret::decode(input) {
+            Ok(_) => Ok(Validation::Valid),
+            Err(_) => Ok(Validation::Invalid("Invalid secret key.".into())),
+        })
         .with_help_message("Enter a valid secret key (SECRETx...)")
         .prompt()
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    Key::from_slice(&tofuri_address::secret::decode(&secret).map_err(Error::Address)?)
-        .map_err(Error::Key)
+    Key::from_slice(&address::secret::decode(&secret).map_err(Error::Address)?).map_err(Error::Key)
 }
 pub fn send() -> bool {
     match Confirm::new("Send?").prompt() {

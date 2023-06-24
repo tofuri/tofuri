@@ -9,15 +9,15 @@ use tofuri::api::API;
 use tofuri::p2p::MAINNET_PORT;
 use tofuri::p2p::TESTNET_PORT;
 // use tofuri::command;
+use address::public;
+use address::secret;
+use blockchain::Blockchain;
+use key::Key;
 use tofuri::interval;
 use tofuri::p2p::swarm;
 use tofuri::p2p::P2P;
 use tofuri::Args;
 use tofuri::Node;
-use tofuri_address::public;
-use tofuri_address::secret;
-use tofuri_blockchain::Blockchain;
-use tofuri_key::Key;
 // use tokio::io::AsyncBufReadExt;
 // use tokio::io::BufReader;
 use tracing::debug;
@@ -67,12 +67,12 @@ async fn main() {
         true => tempdir.path().to_str().unwrap(),
         false => "./tofuri-db",
     };
-    let db = tofuri_db::open_cf_descriptors(path);
+    let db = db::open_cf_descriptors(path);
     let mut connections_known = HashSet::new();
     if let Some(ip_addr) = args.peer {
         connections_known.insert(ip_addr);
     }
-    let peers = tofuri_db::peer::get_all(&db).unwrap();
+    let peers = db::peer::get_all(&db).unwrap();
     for ip_addr in peers {
         connections_known.insert(ip_addr);
     }

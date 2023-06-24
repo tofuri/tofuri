@@ -1,14 +1,14 @@
 use super::Error;
 use super::Fork;
 use super::Stable;
+use block::Block;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
+use stake::Stake;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use tofuri_block::Block;
-use tofuri_stake::Stake;
-use tofuri_transaction::Transaction;
+use transaction::Transaction;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Unstable {
     pub latest_block: Block,

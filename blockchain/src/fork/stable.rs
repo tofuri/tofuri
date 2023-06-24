@@ -1,11 +1,11 @@
 use super::Fork;
+use block::Block;
+use db::checkpoint::CheckpointDB;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use tofuri_block::Block;
-use tofuri_db::checkpoint::CheckpointDB;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Stable {
     pub latest_block: Block,

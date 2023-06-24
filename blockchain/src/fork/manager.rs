@@ -1,11 +1,11 @@
 use super::Error;
 use super::Stable;
 use super::Unstable;
+use db::tree::Tree;
+use db::tree::GENESIS_BLOCK_PREVIOUS_HASH;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
-use tofuri_db::tree::Tree;
-use tofuri_db::tree::GENESIS_BLOCK_PREVIOUS_HASH;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Manager {
     pub stable: Stable,
@@ -51,10 +51,10 @@ impl Manager {
     pub fn update(&mut self, db: &DB, hashes_1: &[[u8; 32]], trust_fork_after_blocks: usize) {
         let hashes_0 = &self.unstable.hashes;
         if hashes_0.len() == trust_fork_after_blocks {
-            let block = tofuri_db::block::get(db, hashes_0.first().unwrap()).unwrap();
+            let block = db::block::get(db, hashes_0.first().unwrap()).unwrap();
             self.stable.append_block(
                 &block,
-                match tofuri_db::block::get(db, &block.previous_hash) {
+                match db::block::get(db, &block.previous_hash) {
                     Ok(block) => block.timestamp,
                     Err(_) => 0,
                 },

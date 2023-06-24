@@ -1,9 +1,9 @@
 #![feature(test)]
 extern crate test;
+use blockchain::fork;
 use sha2::Digest;
 use sha2::Sha256;
 use test::Bencher;
-use tofuri_blockchain::fork;
 #[bench]
 fn hash(b: &mut Bencher) {
     b.iter(|| {

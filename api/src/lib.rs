@@ -1,3 +1,4 @@
+use address::public;
 use decimal::Decimal;
 use decimal::FromStr;
 use hex;
@@ -6,12 +7,11 @@ use serde::Serialize;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::num::ParseIntError;
-use tofuri_address::public;
 use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
     Hex(hex::FromHexError),
-    Address(tofuri_address::Error),
+    Address(address::Error),
     ParseIntError(ParseIntError),
     TryFromSliceError(core::array::TryFromSliceError),
 }
@@ -54,9 +54,9 @@ pub struct StakeHex {
     pub input_address: String,
     pub hash: String,
 }
-impl TryFrom<tofuri_block::Block> for BlockHex {
-    type Error = tofuri_key::Error;
-    fn try_from(block: tofuri_block::Block) -> Result<Self, Self::Error> {
+impl TryFrom<block::Block> for BlockHex {
+    type Error = key::Error;
+    fn try_from(block: block::Block) -> Result<Self, Self::Error> {
         Ok(BlockHex {
             hash: hex::encode(block.hash()),
             previous_hash: hex::encode(block.previous_hash),
@@ -74,9 +74,9 @@ impl TryFrom<tofuri_block::Block> for BlockHex {
         })
     }
 }
-impl TryFrom<tofuri_transaction::Transaction> for TransactionHex {
-    type Error = tofuri_key::Error;
-    fn try_from(transaction: tofuri_transaction::Transaction) -> Result<Self, Self::Error> {
+impl TryFrom<transaction::Transaction> for TransactionHex {
+    type Error = key::Error;
+    fn try_from(transaction: transaction::Transaction) -> Result<Self, Self::Error> {
         Ok(TransactionHex {
             input_address: public::encode(&transaction.input_address()?),
             output_address: public::encode(&transaction.output_address),
@@ -88,9 +88,9 @@ impl TryFrom<tofuri_transaction::Transaction> for TransactionHex {
         })
     }
 }
-impl TryFrom<tofuri_stake::Stake> for StakeHex {
-    type Error = tofuri_key::Error;
-    fn try_from(stake: tofuri_stake::Stake) -> Result<Self, Self::Error> {
+impl TryFrom<stake::Stake> for StakeHex {
+    type Error = key::Error;
+    fn try_from(stake: stake::Stake) -> Result<Self, Self::Error> {
         Ok(StakeHex {
             amount: u128::from(stake.amount).decimal::<18>(),
             fee: u128::from(stake.fee).decimal::<18>(),
@@ -102,10 +102,10 @@ impl TryFrom<tofuri_stake::Stake> for StakeHex {
         })
     }
 }
-impl TryFrom<TransactionHex> for tofuri_transaction::Transaction {
+impl TryFrom<TransactionHex> for transaction::Transaction {
     type Error = Error;
     fn try_from(transaction: TransactionHex) -> Result<Self, Self::Error> {
-        Ok(tofuri_transaction::Transaction {
+        Ok(transaction::Transaction {
             output_address: public::decode(&transaction.output_address).map_err(Error::Address)?,
             amount: Vint::from(
                 u128::from_str::<18>(&transaction.amount).map_err(Error::ParseIntError)?,
@@ -120,10 +120,10 @@ impl TryFrom<TransactionHex> for tofuri_transaction::Transaction {
         })
     }
 }
-impl TryFrom<StakeHex> for tofuri_stake::Stake {
+impl TryFrom<StakeHex> for stake::Stake {
     type Error = Error;
     fn try_from(stake: StakeHex) -> Result<Self, Self::Error> {
-        Ok(tofuri_stake::Stake {
+        Ok(stake::Stake {
             amount: Vint::from(u128::from_str::<18>(&stake.amount).map_err(Error::ParseIntError)?),
             fee: Vint::from(u128::from_str::<18>(&stake.fee).map_err(Error::ParseIntError)?),
             deposit: stake.deposit,

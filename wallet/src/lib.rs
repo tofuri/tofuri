@@ -4,6 +4,12 @@ use crate::inquire::GENERATE;
 use crate::inquire::IMPORT;
 use ::inquire::Confirm;
 use ::inquire::Select;
+use address::public;
+use address::secret;
+use api::BlockHex;
+use api::Root;
+use api::StakeHex;
+use api::TransactionHex;
 use argon2::Algorithm;
 use argon2::Argon2;
 use argon2::ParamsBuilder;
@@ -16,19 +22,13 @@ use clap::Parser;
 use colored::*;
 use crossterm::event;
 use crossterm::terminal;
+use key::Key;
 use reqwest::Client;
 use reqwest::Url;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process;
-use tofuri_address::public;
-use tofuri_address::secret;
-use tofuri_api::BlockHex;
-use tofuri_api::Root;
-use tofuri_api::StakeHex;
-use tofuri_api::TransactionHex;
-use tofuri_key::Key;
 pub const EXTENSION: &str = "tofuri";
 const INCORRECT: &str = "Incorrect passphrase";
 pub type Salt = [u8; 32];
@@ -36,7 +36,7 @@ pub type Nonce = [u8; 12];
 pub type Ciphertext = [u8; 48];
 #[derive(Debug)]
 pub enum Error {
-    Key(tofuri_key::Error),
+    Key(key::Error),
     Reqwest(reqwest::Error),
     Io(std::io::Error),
     Inquire(inquire::Error),
@@ -210,7 +210,7 @@ impl Wallet {
         } {
             return Ok(());
         }
-        let transaction = tofuri_transaction::Transaction::sign(
+        let transaction = transaction::Transaction::sign(
             public::decode(&address).unwrap(),
             amount,
             fee,
@@ -248,7 +248,7 @@ impl Wallet {
         if !send {
             return Ok(());
         }
-        let stake = tofuri_stake::Stake::sign(
+        let stake = stake::Stake::sign(
             deposit,
             amount,
             fee,

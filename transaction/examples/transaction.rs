@@ -1,5 +1,5 @@
-use tofuri_key::Key;
-use tofuri_transaction::Transaction;
+use key::Key;
+use transaction::Transaction;
 pub fn main() {
     let key = Key::from_slice(&[0xcd; 32]).unwrap();
     let amount = 1_000_000_000_000_000_000;

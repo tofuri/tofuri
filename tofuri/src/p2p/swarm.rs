@@ -6,6 +6,8 @@ use crate::p2p::ratelimit::Endpoint;
 use crate::p2p::MAX_TRANSMIT_SIZE;
 use crate::Node;
 use crate::SHARE_PEERS_MAX_LEN;
+use block::Block;
+use db;
 use libp2p::core::connection::ConnectedPoint;
 use libp2p::gossipsub;
 use libp2p::gossipsub::MessageAcceptance;
@@ -17,18 +19,16 @@ use libp2p::swarm::derive_prelude::Either;
 use libp2p::swarm::ConnectionHandlerUpgrErr;
 use libp2p::swarm::SwarmEvent;
 use libp2p::PeerId;
+use stake::Stake;
 use std::io::Error;
 use std::net::IpAddr;
 use std::num::NonZeroU32;
-use tofuri_block::Block;
-use tofuri_db as db;
-use tofuri_stake::Stake;
-use tofuri_transaction::Transaction;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
+use transaction::Transaction;
 use void::Void;
 type Event = SwarmEvent<
     OutEvent,
@@ -126,7 +126,7 @@ fn gossipsub_message(
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
-        Blockchain(tofuri_blockchain::Error),
+        Blockchain(blockchain::Error),
         MessageSource,
         IpAddr,
         Ratelimit,
@@ -202,9 +202,9 @@ fn gossipsub_message(
                     MessageAcceptance::Accept,
                 )
         }
-        Err(Error::Blockchain(tofuri_blockchain::Error::BlockPending))
-        | Err(Error::Blockchain(tofuri_blockchain::Error::BlockHashInTree))
-        | Err(Error::Blockchain(tofuri_blockchain::Error::BlockPreviousHashNotInTree)) => node
+        Err(Error::Blockchain(blockchain::Error::BlockPending))
+        | Err(Error::Blockchain(blockchain::Error::BlockHashInTree))
+        | Err(Error::Blockchain(blockchain::Error::BlockPreviousHashNotInTree)) => node
             .p2p
             .swarm
             .behaviour_mut()
@@ -251,7 +251,7 @@ fn sync_request(
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
-        Blockchain(tofuri_blockchain::Error),
+        Blockchain(blockchain::Error),
         Response(Response),
     }
     fn inner(
@@ -265,7 +265,7 @@ fn sync_request(
         loop {
             let index = height + vec.len();
             let res = node.blockchain.sync_block(&node.db, index);
-            if let Err(tofuri_blockchain::Error::SyncBlock) = res {
+            if let Err(blockchain::Error::SyncBlock) = res {
                 break;
             }
             let block = res.map_err(Error::Blockchain)?;
@@ -310,7 +310,7 @@ fn sync_response(node: &mut Node, peer_id: PeerId, response: Response) {
     #[derive(Debug)]
     enum Error {
         Bincode(bincode::Error),
-        Blockchain(tofuri_blockchain::Error),
+        Blockchain(blockchain::Error),
     }
     fn inner(node: &mut Node, response: Response) -> Result<(), Error> {
         for block in bincode::deserialize::<Vec<Block>>(&response.0).map_err(Error::Bincode)? {

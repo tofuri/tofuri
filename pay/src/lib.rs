@@ -1,18 +1,18 @@
 pub mod db;
 pub mod router;
+use api::BlockHex;
+use api::TransactionHex;
 use chrono::Utc;
 use clap::Parser;
 use db::charge;
 use decimal::FromStr;
+use key::Key;
 use reqwest::Client;
 use reqwest::Url;
 use rocksdb::IteratorMode;
 use rocksdb::DB;
 use std::collections::HashMap;
 use std::num::ParseIntError;
-use tofuri_api::BlockHex;
-use tofuri_api::TransactionHex;
-use tofuri_key::Key;
 use tracing::instrument;
 #[derive(Debug)]
 pub enum Error {
@@ -127,7 +127,7 @@ impl Pay {
         let mut map: HashMap<String, u128> = HashMap::new();
         for transaction in transactions {
             for charge in self.charges.values() {
-                let address = tofuri_address::public::encode(&charge.address_bytes(&self.key));
+                let address = address::public::encode(&charge.address_bytes(&self.key));
                 if transaction.output_address == address {
                     let amount = match map.get(&address) {
                         Some(a) => *a,
@@ -144,7 +144,7 @@ impl Pay {
         }
         let mut charges = vec![];
         for charge in self.charges.values_mut() {
-            let address = tofuri_address::public::encode(&charge.address_bytes(&self.key));
+            let address = address::public::encode(&charge.address_bytes(&self.key));
             let res = {
                 let amount = match map.get(&address) {
                     Some(a) => *a,
@@ -294,7 +294,7 @@ impl Charge {
         key.subkey(self.subkey_n).unwrap().address_bytes()
     }
     pub fn payment(&self, key: &Key) -> Payment {
-        let address = tofuri_address::public::encode(&self.address_bytes(key));
+        let address = address::public::encode(&self.address_bytes(key));
         let status = status(&self.status);
         Payment {
             address,

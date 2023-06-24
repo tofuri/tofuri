@@ -1,5 +1,5 @@
-use tofuri_key::Key;
-use tofuri_stake::Stake;
+use key::Key;
+use stake::Stake;
 pub fn main() {
     let key = Key::from_slice(&[0xcd; 32]).unwrap();
     let deposit = true;

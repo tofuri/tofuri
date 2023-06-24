@@ -1,8 +1,8 @@
 use crate::Error;
 use rocksdb::ColumnFamily;
 use rocksdb::DB;
-use tofuri_transaction::Transaction;
 use tracing::instrument;
+use transaction::Transaction;
 pub fn cf(db: &DB) -> &ColumnFamily {
     db.cf_handle("transaction").unwrap()
 }

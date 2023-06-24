@@ -1,7 +1,7 @@
 use crate::Error;
 use rocksdb::ColumnFamily;
 use rocksdb::DB;
-use tofuri_stake::Stake;
+use stake::Stake;
 use tracing::instrument;
 pub fn cf(db: &DB) -> &ColumnFamily {
     db.cf_handle("stake").unwrap()

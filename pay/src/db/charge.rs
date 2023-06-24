@@ -1,8 +1,8 @@
 use crate::db::Error;
 use crate::Charge;
+use key::Key;
 use rocksdb::ColumnFamily;
 use rocksdb::DB;
-use tofuri_key::Key;
 pub fn cf(db: &DB) -> &ColumnFamily {
     db.cf_handle("charge").unwrap()
 }

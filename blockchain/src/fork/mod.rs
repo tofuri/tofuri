@@ -1,6 +1,8 @@
 mod manager;
 mod stable;
 mod unstable;
+use address::public;
+use block::Block;
 use decimal::Decimal;
 pub use manager::Manager;
 use rocksdb::DB;
@@ -9,8 +11,6 @@ use sha2::Sha256;
 pub use stable::Stable;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use tofuri_address::public;
-use tofuri_block::Block;
 use tracing::debug;
 use tracing::warn;
 use uint::construct_uint;
@@ -159,11 +159,11 @@ fn append_block<T: Fork>(fork: &mut T, block: &Block, previous_timestamp: u32, l
 }
 fn load<T: Fork>(fork: &mut T, db: &DB, hashes: &[[u8; 32]]) {
     let mut previous_timestamp = match hashes.first() {
-        Some(hash) => tofuri_db::block::get(db, hash).unwrap().timestamp,
+        Some(hash) => db::block::get(db, hash).unwrap().timestamp,
         None => 0,
     };
     for hash in hashes.iter() {
-        let block = tofuri_db::block::get(db, hash).unwrap();
+        let block = db::block::get(db, hash).unwrap();
         fork.append_block(&block, previous_timestamp, T::is_stable());
         previous_timestamp = block.timestamp;
     }

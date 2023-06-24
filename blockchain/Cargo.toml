@@ -1,20 +1,19 @@
 [package]
-name = "tofuri-blockchain"
+name = "blockchain"
 version = "0.1.0"
 edition = "2021"
-license = "GPL-3.0"
-description = "Tofuri blockchain"
-repository = "https://github.com/tofuri/tofuri"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tofuri-address = { version = "0.1.1", path = "../address" }
+address = { version = "0.1.0", path = "../address" }
 vint = { git = "https://github.com/zudo/vint" }
 decimal = { git = "https://github.com/zudo/decimal" }
-tofuri-block = { version = "0.1.0", path = "../block" }
-tofuri-db = { version = "0.1.0", path = "../db" }
-tofuri-key = { version = "0.1.0", path = "../key" }
-tofuri-stake = { version = "0.1.0", path = "../stake" }
-tofuri-transaction = { version = "0.1.0", path = "../transaction" }
+block = { version = "0.1.0", path = "../block" }
+db = { version = "0.1.0", path = "../db" }
+key = { version = "0.1.0", path = "../key" }
+stake = { version = "0.1.0", path = "../stake" }
+transaction = { version = "0.1.0", path = "../transaction" }
 rocksdb = "0.21.0"
 colored = "2.0.0"
 tracing = "0.1.37"

@@ -4357,6 +4357,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 name = "tofuri"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "bincode",
  "chrono",
  "clap",
@@ -4371,15 +4372,16 @@ dependencies = [
  "sha2 0.10.7",
  "tempdir",
  "tofuri-address",
+ "tofuri-api",
  "tofuri-block",
  "tofuri-blockchain",
  "tofuri-db",
  "tofuri-key",
  "tofuri-p2p",
- "tofuri-rpc",
  "tofuri-stake",
  "tofuri-transaction",
  "tokio",
+ "tower-http",
  "tracing",
  "tracing-subscriber",
  "vint",
@@ -4398,9 +4400,6 @@ dependencies = [
 name = "tofuri-api"
 version = "0.1.0"
 dependencies = [
- "axum",
- "chrono",
- "clap",
  "decimal",
  "hex",
  "serde",
@@ -4408,13 +4407,8 @@ dependencies = [
  "tofuri-block",
  "tofuri-blockchain",
  "tofuri-key",
- "tofuri-rpc",
  "tofuri-stake",
  "tofuri-transaction",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
  "vint",
 ]
 
@@ -4528,19 +4522,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "vint",
-]
-
-[[package]]
-name = "tofuri-rpc"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "serde",
- "tofuri-block",
- "tofuri-blockchain",
- "tofuri-stake",
- "tofuri-transaction",
- "tokio",
 ]
 
 [[package]]

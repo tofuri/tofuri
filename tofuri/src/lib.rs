@@ -1,6 +1,6 @@
+pub mod api;
 pub mod command;
 pub mod interval;
-pub mod rpc;
 pub mod swarm;
 use clap::Parser;
 use rocksdb::DB;
@@ -8,6 +8,10 @@ use std::net::IpAddr;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
 use tofuri_p2p::P2p;
+pub const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
+pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
+pub const GIT_HASH: &str = env!("GIT_HASH");
 pub const SHARE_PEERS_MAX_LEN: usize = 100;
 pub struct Node {
     pub db: DB,
@@ -56,10 +60,6 @@ pub struct Args {
     #[clap(long, env = "TIMEOUT", default_value_t = 10000)]
     pub timeout: u64,
 
-    /// TCP socket address to bind to
-    #[clap(long, env = "RPC", default_value = "[::]:2021")]
-    pub rpc: String,
-
     /// IpAddr to dial
     #[clap(long, env = "PEER")]
     pub peer: Option<IpAddr>,
@@ -71,6 +71,10 @@ pub struct Args {
     /// Secret key
     #[clap(long, env = "SECRET")]
     pub secret: Option<String>,
+
+    /// API Endpoint
+    #[clap(long, env = "API", default_value = "[::]:2022")]
+    pub api: String,
 
     /// Disable tracing_subscriber timestamps
     #[clap(long, env = "WITHOUT_TIME")]

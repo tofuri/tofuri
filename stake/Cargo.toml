@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 vint = { git = "https://github.com/zudo/vint" }
 decimal = { git = "https://github.com/zudo/decimal" }
-key = { version = "0.1.0", path = "../key" }
-address = { version = "0.1.0", path = "../address" }
+key = { path = "../key" }
+address = { path = "../address" }
 serde = { version = "1.0.163", features = ["derive"] }
 serde-big-array = "0.5.1"
 sha2 = "0.10.6"

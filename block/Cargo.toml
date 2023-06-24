@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-key = { version = "0.1.0", path = "../key", features = ["vrf"] }
-stake = { version = "0.1.0", path = "../stake" }
-transaction = { version = "0.1.0", path = "../transaction" }
-address = { version = "0.1.0", path = "../address" }
+key = { path = "../key", features = ["vrf"] }
+stake = { path = "../stake" }
+transaction = { path = "../transaction" }
+address = { path = "../address" }
 vint = { git = "https://github.com/zudo/vint" }
 decimal = { git = "https://github.com/zudo/decimal" }
 serde = { version = "1.0.163", features = ["derive"] }

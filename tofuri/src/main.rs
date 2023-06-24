@@ -95,9 +95,8 @@ async fn main() {
         .unwrap();
     let (tx, mut rx) = tokio::sync::mpsc::channel(1);
     let internal = Internal(tx);
-    let router = api::external::router(internal);
     let api = args.api.clone();
-    tokio::spawn(async { api::serve(router, api).await });
+    tokio::spawn(async { api::external::serve(internal, api).await });
     // let mut reader = BufReader::new(tokio::io::stdin());
     // let mut line = String::new();
     let mut interval_1s = interval::at(Duration::from_secs(1));

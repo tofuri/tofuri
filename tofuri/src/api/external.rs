@@ -11,6 +11,7 @@ use axum::routing::get;
 use axum::routing::post;
 use axum::Json;
 use axum::Router;
+use axum::Server;
 use chrono::offset::Utc;
 use hex;
 use std::convert::TryInto;
@@ -27,7 +28,14 @@ use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
-pub fn router(internal: Internal) -> Router {
+use tracing::info;
+pub async fn serve(internal: Internal, api: String) {
+    let addr = api.parse().unwrap();
+    info!(?addr, "API listening");
+    let make_service = router(internal).into_make_service();
+    Server::bind(&addr).serve(make_service).await.unwrap();
+}
+fn router(internal: Internal) -> Router {
     let cors = CorsLayer::permissive();
     let trace = TraceLayer::new_for_http();
     Router::new()

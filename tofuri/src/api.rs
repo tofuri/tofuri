@@ -1,17 +1,8 @@
 pub mod external;
 pub mod internal;
-use axum::Router;
-use axum::Server;
 use std::net::IpAddr;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
-use tracing::info;
-pub async fn serve(router: Router, api: String) {
-    let addr = api.parse().unwrap();
-    info!(?addr, "API listening");
-    let make_service = router.into_make_service();
-    Server::bind(&addr).serve(make_service).await.unwrap();
-}
 pub enum Call {
     Balance([u8; 20]),
     BalancePendingMin([u8; 20]),

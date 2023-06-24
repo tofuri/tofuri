@@ -1,5 +1,5 @@
 use super::internal::Internal;
-use super::Call;
+use super::Get;
 use crate::CARGO_PKG_NAME;
 use crate::CARGO_PKG_REPOSITORY;
 use crate::CARGO_PKG_VERSION;
@@ -100,107 +100,107 @@ async fn git_hash() -> impl IntoResponse {
 }
 async fn balance(State(s): State<Internal>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = public::decode(&address).unwrap();
-    Json(s.call::<u128>(Call::Balance(address_bytes)).await)
+    Json(s.get::<u128>(Get::Balance(address_bytes)).await)
 }
 async fn balance_pending_min(
     State(s): State<Internal>,
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = public::decode(&address).unwrap();
-    Json(s.call::<u128>(Call::BalancePendingMin(address_bytes)).await)
+    Json(s.get::<u128>(Get::BalancePendingMin(address_bytes)).await)
 }
 async fn balance_pending_max(
     State(s): State<Internal>,
     address: Path<String>,
 ) -> impl IntoResponse {
     let address_bytes = public::decode(&address).unwrap();
-    Json(s.call::<u128>(Call::BalancePendingMax(address_bytes)).await)
+    Json(s.get::<u128>(Get::BalancePendingMax(address_bytes)).await)
 }
 async fn staked(State(s): State<Internal>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = public::decode(&address).unwrap();
-    Json(s.call::<u128>(Call::Staked(address_bytes)).await)
+    Json(s.get::<u128>(Get::Staked(address_bytes)).await)
 }
 async fn staked_pending_min(State(s): State<Internal>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = public::decode(&address).unwrap();
-    Json(s.call::<u128>(Call::StakedPendingMin(address_bytes)).await)
+    Json(s.get::<u128>(Get::StakedPendingMin(address_bytes)).await)
 }
 async fn staked_pending_max(State(s): State<Internal>, address: Path<String>) -> impl IntoResponse {
     let address_bytes = public::decode(&address).unwrap();
-    Json(s.call::<u128>(Call::StakedPendingMax(address_bytes)).await)
+    Json(s.get::<u128>(Get::StakedPendingMax(address_bytes)).await)
 }
 async fn height(State(s): State<Internal>) -> impl IntoResponse {
-    Json(s.call::<usize>(Call::Height).await)
+    Json(s.get::<usize>(Get::Height).await)
 }
 async fn height_by_hash(State(s): State<Internal>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-    Json(s.call::<usize>(Call::HeightByHash(hash)).await)
+    Json(s.get::<usize>(Get::HeightByHash(hash)).await)
 }
 async fn block_latest(State(s): State<Internal>) -> impl IntoResponse {
-    let block = s.call::<Block>(Call::BlockLatest).await;
+    let block = s.get::<Block>(Get::BlockLatest).await;
     let block_hex: BlockHex = block.try_into().unwrap();
     Json(block_hex)
 }
 async fn hash_by_height(State(s): State<Internal>, height: Path<String>) -> impl IntoResponse {
     let height: usize = height.parse().unwrap();
-    let hash = s.call::<[u8; 32]>(Call::HashByHeight(height)).await;
+    let hash = s.get::<[u8; 32]>(Get::HashByHeight(height)).await;
     let hash_hex = hex::encode(hash);
     Json(hash_hex)
 }
 async fn block_by_hash(State(s): State<Internal>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-    let block = s.call::<Block>(Call::BlockByHash(hash)).await;
+    let block = s.get::<Block>(Get::BlockByHash(hash)).await;
     let block_hex: BlockHex = block.try_into().unwrap();
     Json(block_hex)
 }
 async fn transaction_by_hash(State(s): State<Internal>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-    let transaction = s.call::<Transaction>(Call::TransactionByHash(hash)).await;
+    let transaction = s.get::<Transaction>(Get::TransactionByHash(hash)).await;
     let transaction_hex: TransactionHex = transaction.try_into().unwrap();
     Json(transaction_hex)
 }
 async fn stake_by_hash(State(s): State<Internal>, hash: Path<String>) -> impl IntoResponse {
     let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-    let stake = s.call::<Stake>(Call::StakeByHash(hash)).await;
+    let stake = s.get::<Stake>(Get::StakeByHash(hash)).await;
     let stake_hex: StakeHex = stake.try_into().unwrap();
     Json(stake_hex)
 }
 async fn peers(State(s): State<Internal>) -> impl IntoResponse {
-    Json(s.call::<Vec<IpAddr>>(Call::Peers).await)
+    Json(s.get::<Vec<IpAddr>>(Get::Peers).await)
 }
 async fn peer(State(s): State<Internal>, Path(ip_addr): Path<String>) -> impl IntoResponse {
     let ip_addr = ip_addr.parse().unwrap();
-    Json(s.call::<bool>(Call::Peer(ip_addr)).await)
+    Json(s.get::<bool>(Get::Peer(ip_addr)).await)
 }
 async fn transaction(
     State(s): State<Internal>,
     Json(transaction): Json<TransactionHex>,
 ) -> impl IntoResponse {
     let transaction: Transaction = transaction.try_into().unwrap();
-    Json(s.call::<bool>(Call::Transaction(transaction)).await)
+    Json(s.get::<bool>(Get::Transaction(transaction)).await)
 }
 async fn stake(State(s): State<Internal>, Json(stake): Json<StakeHex>) -> impl IntoResponse {
     let stake: Stake = stake.try_into().unwrap();
-    Json(s.call::<bool>(Call::Stake(stake)).await)
+    Json(s.get::<bool>(Get::Stake(stake)).await)
 }
 async fn address(State(s): State<Internal>) -> impl IntoResponse {
-    Json(public::encode(&s.call::<[u8; 20]>(Call::Address).await))
+    Json(public::encode(&s.get::<[u8; 20]>(Get::Address).await))
 }
 async fn ticks(State(s): State<Internal>) -> impl IntoResponse {
-    Json(s.call::<usize>(Call::Ticks).await)
+    Json(s.get::<usize>(Get::Ticks).await)
 }
 async fn time() -> impl IntoResponse {
     Json(chrono::offset::Utc::now().timestamp_millis())
 }
 async fn tree_size(State(s): State<Internal>) -> impl IntoResponse {
-    Json(s.call::<usize>(Call::TreeSize).await)
+    Json(s.get::<usize>(Get::TreeSize).await)
 }
 async fn sync(State(s): State<Internal>) -> impl IntoResponse {
-    let sync = s.call::<Sync>(Call::Sync).await;
+    let sync = s.get::<Sync>(Get::Sync).await;
     Json(sync)
 }
 async fn random_queue(State(s): State<Internal>) -> impl IntoResponse {
     Json(
-        s.call::<Vec<[u8; 20]>>(Call::RandomQueue)
+        s.get::<Vec<[u8; 20]>>(Get::RandomQueue)
             .await
             .iter()
             .map(public::encode)
@@ -208,11 +208,11 @@ async fn random_queue(State(s): State<Internal>) -> impl IntoResponse {
     )
 }
 async fn unstable_hashes(State(s): State<Internal>) -> impl IntoResponse {
-    Json(s.call::<usize>(Call::UnstableHashes).await)
+    Json(s.get::<usize>(Get::UnstableHashes).await)
 }
 async fn unstable_latest_hashes(State(s): State<Internal>) -> impl IntoResponse {
     Json(
-        s.call::<Vec<[u8; 32]>>(Call::UnstableLatestHashes)
+        s.get::<Vec<[u8; 32]>>(Get::UnstableLatestHashes)
             .await
             .iter()
             .map(hex::encode)
@@ -220,14 +220,14 @@ async fn unstable_latest_hashes(State(s): State<Internal>) -> impl IntoResponse 
     )
 }
 async fn unstable_stakers(State(s): State<Internal>) -> impl IntoResponse {
-    Json(s.call::<usize>(Call::UnstableStakers).await)
+    Json(s.get::<usize>(Get::UnstableStakers).await)
 }
 async fn stable_hashes(State(s): State<Internal>) -> impl IntoResponse {
-    Json(s.call::<usize>(Call::StableHashes).await)
+    Json(s.get::<usize>(Get::StableHashes).await)
 }
 async fn stable_latest_hashes(State(s): State<Internal>) -> impl IntoResponse {
     Json(
-        s.call::<Vec<[u8; 32]>>(Call::StableLatestHashes)
+        s.get::<Vec<[u8; 32]>>(Get::StableLatestHashes)
             .await
             .iter()
             .map(hex::encode)
@@ -235,17 +235,17 @@ async fn stable_latest_hashes(State(s): State<Internal>) -> impl IntoResponse {
     )
 }
 async fn stable_stakers(State(s): State<Internal>) -> impl IntoResponse {
-    Json(s.call::<usize>(Call::StableStakers).await)
+    Json(s.get::<usize>(Get::StableStakers).await)
 }
 async fn sync_remaining(State(s): State<Internal>) -> impl IntoResponse {
-    let sync = s.call::<Sync>(Call::Sync).await;
+    let sync = s.get::<Sync>(Get::Sync).await;
     if sync.completed {
         return Json(0.0);
     }
     if !sync.downloading() {
         return Json(-1.0);
     }
-    let block = s.call::<Block>(Call::BlockLatest).await;
+    let block = s.get::<Block>(Get::BlockLatest).await;
     let mut diff = (Utc::now().timestamp() as u32).saturating_sub(block.timestamp) as f32;
     diff /= BLOCK_TIME as f32;
     diff /= sync.bps;

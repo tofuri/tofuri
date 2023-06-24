@@ -6,7 +6,7 @@ use std::net::IpAddr;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
 use tokio::sync::mpsc;
-pub enum Call {
+pub enum Get {
     Balance([u8; 20]),
     BalancePendingMin([u8; 20]),
     BalancePendingMax([u8; 20]),

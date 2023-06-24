@@ -6,7 +6,6 @@ members = [
     "blockchain",
     "db",
     "key",
-    "p2p",
     "pay",
     "tofuri",
     "stake",

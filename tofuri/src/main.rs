@@ -6,18 +6,18 @@ use std::time::Duration;
 use tempdir::TempDir;
 use tofuri::api;
 use tofuri::api::API;
-use tofuri_p2p::MAINNET_PORT;
-use tofuri_p2p::TESTNET_PORT;
+use tofuri::p2p::MAINNET_PORT;
+use tofuri::p2p::TESTNET_PORT;
 // use tofuri::command;
 use tofuri::interval;
-use tofuri::swarm;
+use tofuri::p2p::swarm;
+use tofuri::p2p::P2P;
 use tofuri::Args;
 use tofuri::Node;
 use tofuri_address::public;
 use tofuri_address::secret;
 use tofuri_blockchain::Blockchain;
 use tofuri_key::Key;
-use tofuri_p2p::P2p;
 // use tokio::io::AsyncBufReadExt;
 // use tokio::io::BufReader;
 use tracing::debug;
@@ -76,7 +76,7 @@ async fn main() {
     for ip_addr in peers {
         connections_known.insert(ip_addr);
     }
-    let p2p = P2p::new(args.max_established, args.timeout, connections_known)
+    let p2p = P2P::new(args.max_established, args.timeout, connections_known)
         .await
         .unwrap();
     let blockchain = Blockchain::default();

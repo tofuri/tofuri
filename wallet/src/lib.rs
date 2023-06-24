@@ -46,7 +46,7 @@ pub enum Error {
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// API Endpoint
-    #[clap(long, env = "API", default_value = "http://localhost:2022/")]
+    #[clap(long, env = "API", default_value = "http://localhost:2021/")]
     pub api: Url,
 }
 #[derive(Debug, Clone)]

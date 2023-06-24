@@ -73,7 +73,7 @@ pub struct Args {
     pub secret: Option<String>,
 
     /// API Endpoint
-    #[clap(long, env = "API", default_value = "[::]:2022")]
+    #[clap(long, env = "API", default_value = "[::]:2021")]
     pub api: String,
 
     /// Disable tracing_subscriber timestamps

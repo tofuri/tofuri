@@ -2,7 +2,6 @@ pub mod api;
 pub mod command;
 pub mod interval;
 pub mod p2p;
-pub mod swarm;
 use clap::Parser;
 use p2p::P2P;
 use rocksdb::DB;

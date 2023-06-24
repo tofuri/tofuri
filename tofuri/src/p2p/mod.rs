@@ -1,6 +1,7 @@
 pub mod behaviour;
 pub mod multiaddr;
 pub mod ratelimit;
+pub mod swarm;
 use behaviour::Behaviour;
 use libp2p::core::upgrade;
 use libp2p::gossipsub::IdentTopic;

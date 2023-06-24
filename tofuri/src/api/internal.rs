@@ -13,18 +13,23 @@ pub enum Error {
     DB(tofuri_db::Error),
     Bincode(bincode::Error),
 }
+pub struct Request {
+    pub call: Call,
+    pub tx: oneshot::Sender<Response>,
+}
+pub struct Response(pub Vec<u8>);
 #[derive(Clone)]
-pub struct Internal(pub mpsc::Sender<(Call, oneshot::Sender<Vec<u8>>)>);
+pub struct Internal(pub mpsc::Sender<Request>);
 impl Internal {
     pub async fn call<T: DeserializeOwned>(&self, call: Call) -> T {
         let (tx, rx) = oneshot::channel();
-        let _ = self.0.send((call, tx)).await;
-        let vec = rx.await.unwrap();
-        bincode::deserialize(&vec).unwrap()
+        let _ = self.0.send(Request { call, tx }).await;
+        let response = rx.await.unwrap();
+        bincode::deserialize(&response.0).unwrap()
     }
 }
-pub async fn accept(node: &mut Node, call: Call, tx: oneshot::Sender<Vec<u8>>) {
-    let res = match call {
+pub async fn accept(node: &mut Node, request: Request) {
+    let res = match request.call {
         Call::Balance(a) => balance(node, a),
         Call::BalancePendingMin(a) => balance_pending_min(node, a),
         Call::BalancePendingMax(a) => balance_pending_max(node, a),
@@ -56,7 +61,7 @@ pub async fn accept(node: &mut Node, call: Call, tx: oneshot::Sender<Vec<u8>>) {
     };
     match res {
         Ok(vec) => {
-            let _ = tx.send(vec);
+            let _ = request.tx.send(Response(vec));
         }
         Err(e) => {
             error!(?e);

@@ -1,8 +1,11 @@
 pub mod external;
 pub mod internal;
+use self::internal::Internal;
+use self::internal::Request;
 use std::net::IpAddr;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
+use tokio::sync::mpsc;
 pub enum Call {
     Balance([u8; 20]),
     BalancePendingMin([u8; 20]),
@@ -32,4 +35,16 @@ pub enum Call {
     StableHashes,
     StableLatestHashes,
     StableStakers,
+}
+pub struct API {
+    pub rx: mpsc::Receiver<Request>,
+}
+impl API {
+    pub fn spawn(buffer: usize, api: &str) -> API {
+        let (tx, rx) = mpsc::channel(buffer);
+        let internal = Internal(tx);
+        let api = api.to_string();
+        tokio::spawn(async { external::serve(internal, api).await });
+        API { rx }
+    }
 }

@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
 use tofuri::api;
-use tofuri::api::internal::Internal;
+use tofuri::api::API;
 use tofuri_p2p::MAINNET_PORT;
 use tofuri_p2p::TESTNET_PORT;
 // use tofuri::command;
@@ -93,10 +93,7 @@ async fn main() {
                 .unwrap(),
         })
         .unwrap();
-    let (tx, mut rx) = tokio::sync::mpsc::channel(1);
-    let internal = Internal(tx);
-    let api = args.api.clone();
-    tokio::spawn(async { api::external::serve(internal, api).await });
+    let mut api = API::spawn(1, &node.args.api);
     // let mut reader = BufReader::new(tokio::io::stdin());
     // let mut line = String::new();
     let mut interval_1s = interval::at(Duration::from_secs(1));
@@ -111,7 +108,7 @@ async fn main() {
             _ = interval_1m.tick() => interval::interval_1m(&mut node),
             _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
-            Some((call, tx)) = rx.recv() => api::internal::accept(&mut node, call, tx).await,
+            Some(request) = api.rx.recv() => api::internal::accept(&mut node, request).await,
             // _ = reader.read_line(&mut line) => command::command(&mut node, &mut line, &reload_handle),
         }
     }

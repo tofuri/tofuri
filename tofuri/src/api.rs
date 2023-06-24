@@ -36,16 +36,16 @@ pub enum Call {
     StableLatestHashes,
     StableStakers,
 }
-pub struct Server {
+pub struct API {
     pub rx: mpsc::Receiver<Request>,
 }
-impl Server {
-    pub fn spawn(buffer: usize, api: &str) -> Server {
+impl API {
+    pub fn spawn(buffer: usize, api: &str) -> API {
         let (tx, rx) = mpsc::channel(buffer);
-        let internal = Client(tx);
+        let client = Client(tx);
         let api = api.to_string();
-        tokio::spawn(async { external::serve(internal, api).await });
-        Server { rx }
+        tokio::spawn(async { external::serve(client, api).await });
+        API { rx }
     }
 }
 #[derive(Clone)]

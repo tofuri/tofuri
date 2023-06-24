@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
 use tofuri::api;
-use tofuri::api::Server;
+use tofuri::api::API;
 use tofuri_p2p::MAINNET_PORT;
 use tofuri_p2p::TESTNET_PORT;
 // use tofuri::command;
@@ -93,7 +93,7 @@ async fn main() {
                 .unwrap(),
         })
         .unwrap();
-    let mut api = Server::spawn(1, &node.args.api);
+    let mut api = API::spawn(1, &node.args.api);
     // let mut reader = BufReader::new(tokio::io::stdin());
     // let mut line = String::new();
     let mut interval_1s = interval::at(Duration::from_secs(1));

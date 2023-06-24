@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::time::Duration;
 use tempdir::TempDir;
 use tofuri::api;
-use tofuri::api::external::Internal;
+use tofuri::api::internal::Internal;
 use tofuri_p2p::MAINNET_PORT;
 use tofuri_p2p::TESTNET_PORT;
 // use tofuri::command;

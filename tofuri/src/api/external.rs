@@ -1,3 +1,4 @@
+use super::internal::Internal;
 use super::Call;
 use crate::CARGO_PKG_NAME;
 use crate::CARGO_PKG_REPOSITORY;
@@ -12,7 +13,6 @@ use axum::Json;
 use axum::Router;
 use chrono::offset::Utc;
 use hex;
-use serde::de::DeserializeOwned;
 use std::convert::TryInto;
 use std::net::IpAddr;
 use tofuri_address::public;
@@ -25,20 +25,8 @@ use tofuri_blockchain::fork::BLOCK_TIME;
 use tofuri_blockchain::sync::Sync;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
-use tokio::sync::mpsc;
-use tokio::sync::oneshot;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
-#[derive(Clone)]
-pub struct Internal(pub mpsc::Sender<(Call, oneshot::Sender<Vec<u8>>)>);
-impl Internal {
-    pub async fn call<T: DeserializeOwned>(&self, call: Call) -> T {
-        let (tx, rx) = oneshot::channel();
-        let _ = self.0.send((call, tx)).await;
-        let vec = rx.await.unwrap();
-        bincode::deserialize(&vec).unwrap()
-    }
-}
 pub fn router(internal: Internal) -> Router {
     let cors = CorsLayer::permissive();
     let trace = TraceLayer::new_for_http();

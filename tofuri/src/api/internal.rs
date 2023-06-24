@@ -1,8 +1,10 @@
 use crate::api::Call;
 use crate::Node;
+use serde::de::DeserializeOwned;
 use std::net::IpAddr;
 use tofuri_stake::Stake;
 use tofuri_transaction::Transaction;
+use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 use tracing::error;
 #[derive(Debug)]
@@ -10,6 +12,16 @@ pub enum Error {
     Blockchain(tofuri_blockchain::Error),
     DB(tofuri_db::Error),
     Bincode(bincode::Error),
+}
+#[derive(Clone)]
+pub struct Internal(pub mpsc::Sender<(Call, oneshot::Sender<Vec<u8>>)>);
+impl Internal {
+    pub async fn call<T: DeserializeOwned>(&self, call: Call) -> T {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.0.send((call, tx)).await;
+        let vec = rx.await.unwrap();
+        bincode::deserialize(&vec).unwrap()
+    }
 }
 pub async fn accept(node: &mut Node, call: Call, tx: oneshot::Sender<Vec<u8>>) {
     let res = match call {

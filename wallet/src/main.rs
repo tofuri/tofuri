@@ -6,7 +6,7 @@ use wallet::Wallet;
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    let mut wallet = Wallet::new(args);
+    let mut wallet = Wallet::new(args.api);
     loop {
         if wallet.select().await {
             press_any_key_to_continue();

@@ -1,5 +1,4 @@
 pub mod inquire;
-pub mod util;
 use crate::inquire::GENERATE;
 use crate::inquire::IMPORT;
 use ::inquire::Confirm;
@@ -25,7 +24,10 @@ use crossterm::terminal;
 use key::Key;
 use reqwest::Client;
 use reqwest::Url;
+use std::fs::create_dir_all;
+use std::fs::read_dir;
 use std::fs::File;
+use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process;
@@ -450,7 +452,7 @@ pub fn save(filename: &str, key: &Key) -> Result<(), Error> {
     bytes[0..32].copy_from_slice(&salt);
     bytes[32..44].copy_from_slice(&nonce);
     bytes[44..92].copy_from_slice(&ciphertext);
-    let mut path = util::default_path().join(filename);
+    let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
     let mut file = File::create(path).unwrap();
     file.write_all(hex::encode(bytes).as_bytes()).unwrap();
@@ -499,7 +501,7 @@ pub fn load() -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
         filename = inquire::name().map_err(Error::Inquire)?;
         save(&filename, &key)?;
     }
-    let mut path = util::default_path().join(filename);
+    let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
     clear();
     println!("{}", path.to_string_lossy().green());
@@ -521,4 +523,25 @@ pub fn press_any_key_to_continue() {
 }
 pub fn clear() {
     print!("\x1B[2J\x1B[1;1H");
+}
+pub fn default_path() -> &'static Path {
+    Path::new("./tofuri-wallet")
+}
+pub fn filenames() -> Result<Vec<String>, io::Error> {
+    let path = default_path();
+    if !path.exists() {
+        create_dir_all(path).unwrap();
+    }
+    let mut filenames: Vec<String> = vec![];
+    for entry in read_dir(path).unwrap() {
+        filenames.push(
+            entry?
+                .path()
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned(),
+        );
+    }
+    Ok(filenames)
 }

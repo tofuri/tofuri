@@ -1,4 +1,4 @@
-use crate::util;
+use crate::filenames;
 use crate::EXTENSION;
 use address::public;
 use colored::*;
@@ -10,23 +10,23 @@ use inquire::PasswordDisplayMode;
 use inquire::Select;
 use key::Key;
 use lazy_static::lazy_static;
+use std::io;
 use std::path::PathBuf;
 use std::process;
 use vint::floor;
 use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
-    Util(util::Error),
     Address(address::Error),
     Key(key::Error),
-    Io(std::io::Error),
+    Io(io::Error),
 }
 lazy_static! {
     pub static ref GENERATE: String = "Generate".green().to_string();
     pub static ref IMPORT: String = "Import".magenta().to_string();
 }
 pub fn select() -> Result<String, Error> {
-    let mut filenames = util::filenames().map_err(Error::Util)?;
+    let mut filenames = filenames().map_err(Error::Io)?;
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());
     let filename = Select::new(">>", filenames.to_vec())
@@ -38,7 +38,7 @@ pub fn select() -> Result<String, Error> {
     Ok(filename)
 }
 pub fn name() -> Result<String, Error> {
-    let filenames = util::filenames().map_err(Error::Util)?;
+    let filenames = filenames().map_err(Error::Io)?;
     Ok(Password::new("Name:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Full)

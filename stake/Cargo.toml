@@ -7,13 +7,10 @@ edition = "2021"
 
 [dependencies]
 vint = { git = "https://github.com/zudo/vint" }
-decimal = { git = "https://github.com/zudo/decimal" }
 key = { path = "../key" }
-address = { path = "../address" }
 serde = { version = "1.0.163", features = ["derive"] }
 serde-big-array = "0.5.1"
 sha2 = "0.10.6"
-hex = "0.4.3"
 
 [dev-dependencies]
 bincode = "1.3.3"

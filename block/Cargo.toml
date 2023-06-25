@@ -9,14 +9,11 @@ edition = "2021"
 key = { path = "../key", features = ["vrf"] }
 stake = { path = "../stake" }
 transaction = { path = "../transaction" }
-address = { path = "../address" }
 vint = { git = "https://github.com/zudo/vint" }
-decimal = { git = "https://github.com/zudo/decimal" }
 serde = { version = "1.0.163", features = ["derive"] }
 serde-big-array = "0.5.1"
 sha2 = "0.10.6"
 merkle-cbt = "0.3.2"
-hex = "0.4.3"
 
 [dev-dependencies]
 bincode = "1.3.3"

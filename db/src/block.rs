@@ -12,12 +12,12 @@ pub fn cf(db: &DB) -> &ColumnFamily {
     db.cf_handle("block").unwrap()
 }
 #[instrument(skip_all, level = "trace")]
-pub fn put(block: &Block, db: &DB) -> Result<(), Error> {
+pub fn put(db: &DB, block: &Block) -> Result<(), Error> {
     for transaction in block.transactions.iter() {
-        transaction::put(transaction, db)?;
+        transaction::put(db, transaction)?;
     }
     for stake in block.stakes.iter() {
-        stake::put(stake, db)?;
+        stake::put(db, stake)?;
     }
     let key = block.hash();
     let value = bincode::serialize(&BlockDB::from(block)).map_err(Error::Bincode)?;

@@ -72,7 +72,7 @@ pub struct Blockchain {
 impl Blockchain {
     #[instrument(skip_all, level = "debug")]
     pub fn load(&mut self, db: &DB, trust_fork_after_blocks: usize) -> Result<(), Error> {
-        db::tree::reload(&mut self.tree, db).map_err(Error::DB)?;
+        db::tree::reload(db, &mut self.tree).map_err(Error::DB)?;
         let (mut stable_hashes, unstable_hashes) = self
             .tree
             .stable_and_unstable_hashes(trust_fork_after_blocks);
@@ -213,7 +213,7 @@ impl Blockchain {
         block
     }
     fn save_block(&mut self, db: &DB, block: &Block, forger: bool, trust_fork_after_blocks: usize) {
-        db::block::put(block, db).unwrap();
+        db::block::put(db, block).unwrap();
         let fork = self
             .tree
             .insert(block.hash(), block.previous_hash, block.timestamp);

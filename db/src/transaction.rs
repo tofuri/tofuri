@@ -7,7 +7,7 @@ pub fn cf(db: &DB) -> &ColumnFamily {
     db.cf_handle("transaction").unwrap()
 }
 #[instrument(skip_all, level = "trace")]
-pub fn put(transaction: &Transaction, db: &DB) -> Result<(), Error> {
+pub fn put(db: &DB, transaction: &Transaction) -> Result<(), Error> {
     let key = transaction.hash();
     let value = bincode::serialize(&transaction).map_err(Error::Bincode)?;
     db.put_cf(cf(db), key, value).map_err(Error::RocksDB)

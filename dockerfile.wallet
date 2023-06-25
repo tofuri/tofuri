@@ -1,7 +1,0 @@
-FROM rust:latest as builder
-WORKDIR /a
-COPY . .
-RUN cargo build --bin tofuri-wallet --release
-FROM debian:stable-slim
-COPY --from=builder /a/target/release/tofuri-wallet /usr/local/bin/
-ENTRYPOINT ["tofuri-wallet"]

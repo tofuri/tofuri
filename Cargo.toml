@@ -5,6 +5,7 @@ members = [
     "block",
     "blockchain",
     "db",
+    "encryption",
     "key",
     "tofuri",
     "stake",

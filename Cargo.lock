@@ -1370,6 +1370,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "encryption"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "chacha20poly1305 0.10.1",
+ "lazy_static",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+]
+
+[[package]]
 name = "enum-as-inner"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

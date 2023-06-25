@@ -17,5 +17,4 @@ Visit [doc.tofuri.com](https://doc.tofuri.com) for detailed installation instruc
 |-|-|-|
 | 2020 | tofuri | P2P communication |
 | 2021 | tofuri-api | API over HTTP using JSON format |
-| 2023 | tofuri-pay | Payment Processor API over HTTP using JSON format |
 | 3030 | tofuri | Testnet P2P communication |

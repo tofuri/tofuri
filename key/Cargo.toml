@@ -1,10 +1,9 @@
 [package]
-name = "tofuri-key"
+name = "key"
 version = "0.1.0"
 edition = "2021"
-license = "GPL-3.0"
-description = "Tofuri key"
-repository = "https://github.com/tofuri/tofuri"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 secp256k1 = { version = "0.27.0", features = [

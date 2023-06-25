@@ -11,7 +11,7 @@ use std::fmt;
 use tracing::instrument;
 pub const GENESIS_BLOCK_PREVIOUS_HASH: [u8; 32] = [0; 32];
 #[instrument(skip_all, level = "debug")]
-pub fn reload(tree: &mut Tree, db: &DB) -> Result<(), Error> {
+pub fn reload(db: &DB, tree: &mut Tree) -> Result<(), Error> {
     tree.clear();
     let mut map: HashMap<[u8; 32], Vec<([u8; 32], u32)>> = HashMap::new();
     for res in db.iterator_cf(block::cf(db), IteratorMode::Start) {

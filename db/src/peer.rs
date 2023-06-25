@@ -8,7 +8,7 @@ pub fn cf(db: &DB) -> &ColumnFamily {
     db.cf_handle("peer").unwrap()
 }
 #[instrument(skip_all, level = "trace")]
-pub fn put(ip_addr: &IpAddr, db: &DB) -> Result<(), Error> {
+pub fn put(db: &DB, ip_addr: &IpAddr) -> Result<(), Error> {
     let key = bincode::serialize(ip_addr).map_err(Error::Bincode)?;
     let value = [];
     db.put_cf(cf(db), key, value).map_err(Error::RocksDB)

@@ -1,10 +1,10 @@
+use key::Error;
+use key::Key;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_big_array::BigArray;
 use sha2::Digest;
 use sha2::Sha256;
-use tofuri_key::Error;
-use tofuri_key::Key;
 use vint::vint;
 use vint::Vint;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]

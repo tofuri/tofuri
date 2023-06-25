@@ -1,8 +1,0 @@
-FROM rust:latest as builder
-WORKDIR /a
-COPY . .
-RUN cargo build --bin tofuri-api --release
-FROM debian:stable-slim
-COPY --from=builder /a/target/release/tofuri-api /usr/local/bin/
-EXPOSE 2022
-ENTRYPOINT ["tofuri-api"]

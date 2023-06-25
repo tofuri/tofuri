@@ -1,11 +1,11 @@
 use crate::Error;
+use block::Block;
 use rocksdb::ColumnFamily;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use tofuri_block::Block;
 use tracing::instrument;
 pub fn cf(db: &DB) -> &ColumnFamily {
     db.cf_handle("checkpoint").unwrap()

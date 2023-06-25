@@ -1,25 +1,25 @@
 pub mod fork;
 pub mod sync;
+use block::Block;
 use chrono::Utc;
 use colored::*;
+use db::tree::Tree;
+use db::tree::GENESIS_BLOCK_PREVIOUS_HASH;
 use fork::Manager;
 use fork::Stable;
 use fork::Unstable;
 use fork::BLOCK_TIME;
+use key::Key;
 use lazy_static::lazy_static;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
+use stake::Stake;
 use sync::Sync;
-use tofuri_block::Block;
-use tofuri_db::tree::Tree;
-use tofuri_db::tree::GENESIS_BLOCK_PREVIOUS_HASH;
-use tofuri_key::Key;
-use tofuri_stake::Stake;
-use tofuri_transaction::Transaction;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
+use transaction::Transaction;
 pub const BLOCK_SIZE_LIMIT: usize = 57797;
 pub const GENESIS_BLOCK_BETA: [u8; 32] = [0; 32];
 lazy_static! {
@@ -30,8 +30,8 @@ lazy_static! {
 }
 #[derive(Debug)]
 pub enum Error {
-    DB(tofuri_db::Error),
-    Key(tofuri_key::Error),
+    DB(db::Error),
+    Key(key::Error),
     Fork(fork::Error),
     BlockPending,
     BlockHashInTree,
@@ -72,7 +72,7 @@ pub struct Blockchain {
 impl Blockchain {
     #[instrument(skip_all, level = "debug")]
     pub fn load(&mut self, db: &DB, trust_fork_after_blocks: usize) -> Result<(), Error> {
-        tofuri_db::tree::reload(&mut self.tree, db).map_err(Error::DB)?;
+        db::tree::reload(db, &mut self.tree).map_err(Error::DB)?;
         let (mut stable_hashes, unstable_hashes) = self
             .tree
             .stable_and_unstable_hashes(trust_fork_after_blocks);
@@ -84,7 +84,7 @@ impl Blockchain {
             unstable_hashes = unstable_hashes.len(),
             tree_size = self.tree.size(),
         );
-        if let Ok(checkpoint) = tofuri_db::checkpoint::get(db) {
+        if let Ok(checkpoint) = db::checkpoint::get(db) {
             info!(checkpoint.height);
             self.forks.stable = Stable::from_checkpoint(
                 stable_hashes.drain(..checkpoint.height).collect(),
@@ -144,7 +144,7 @@ impl Blockchain {
         } else {
             self.forks.unstable.hashes[index - self.forks.stable.hashes.len()]
         };
-        tofuri_db::block::get(db, &hash).map_err(Error::DB)
+        db::block::get(db, &hash).map_err(Error::DB)
     }
     pub fn forge_block(
         &mut self,
@@ -213,7 +213,7 @@ impl Blockchain {
         block
     }
     fn save_block(&mut self, db: &DB, block: &Block, forger: bool, trust_fork_after_blocks: usize) {
-        tofuri_db::block::put(block, db).unwrap();
+        db::block::put(db, block).unwrap();
         let fork = self
             .tree
             .insert(block.hash(), block.previous_hash, block.timestamp);

@@ -3,10 +3,10 @@ use crate::p2p::multiaddr;
 use crate::p2p::ratelimit::Endpoint;
 use crate::Node;
 use crate::SHARE_PEERS_MAX_LEN;
+use blockchain::fork::BLOCK_TIME;
 use chrono::Utc;
 use rand::prelude::*;
 use std::net::IpAddr;
-use tofuri_blockchain::fork::BLOCK_TIME;
 use tokio::time::Duration;
 use tokio::time::Instant;
 use tokio::time::Interval;
@@ -100,7 +100,7 @@ fn grow(node: &mut Node) {
     if !sync.completed {
         return;
     }
-    if !tofuri_blockchain::validate_block_timestamp(timestamp, unstable.latest_block.timestamp) {
+    if !blockchain::validate_block_timestamp(timestamp, unstable.latest_block.timestamp) {
         return;
     }
     let key = match &node.key {
@@ -154,6 +154,6 @@ fn sync_request(node: &mut Node) {
 #[instrument(skip_all, level = "debug")]
 fn checkpoint(node: &mut Node) {
     let checkpoint = node.blockchain.forks.stable.checkpoint();
-    tofuri_db::checkpoint::put(&node.db, &checkpoint).unwrap();
+    db::checkpoint::put(&node.db, &checkpoint).unwrap();
     info!(checkpoint.height);
 }

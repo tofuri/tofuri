@@ -1,7 +1,7 @@
-use tofuri_block::Block;
-use tofuri_key::Key;
-use tofuri_stake::Stake;
-use tofuri_transaction::Transaction;
+use block::Block;
+use key::Key;
+use stake::Stake;
+use transaction::Transaction;
 fn main() {
     let key = Key::from_slice(&[0xcd; 32]).unwrap();
     let output_address = [1; 20];

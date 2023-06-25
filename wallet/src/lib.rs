@@ -1,9 +1,14 @@
 pub mod inquire;
-pub mod util;
 use crate::inquire::GENERATE;
 use crate::inquire::IMPORT;
 use ::inquire::Confirm;
 use ::inquire::Select;
+use address::public;
+use address::secret;
+use api::BlockHex;
+use api::Root;
+use api::StakeHex;
+use api::TransactionHex;
 use argon2::Algorithm;
 use argon2::Argon2;
 use argon2::ParamsBuilder;
@@ -16,19 +21,16 @@ use clap::Parser;
 use colored::*;
 use crossterm::event;
 use crossterm::terminal;
+use key::Key;
 use reqwest::Client;
 use reqwest::Url;
+use std::fs::create_dir_all;
+use std::fs::read_dir;
 use std::fs::File;
+use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process;
-use tofuri_address::public;
-use tofuri_address::secret;
-use tofuri_api::BlockHex;
-use tofuri_api::Root;
-use tofuri_api::StakeHex;
-use tofuri_api::TransactionHex;
-use tofuri_key::Key;
 pub const EXTENSION: &str = "tofuri";
 const INCORRECT: &str = "Incorrect passphrase";
 pub type Salt = [u8; 32];
@@ -36,7 +38,7 @@ pub type Nonce = [u8; 12];
 pub type Ciphertext = [u8; 48];
 #[derive(Debug)]
 pub enum Error {
-    Key(tofuri_key::Error),
+    Key(key::Error),
     Reqwest(reqwest::Error),
     Io(std::io::Error),
     Inquire(inquire::Error),
@@ -46,7 +48,7 @@ pub enum Error {
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// API Endpoint
-    #[clap(long, env = "API", default_value = "http://localhost:2022/")]
+    #[clap(long, env = "API", default_value = "http://localhost:2021/")]
     pub api: Url,
 }
 #[derive(Debug, Clone)]
@@ -210,7 +212,7 @@ impl Wallet {
         } {
             return Ok(());
         }
-        let transaction = tofuri_transaction::Transaction::sign(
+        let transaction = transaction::Transaction::sign(
             public::decode(&address).unwrap(),
             amount,
             fee,
@@ -248,7 +250,7 @@ impl Wallet {
         if !send {
             return Ok(());
         }
-        let stake = tofuri_stake::Stake::sign(
+        let stake = stake::Stake::sign(
             deposit,
             amount,
             fee,
@@ -450,7 +452,7 @@ pub fn save(filename: &str, key: &Key) -> Result<(), Error> {
     bytes[0..32].copy_from_slice(&salt);
     bytes[32..44].copy_from_slice(&nonce);
     bytes[44..92].copy_from_slice(&ciphertext);
-    let mut path = util::default_path().join(filename);
+    let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
     let mut file = File::create(path).unwrap();
     file.write_all(hex::encode(bytes).as_bytes()).unwrap();
@@ -499,7 +501,7 @@ pub fn load() -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
         filename = inquire::name().map_err(Error::Inquire)?;
         save(&filename, &key)?;
     }
-    let mut path = util::default_path().join(filename);
+    let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
     clear();
     println!("{}", path.to_string_lossy().green());
@@ -521,4 +523,25 @@ pub fn press_any_key_to_continue() {
 }
 pub fn clear() {
     print!("\x1B[2J\x1B[1;1H");
+}
+pub fn default_path() -> &'static Path {
+    Path::new("./tofuri-wallet")
+}
+pub fn filenames() -> Result<Vec<String>, io::Error> {
+    let path = default_path();
+    if !path.exists() {
+        create_dir_all(path).unwrap();
+    }
+    let mut filenames: Vec<String> = vec![];
+    for entry in read_dir(path).unwrap() {
+        filenames.push(
+            entry?
+                .path()
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned(),
+        );
+    }
+    Ok(filenames)
 }

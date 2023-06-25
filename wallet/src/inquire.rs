@@ -1,5 +1,6 @@
-use crate::util;
+use crate::filenames;
 use crate::EXTENSION;
+use address::public;
 use colored::*;
 use inquire::validator::Validation;
 use inquire::Confirm;
@@ -7,26 +8,25 @@ use inquire::CustomType;
 use inquire::Password;
 use inquire::PasswordDisplayMode;
 use inquire::Select;
+use key::Key;
 use lazy_static::lazy_static;
+use std::io;
 use std::path::PathBuf;
 use std::process;
-use tofuri_address::public;
-use tofuri_key::Key;
 use vint::floor;
 use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
-    Util(util::Error),
-    Address(tofuri_address::Error),
-    Key(tofuri_key::Error),
-    Io(std::io::Error),
+    Address(address::Error),
+    Key(key::Error),
+    Io(io::Error),
 }
 lazy_static! {
     pub static ref GENERATE: String = "Generate".green().to_string();
     pub static ref IMPORT: String = "Import".magenta().to_string();
 }
 pub fn select() -> Result<String, Error> {
-    let mut filenames = util::filenames().map_err(Error::Util)?;
+    let mut filenames = filenames().map_err(Error::Io)?;
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());
     let filename = Select::new(">>", filenames.to_vec())
@@ -38,7 +38,7 @@ pub fn select() -> Result<String, Error> {
     Ok(filename)
 }
 pub fn name() -> Result<String, Error> {
-    let filenames = util::filenames().map_err(Error::Util)?;
+    let filenames = filenames().map_err(Error::Io)?;
     Ok(Password::new("Name:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Full)
@@ -136,20 +136,17 @@ pub fn import() -> Result<Key, Error> {
     let secret = Password::new("Enter secret key:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
-        .with_validator(
-            move |input: &str| match tofuri_address::secret::decode(input) {
-                Ok(_) => Ok(Validation::Valid),
-                Err(_) => Ok(Validation::Invalid("Invalid secret key.".into())),
-            },
-        )
+        .with_validator(move |input: &str| match address::secret::decode(input) {
+            Ok(_) => Ok(Validation::Valid),
+            Err(_) => Ok(Validation::Invalid("Invalid secret key.".into())),
+        })
         .with_help_message("Enter a valid secret key (SECRETx...)")
         .prompt()
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
         });
-    Key::from_slice(&tofuri_address::secret::decode(&secret).map_err(Error::Address)?)
-        .map_err(Error::Key)
+    Key::from_slice(&address::secret::decode(&secret).map_err(Error::Address)?).map_err(Error::Key)
 }
 pub fn send() -> bool {
     match Confirm::new("Send?").prompt() {

@@ -1,11 +1,11 @@
 pub mod external;
 pub mod internal;
 use serde::de::DeserializeOwned;
+use stake::Stake;
 use std::net::IpAddr;
-use tofuri_stake::Stake;
-use tofuri_transaction::Transaction;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
+use transaction::Transaction;
 pub enum Call {
     Balance([u8; 20]),
     BalancePendingMin([u8; 20]),

@@ -13,8 +13,8 @@ Visit [doc.tofuri.com](https://doc.tofuri.com) for detailed installation instruc
 
 ---
 
-| Port Number | Crate | Description |
+| Port Number | Description |
 |-|-|-|
-| 2020 | tofuri | P2P communication |
-| 2021 | tofuri-api | API over HTTP using JSON format |
-| 3030 | tofuri | Testnet P2P communication |
+| 2020 | P2P communication |
+| 2021 | API over HTTP using JSON format |
+| 3030 | Testnet P2P communication |

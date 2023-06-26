@@ -6,6 +6,7 @@ use inquire::CustomType;
 use inquire::Password;
 use inquire::PasswordDisplayMode;
 use inquire::Select;
+use inquire::Text;
 use key::Key;
 use key_store::EXTENSION;
 use lazy_static::lazy_static;
@@ -38,9 +39,7 @@ pub fn select() -> Result<String, Error> {
 }
 pub fn name() -> Result<String, Error> {
     let filenames = key_store::filenames();
-    Ok(Password::new("Name:")
-        .with_display_toggle_enabled()
-        .with_display_mode(PasswordDisplayMode::Full)
+    Ok(Text::new("Name:")
         .with_validator(move |input: &str| {
             if input.is_empty() {
                 return Ok(Validation::Invalid("A wallet name can't be empty.".into()));
@@ -73,6 +72,7 @@ pub fn save() -> bool {
 }
 pub fn pwd() -> String {
     Password::new("Enter passphrase:")
+        .without_confirmation()
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
         .with_formatter(&|_| String::from("Decrypting..."))
@@ -82,8 +82,8 @@ pub fn pwd() -> String {
             process::exit(0)
         })
 }
-pub fn new_passphrase() -> String {
-    let passphrase = Password::new("New passphrase:")
+pub fn pwd_new() -> String {
+    Password::new("New passphrase:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
         .with_validator(move |input: &str| {
@@ -113,26 +113,11 @@ pub fn new_passphrase() -> String {
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());
             process::exit(0)
-        });
-    Password::new("Confirm new passphrase:")
-        .with_display_toggle_enabled()
-        .with_display_mode(PasswordDisplayMode::Masked)
-        .with_validator(move |input: &str| {
-            if passphrase != input {
-                Ok(Validation::Invalid("Passphrase does not match.".into()))
-            } else {
-                Ok(Validation::Valid)
-            }
-        })
-        .with_formatter(&|_| String::from("Encrypting..."))
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
         })
 }
 pub fn import() -> Result<Key, Error> {
     let secret = Password::new("Enter secret key:")
+        .without_confirmation()
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
         .with_validator(move |input: &str| match address::secret::decode(input) {
@@ -187,8 +172,8 @@ pub fn address() -> String {
             process::exit(0)
         })
 }
-const COIN: u128 = 10_u128.pow(18);
 pub fn amount() -> u128 {
+    const COIN: u128 = 10_u128.pow(18);
     (CustomType::<f64>::new("Amount:")
         .with_formatter(&|i| format!("{i:.18} tofuri"))
         .with_error_message("Please type a valid number")

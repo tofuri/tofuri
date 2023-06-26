@@ -56,7 +56,7 @@ fn wallet(key: &mut Option<Key>) -> bool {
             return true;
         }
         filename = inquire::name().unwrap();
-        let pwd = crate::inquire::new_passphrase();
+        let pwd = crate::inquire::pwd_new();
         let rng = &mut OsRng;
         key_store::write(rng, &key, &filename, &pwd);
     }

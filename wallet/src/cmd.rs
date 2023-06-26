@@ -50,10 +50,10 @@ pub async fn select(
     )
 }
 fn wallet(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
-    let mut filename = inquire::select().unwrap();
-    let res = if filename.as_str() == *GENERATE {
+    let mut name = inquire::name_select().unwrap();
+    let res = if name.as_str() == *GENERATE {
         Some(Key::generate())
-    } else if filename.as_str() == *IMPORT {
+    } else if name.as_str() == *IMPORT {
         Some(inquire::import_new().unwrap())
     } else {
         None
@@ -62,12 +62,12 @@ fn wallet(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
         if !inquire::save_new()? {
             return Ok(true);
         }
-        filename = inquire::name_new().unwrap();
+        name = inquire::name_new().unwrap();
         let pwd = inquire::pwd_new()?;
         let rng = &mut OsRng;
-        key_store::write(rng, &key, &filename, &pwd);
+        key_store::write(rng, &key, &name, &pwd);
     }
-    let mut path = DEFAULT_PATH.join(filename);
+    let mut path = DEFAULT_PATH.join(name);
     path.set_extension(EXTENSION);
     clear();
     decrypt(key, &path)?;

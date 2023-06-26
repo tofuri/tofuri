@@ -18,7 +18,7 @@ lazy_static! {
     pub static ref GENERATE: String = "Generate".green().to_string();
     pub static ref IMPORT: String = "Import".magenta().to_string();
 }
-pub fn select() -> Result<String, Box<dyn Error>> {
+pub fn name_select() -> Result<String, Box<dyn Error>> {
     let mut filenames = key_store::filenames();
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());

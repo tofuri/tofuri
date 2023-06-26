@@ -20,6 +20,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "address"
+version = "0.1.0"
+source = "git+https://github.com/tofuri/tofuri#41e7ed18ae1f89b4b27468b937f7d245c1c01c98"
+dependencies = [
+ "hex",
+ "sha2 0.10.7",
+]
+
+[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -230,11 +239,11 @@ checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
 name = "api"
 version = "0.1.0"
 dependencies = [
- "address",
+ "address 0.1.0",
  "block",
  "decimal",
  "hex",
- "key",
+ "key 0.1.0",
  "serde",
  "stake",
  "transaction",
@@ -572,7 +581,7 @@ name = "block"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "key",
+ "key 0.1.0",
  "merkle-cbt",
  "serde",
  "serde-big-array",
@@ -620,7 +629,7 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 name = "blockchain"
 version = "0.1.0"
 dependencies = [
- "address",
+ "address 0.1.0",
  "bincode",
  "block",
  "chrono",
@@ -628,7 +637,7 @@ dependencies = [
  "db",
  "decimal",
  "hex",
- "key",
+ "key 0.1.0",
  "lazy_static",
  "rocksdb",
  "serde",
@@ -2134,12 +2143,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "key"
+version = "0.1.0"
+source = "git+https://github.com/tofuri/tofuri#41e7ed18ae1f89b4b27468b937f7d245c1c01c98"
+dependencies = [
+ "rand 0.8.5",
+ "secp256k1",
+ "sha2 0.10.7",
+]
+
+[[package]]
 name = "key-store"
 version = "0.1.0"
 dependencies = [
  "encryption",
  "hex",
- "key",
+ "key 0.1.0",
  "lazy_static",
  "rand_core 0.6.4",
 ]
@@ -4225,7 +4244,7 @@ name = "stake"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "key",
+ "key 0.1.0",
  "serde",
  "serde-big-array",
  "sha2 0.10.7",
@@ -4460,7 +4479,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 name = "tofuri"
 version = "0.1.0"
 dependencies = [
- "address",
+ "address 0.1.0",
  "api",
  "async-trait",
  "axum",
@@ -4474,7 +4493,7 @@ dependencies = [
  "decimal",
  "futures",
  "hex",
- "key",
+ "key 0.1.0",
  "libp2p",
  "rand 0.8.5",
  "rocksdb",
@@ -4671,7 +4690,7 @@ name = "transaction"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "key",
+ "key 0.1.0",
  "serde",
  "serde-big-array",
  "sha2 0.10.7",
@@ -4875,6 +4894,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 
 [[package]]
+name = "vanity"
+version = "0.1.0"
+dependencies = [
+ "address 0.1.0 (git+https://github.com/tofuri/tofuri)",
+ "clap",
+ "key 0.1.0 (git+https://github.com/tofuri/tofuri)",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4930,7 +4960,7 @@ checksum = "9d5b2c62b4012a3e1eca5a7e077d13b3bf498c4073e33ccd58626607748ceeca"
 name = "wallet"
 version = "0.1.0"
 dependencies = [
- "address",
+ "address 0.1.0",
  "api",
  "chrono",
  "clap",
@@ -4940,7 +4970,7 @@ dependencies = [
  "encryption",
  "hex",
  "inquire",
- "key",
+ "key 0.1.0",
  "key-store",
  "lazy_static",
  "rand 0.8.5",

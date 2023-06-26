@@ -14,9 +14,7 @@ async fn main() {
         match cmd::select(&client, args.api.as_str(), &mut key).await {
             Ok(true) => press_any_key_to_continue(),
             Ok(false) => {}
-            Err(e) => {
-                println!("{}", e.to_string().red());
-            }
+            Err(e) => println!("{}", e.to_string().red()),
         }
         clear();
     }

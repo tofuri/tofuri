@@ -74,20 +74,20 @@ fn wallet(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
     Ok(false)
 }
 async fn root(client: &Client, api: &str) -> Result<bool, Box<dyn Error>> {
-    let root: Root = client.get(api.to_string()).send().await?.json().await?;
+    let root: Root = client.get(api).send().await?.json().await?;
     println!("{root:#?}");
     Ok(true)
 }
 async fn balance(client: &Client, api: &str, key: &Key) -> Result<bool, Box<dyn Error>> {
     let address = public::encode(&key.address_bytes());
     let balance: String = client
-        .get(format!("{}balance/{}", api.to_string(), address))
+        .get(format!("{}balance/{}", api, address))
         .send()
         .await?
         .json()
         .await?;
     let staked: String = client
-        .get(format!("{}staked/{}", api.to_string(), address))
+        .get(format!("{}staked/{}", api, address))
         .send()
         .await?
         .json()
@@ -101,7 +101,7 @@ async fn balance(client: &Client, api: &str, key: &Key) -> Result<bool, Box<dyn 
 }
 async fn height(client: &Client, api: &str) -> Result<bool, Box<dyn Error>> {
     let height: usize = client
-        .get(format!("{}height", api.to_string()))
+        .get(format!("{}height", api))
         .send()
         .await?
         .json()
@@ -127,7 +127,7 @@ async fn transaction(client: &Client, api: &str, key: &Key) -> Result<bool, Box<
     println!("[u8; 32]: {}", hex::encode(transaction.hash()).cyan());
     let transaction_hex: TransactionHex = transaction.try_into().unwrap();
     let res: String = client
-        .post(format!("{}transaction", api.to_string()))
+        .post(format!("{}transaction", api))
         .json(&transaction_hex)
         .send()
         .await?
@@ -156,7 +156,7 @@ async fn stake(client: &Client, api: &str, key: &Key) -> Result<bool, Box<dyn Er
     println!("[u8; 32]: {}", hex::encode(stake.hash()).cyan());
     let stake_hex: StakeHex = stake.try_into().unwrap();
     let res: String = client
-        .post(format!("{}stake", api.to_string()))
+        .post(format!("{}stake", api))
         .json(&stake_hex)
         .send()
         .await?
@@ -176,13 +176,13 @@ async fn search(client: &Client, api: &str) -> Result<bool, Box<dyn Error>> {
     let search = inquire::search()?;
     if public::decode(&search).is_ok() {
         let balance: String = client
-            .get(format!("{}balance/{}", api.to_string(), search))
+            .get(format!("{}balance/{}", api, search))
             .send()
             .await?
             .json()
             .await?;
         let staked: String = client
-            .get(format!("{}staked/{}", api.to_string(), search))
+            .get(format!("{}staked/{}", api, search))
             .send()
             .await?
             .json()
@@ -194,40 +194,24 @@ async fn search(client: &Client, api: &str) -> Result<bool, Box<dyn Error>> {
         );
         return Ok(true);
     } else if search.len() == 64 {
-        if let Ok(res) = client
-            .get(format!("{}block/{}", api.to_string(), search))
-            .send()
-            .await
-        {
+        if let Ok(res) = client.get(format!("{}block/{}", api, search)).send().await {
             let block: BlockHex = res.json().await?;
             println!("Block found\n{block:?}");
         } else if let Ok(res) = client
-            .get(format!("{}/transaction/{}", api.to_string(), search))
+            .get(format!("{}/transaction/{}", api, search))
             .send()
             .await
         {
             let transaction: TransactionHex = res.json().await?;
             println!("Transaction found\n{transaction:?}");
-        } else if let Ok(res) = client
-            .get(format!("{}stake/{}", api.to_string(), search))
-            .send()
-            .await
-        {
+        } else if let Ok(res) = client.get(format!("{}stake/{}", api, search)).send().await {
             let stake: StakeHex = res.json().await?;
             println!("Stake found\n{stake:?}");
         }
     } else if search.parse::<usize>().is_ok() {
-        if let Ok(res) = client
-            .get(format!("{}hash/{}", api.to_string(), search))
-            .send()
-            .await
-        {
+        if let Ok(res) = client.get(format!("{}hash/{}", api, search)).send().await {
             let hash: String = res.json().await?;
-            if let Ok(res) = client
-                .get(format!("{}block/{}", api.to_string(), hash))
-                .send()
-                .await
-            {
+            if let Ok(res) = client.get(format!("{}block/{}", api, hash)).send().await {
                 let block: BlockHex = res.json().await?;
                 println!("Block found\n{block:?}");
             }

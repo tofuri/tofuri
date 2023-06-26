@@ -9,19 +9,13 @@ use api::BlockHex;
 use api::Root;
 use api::StakeHex;
 use api::TransactionHex;
-use argon2::Algorithm;
-use argon2::Argon2;
-use argon2::ParamsBuilder;
-use argon2::Version;
-use chacha20poly1305::aead::Aead;
-use chacha20poly1305::aead::KeyInit;
-use chacha20poly1305::ChaCha20Poly1305;
 use chrono::Utc;
 use clap::Parser;
 use colored::*;
 use crossterm::event;
 use crossterm::terminal;
 use key::Key;
+use rand::rngs::OsRng;
 use reqwest::Client;
 use reqwest::Url;
 use std::fs::create_dir_all;
@@ -54,9 +48,6 @@ pub struct Args {
 #[derive(Debug, Clone)]
 pub struct Wallet {
     key: Option<Key>,
-    salt: Salt,
-    nonce: Nonce,
-    ciphertext: Ciphertext,
     api: Url,
     client: Client,
 }
@@ -64,9 +55,6 @@ impl Wallet {
     pub fn new(api: Url) -> Wallet {
         Wallet {
             key: None,
-            salt: [0; 32],
-            nonce: [0; 12],
-            ciphertext: [0; 48],
             api,
             client: Client::default(),
         }
@@ -74,7 +62,7 @@ impl Wallet {
     pub async fn select(&mut self) -> bool {
         let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
         if self.key.is_some() {
-            let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret", "Hex"];
+            let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret"];
             v.append(&mut vec);
             vec = v;
         };
@@ -130,20 +118,13 @@ impl Wallet {
                 self.key();
                 true
             }
-            "Hex" => {
-                self.data();
-                true
-            }
             _ => {
                 process::exit(0);
             }
         }
     }
     fn decrypt(&mut self) {
-        let (salt, nonce, ciphertext, key) = load().unwrap();
-        self.salt = salt;
-        self.nonce = nonce;
-        self.ciphertext = ciphertext;
+        let key = load().unwrap();
         self.key = Some(key);
     }
     async fn api(&self) -> Result<(), Error> {
@@ -389,72 +370,17 @@ impl Wallet {
             );
         }
     }
-    fn data(&self) {
-        println!(
-            "{}{}{}",
-            hex::encode(self.salt).red(),
-            hex::encode(self.nonce).red(),
-            hex::encode(self.ciphertext).red()
-        );
-    }
 }
-pub fn argon2_key_derivation(password: &[u8], salt: &[u8; 32]) -> [u8; 32] {
-    let mut params_builder = ParamsBuilder::new();
-    params_builder.m_cost(1024);
-    params_builder.t_cost(1);
-    params_builder.p_cost(1);
-    let params = params_builder.build().unwrap();
-    let ctx = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
-    let mut bytes = [0; 32];
-    ctx.hash_password_into(password, salt, &mut bytes).unwrap();
-    bytes
-}
-pub fn encrypt(key: &Key) -> Result<(Salt, Nonce, Ciphertext), Error> {
-    let passphrase = crate::inquire::new_passphrase();
-    let salt: Salt = rand::random();
-    let cipher_key = argon2_key_derivation(passphrase.as_bytes(), &salt);
-    let cipher = ChaCha20Poly1305::new_from_slice(&cipher_key).unwrap();
-    let nonce: Nonce = rand::random();
-    let ciphertext: Ciphertext = cipher
-        .encrypt(
-            &nonce.try_into().unwrap(),
-            key.secret_key_bytes().as_slice(),
-        )
-        .unwrap()
-        .try_into()
-        .unwrap();
-    Ok((salt, nonce, ciphertext))
-}
-pub fn decrypt(
-    salt: &Salt,
-    nonce: &Nonce,
-    ciphertext: &Ciphertext,
-    passphrase: &str,
-) -> Result<Vec<u8>, Error> {
-    let passphrase = match passphrase {
-        "" => crate::inquire::passphrase(),
-        _ => passphrase.to_string(),
-    };
-    let key = argon2_key_derivation(passphrase.as_bytes(), salt);
-    let cipher = ChaCha20Poly1305::new_from_slice(&key).unwrap();
-    match cipher.decrypt(nonce.into(), ciphertext.as_slice()) {
-        Ok(plaintext) => Ok(plaintext),
-        Err(_) => Err(Error::InvalidPassphrase),
-    }
-}
-pub fn save(filename: &str, key: &Key) -> Result<(), Error> {
-    let (salt, nonce, ciphertext) = encrypt(key)?;
-    let mut bytes = [0; 92];
-    bytes[0..32].copy_from_slice(&salt);
-    bytes[32..44].copy_from_slice(&nonce);
-    bytes[44..92].copy_from_slice(&ciphertext);
+pub fn save(filename: &str, key: &Key) {
+    let rng = &mut OsRng;
+    let pwd = crate::inquire::new_passphrase();
+    let encrypted = encryption::encrypt(rng, key.secret_key_bytes(), pwd);
     let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
     let mut file = File::create(path).unwrap();
-    file.write_all(hex::encode(bytes).as_bytes()).unwrap();
-    Ok(())
+    file.write_all(hex::encode(encrypted).as_bytes()).unwrap();
 }
-pub fn load() -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
+pub fn load() -> Result<Key, Error> {
     fn read_exact(path: impl AsRef<Path>) -> Result<[u8; 92], Error> {
         let mut file = File::open(path).unwrap();
         let mut bytes = [0; 184];
@@ -462,21 +388,20 @@ pub fn load() -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
         let vec = hex::decode(bytes).unwrap();
         Ok(vec.try_into().unwrap())
     }
-    fn attempt(slice: &[u8], passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
-        fn inner(slice: &[u8], passphrase: &str) -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
-            let salt: Salt = slice[0..32].try_into().unwrap();
-            let nonce: Nonce = slice[32..44].try_into().unwrap();
-            let ciphertext: Ciphertext = slice[44..92].try_into().unwrap();
-            let key = Key::from_slice(
-                decrypt(&salt, &nonce, &ciphertext, passphrase)?
-                    .as_slice()
-                    .try_into()
-                    .unwrap(),
-            )
-            .map_err(Error::Key)?;
-            Ok((salt, nonce, ciphertext, key))
+    fn attempt(encrypted: &[u8; 92], passphrase: &str) -> Result<Key, Error> {
+        fn inner(encrypted: &[u8; 92], passphrase: &str) -> Result<Key, Error> {
+            let passphrase = match passphrase {
+                "" => crate::inquire::passphrase(),
+                _ => passphrase.to_string(),
+            };
+            let secret_key_bytes = match encryption::decrypt(encrypted, &passphrase) {
+                Some(bytes) => bytes,
+                None => return Err(Error::InvalidPassphrase),
+            };
+            let key = Key::from_slice(&secret_key_bytes).map_err(Error::Key)?;
+            Ok(key)
         }
-        let res = inner(slice, passphrase);
+        let res = inner(encrypted, passphrase);
         if let Err(Error::InvalidPassphrase) = res {
             println!("{}", INCORRECT.red())
         }
@@ -492,10 +417,10 @@ pub fn load() -> Result<(Salt, Nonce, Ciphertext, Key), Error> {
     };
     if let Some(key) = res {
         if !inquire::save() {
-            return Ok(([0; 32], [0; 12], [0; 48], key));
+            return Ok(key);
         }
         filename = inquire::name().map_err(Error::Inquire)?;
-        save(&filename, &key)?;
+        save(&filename, &key);
     }
     let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);

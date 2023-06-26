@@ -115,7 +115,7 @@ pub fn pwd() -> String {
             process::exit(0)
         })
 }
-pub fn import() -> Result<Key, Error> {
+pub fn import_new() -> Result<Key, Error> {
     let secret = Password::new("Enter secret key:")
         .without_confirmation()
         .with_display_toggle_enabled()
@@ -132,7 +132,7 @@ pub fn import() -> Result<Key, Error> {
         });
     Key::from_slice(&address::secret::decode(&secret).map_err(Error::Address)?).map_err(Error::Key)
 }
-pub fn send() -> bool {
+pub fn confirm_send() -> bool {
     match Confirm::new("Send?").prompt() {
         Ok(b) => b,
         Err(err) => {

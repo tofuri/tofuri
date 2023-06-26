@@ -47,7 +47,7 @@ fn wallet(key: &mut Option<Key>) -> bool {
     let res = if filename.as_str() == *GENERATE {
         Some(Key::generate())
     } else if filename.as_str() == *IMPORT {
-        Some(inquire::import().unwrap())
+        Some(inquire::import_new().unwrap())
     } else {
         None
     };
@@ -161,7 +161,7 @@ async fn stake(client: &Client, api: &str, key: &Key) -> bool {
     let deposit = inquire::deposit();
     let amount = inquire::amount();
     let fee = inquire::fee();
-    let send = inquire::send();
+    let send = inquire::confirm_send();
     if !send {
         return false;
     }

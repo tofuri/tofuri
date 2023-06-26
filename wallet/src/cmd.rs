@@ -26,29 +26,27 @@ pub async fn select(
     api: &str,
     key: &mut Option<Key>,
 ) -> Result<bool, Box<dyn Error>> {
-    let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
+    let mut options = vec!["Wallet", "Search", "Height", "API", "Exit"];
     if key.is_some() {
-        let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret"];
-        v.append(&mut vec);
-        vec = v;
+        options.extend_from_slice(&["Address", "Balance", "Send", "Stake", "Secret"]);
+    }
+    let choice = Select::new(">>", options).prompt().unwrap_or_else(|err| {
+        println!("{}", err.to_string().red());
+        process::exit(0)
+    });
+    match choice {
+        "Wallet" => decrypt(key)?,
+        "Search" => search(client, api).await?,
+        "Height" => height(client, api).await?,
+        "API" => root(client, api).await?,
+        "Address" => address(key.as_ref().unwrap()),
+        "Balance" => balance(client, api, key.as_ref().unwrap()).await?,
+        "Send" => transaction(client, api, key.as_ref().unwrap()).await?,
+        "Stake" => stake(client, api, key.as_ref().unwrap()).await?,
+        "Secret" => view_secret(key.as_ref().unwrap())?,
+        _ => unreachable!(),
     };
-    Ok(
-        match Select::new(">>", vec).prompt().unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }) {
-            "Wallet" => decrypt(key)?,
-            "Search" => search(client, api).await?,
-            "Height" => height(client, api).await?,
-            "API" => root(client, api).await?,
-            "Address" => address(&key.as_ref().unwrap()),
-            "Balance" => balance(client, api, &key.as_ref().unwrap()).await?,
-            "Send" => transaction(client, api, &key.as_ref().unwrap()).await?,
-            "Stake" => stake(client, api, &key.as_ref().unwrap()).await?,
-            "Secret" => view_secret(&key.as_ref().unwrap())?,
-            _ => unreachable!(),
-        },
-    )
+    Ok(true)
 }
 fn decrypt(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
     let mut name = inquire::name_select().unwrap();

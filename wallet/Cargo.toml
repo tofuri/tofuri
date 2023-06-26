@@ -9,6 +9,7 @@ edition = "2021"
 api = { path = "../api" }
 address = { path = "../address" }
 encryption = { path = "../encryption" }
+key-store = { path = "../key-store" }
 vint = { git = "https://github.com/zudo/vint" }
 decimal = { git = "https://github.com/zudo/decimal" }
 key = { path = "../key" }

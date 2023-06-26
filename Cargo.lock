@@ -2141,7 +2141,7 @@ dependencies = [
  "hex",
  "key",
  "lazy_static",
- "rand 0.8.5",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -4941,6 +4941,7 @@ dependencies = [
  "hex",
  "inquire",
  "key",
+ "key-store",
  "lazy_static",
  "rand 0.8.5",
  "reqwest",

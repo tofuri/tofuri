@@ -1,6 +1,6 @@
 use key::Key;
 use lazy_static::lazy_static;
-use rand::rngs::OsRng;
+use rand_core::CryptoRngCore;
 use std::fs::read_dir;
 use std::fs::File;
 use std::io::prelude::*;
@@ -16,8 +16,7 @@ pub fn read(path: impl AsRef<Path>) -> [u8; 92] {
     let vec = hex::decode(bytes).unwrap();
     vec.try_into().unwrap()
 }
-pub fn write(key: &Key, filename: &str, pwd: &str) {
-    let rng = &mut OsRng;
+pub fn write(rng: &mut impl CryptoRngCore, key: &Key, filename: &str, pwd: &str) {
     let encrypted = encryption::encrypt(rng, key.secret_key_bytes(), pwd);
     let mut path = DEFAULT_PATH.join(filename);
     path.set_extension(EXTENSION);

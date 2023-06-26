@@ -9,5 +9,5 @@ edition = "2021"
 encryption = { path = "../encryption" }
 key = { path = "../key" }
 hex = "0.4.3"
-rand = "0.8.5"
 lazy_static = "1.4.0"
+rand_core = "0.6.4"

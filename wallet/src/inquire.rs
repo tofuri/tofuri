@@ -1,5 +1,3 @@
-use crate::filenames;
-use crate::EXTENSION;
 use address::public;
 use colored::*;
 use inquire::validator::Validation;
@@ -9,6 +7,7 @@ use inquire::Password;
 use inquire::PasswordDisplayMode;
 use inquire::Select;
 use key::Key;
+use key_store::EXTENSION;
 use lazy_static::lazy_static;
 use std::io;
 use std::path::PathBuf;
@@ -26,7 +25,7 @@ lazy_static! {
     pub static ref IMPORT: String = "Import".magenta().to_string();
 }
 pub fn select() -> Result<String, Error> {
-    let mut filenames = filenames().map_err(Error::Io)?;
+    let mut filenames = key_store::filenames();
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());
     let filename = Select::new(">>", filenames.to_vec())
@@ -38,7 +37,7 @@ pub fn select() -> Result<String, Error> {
     Ok(filename)
 }
 pub fn name() -> Result<String, Error> {
-    let filenames = filenames().map_err(Error::Io)?;
+    let filenames = key_store::filenames();
     Ok(Password::new("Name:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Full)

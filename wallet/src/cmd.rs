@@ -1,5 +1,3 @@
-use crate::clear;
-use crate::decrypt;
 use crate::inquire;
 use crate::inquire::GENERATE;
 use crate::inquire::IMPORT;
@@ -13,6 +11,8 @@ use api::StakeHex;
 use api::TransactionHex;
 use chrono::Utc;
 use colored::*;
+use crossterm::event;
+use crossterm::terminal;
 use key::Key;
 use key_store::DEFAULT_PATH;
 use key_store::EXTENSION;
@@ -20,6 +20,7 @@ use rand::rngs::OsRng;
 use reqwest::Client;
 use std::error::Error;
 use std::process;
+const INCORRECT: &str = "Incorrect passphrase";
 pub async fn select(
     client: &Client,
     api: &str,
@@ -36,7 +37,7 @@ pub async fn select(
             println!("{}", err.to_string().red());
             process::exit(0)
         }) {
-            "Wallet" => wallet(key)?,
+            "Wallet" => decrypt(key)?,
             "Search" => search(client, api).await?,
             "Height" => height(client, api).await?,
             "API" => root(client, api).await?,
@@ -49,7 +50,7 @@ pub async fn select(
         },
     )
 }
-fn wallet(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
+fn decrypt(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
     let mut name = inquire::name_select().unwrap();
     let res = if name.as_str() == *GENERATE {
         Some(Key::generate())
@@ -67,11 +68,28 @@ fn wallet(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
         let rng = &mut OsRng;
         key_store::write(rng, &key, &name, &pwd);
     }
+    clear();
     let mut path = DEFAULT_PATH.join(name);
     path.set_extension(EXTENSION);
-    clear();
-    decrypt(key, &path)?;
-    Ok(false)
+    println!("{}", path.to_string_lossy().green());
+    let encrypted = key_store::read(path);
+    loop {
+        match {
+            let pwd = inquire::pwd()?;
+            let key = encryption::decrypt(&encrypted, pwd)
+                .and_then(|secret_key_bytes| Key::from_slice(&secret_key_bytes).ok());
+            if key.is_none() {
+                println!("{}", INCORRECT.red())
+            }
+            key
+        } {
+            Some(x) => {
+                *key = Some(x);
+                return Ok(false);
+            }
+            None => continue,
+        }
+    }
 }
 async fn root(client: &Client, api: &str) -> Result<bool, Box<dyn Error>> {
     let root: Root = client.get(api).send().await?.json().await?;
@@ -237,4 +255,13 @@ fn view_secret(key: &Key) -> Result<bool, Box<dyn Error>> {
         println!("{}", secret::encode(&key.secret_key_bytes()).red());
     }
     Ok(true)
+}
+pub fn press_any_key_to_continue() {
+    println!("{}", "Press any key to continue...".magenta().italic());
+    terminal::enable_raw_mode().unwrap();
+    event::read().unwrap();
+    terminal::disable_raw_mode().unwrap();
+}
+pub fn clear() {
+    print!("\x1B[2J\x1B[1;1H");
 }

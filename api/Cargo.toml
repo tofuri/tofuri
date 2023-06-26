@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 address = { path = "../address" }
 block = { path = "../block" }
-blockchain = { path = "../blockchain" }
 key = { path = "../key" }
 vint = { git = "https://github.com/zudo/vint" }
 decimal = { git = "https://github.com/zudo/decimal" }

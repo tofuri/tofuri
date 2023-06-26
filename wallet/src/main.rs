@@ -1,16 +1,19 @@
 use clap::Parser;
-use wallet::clear;
-use wallet::press_any_key_to_continue;
+use colored::*;
+use reqwest::Client;
+use wallet::cmd;
 use wallet::Args;
-use wallet::Wallet;
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    let mut wallet = Wallet::new(args);
+    let client = Client::new();
+    let mut key = None;
     loop {
-        if wallet.select().await {
-            press_any_key_to_continue();
+        match cmd::select(&client, args.api.as_str(), &mut key).await {
+            Ok(true) => cmd::press_any_key_to_continue(),
+            Ok(false) => {}
+            Err(e) => println!("{}", e.to_string().red()),
         }
-        clear();
+        cmd::clear();
     }
 }

@@ -232,7 +232,6 @@ version = "0.1.0"
 dependencies = [
  "address",
  "block",
- "blockchain",
  "decimal",
  "hex",
  "key",
@@ -572,10 +571,7 @@ dependencies = [
 name = "block"
 version = "0.1.0"
 dependencies = [
- "address",
  "bincode",
- "decimal",
- "hex",
  "key",
  "merkle-cbt",
  "serde",
@@ -1142,7 +1138,6 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "block",
- "decimal",
  "hex",
  "rocksdb",
  "serde",
@@ -1372,6 +1367,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071a31f4ee85403370b58aca746f01041ede6f0da2730960ad001edc2b71b394"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "encryption"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "chacha20poly1305 0.10.1",
+ "lazy_static",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -2125,6 +2131,17 @@ dependencies = [
  "secp256k1",
  "sha2 0.10.7",
  "vrf",
+]
+
+[[package]]
+name = "key-store"
+version = "0.1.0"
+dependencies = [
+ "encryption",
+ "hex",
+ "key",
+ "lazy_static",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -4207,10 +4224,7 @@ dependencies = [
 name = "stake"
 version = "0.1.0"
 dependencies = [
- "address",
  "bincode",
- "decimal",
- "hex",
  "key",
  "serde",
  "serde-big-array",
@@ -4656,10 +4670,7 @@ dependencies = [
 name = "transaction"
 version = "0.1.0"
 dependencies = [
- "address",
  "bincode",
- "decimal",
- "hex",
  "key",
  "serde",
  "serde-big-array",
@@ -4921,17 +4932,16 @@ version = "0.1.0"
 dependencies = [
  "address",
  "api",
- "argon2",
- "bincode",
- "chacha20poly1305 0.10.1",
  "chrono",
  "clap",
  "colored",
  "crossterm 0.26.1",
  "decimal",
+ "encryption",
  "hex",
  "inquire",
  "key",
+ "key-store",
  "lazy_static",
  "rand 0.8.5",
  "reqwest",

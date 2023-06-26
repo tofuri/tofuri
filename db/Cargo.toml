@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 vint = { git = "https://github.com/zudo/vint" }
-decimal = { git = "https://github.com/zudo/decimal" }
 block = { path = "../block" }
 stake = { path = "../stake" }
 transaction = { path = "../transaction" }

@@ -19,21 +19,16 @@ pub struct Args {
 pub fn decrypt(key: &mut Option<Key>, path: &Path) -> Result<bool, Box<dyn Error>> {
     println!("{}", path.to_string_lossy().green());
     let encrypted = key_store::read(path);
-    fn attempt(encrypted: &[u8; 92], pwd: &str) -> Option<Key> {
-        let pwd = match pwd {
-            "" => inquire::pwd().unwrap(),
-            _ => pwd.to_string(),
-        };
-        let key = encryption::decrypt(encrypted, &pwd)
-            .and_then(|secret_key_bytes| Key::from_slice(&secret_key_bytes).ok());
-        if key.is_none() {
-            println!("{}", INCORRECT.red())
-        }
-        key
-    }
     loop {
-        let pwd = inquire::pwd()?;
-        match attempt(&encrypted, &pwd) {
+        match {
+            let pwd = inquire::pwd()?;
+            let key = encryption::decrypt(&encrypted, pwd)
+                .and_then(|secret_key_bytes| Key::from_slice(&secret_key_bytes).ok());
+            if key.is_none() {
+                println!("{}", INCORRECT.red())
+            }
+            key
+        } {
             Some(x) => {
                 *key = Some(x);
                 return Ok(false);

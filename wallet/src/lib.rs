@@ -388,24 +388,17 @@ pub fn load() -> Result<Key, Error> {
         let vec = hex::decode(bytes).unwrap();
         Ok(vec.try_into().unwrap())
     }
-    fn attempt(encrypted: &[u8; 92], passphrase: &str) -> Result<Key, Error> {
-        fn inner(encrypted: &[u8; 92], passphrase: &str) -> Result<Key, Error> {
-            let passphrase = match passphrase {
-                "" => crate::inquire::passphrase(),
-                _ => passphrase.to_string(),
-            };
-            let secret_key_bytes = match encryption::decrypt(encrypted, &passphrase) {
-                Some(bytes) => bytes,
-                None => return Err(Error::InvalidPassphrase),
-            };
-            let key = Key::from_slice(&secret_key_bytes).map_err(Error::Key)?;
-            Ok(key)
-        }
-        let res = inner(encrypted, passphrase);
-        if let Err(Error::InvalidPassphrase) = res {
+    fn attempt(encrypted: &[u8; 92], pwd: &str) -> Option<Key> {
+        let pwd = match pwd {
+            "" => crate::inquire::passphrase(),
+            _ => pwd.to_string(),
+        };
+        let key = encryption::decrypt(encrypted, &pwd)
+            .and_then(|secret_key_bytes| Key::from_slice(&secret_key_bytes).ok());
+        if key.is_none() {
             println!("{}", INCORRECT.red())
         }
-        res
+        key
     }
     let mut filename = crate::inquire::select().map_err(Error::Inquire)?;
     let res = if filename.as_str() == *GENERATE {
@@ -429,11 +422,10 @@ pub fn load() -> Result<Key, Error> {
     let bytes = read_exact(path)?;
     loop {
         let passphrase = crate::inquire::passphrase();
-        let res = attempt(&bytes, &passphrase);
-        if let Err(Error::InvalidPassphrase) = res {
-            continue;
+        match attempt(&bytes, &passphrase) {
+            Some(key) => return Ok(key),
+            None => continue,
         }
-        return res;
     }
 }
 pub fn press_any_key_to_continue() {

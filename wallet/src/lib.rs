@@ -45,333 +45,244 @@ pub struct Args {
     #[clap(long, env = "API", default_value = "http://localhost:2021/")]
     pub api: Url,
 }
-#[derive(Debug, Clone)]
-pub struct Wallet {
-    key: Option<Key>,
-    api: Url,
-    client: Client,
-}
-impl Wallet {
-    pub fn new(api: Url) -> Wallet {
-        Wallet {
-            key: None,
-            api,
-            client: Client::default(),
-        }
+pub async fn select(client: &Client, api: &str, key: &mut Option<Key>) -> bool {
+    let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
+    if key.is_some() {
+        let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret"];
+        v.append(&mut vec);
+        vec = v;
+    };
+    match Select::new(">>", vec).prompt().unwrap_or_else(|err| {
+        println!("{}", err.to_string().red());
+        process::exit(0)
+    }) {
+        "Wallet" => read(key),
+        "Search" => search(client, api).await,
+        "Height" => height(client, api).await,
+        "API" => root(client, api).await,
+        "Address" => address(&key.as_ref().unwrap()),
+        "Balance" => balance(client, api, &key.as_ref().unwrap()).await,
+        "Send" => transaction(client, api, &key.as_ref().unwrap()).await,
+        "Stake" => stake(client, api, &key.as_ref().unwrap()).await,
+        "Secret" => view_secret(&key.as_ref().unwrap()),
+        _ => process::exit(0),
     }
-    pub async fn select(&mut self) -> bool {
-        let mut vec = vec!["Wallet", "Search", "Height", "API", "Exit"];
-        if self.key.is_some() {
-            let mut v = vec!["Address", "Balance", "Send", "Stake", "Secret"];
-            v.append(&mut vec);
-            vec = v;
-        };
-        match Select::new(">>", vec).prompt().unwrap_or_else(|err| {
+}
+async fn root(client: &Client, api: &str) -> bool {
+    let root: Root = client
+        .get(api.to_string())
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    println!("{root:#?}");
+    true
+}
+async fn balance(client: &Client, api: &str, key: &Key) -> bool {
+    let address = public::encode(&key.address_bytes());
+    let balance: String = client
+        .get(format!("{}balance/{}", api.to_string(), address))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let staked: String = client
+        .get(format!("{}staked/{}", api.to_string(), address))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    println!(
+        "Account balance: {}, staked: {}",
+        balance.to_string().yellow(),
+        staked.yellow()
+    );
+    true
+}
+async fn height(client: &Client, api: &str) -> bool {
+    let height: usize = client
+        .get(format!("{}height", api.to_string()))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    println!("Latest block height is {}.", height.to_string().yellow());
+    true
+}
+async fn transaction(client: &Client, api: &str, key: &Key) -> bool {
+    let address = inquire::address();
+    let amount = inquire::amount();
+    let fee = inquire::fee();
+    if !match Confirm::new("Send?").prompt() {
+        Ok(b) => b,
+        Err(err) => {
             println!("{}", err.to_string().red());
             process::exit(0)
-        }) {
-            "Wallet" => {
-                self.decrypt();
-                false
-            }
-            "Search" => {
-                if let Err(err) = self.search().await {
-                    println!("{:?}", err);
-                }
-                true
-            }
-            "Height" => {
-                if let Err(err) = self.height().await {
-                    println!("{:?}", err);
-                }
-                true
-            }
-            "API" => {
-                if let Err(err) = self.api().await {
-                    println!("{:?}", err);
-                }
-                true
-            }
-            "Address" => {
-                self.address();
-                true
-            }
-            "Balance" => {
-                if let Err(err) = self.balance().await {
-                    println!("{:?}", err);
-                }
-                true
-            }
-            "Send" => {
-                if let Err(err) = self.transaction().await {
-                    println!("{:?}", err);
-                }
-                true
-            }
-            "Stake" => {
-                if let Err(err) = self.stake().await {
-                    println!("{:?}", err);
-                }
-                true
-            }
-            "Secret" => {
-                self.key();
-                true
-            }
-            _ => {
-                process::exit(0);
-            }
         }
+    } {
+        return false;
     }
-    fn decrypt(&mut self) {
-        let key = load().unwrap();
-        self.key = Some(key);
+    let transaction = transaction::Transaction::sign(
+        public::decode(&address).unwrap(),
+        amount,
+        fee,
+        Utc::now().timestamp() as u32,
+        key,
+    )
+    .unwrap();
+    println!("[u8; 32]: {}", hex::encode(transaction.hash()).cyan());
+    let transaction_hex: TransactionHex = transaction.try_into().unwrap();
+    let res: String = client
+        .post(format!("{}transaction", api.to_string()))
+        .json(&transaction_hex)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    println!(
+        "{}",
+        if res == "success" {
+            res.green()
+        } else {
+            res.red()
+        }
+    );
+    true
+}
+async fn stake(client: &Client, api: &str, key: &Key) -> bool {
+    let deposit = inquire::deposit();
+    let amount = inquire::amount();
+    let fee = inquire::fee();
+    let send = inquire::send();
+    if !send {
+        return false;
     }
-    async fn api(&self) -> Result<(), Error> {
-        let root: Root = self
-            .client
-            .get(self.api.to_string())
+    let stake =
+        stake::Stake::sign(deposit, amount, fee, Utc::now().timestamp() as u32, key).unwrap();
+    println!("[u8; 32]: {}", hex::encode(stake.hash()).cyan());
+    let stake_hex: StakeHex = stake.try_into().unwrap();
+    let res: String = client
+        .post(format!("{}stake", api.to_string()))
+        .json(&stake_hex)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    println!(
+        "{}",
+        if res == "success" {
+            res.green()
+        } else {
+            res.red()
+        }
+    );
+    true
+}
+async fn search(client: &Client, api: &str) -> bool {
+    let search = inquire::search();
+    if public::decode(&search).is_ok() {
+        let balance: String = client
+            .get(format!("{}balance/{}", api.to_string(), search))
             .send()
             .await
-            .map_err(Error::Reqwest)?
+            .unwrap()
             .json()
             .await
-            .map_err(Error::Reqwest)?;
-        println!("{root:#?}");
-        Ok(())
-    }
-    async fn balance(&self) -> Result<(), Error> {
-        let address = public::encode(&self.key.as_ref().unwrap().address_bytes());
-        let balance: String = self
-            .client
-            .get(format!("{}balance/{}", self.api.to_string(), address))
+            .unwrap();
+        let staked: String = client
+            .get(format!("{}staked/{}", api.to_string(), search))
             .send()
             .await
-            .map_err(Error::Reqwest)?
+            .unwrap()
             .json()
             .await
-            .map_err(Error::Reqwest)?;
-        let staked: String = self
-            .client
-            .get(format!("{}staked/{}", self.api.to_string(), address))
-            .send()
-            .await
-            .map_err(Error::Reqwest)?
-            .json()
-            .await
-            .map_err(Error::Reqwest)?;
+            .unwrap();
         println!(
-            "Account balance: {}, staked: {}",
+            "Address found\nAccount balance: {}, staked: {}",
             balance.to_string().yellow(),
             staked.yellow()
         );
-        Ok(())
-    }
-    async fn height(&self) -> Result<(), Error> {
-        let height: usize = self
-            .client
-            .get(format!("{}height", self.api.to_string()))
+        return true;
+    } else if search.len() == 64 {
+        if let Ok(res) = client
+            .get(format!("{}block/{}", api.to_string(), search))
             .send()
             .await
-            .map_err(Error::Reqwest)?
-            .json()
+        {
+            let block: BlockHex = res.json().await.unwrap();
+            println!("Block found\n{block:?}");
+        } else if let Ok(res) = client
+            .get(format!("{}/transaction/{}", api.to_string(), search))
+            .send()
             .await
-            .map_err(Error::Reqwest)?;
-        println!("Latest block height is {}.", height.to_string().yellow());
-        Ok(())
-    }
-    async fn transaction(&self) -> Result<(), Error> {
-        let address = inquire::address();
-        let amount = inquire::amount();
-        let fee = inquire::fee();
-        if !match Confirm::new("Send?").prompt() {
-            Ok(b) => b,
-            Err(err) => {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            }
-        } {
-            return Ok(());
+        {
+            let transaction: TransactionHex = res.json().await.unwrap();
+            println!("Transaction found\n{transaction:?}");
+        } else if let Ok(res) = client
+            .get(format!("{}stake/{}", api.to_string(), search))
+            .send()
+            .await
+        {
+            let stake: StakeHex = res.json().await.unwrap();
+            println!("Stake found\n{stake:?}");
         }
-        let transaction = transaction::Transaction::sign(
-            public::decode(&address).unwrap(),
-            amount,
-            fee,
-            Utc::now().timestamp() as u32,
-            self.key.as_ref().unwrap(),
-        )
-        .unwrap();
-        println!("[u8; 32]: {}", hex::encode(transaction.hash()).cyan());
-        let transaction_hex: TransactionHex = transaction.try_into().unwrap();
-        let res: String = self
-            .client
-            .post(format!("{}transaction", self.api.to_string()))
-            .json(&transaction_hex)
+    } else if search.parse::<usize>().is_ok() {
+        if let Ok(res) = client
+            .get(format!("{}hash/{}", api.to_string(), search))
             .send()
             .await
-            .map_err(Error::Reqwest)?
-            .json()
-            .await
-            .map_err(Error::Reqwest)?;
-        println!(
-            "{}",
-            if res == "success" {
-                res.green()
-            } else {
-                res.red()
-            }
-        );
-        Ok(())
-    }
-    async fn stake(&self) -> Result<(), Error> {
-        let deposit = inquire::deposit();
-        let amount = inquire::amount();
-        let fee = inquire::fee();
-        let send = inquire::send();
-        if !send {
-            return Ok(());
-        }
-        let stake = stake::Stake::sign(
-            deposit,
-            amount,
-            fee,
-            Utc::now().timestamp() as u32,
-            self.key.as_ref().unwrap(),
-        )
-        .unwrap();
-        println!("[u8; 32]: {}", hex::encode(stake.hash()).cyan());
-        let stake_hex: StakeHex = stake.try_into().unwrap();
-        let res: String = self
-            .client
-            .post(format!("{}stake", self.api.to_string()))
-            .json(&stake_hex)
-            .send()
-            .await
-            .map_err(Error::Reqwest)?
-            .json()
-            .await
-            .map_err(Error::Reqwest)?;
-        println!(
-            "{}",
-            if res == "success" {
-                res.green()
-            } else {
-                res.red()
-            }
-        );
-        Ok(())
-    }
-    async fn search(&self) -> Result<(), Error> {
-        let search = inquire::search();
-        if public::decode(&search).is_ok() {
-            let balance: String = self
-                .client
-                .get(format!("{}balance/{}", self.api.to_string(), search))
-                .send()
-                .await
-                .map_err(Error::Reqwest)?
-                .json()
-                .await
-                .map_err(Error::Reqwest)?;
-            let staked: String = self
-                .client
-                .get(format!("{}staked/{}", self.api.to_string(), search))
-                .send()
-                .await
-                .map_err(Error::Reqwest)?
-                .json()
-                .await
-                .map_err(Error::Reqwest)?;
-            println!(
-                "Address found\nAccount balance: {}, staked: {}",
-                balance.to_string().yellow(),
-                staked.yellow()
-            );
-            return Ok(());
-        } else if search.len() == 64 {
-            if let Ok(res) = self
-                .client
-                .get(format!("{}block/{}", self.api.to_string(), search))
+        {
+            let hash: String = res.json().await.unwrap();
+            if let Ok(res) = client
+                .get(format!("{}block/{}", api.to_string(), hash))
                 .send()
                 .await
             {
-                let block: BlockHex = res.json().await.map_err(Error::Reqwest)?;
+                let block: BlockHex = res.json().await.unwrap();
                 println!("Block found\n{block:?}");
-                return Ok(());
-            }
-            if let Ok(res) = self
-                .client
-                .get(format!("{}/transaction/{}", self.api.to_string(), search))
-                .send()
-                .await
-            {
-                let transaction: TransactionHex = res.json().await.map_err(Error::Reqwest)?;
-                println!("Transaction found\n{transaction:?}");
-                return Ok(());
-            }
-            if let Ok(res) = self
-                .client
-                .get(format!("{}stake/{}", self.api.to_string(), search))
-                .send()
-                .await
-            {
-                let stake: StakeHex = res.json().await.map_err(Error::Reqwest)?;
-                println!("Stake found\n{stake:?}");
-                return Ok(());
-            }
-        } else if search.parse::<usize>().is_ok() {
-            if let Ok(res) = self
-                .client
-                .get(format!("{}hash/{}", self.api.to_string(), search))
-                .send()
-                .await
-            {
-                let hash: String = res.json().await.map_err(Error::Reqwest)?;
-                if let Ok(res) = self
-                    .client
-                    .get(format!("{}block/{}", self.api.to_string(), hash))
-                    .send()
-                    .await
-                {
-                    let block: BlockHex = res.json().await.map_err(Error::Reqwest)?;
-                    println!("Block found\n{block:?}");
-                    return Ok(());
-                }
-                return Ok(());
             }
         }
+    } else {
         println!("{}", "Nothing found".red());
-        Ok(())
     }
-    fn address(&self) {
-        println!(
-            "{}",
-            public::encode(&self.key.as_ref().unwrap().address_bytes()).green()
-        );
-    }
-    fn key(&self) {
-        println!("{}", "Are you being watched?".yellow());
-        println!("{}", "Never share your secret key!".yellow());
-        println!(
-            "{}",
-            "Anyone who has it can access your funds from anywhere.".italic()
-        );
-        println!("{}", "View in private with no cameras around.".italic());
-        if match Confirm::new("View secret key?").prompt() {
-            Ok(b) => b,
-            Err(err) => {
-                println!("{}", err.to_string().red());
-                process::exit(0)
-            }
-        } {
-            println!(
-                "{}",
-                secret::encode(&self.key.as_ref().unwrap().secret_key_bytes()).red()
-            );
-        }
-    }
+    true
 }
-pub fn save(filename: &str, key: &Key) {
+fn address(key: &Key) -> bool {
+    println!("{}", public::encode(&key.address_bytes()).green());
+    true
+}
+fn view_secret(key: &Key) -> bool {
+    println!("{}", "Are you being watched?".yellow());
+    println!("{}", "Never share your secret key!".yellow());
+    println!(
+        "{}",
+        "Anyone who has it can access your funds from anywhere.".italic()
+    );
+    println!("{}", "View in private with no cameras around.".italic());
+    if match Confirm::new("View secret key?").prompt() {
+        Ok(b) => b,
+        Err(err) => {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        }
+    } {
+        println!("{}", secret::encode(&key.secret_key_bytes()).red());
+    }
+    true
+}
+pub fn write(filename: &str, key: &Key) {
     let rng = &mut OsRng;
     let pwd = crate::inquire::new_passphrase();
     let encrypted = encryption::encrypt(rng, key.secret_key_bytes(), pwd);
@@ -380,7 +291,7 @@ pub fn save(filename: &str, key: &Key) {
     let mut file = File::create(path).unwrap();
     file.write_all(hex::encode(encrypted).as_bytes()).unwrap();
 }
-pub fn load() -> Result<Key, Error> {
+pub fn read(key: &mut Option<Key>) -> bool {
     fn read_exact(path: impl AsRef<Path>) -> Result<[u8; 92], Error> {
         let mut file = File::open(path).unwrap();
         let mut bytes = [0; 184];
@@ -400,30 +311,33 @@ pub fn load() -> Result<Key, Error> {
         }
         key
     }
-    let mut filename = crate::inquire::select().map_err(Error::Inquire)?;
+    let mut filename = crate::inquire::select().unwrap();
     let res = if filename.as_str() == *GENERATE {
         Some(Key::generate())
     } else if filename.as_str() == *IMPORT {
-        Some(inquire::import().map_err(Error::Inquire)?)
+        Some(inquire::import().unwrap())
     } else {
         None
     };
     if let Some(key) = res {
         if !inquire::save() {
-            return Ok(key);
+            return true;
         }
-        filename = inquire::name().map_err(Error::Inquire)?;
-        save(&filename, &key);
+        filename = inquire::name().unwrap();
+        write(&filename, &key);
     }
     let mut path = default_path().join(filename);
     path.set_extension(EXTENSION);
     clear();
     println!("{}", path.to_string_lossy().green());
-    let bytes = read_exact(path)?;
+    let bytes = read_exact(path).unwrap();
     loop {
         let passphrase = crate::inquire::passphrase();
         match attempt(&bytes, &passphrase) {
-            Some(key) => return Ok(key),
+            Some(x) => {
+                *key = Some(x);
+                return false;
+            }
             None => continue,
         }
     }

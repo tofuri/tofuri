@@ -71,7 +71,7 @@ pub fn save() -> bool {
         }
     }
 }
-pub fn passphrase() -> String {
+pub fn pwd() -> String {
     Password::new("Enter passphrase:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)

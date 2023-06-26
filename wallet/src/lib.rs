@@ -20,7 +20,7 @@ pub fn decrypt(key: &mut Option<Key>, path: &Path) -> bool {
     let encrypted = key_store::read(path);
     fn attempt(encrypted: &[u8; 92], pwd: &str) -> Option<Key> {
         let pwd = match pwd {
-            "" => crate::inquire::passphrase(),
+            "" => crate::inquire::pwd(),
             _ => pwd.to_string(),
         };
         let key = encryption::decrypt(encrypted, &pwd)
@@ -31,8 +31,8 @@ pub fn decrypt(key: &mut Option<Key>, path: &Path) -> bool {
         key
     }
     loop {
-        let passphrase = crate::inquire::passphrase();
-        match attempt(&encrypted, &passphrase) {
+        let pwd = crate::inquire::pwd();
+        match attempt(&encrypted, &pwd) {
             Some(x) => {
                 *key = Some(x);
                 return false;

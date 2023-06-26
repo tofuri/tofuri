@@ -45,7 +45,7 @@ pub async fn select(
             "Send" => transaction(client, api, &key.as_ref().unwrap()).await?,
             "Stake" => stake(client, api, &key.as_ref().unwrap()).await?,
             "Secret" => view_secret(&key.as_ref().unwrap())?,
-            _ => process::exit(0),
+            _ => unreachable!(),
         },
     )
 }

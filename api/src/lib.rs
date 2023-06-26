@@ -2,18 +2,20 @@ use address::public;
 use decimal::Decimal;
 use decimal::FromStr;
 use hex;
+use hex::FromHexError;
 use serde::Deserialize;
 use serde::Serialize;
+use std::array::TryFromSliceError;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::num::ParseIntError;
 use vint::Vint;
 #[derive(Debug)]
 pub enum Error {
-    Hex(hex::FromHexError),
+    FromHexError(FromHexError),
     Address(address::Error),
     ParseIntError(ParseIntError),
-    TryFromSliceError(core::array::TryFromSliceError),
+    TryFromSliceError(TryFromSliceError),
 }
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Root {
@@ -113,7 +115,7 @@ impl TryFrom<TransactionHex> for transaction::Transaction {
             fee: Vint::from(u128::from_str::<18>(&transaction.fee).map_err(Error::ParseIntError)?),
             timestamp: transaction.timestamp,
             signature: hex::decode(&transaction.signature)
-                .map_err(Error::Hex)?
+                .map_err(Error::FromHexError)?
                 .as_slice()
                 .try_into()
                 .map_err(Error::TryFromSliceError)?,
@@ -129,7 +131,7 @@ impl TryFrom<StakeHex> for stake::Stake {
             deposit: stake.deposit,
             timestamp: stake.timestamp,
             signature: hex::decode(&stake.signature)
-                .map_err(Error::Hex)?
+                .map_err(Error::FromHexError)?
                 .as_slice()
                 .try_into()
                 .map_err(Error::TryFromSliceError)?,

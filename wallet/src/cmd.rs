@@ -52,10 +52,10 @@ fn wallet(key: &mut Option<Key>) -> bool {
         None
     };
     if let Some(key) = res {
-        if !inquire::save() {
+        if !inquire::save_new() {
             return true;
         }
-        filename = inquire::name().unwrap();
+        filename = inquire::name_new().unwrap();
         let pwd = crate::inquire::pwd_new();
         let rng = &mut OsRng;
         key_store::write(rng, &key, &filename, &pwd);

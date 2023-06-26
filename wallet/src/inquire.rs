@@ -37,7 +37,7 @@ pub fn select() -> Result<String, Error> {
         });
     Ok(filename)
 }
-pub fn name() -> Result<String, Error> {
+pub fn name_new() -> Result<String, Error> {
     let filenames = key_store::filenames();
     Ok(Text::new("Name:")
         .with_validator(move |input: &str| {
@@ -61,7 +61,7 @@ pub fn name() -> Result<String, Error> {
             process::exit(0)
         }))
 }
-pub fn save() -> bool {
+pub fn save_new() -> bool {
     match Confirm::new("Save to disk?").prompt() {
         Ok(b) => b,
         Err(err) => {
@@ -69,18 +69,6 @@ pub fn save() -> bool {
             process::exit(0)
         }
     }
-}
-pub fn pwd() -> String {
-    Password::new("Enter passphrase:")
-        .without_confirmation()
-        .with_display_toggle_enabled()
-        .with_display_mode(PasswordDisplayMode::Masked)
-        .with_formatter(&|_| String::from("Decrypting..."))
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        })
 }
 pub fn pwd_new() -> String {
     Password::new("New passphrase:")
@@ -109,6 +97,18 @@ pub fn pwd_new() -> String {
             )
         })
         .with_help_message("It is recommended to generate a new one only for this purpose")
+        .prompt()
+        .unwrap_or_else(|err| {
+            println!("{}", err.to_string().red());
+            process::exit(0)
+        })
+}
+pub fn pwd() -> String {
+    Password::new("Enter passphrase:")
+        .without_confirmation()
+        .with_display_toggle_enabled()
+        .with_display_mode(PasswordDisplayMode::Masked)
+        .with_formatter(&|_| String::from("Decrypting..."))
         .prompt()
         .unwrap_or_else(|err| {
             println!("{}", err.to_string().red());

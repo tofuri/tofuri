@@ -10,34 +10,21 @@ use inquire::Text;
 use key::Key;
 use key_store::EXTENSION;
 use lazy_static::lazy_static;
-use std::io;
+use std::error::Error;
 use std::path::PathBuf;
-use std::process;
 use vint::floor;
 use vint::Vint;
-#[derive(Debug)]
-pub enum Error {
-    Address(address::Error),
-    Key(key::Error),
-    Io(io::Error),
-}
 lazy_static! {
     pub static ref GENERATE: String = "Generate".green().to_string();
     pub static ref IMPORT: String = "Import".magenta().to_string();
 }
-pub fn select() -> Result<String, Error> {
+pub fn select() -> Result<String, Box<dyn Error>> {
     let mut filenames = key_store::filenames();
     filenames.push(GENERATE.to_string());
     filenames.push(IMPORT.to_string());
-    let filename = Select::new(">>", filenames.to_vec())
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        });
-    Ok(filename)
+    Ok(Select::new(">>", filenames.to_vec()).prompt()?)
 }
-pub fn name_new() -> Result<String, Error> {
+pub fn name_new() -> Result<String, Box<dyn Error>> {
     let filenames = key_store::filenames();
     Ok(Text::new("Name:")
         .with_validator(move |input: &str| {
@@ -55,23 +42,13 @@ pub fn name_new() -> Result<String, Error> {
             }
         })
         .with_formatter(&|name| name.to_string())
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }))
+        .prompt()?)
 }
-pub fn save_new() -> bool {
-    match Confirm::new("Save to disk?").prompt() {
-        Ok(b) => b,
-        Err(err) => {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }
-    }
+pub fn save_new() -> Result<bool, Box<dyn Error>> {
+    Ok(Confirm::new("Save to disk?").prompt()?)
 }
-pub fn pwd_new() -> String {
-    Password::new("New passphrase:")
+pub fn pwd_new() -> Result<String, Box<dyn Error>> {
+    Ok(Password::new("New passphrase:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
         .with_validator(move |input: &str| {
@@ -97,25 +74,17 @@ pub fn pwd_new() -> String {
             )
         })
         .with_help_message("It is recommended to generate a new one only for this purpose")
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        })
+        .prompt()?)
 }
-pub fn pwd() -> String {
-    Password::new("Enter passphrase:")
+pub fn pwd() -> Result<String, Box<dyn Error>> {
+    Ok(Password::new("Enter passphrase:")
         .without_confirmation()
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Masked)
         .with_formatter(&|_| String::from("Decrypting..."))
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        })
+        .prompt()?)
 }
-pub fn import_new() -> Result<Key, Error> {
+pub fn import_new() -> Result<Key, Box<dyn Error>> {
     let secret = Password::new("Enter secret key:")
         .without_confirmation()
         .with_display_toggle_enabled()
@@ -125,24 +94,14 @@ pub fn import_new() -> Result<Key, Error> {
             Err(_) => Ok(Validation::Invalid("Invalid secret key.".into())),
         })
         .with_help_message("Enter a valid secret key (SECRETx...)")
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        });
-    Key::from_slice(&address::secret::decode(&secret).map_err(Error::Address)?).map_err(Error::Key)
+        .prompt()?;
+    Ok(Key::from_slice(&address::secret::decode(&secret).unwrap()).unwrap())
 }
-pub fn confirm_send() -> bool {
-    match Confirm::new("Send?").prompt() {
-        Ok(b) => b,
-        Err(err) => {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }
-    }
+pub fn confirm_send() -> Result<bool, Box<dyn Error>> {
+    Ok(Confirm::new("Send?").prompt()?)
 }
-pub fn search() -> String {
-    CustomType::<String>::new("Search:")
+pub fn search() -> Result<String, Box<dyn Error>> {
+    Ok(CustomType::<String>::new("Search:")
         .with_error_message("Please enter a valid Address, [u8; 32] or Number.")
         .with_help_message("Search Blockchain, Transactions, Addresses, Blocks and Stakes")
         .with_parser(&|input| {
@@ -152,29 +111,21 @@ pub fn search() -> String {
             }
             Err(())
         })
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        })
+        .prompt()?)
 }
-pub fn address() -> String {
-    CustomType::<String>::new("Address:")
+pub fn address() -> Result<String, Box<dyn Error>> {
+    Ok(CustomType::<String>::new("Address:")
         .with_error_message("Please enter a valid address")
         .with_help_message("Type the hex encoded address with 0x as prefix")
         .with_parser(&|input| match public::decode(input) {
             Ok(address_bytes) => Ok(public::encode(&address_bytes)),
             Err(_) => Err(()),
         })
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        })
+        .prompt()?)
 }
-pub fn amount() -> u128 {
+pub fn amount() -> Result<u128, Box<dyn Error>> {
     const COIN: u128 = 10_u128.pow(18);
-    (CustomType::<f64>::new("Amount:")
+    Ok((CustomType::<f64>::new("Amount:")
         .with_formatter(&|i| format!("{i:.18} tofuri"))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the amount to send using a decimal point as a separator")
@@ -182,15 +133,11 @@ pub fn amount() -> u128 {
             Ok(amount) => Ok(floor!((amount * COIN as f64), 4) as f64 / COIN as f64),
             Err(_) => Err(()),
         })
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        })
-        * COIN as f64) as u128
+        .prompt()?
+        * COIN as f64) as u128)
 }
-pub fn fee() -> u128 {
-    CustomType::<u128>::new("Fee:")
+pub fn fee() -> Result<u128, Box<dyn Error>> {
+    Ok(CustomType::<u128>::new("Fee:")
         .with_formatter(&|i| format!("{} {}", i, if i == 1 { "satoshi" } else { "satoshis" }))
         .with_error_message("Please type a valid number")
         .with_help_message("Type the fee to use in satoshis")
@@ -198,21 +145,14 @@ pub fn fee() -> u128 {
             Ok(fee) => Ok(floor!(fee, 4)),
             Err(_) => Err(()),
         })
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        })
+        .prompt()?)
 }
-pub fn deposit() -> bool {
-    match Select::new(">>", vec!["deposit", "withdraw"])
-        .prompt()
-        .unwrap_or_else(|err| {
-            println!("{}", err.to_string().red());
-            process::exit(0)
-        }) {
-        "deposit" => true,
-        "withdraw" => false,
-        _ => false,
-    }
+pub fn deposit() -> Result<bool, Box<dyn Error>> {
+    Ok(
+        match Select::new(">>", vec!["deposit", "withdraw"]).prompt()? {
+            "deposit" => true,
+            "withdraw" => false,
+            _ => unreachable!(),
+        },
+    )
 }

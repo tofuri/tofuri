@@ -59,18 +59,18 @@ fn wallet(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
         None
     };
     if let Some(key) = res {
-        if !inquire::save_new() {
+        if !inquire::save_new()? {
             return Ok(true);
         }
         filename = inquire::name_new().unwrap();
-        let pwd = crate::inquire::pwd_new();
+        let pwd = inquire::pwd_new()?;
         let rng = &mut OsRng;
         key_store::write(rng, &key, &filename, &pwd);
     }
     let mut path = DEFAULT_PATH.join(filename);
     path.set_extension(EXTENSION);
     clear();
-    decrypt(key, &path);
+    decrypt(key, &path)?;
     Ok(false)
 }
 async fn root(client: &Client, api: &str) -> Result<bool, Box<dyn Error>> {
@@ -110,9 +110,9 @@ async fn height(client: &Client, api: &str) -> Result<bool, Box<dyn Error>> {
     Ok(true)
 }
 async fn transaction(client: &Client, api: &str, key: &Key) -> Result<bool, Box<dyn Error>> {
-    let address = inquire::address();
-    let amount = inquire::amount();
-    let fee = inquire::fee();
+    let address = inquire::address()?;
+    let amount = inquire::amount()?;
+    let fee = inquire::fee()?;
     if !Confirm::new("Send?").prompt()? {
         return Ok(false);
     }
@@ -130,11 +130,9 @@ async fn transaction(client: &Client, api: &str, key: &Key) -> Result<bool, Box<
         .post(format!("{}transaction", api.to_string()))
         .json(&transaction_hex)
         .send()
-        .await
-        .unwrap()
+        .await?
         .json()
-        .await
-        .unwrap();
+        .await?;
     println!(
         "{}",
         if res == "success" {
@@ -146,10 +144,10 @@ async fn transaction(client: &Client, api: &str, key: &Key) -> Result<bool, Box<
     Ok(true)
 }
 async fn stake(client: &Client, api: &str, key: &Key) -> Result<bool, Box<dyn Error>> {
-    let deposit = inquire::deposit();
-    let amount = inquire::amount();
-    let fee = inquire::fee();
-    let send = inquire::confirm_send();
+    let deposit = inquire::deposit()?;
+    let amount = inquire::amount()?;
+    let fee = inquire::fee()?;
+    let send = inquire::confirm_send()?;
     if !send {
         return Ok(false);
     }
@@ -175,7 +173,7 @@ async fn stake(client: &Client, api: &str, key: &Key) -> Result<bool, Box<dyn Er
     Ok(true)
 }
 async fn search(client: &Client, api: &str) -> Result<bool, Box<dyn Error>> {
-    let search = inquire::search();
+    let search = inquire::search()?;
     if public::decode(&search).is_ok() {
         let balance: String = client
             .get(format!("{}balance/{}", api.to_string(), search))

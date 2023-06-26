@@ -6,6 +6,7 @@ use crossterm::event;
 use crossterm::terminal;
 use key::Key;
 use reqwest::Url;
+use std::error::Error;
 use std::path::Path;
 const INCORRECT: &str = "Incorrect passphrase";
 #[derive(Parser, Debug, Clone)]
@@ -15,12 +16,12 @@ pub struct Args {
     #[clap(long, env = "API", default_value = "http://localhost:2021/")]
     pub api: Url,
 }
-pub fn decrypt(key: &mut Option<Key>, path: &Path) -> bool {
+pub fn decrypt(key: &mut Option<Key>, path: &Path) -> Result<bool, Box<dyn Error>> {
     println!("{}", path.to_string_lossy().green());
     let encrypted = key_store::read(path);
     fn attempt(encrypted: &[u8; 92], pwd: &str) -> Option<Key> {
         let pwd = match pwd {
-            "" => crate::inquire::pwd(),
+            "" => inquire::pwd().unwrap(),
             _ => pwd.to_string(),
         };
         let key = encryption::decrypt(encrypted, &pwd)
@@ -31,11 +32,11 @@ pub fn decrypt(key: &mut Option<Key>, path: &Path) -> bool {
         key
     }
     loop {
-        let pwd = crate::inquire::pwd();
+        let pwd = inquire::pwd()?;
         match attempt(&encrypted, &pwd) {
             Some(x) => {
                 *key = Some(x);
-                return false;
+                return Ok(false);
             }
             None => continue,
         }

@@ -1,9 +1,9 @@
 use clap::Parser;
 use colored::*;
 use libp2p::futures::StreamExt;
-use p2p::MAINNET_PORT;
-use p2p::TESTNET_PORT;
+use multiaddr::ToMultiaddr;
 use std::collections::HashSet;
+use std::net::IpAddr;
 use std::time::Duration;
 use tempdir::TempDir;
 use tofuri::api;
@@ -82,16 +82,10 @@ async fn main() {
     let blockchain = Blockchain::default();
     let mut node = Node::new(db, key, args.clone(), p2p, blockchain);
     node.blockchain.load(&node.db, node.args.trust).unwrap();
+    let ip_addr = "0.0.0.0".parse::<IpAddr>().unwrap();
     node.p2p
         .swarm
-        .listen_on(match args.testnet {
-            true => format!("/ip4/0.0.0.0/tcp/{}", TESTNET_PORT)
-                .parse()
-                .unwrap(),
-            false => format!("/ip4/0.0.0.0/tcp/{}", MAINNET_PORT)
-                .parse()
-                .unwrap(),
-        })
+        .listen_on(ip_addr.multiaddr(args.testnet))
         .unwrap();
     let mut api = API::spawn(1, &node.args.api);
     // let mut reader = BufReader::new(tokio::io::stdin());

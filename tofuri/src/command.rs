@@ -1,7 +1,8 @@
 use crate::Node;
 use address::public;
 use decimal::Decimal;
-use p2p::multiaddr;
+use multiaddr::ToMultiaddr;
+use std::net::IpAddr;
 use std::process;
 use tracing::error;
 use tracing::info;
@@ -74,11 +75,11 @@ fn dial(node: &mut Node, args: &[&str]) {
         Some(x) => *x,
         None => return error!("{}", "Missing argument"),
     };
-    let ip_addr = match arg1.parse() {
+    let ip_addr: IpAddr = match arg1.parse() {
         Ok(x) => x,
         Err(_) => return error!("{}", "Invalid IP address"),
     };
-    let multiaddr = multiaddr::from_ip_addr(&ip_addr, node.args.testnet);
+    let multiaddr = ip_addr.multiaddr(node.args.testnet);
     info!(?multiaddr, "Dialing");
     let _ = node.p2p.swarm.dial(multiaddr);
 }

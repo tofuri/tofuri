@@ -13,10 +13,10 @@ use libp2p::swarm::derive_prelude::Either;
 use libp2p::swarm::ConnectionHandlerUpgrErr;
 use libp2p::swarm::SwarmEvent;
 use libp2p::PeerId;
+use multiaddr::ToIpAddr;
 use p2p::behaviour::OutEvent;
 use p2p::behaviour::Request;
 use p2p::behaviour::Response;
-use p2p::multiaddr;
 use p2p::ratelimit::Endpoint;
 use p2p::MAX_TRANSMIT_SIZE;
 use stake::Stake;
@@ -82,11 +82,10 @@ fn connection_established(
     endpoint: ConnectedPoint,
     num_established: NonZeroU32,
 ) {
-    let res = match endpoint {
-        ConnectedPoint::Dialer { address, .. } => multiaddr::to_ip_addr(&address),
-        ConnectedPoint::Listener { send_back_addr, .. } => multiaddr::to_ip_addr(&send_back_addr),
+    let ip_addr = match endpoint {
+        ConnectedPoint::Dialer { address, .. } => address.ip_addr().unwrap(),
+        ConnectedPoint::Listener { send_back_addr, .. } => send_back_addr.ip_addr().unwrap(),
     };
-    let ip_addr = res.unwrap();
     node.p2p.connections_known.insert(ip_addr);
     let _ = db::peer::put(&node.db, &ip_addr);
     // if let Some((previous_peer_id, _)) = node.p2p.connections.iter().find(|x| x.1 == &ip_addr) {
@@ -108,8 +107,7 @@ fn mdns(node: &mut Node, event: mdns::Event) {
     match event {
         mdns::Event::Discovered(iter) => {
             for (_, multiaddr) in iter {
-                let res = multiaddr::to_ip_addr(&multiaddr);
-                let ip_addr = res.unwrap();
+                let ip_addr = multiaddr.ip_addr().unwrap();
                 node.p2p.connections_unknown.insert(ip_addr);
             }
         }

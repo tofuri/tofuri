@@ -2206,7 +2206,7 @@ dependencies = [
  "libp2p-tcp",
  "libp2p-webrtc",
  "libp2p-yamux",
- "multiaddr",
+ "multiaddr 0.17.1",
  "pin-project",
 ]
 
@@ -2266,7 +2266,7 @@ dependencies = [
  "instant",
  "libp2p-identity",
  "log",
- "multiaddr",
+ "multiaddr 0.17.1",
  "multihash",
  "multistream-select",
  "once_cell",
@@ -2358,7 +2358,7 @@ dependencies = [
  "bs58",
  "ed25519-dalek",
  "log",
- "multiaddr",
+ "multiaddr 0.17.1",
  "multihash",
  "quick-protobuf",
  "rand 0.8.5",
@@ -2747,6 +2747,13 @@ dependencies = [
  "log",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "multiaddr"
+version = "0.1.0"
+dependencies = [
+ "libp2p",
 ]
 
 [[package]]
@@ -4492,6 +4499,7 @@ dependencies = [
  "hex",
  "key",
  "libp2p",
+ "multiaddr 0.1.0",
  "p2p",
  "rand 0.8.5",
  "rocksdb",

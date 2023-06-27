@@ -1,8 +1,8 @@
-use super::MAINNET_PORT;
-use super::TESTNET_PORT;
+use libp2p::multiaddr::Multiaddr;
 use libp2p::multiaddr::Protocol;
-use libp2p::Multiaddr;
 use std::net::IpAddr;
+pub const MAINNET_PORT: u16 = 2020;
+pub const TESTNET_PORT: u16 = 3030;
 pub fn to_ip_addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
     match multiaddr.iter().collect::<Vec<_>>().first() {
         Some(Protocol::Ip4(ip)) => Some(IpAddr::V4(*ip)),
@@ -10,12 +10,12 @@ pub fn to_ip_addr(multiaddr: &Multiaddr) -> Option<IpAddr> {
         _ => None,
     }
 }
-pub fn from_ip_addr(ip_addr: &IpAddr, testnet: bool) -> Multiaddr {
+pub fn from_ip_addr(ip_addr: IpAddr, testnet: bool) -> Multiaddr {
     let port = if testnet { TESTNET_PORT } else { MAINNET_PORT };
     let mut multiaddr = Multiaddr::empty();
-    let protocol = match ip_addr {
-        IpAddr::V4(ip) => Protocol::Ip4(*ip),
-        IpAddr::V6(ip) => Protocol::Ip6(*ip),
+    let protocol = match ip_addr.into() {
+        IpAddr::V4(ip) => Protocol::Ip4(ip),
+        IpAddr::V6(ip) => Protocol::Ip6(ip),
     };
     multiaddr.push(protocol);
     multiaddr.push(Protocol::Tcp(port));
@@ -59,13 +59,13 @@ mod tests {
     #[test]
     fn test_from_ip_addr() {
         assert_eq!(
-            from_ip_addr(&"0.0.0.0".parse().unwrap(), false),
+            from_ip_addr("0.0.0.0".parse().unwrap(), false),
             format!("/ip4/0.0.0.0/tcp/{MAINNET_PORT}")
                 .parse::<Multiaddr>()
                 .unwrap()
         );
         assert_eq!(
-            from_ip_addr(&"::".parse().unwrap(), false),
+            from_ip_addr("::".parse().unwrap(), false),
             format!("/ip6/::/tcp/{MAINNET_PORT}")
                 .parse::<Multiaddr>()
                 .unwrap()

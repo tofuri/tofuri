@@ -16,7 +16,6 @@ use libp2p::PeerId;
 use p2p::behaviour::OutEvent;
 use p2p::behaviour::Request;
 use p2p::behaviour::Response;
-use p2p::multiaddr;
 use p2p::ratelimit::Endpoint;
 use p2p::MAX_TRANSMIT_SIZE;
 use stake::Stake;

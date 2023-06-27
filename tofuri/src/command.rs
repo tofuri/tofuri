@@ -1,7 +1,6 @@
 use crate::Node;
 use address::public;
 use decimal::Decimal;
-use p2p::multiaddr;
 use std::process;
 use tracing::error;
 use tracing::info;
@@ -78,7 +77,7 @@ fn dial(node: &mut Node, args: &[&str]) {
         Ok(x) => x,
         Err(_) => return error!("{}", "Invalid IP address"),
     };
-    let multiaddr = multiaddr::from_ip_addr(&ip_addr, node.args.testnet);
+    let multiaddr = multiaddr::from_ip_addr(ip_addr, node.args.testnet);
     info!(?multiaddr, "Dialing");
     let _ = node.p2p.swarm.dial(multiaddr);
 }

@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-encryption = { path = "../encryption" }
-key = { path = "../key" }
+encryption = { workspace = true }
+key = { workspace = true }
 hex = "0.4.3"
 lazy_static = "1.4.0"
 rand_core = "0.6.4"

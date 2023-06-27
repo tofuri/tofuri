@@ -1,7 +1,7 @@
 pub mod api;
 pub mod command;
 pub mod interval;
-pub mod p2p;
+pub mod swarm;
 use blockchain::Blockchain;
 use clap::Parser;
 use key::Key;

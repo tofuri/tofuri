@@ -1,10 +1,10 @@
-use crate::p2p::behaviour::Request;
-use crate::p2p::multiaddr;
-use crate::p2p::ratelimit::Endpoint;
 use crate::Node;
 use crate::SHARE_PEERS_MAX_LEN;
 use blockchain::fork::BLOCK_TIME;
 use chrono::Utc;
+use p2p::behaviour::Request;
+use p2p::multiaddr;
+use p2p::ratelimit::Endpoint;
 use rand::prelude::*;
 use std::net::IpAddr;
 use tokio::time::Duration;

@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-address = { git = "https://github.com/tofuri/tofuri" }
-key = { git = "https://github.com/tofuri/tofuri" }
+address = { workspace = true }
+key = { workspace = true }
 clap = { version = "4.3.2", features = ["derive"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing = "0.1.37"

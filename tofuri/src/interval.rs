@@ -2,6 +2,7 @@ use crate::Node;
 use crate::SHARE_PEERS_MAX_LEN;
 use blockchain::fork::BLOCK_TIME;
 use chrono::Utc;
+use multiaddr::ToMultiaddr;
 use p2p::behaviour::Request;
 use p2p::ratelimit::Endpoint;
 use rand::prelude::*;
@@ -59,10 +60,7 @@ fn dial(node: &mut Node, vec: Vec<IpAddr>) {
             continue;
         }
         debug!(?ip_addr, "Dial");
-        let _ = node
-            .p2p
-            .swarm
-            .dial(multiaddr::from_ip_addr(ip_addr, node.args.testnet));
+        let _ = node.p2p.swarm.dial(ip_addr.multiaddr(node.args.testnet));
     }
 }
 #[instrument(skip_all, level = "debug")]

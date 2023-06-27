@@ -13,6 +13,7 @@ use libp2p::swarm::derive_prelude::Either;
 use libp2p::swarm::ConnectionHandlerUpgrErr;
 use libp2p::swarm::SwarmEvent;
 use libp2p::PeerId;
+use multiaddr::ToIpAddr;
 use p2p::behaviour::OutEvent;
 use p2p::behaviour::Request;
 use p2p::behaviour::Response;
@@ -82,8 +83,8 @@ fn connection_established(
     num_established: NonZeroU32,
 ) {
     let res = match endpoint {
-        ConnectedPoint::Dialer { address, .. } => multiaddr::to_ip_addr(&address),
-        ConnectedPoint::Listener { send_back_addr, .. } => multiaddr::to_ip_addr(&send_back_addr),
+        ConnectedPoint::Dialer { address, .. } => address.ip_addr(),
+        ConnectedPoint::Listener { send_back_addr, .. } => send_back_addr.ip_addr(),
     };
     let ip_addr = res.unwrap();
     node.p2p.connections_known.insert(ip_addr);
@@ -107,7 +108,7 @@ fn mdns(node: &mut Node, event: mdns::Event) {
     match event {
         mdns::Event::Discovered(iter) => {
             for (_, multiaddr) in iter {
-                let res = multiaddr::to_ip_addr(&multiaddr);
+                let res = multiaddr.ip_addr();
                 let ip_addr = res.unwrap();
                 node.p2p.connections_unknown.insert(ip_addr);
             }

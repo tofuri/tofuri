@@ -8,6 +8,7 @@ members = [
     "encryption",
     "key",
     "key-store",
+    "p2p",
     "tofuri",
     "stake",
     "transaction",
@@ -24,6 +25,7 @@ db = { path = "db" }
 encryption = { path = "encryption" }
 key = { path = "key" }
 key-store = { path = "key-store" }
+p2p = { path = "p2p" }
 tofuri = { path = "tofuri" }
 stake = { path = "stake" }
 transaction = { path = "transaction" }

@@ -1,7 +1,7 @@
-use crate::p2p::multiaddr;
 use crate::Node;
 use address::public;
 use decimal::Decimal;
+use p2p::multiaddr;
 use std::process;
 use tracing::error;
 use tracing::info;

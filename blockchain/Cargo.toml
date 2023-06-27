@@ -15,6 +15,7 @@ key = { workspace = true }
 stake = { workspace = true }
 transaction = { workspace = true }
 fork = { workspace = true }
+sync = { workspace = true }
 rocksdb = "0.21.0"
 colored = "2.0.0"
 tracing = "0.1.37"

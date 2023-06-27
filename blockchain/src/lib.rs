@@ -1,4 +1,3 @@
-pub mod sync;
 use block::Block;
 use chrono::Utc;
 use colored::*;

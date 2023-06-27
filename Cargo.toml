@@ -13,6 +13,7 @@ members = [
     "p2p",
     "tofuri",
     "stake",
+    "sync",
     "transaction",
     "vanity",
     "wallet",
@@ -32,6 +33,7 @@ multiaddr = { path = "multiaddr" }
 p2p = { path = "p2p" }
 tofuri = { path = "tofuri" }
 stake = { path = "stake" }
+sync = { path = "sync" }
 transaction = { path = "transaction" }
 vanity = { path = "vanity" }
 wallet = { path = "wallet" }

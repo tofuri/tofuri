@@ -635,6 +635,7 @@ dependencies = [
  "serde",
  "sha2 0.10.7",
  "stake",
+ "sync",
  "tracing",
  "transaction",
  "uint",
@@ -4346,6 +4347,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sync"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "serde",
+]
+
+[[package]]
 name = "sync_wrapper"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4530,6 +4539,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.7",
  "stake",
+ "sync",
  "tempdir",
  "tokio",
  "tower-http",

@@ -1,4 +1,3 @@
-pub mod fork;
 pub mod sync;
 use block::Block;
 use chrono::Utc;

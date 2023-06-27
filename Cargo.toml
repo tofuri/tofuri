@@ -6,6 +6,7 @@ members = [
     "blockchain",
     "db",
     "encryption",
+    "fork",
     "key",
     "key-store",
     "multiaddr",
@@ -24,6 +25,7 @@ block = { path = "block" }
 blockchain = { path = "blockchain" }
 db = { path = "db" }
 encryption = { path = "encryption" }
+fork = { path = "fork" }
 key = { path = "key" }
 key-store = { path = "key-store" }
 multiaddr = { path = "multiaddr" }

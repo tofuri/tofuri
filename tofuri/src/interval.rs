@@ -1,7 +1,7 @@
 use crate::Node;
 use crate::SHARE_PEERS_MAX_LEN;
-use blockchain::fork::BLOCK_TIME;
 use chrono::Utc;
+use fork::BLOCK_TIME;
 use multiaddr::ToMultiaddr;
 use p2p::behaviour::Request;
 use p2p::ratelimit::Endpoint;

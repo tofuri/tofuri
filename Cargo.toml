@@ -15,6 +15,7 @@ members = [
     "stake",
     "sync",
     "transaction",
+    "tree",
     "vanity",
     "wallet",
 ]
@@ -35,6 +36,7 @@ tofuri = { path = "tofuri" }
 stake = { path = "stake" }
 sync = { path = "sync" }
 transaction = { path = "transaction" }
+tree = { path = "tree" }
 vanity = { path = "vanity" }
 wallet = { path = "wallet" }
 vint = { git = "https://github.com/zudo/vint" }

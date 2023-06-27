@@ -1,8 +1,6 @@
 use block::Block;
 use chrono::Utc;
 use colored::*;
-use db::tree::Tree;
-use db::tree::GENESIS_BLOCK_PREVIOUS_HASH;
 use fork::Manager;
 use fork::Stable;
 use fork::Unstable;
@@ -18,6 +16,8 @@ use tracing::info;
 use tracing::instrument;
 use tracing::warn;
 use transaction::Transaction;
+use tree::Tree;
+use tree::GENESIS_BLOCK_PREVIOUS_HASH;
 pub const BLOCK_SIZE_LIMIT: usize = 57797;
 pub const GENESIS_BLOCK_BETA: [u8; 32] = [0; 32];
 lazy_static! {

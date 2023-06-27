@@ -1,8 +1,6 @@
 use address::public;
 use block::Block;
 use db::checkpoint::CheckpointDB;
-use db::tree::Tree;
-use db::tree::GENESIS_BLOCK_PREVIOUS_HASH;
 use decimal::Decimal;
 use rocksdb::DB;
 use serde::Deserialize;
@@ -15,6 +13,8 @@ use std::collections::VecDeque;
 use tracing::debug;
 use tracing::warn;
 use transaction::Transaction;
+use tree::Tree;
+use tree::GENESIS_BLOCK_PREVIOUS_HASH;
 use uint::construct_uint;
 pub const BLOCK_TIME: u32 = 60;
 pub const ELAPSED: u32 = 90;

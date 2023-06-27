@@ -638,6 +638,7 @@ dependencies = [
  "sync",
  "tracing",
  "transaction",
+ "tree",
  "uint",
  "vint",
 ]
@@ -1147,6 +1148,7 @@ dependencies = [
  "stake",
  "tracing",
  "transaction",
+ "tree",
  "vint",
 ]
 
@@ -1516,6 +1518,7 @@ dependencies = [
  "stake",
  "tracing",
  "transaction",
+ "tree",
  "uint",
  "vint",
 ]
@@ -4734,6 +4737,14 @@ dependencies = [
  "serde-big-array",
  "sha2 0.10.7",
  "vint",
+]
+
+[[package]]
+name = "tree"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "serde",
 ]
 
 [[package]]

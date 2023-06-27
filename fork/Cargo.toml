@@ -1,19 +1,24 @@
 [package]
-name = "db"
+name = "fork"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+address = { workspace = true }
 vint = { workspace = true }
+decimal = { workspace = true }
 block = { workspace = true }
+db = { workspace = true }
+key = { workspace = true }
 stake = { workspace = true }
 transaction = { workspace = true }
 tree = { workspace = true }
 rocksdb = "0.21.0"
-bincode = "1.3.3"
 tracing = "0.1.37"
-serde = "1.0.164"
-serde-big-array = "0.5.1"
 hex = "0.4.3"
+serde = "1.0.163"
+bincode = "1.3.3"
+uint = "0.9.5"
+sha2 = "0.10.6"

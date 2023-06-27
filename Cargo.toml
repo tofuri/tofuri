@@ -6,13 +6,16 @@ members = [
     "blockchain",
     "db",
     "encryption",
+    "fork",
     "key",
     "key-store",
     "multiaddr",
     "p2p",
     "tofuri",
     "stake",
+    "sync",
     "transaction",
+    "tree",
     "vanity",
     "wallet",
 ]
@@ -24,13 +27,16 @@ block = { path = "block" }
 blockchain = { path = "blockchain" }
 db = { path = "db" }
 encryption = { path = "encryption" }
+fork = { path = "fork" }
 key = { path = "key" }
 key-store = { path = "key-store" }
 multiaddr = { path = "multiaddr" }
 p2p = { path = "p2p" }
 tofuri = { path = "tofuri" }
 stake = { path = "stake" }
+sync = { path = "sync" }
 transaction = { path = "transaction" }
+tree = { path = "tree" }
 vanity = { path = "vanity" }
 wallet = { path = "wallet" }
 vint = { git = "https://github.com/zudo/vint" }

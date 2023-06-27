@@ -1,4 +1,4 @@
-use db::tree::Tree;
+use tree::Tree;
 fn main() {
     let mut tree = Tree::default();
     tree.insert([0x11; 32], [0x00; 32], 1);

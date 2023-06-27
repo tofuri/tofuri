@@ -627,6 +627,7 @@ dependencies = [
  "colored",
  "db",
  "decimal",
+ "fork",
  "hex",
  "key",
  "lazy_static",
@@ -634,8 +635,10 @@ dependencies = [
  "serde",
  "sha2 0.10.7",
  "stake",
+ "sync",
  "tracing",
  "transaction",
+ "tree",
  "uint",
  "vint",
 ]
@@ -1145,6 +1148,7 @@ dependencies = [
  "stake",
  "tracing",
  "transaction",
+ "tree",
  "vint",
 ]
 
@@ -1496,6 +1500,28 @@ name = "foreign-types-shared"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
+
+[[package]]
+name = "fork"
+version = "0.1.0"
+dependencies = [
+ "address",
+ "bincode",
+ "block",
+ "db",
+ "decimal",
+ "hex",
+ "key",
+ "rocksdb",
+ "serde",
+ "sha2 0.10.7",
+ "stake",
+ "tracing",
+ "transaction",
+ "tree",
+ "uint",
+ "vint",
+]
 
 [[package]]
 name = "form_urlencoded"
@@ -4324,6 +4350,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sync"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "serde",
+]
+
+[[package]]
 name = "sync_wrapper"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4495,6 +4529,7 @@ dependencies = [
  "colored",
  "db",
  "decimal",
+ "fork",
  "futures",
  "hex",
  "key",
@@ -4507,6 +4542,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.7",
  "stake",
+ "sync",
  "tempdir",
  "tokio",
  "tower-http",
@@ -4701,6 +4737,14 @@ dependencies = [
  "serde-big-array",
  "sha2 0.10.7",
  "vint",
+]
+
+[[package]]
+name = "tree"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "serde",
 ]
 
 [[package]]

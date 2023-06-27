@@ -10,8 +10,8 @@ api = { workspace = true }
 address = { workspace = true }
 encryption = { workspace = true }
 key-store = { workspace = true }
-vint = { git = "https://github.com/zudo/vint" }
-decimal = { git = "https://github.com/zudo/decimal" }
+vint = { workspace = true }
+decimal = { workspace = true }
 key = { workspace = true }
 stake = { workspace = true }
 transaction = { workspace = true }

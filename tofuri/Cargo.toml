@@ -9,8 +9,8 @@ default-run = "tofuri"
 [dependencies]
 address = { workspace = true }
 api = { workspace = true }
-vint = { git = "https://github.com/zudo/vint" }
-decimal = { git = "https://github.com/zudo/decimal" }
+vint = { workspace = true }
+decimal = { workspace = true }
 block = { workspace = true }
 blockchain = { workspace = true }
 db = { workspace = true }

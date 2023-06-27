@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vint = { git = "https://github.com/zudo/vint" }
+vint = { workspace = true }
 block = { workspace = true }
 stake = { workspace = true }
 transaction = { workspace = true }

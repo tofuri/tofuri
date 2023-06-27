@@ -29,3 +29,5 @@ stake = { path = "stake" }
 transaction = { path = "transaction" }
 vanity = { path = "vanity" }
 wallet = { path = "wallet" }
+vint = { git = "https://github.com/zudo/vint" }
+decimal = { git = "https://github.com/zudo/decimal" }

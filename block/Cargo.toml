@@ -9,7 +9,7 @@ edition = "2021"
 key = { path = "../key", features = ["vrf"] }
 stake = { workspace = true }
 transaction = { workspace = true }
-vint = { git = "https://github.com/zudo/vint" }
+vint = { workspace = true }
 serde = { version = "1.0.163", features = ["derive"] }
 serde-big-array = "0.5.1"
 sha2 = "0.10.6"

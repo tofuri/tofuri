@@ -35,7 +35,7 @@ pub async fn select(
         process::exit(0)
     });
     match choice {
-        "Wallet" => decrypt(key)?,
+        "Wallet" => wallet(key)?,
         "Search" => search(client, api).await?,
         "Height" => height(client, api).await?,
         "API" => root(client, api).await?,
@@ -48,7 +48,7 @@ pub async fn select(
     };
     Ok(true)
 }
-fn decrypt(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
+fn wallet(key: &mut Option<Key>) -> Result<bool, Box<dyn Error>> {
     let mut name = inquire::name_select().unwrap();
     let res = if name.as_str() == *GENERATE {
         Some(Key::generate())

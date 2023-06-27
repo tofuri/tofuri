@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 key = { path = "../key", features = ["vrf"] }
-stake = { path = "../stake" }
-transaction = { path = "../transaction" }
-vint = { git = "https://github.com/zudo/vint" }
+stake = { workspace = true }
+transaction = { workspace = true }
+vint = { workspace = true }
 serde = { version = "1.0.163", features = ["derive"] }
 serde-big-array = "0.5.1"
 sha2 = "0.10.6"

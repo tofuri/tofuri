@@ -14,3 +14,20 @@ members = [
     "vanity",
     "wallet",
 ]
+
+[workspace.dependencies]
+address = { path = "address" }
+api = { path = "api" }
+block = { path = "block" }
+blockchain = { path = "blockchain" }
+db = { path = "db" }
+encryption = { path = "encryption" }
+key = { path = "key" }
+key-store = { path = "key-store" }
+tofuri = { path = "tofuri" }
+stake = { path = "stake" }
+transaction = { path = "transaction" }
+vanity = { path = "vanity" }
+wallet = { path = "wallet" }
+vint = { git = "https://github.com/zudo/vint" }
+decimal = { git = "https://github.com/zudo/decimal" }

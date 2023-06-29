@@ -31,7 +31,7 @@ use tracing::info;
 use transaction::Transaction;
 pub async fn serve(client: Client, api: String) {
     let addr = api.parse().unwrap();
-    info!(?addr, "API listening");
+    info!(?addr, "api server listening on");
     let make_service = router(client).into_make_service();
     Server::bind(&addr).serve(make_service).await.unwrap();
 }

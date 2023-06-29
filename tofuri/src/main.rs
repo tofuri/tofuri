@@ -34,7 +34,6 @@ async fn main() {
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
     let (layer, handle) = reload::Layer::new(filter);
-    control::spawn(handle, &args.control.parse().unwrap());
     let fmt_layer = fmt::layer()
         .with_file(true)
         .with_line_number(true)
@@ -49,6 +48,11 @@ async fn main() {
     if args.testnet {
         warn!("{}", "RUNNING ON TESTNET!".yellow());
     }
+    if let Ok(addr) = args.control.parse() {
+        control::spawn(handle, &addr);
+        info!(?addr, "control server listening on");
+    }
+    let mut api = API::spawn(1, &args.api);
     let key = args.secret.clone().and_then(|secret| {
         if secret.is_empty() {
             warn!("No secret key provided.");
@@ -86,7 +90,6 @@ async fn main() {
         .swarm
         .listen_on(ip_addr.multiaddr(args.testnet))
         .unwrap();
-    let mut api = API::spawn(1, &node.args.api);
     let mut interval_1s = interval::at(Duration::from_secs(1));
     let mut interval_10s = interval::at(Duration::from_secs(10));
     let mut interval_1m = interval::at(Duration::from_secs(60));

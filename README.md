@@ -17,4 +17,5 @@ Visit [doc.tofuri.com](https://doc.tofuri.com) for detailed installation instruc
 |-|-|
 | 2020 | P2P communication |
 | 2021 | API over HTTP using JSON format |
+| 2022 | Tracing reload filter |
 | 3030 | Testnet P2P communication |

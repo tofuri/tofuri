@@ -91,7 +91,7 @@ fn grow(node: &mut Node) {
     let sync = &mut blockchain.sync;
     let unstable = &blockchain.forks.unstable;
     if !sync.downloading() && !node.args.mint && unstable.next_staker(timestamp).is_none() {
-        info!("Idling");
+        info!("idling");
         sync.completed = false;
     }
     if !sync.completed {

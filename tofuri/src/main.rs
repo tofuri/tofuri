@@ -1,25 +1,22 @@
+use address::public;
+use address::secret;
+use blockchain::Blockchain;
 use clap::Parser;
 use colored::*;
+use key::Key;
 use libp2p::futures::StreamExt;
 use multiaddr::ToMultiaddr;
+use p2p::P2P;
 use std::collections::HashSet;
 use std::net::IpAddr;
 use std::time::Duration;
 use tempdir::TempDir;
 use tofuri::api;
-use tofuri::api::API;
-// use tofuri::command;
-use address::public;
-use address::secret;
-use blockchain::Blockchain;
-use key::Key;
-use p2p::P2P;
+use tofuri::control;
 use tofuri::interval;
 use tofuri::swarm;
 use tofuri::Args;
 use tofuri::Node;
-// use tokio::io::AsyncBufReadExt;
-// use tokio::io::BufReader;
 use tracing::debug;
 use tracing::info;
 use tracing::warn;
@@ -35,7 +32,7 @@ async fn main() {
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
-    let (layer, _) = reload::Layer::new(filter);
+    let (layer, handle) = reload::Layer::new(filter);
     let fmt_layer = fmt::layer()
         .with_file(true)
         .with_line_number(true)
@@ -50,6 +47,15 @@ async fn main() {
     if args.testnet {
         warn!("{}", "RUNNING ON TESTNET!".yellow());
     }
+    if let Ok(addr) = args.control.parse() {
+        control::spawn(handle, &addr);
+        info!(?addr, "control server listening on");
+    }
+    let (api_client, mut api_server) = api::channel(1);
+    if let Ok(addr) = args.api.parse() {
+        api::spawn(api_client, &addr);
+        info!(?addr, "api server listening on");
+    };
     let key = args.secret.clone().and_then(|secret| {
         if secret.is_empty() {
             warn!("No secret key provided.");
@@ -87,9 +93,6 @@ async fn main() {
         .swarm
         .listen_on(ip_addr.multiaddr(args.testnet))
         .unwrap();
-    let mut api = API::spawn(1, &node.args.api);
-    // let mut reader = BufReader::new(tokio::io::stdin());
-    // let mut line = String::new();
     let mut interval_1s = interval::at(Duration::from_secs(1));
     let mut interval_10s = interval::at(Duration::from_secs(10));
     let mut interval_1m = interval::at(Duration::from_secs(60));
@@ -102,8 +105,7 @@ async fn main() {
             _ = interval_1m.tick() => interval::interval_1m(&mut node),
             _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
-            Some(request) = api.rx.recv() => api::internal::accept(&mut node, request).await,
-            // _ = reader.read_line(&mut line) => command::command(&mut node, &mut line, &reload_handle),
+            Some(request) = api_server.rx.recv() => api::accept(&mut node, request).await,
         }
     }
 }

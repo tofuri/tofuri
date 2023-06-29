@@ -36,13 +36,11 @@ pub enum Call {
     StableLatestHashes,
     StableStakers,
 }
-pub fn new(buffer: usize) -> (Server, Client) {
+pub fn channel(buffer: usize) -> (Client, Server) {
     let (tx, rx) = mpsc::channel(buffer);
-    (Server { rx }, Client(tx))
+    (Client(tx), Server(rx))
 }
-pub struct Server {
-    pub rx: mpsc::Receiver<Request>,
-}
+pub struct Server(pub mpsc::Receiver<Request>);
 #[derive(Clone)]
 pub struct Client(pub mpsc::Sender<Request>);
 impl Client {

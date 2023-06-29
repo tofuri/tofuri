@@ -12,6 +12,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use stake::Stake;
 use sync::Sync;
+use tracing::debug;
 use tracing::info;
 use tracing::instrument;
 use tracing::warn;
@@ -75,7 +76,7 @@ impl Blockchain {
             .tree
             .stable_and_unstable_hashes(trust_fork_after_blocks);
         let height = self.tree.main().map(|x| x.height);
-        info!(
+        debug!(
             ?height,
             last_seen = self.last_seen(),
             stable_hashes = stable_hashes.len(),
@@ -83,7 +84,7 @@ impl Blockchain {
             tree_size = self.tree.size(),
         );
         if let Ok(checkpoint) = db::checkpoint::get(db) {
-            info!(checkpoint.height);
+            info!(height = checkpoint.height, "using checkpoint at");
             self.forks.stable = Stable::from_checkpoint(
                 stable_hashes.drain(..checkpoint.height).collect(),
                 checkpoint,

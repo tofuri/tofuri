@@ -1,5 +1,5 @@
 pub mod api;
-pub mod command;
+pub mod control;
 pub mod interval;
 pub mod swarm;
 use blockchain::Blockchain;
@@ -75,6 +75,10 @@ pub struct Args {
     /// API Endpoint
     #[clap(long, env = "API", default_value = "[::]:2021")]
     pub api: String,
+
+    /// Control endpoint
+    #[clap(long, env = "CONTROL", default_value = "127.0.0.1:2022")]
+    pub control: String,
 
     /// Disable tracing_subscriber timestamps
     #[clap(long, env = "WITHOUT_TIME")]

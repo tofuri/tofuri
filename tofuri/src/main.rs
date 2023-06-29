@@ -12,7 +12,6 @@ use std::net::IpAddr;
 use std::time::Duration;
 use tempdir::TempDir;
 use tofuri::api;
-use tofuri::control;
 use tofuri::interval;
 use tofuri::swarm;
 use tofuri::Args;
@@ -48,7 +47,7 @@ async fn main() {
         warn!("{}", "RUNNING ON TESTNET!".yellow());
     }
     if let Ok(addr) = args.control.parse() {
-        control::spawn(handle, &addr);
+        ::control::spawn(handle, &addr);
         info!(?addr, "control server listening on");
     }
     let (api_client, mut api_server) = api::channel(1);

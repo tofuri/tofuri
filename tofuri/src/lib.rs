@@ -1,5 +1,4 @@
 pub mod api;
-pub mod control;
 pub mod interval;
 pub mod swarm;
 use blockchain::Blockchain;

@@ -4,6 +4,7 @@ members = [
     "api",
     "block",
     "blockchain",
+    "control",
     "db",
     "encryption",
     "fork",
@@ -25,6 +26,7 @@ address = { path = "address" }
 api = { path = "api" }
 block = { path = "block" }
 blockchain = { path = "blockchain" }
+control = { path = "control" }
 db = { path = "db" }
 encryption = { path = "encryption" }
 fork = { path = "fork" }

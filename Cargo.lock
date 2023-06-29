@@ -892,6 +892,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "520fbf3c07483f94e3e3ca9d0cfd913d7718ef2483d2cfd91c0d9e91474ab913"
 
 [[package]]
+name = "control"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "tokio",
+ "tower-http",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4527,6 +4537,7 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
+ "control",
  "db",
  "decimal",
  "fork",
@@ -4555,11 +4566,12 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.28.2"
+version = "1.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94d7b1cfd2aa4011f2de74c2c4c63665e27a71006b0a192dcd2710272e73dfa2"
+checksum = "374442f06ee49c3a28a8fc9f01a2596fed7559c6b99b31279c3261778e77d84f"
 dependencies = [
  "autocfg",
+ "backtrace",
  "bytes",
  "libc",
  "mio",
@@ -4949,7 +4961,9 @@ version = "0.1.0"
 dependencies = [
  "address",
  "clap",
+ "control",
  "key",
+ "tokio",
  "tracing",
  "tracing-subscriber",
 ]

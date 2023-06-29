@@ -1,22 +1,26 @@
 use address;
 use address::public;
 use address::secret;
+use axum::extract::State;
+use axum::routing::post;
+use axum::Router;
+use axum::Server;
 use clap::Parser;
 use key::Key;
-use std::io::BufRead;
-use std::io::BufReader;
+use std::net::SocketAddr;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Mutex;
+use tower_http::trace::TraceLayer;
 use tracing::debug;
-use tracing::error;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
+use tracing_subscriber::reload::Handle;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Registry;
 #[derive(Parser, Debug, Clone)]
@@ -25,17 +29,25 @@ pub struct Args {
     /// Threads
     #[clap(long, value_parser, default_value = "1")]
     pub threads: usize,
+
+    /// Control endpoint
+    #[clap(long, env = "CONTROL", default_value = "127.0.0.1:2023")]
+    pub control: String,
 }
-fn main() {
+#[tokio::main]
+async fn main() {
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
-    let (layer, reload_handle) = reload::Layer::new(filter);
+    let (layer, handle) = reload::Layer::new(filter);
     tracing_subscriber::registry()
         .with(layer)
         .with(fmt::layer().with_span_events(FmtSpan::CLOSE))
         .init();
     let args = Args::parse();
+    if let Ok(addr) = args.control.parse() {
+        spawn(handle.clone(), &addr);
+    }
     let best = Arc::new(Mutex::new([0xff; 20]));
     let attempts = Arc::new(AtomicUsize::new(0));
     let handles = (0..args.threads)
@@ -51,7 +63,6 @@ fn main() {
         debug!(attempts_per_second);
         attempts.store(0, Ordering::Relaxed);
     });
-    io_reload_filter(reload_handle);
     for handle in handles {
         handle.join().unwrap();
     }
@@ -71,18 +82,15 @@ fn generate(best: &Arc<Mutex<[u8; 20]>>, attempts: &AtomicUsize) {
         attempts.fetch_add(1, Ordering::Relaxed);
     }
 }
-pub fn io_reload_filter(reload_handle: reload::Handle<EnvFilter, Registry>) {
-    std::thread::spawn(move || {
-        let mut reader = BufReader::new(std::io::stdin());
-        let mut line = String::new();
-        loop {
-            _ = reader.read_line(&mut line);
-            let filter = EnvFilter::new(line.trim());
-            info!(?filter, "Reload");
-            if let Err(e) = reload_handle.modify(|x| *x = filter) {
-                error!(?e)
-            }
-            line.clear();
-        }
-    });
+pub fn spawn(handle: Handle<EnvFilter, Registry>, addr: &SocketAddr) {
+    let builder = Server::bind(addr);
+    let router = Router::new()
+        .route("/", post(handler))
+        .layer(TraceLayer::new_for_http())
+        .with_state(handle);
+    let make_service = router.into_make_service();
+    tokio::spawn(async { builder.serve(make_service).await });
+}
+async fn handler(State(handle): State<Handle<EnvFilter, Registry>>, body: String) {
+    handle.reload(body).unwrap();
 }

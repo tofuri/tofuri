@@ -1,5 +1,5 @@
-use super::Call;
-use super::Client;
+use super::internal::Call;
+use super::internal::Client;
 use crate::CARGO_PKG_NAME;
 use crate::CARGO_PKG_REPOSITORY;
 use crate::CARGO_PKG_VERSION;
@@ -24,21 +24,14 @@ use hex;
 use stake::Stake;
 use std::convert::TryInto;
 use std::net::IpAddr;
+use std::net::SocketAddr;
 use sync::Sync;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
-use tracing::info;
 use transaction::Transaction;
-pub async fn serve(client: Client, api: String) {
-    let addr = api.parse().unwrap();
-    info!(?addr, "api server listening on");
-    let make_service = router(client).into_make_service();
-    Server::bind(&addr).serve(make_service).await.unwrap();
-}
-fn router(client: Client) -> Router {
-    let cors = CorsLayer::permissive();
-    let trace = TraceLayer::new_for_http();
-    Router::new()
+pub fn spawn(client: Client, addr: &SocketAddr) {
+    let builder = Server::bind(addr);
+    let router = Router::new()
         .route("/", get(root))
         .route("/balance/:address", get(balance))
         .route("/balance_pending_min/:address", get(balance_pending_min))
@@ -74,9 +67,11 @@ fn router(client: Client) -> Router {
         .route("/stable_latest_hashes", get(stable_latest_hashes))
         .route("/stable_stakers", get(stable_stakers))
         .route("/sync_remaining", get(sync_remaining))
-        .layer(trace)
-        .layer(cors)
-        .with_state(client)
+        .layer(TraceLayer::new_for_http())
+        .layer(CorsLayer::permissive())
+        .with_state(client);
+    let make_service = router.into_make_service();
+    tokio::spawn(async { builder.serve(make_service).await });
 }
 async fn root() -> impl IntoResponse {
     Json(Root {

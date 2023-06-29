@@ -51,9 +51,9 @@ async fn main() {
         control::spawn(handle, &addr);
         info!(?addr, "control server listening on");
     }
-    let (client, mut rx) = api::channel(1);
+    let (api_client, mut api_server) = api::channel(1);
     if let Ok(addr) = args.api.parse() {
-        api::spawn(client, &addr);
+        api::spawn(api_client, &addr);
         info!(?addr, "api server listening on");
     };
     let key = args.secret.clone().and_then(|secret| {
@@ -105,7 +105,7 @@ async fn main() {
             _ = interval_1m.tick() => interval::interval_1m(&mut node),
             _ = interval_10m.tick() => interval::interval_10m(&mut node),
             event = node.p2p.swarm.select_next_some() => swarm::event(&mut node, event),
-            Some(request) = rx.recv() => api::accept(&mut node, request).await,
+            Some(request) = api_server.rx.recv() => api::accept(&mut node, request).await,
         }
     }
 }

@@ -62,12 +62,17 @@ pub enum Call {
     StableLatestHashes,
     StableStakers,
 }
+pub struct APIServer {
+    pub rx: mpsc::Receiver<Request>,
+}
 #[derive(Clone)]
-pub struct Client(pub mpsc::Sender<Request>);
-impl Client {
+pub struct APIClient {
+    pub tx: mpsc::Sender<Request>,
+}
+impl APIClient {
     pub async fn call<T: DeserializeOwned>(&self, call: Call) -> T {
         let (tx, rx) = oneshot::channel();
-        let _ = self.0.send(Request { call, tx }).await;
+        let _ = self.tx.send(Request { call, tx }).await;
         let response = rx.await.unwrap();
         bincode::deserialize(&response.0).unwrap()
     }
@@ -77,11 +82,11 @@ pub struct Request {
     pub tx: oneshot::Sender<Response>,
 }
 pub struct Response(pub Vec<u8>);
-pub fn channel(buffer: usize) -> (Client, mpsc::Receiver<Request>) {
+pub fn channel(buffer: usize) -> (APIClient, APIServer) {
     let (tx, rx) = mpsc::channel(buffer);
-    (Client(tx), rx)
+    (APIClient { tx }, APIServer { rx })
 }
-pub fn spawn(client: Client, addr: &SocketAddr) {
+pub fn spawn(api_client: APIClient, addr: &SocketAddr) {
     let builder = Server::bind(addr);
     let router = Router::new()
         .route("/", get(e::root))
@@ -121,7 +126,7 @@ pub fn spawn(client: Client, addr: &SocketAddr) {
         .route("/sync_remaining", get(e::sync_remaining))
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive())
-        .with_state(client);
+        .with_state(api_client);
     let make_service = router.into_make_service();
     tokio::spawn(async { builder.serve(make_service).await });
 }
@@ -187,204 +192,181 @@ pub mod e {
     pub async fn git_hash() -> impl IntoResponse {
         Json(GIT_HASH)
     }
-    pub async fn balance(State(client): State<Client>, address: Path<String>) -> impl IntoResponse {
+    pub async fn balance(State(c): State<APIClient>, address: Path<String>) -> impl IntoResponse {
         let address_bytes = public::decode(&address).unwrap();
-        Json(client.call::<u128>(Call::Balance(address_bytes)).await)
+        Json(c.call::<u128>(Call::Balance(address_bytes)).await)
     }
     pub async fn balance_pending_min(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         address: Path<String>,
     ) -> impl IntoResponse {
         let address_bytes = public::decode(&address).unwrap();
-        Json(
-            client
-                .call::<u128>(Call::BalancePendingMin(address_bytes))
-                .await,
-        )
+        Json(c.call::<u128>(Call::BalancePendingMin(address_bytes)).await)
     }
     pub async fn balance_pending_max(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         address: Path<String>,
     ) -> impl IntoResponse {
         let address_bytes = public::decode(&address).unwrap();
-        Json(
-            client
-                .call::<u128>(Call::BalancePendingMax(address_bytes))
-                .await,
-        )
+        Json(c.call::<u128>(Call::BalancePendingMax(address_bytes)).await)
     }
-    pub async fn staked(State(client): State<Client>, address: Path<String>) -> impl IntoResponse {
+    pub async fn staked(State(c): State<APIClient>, address: Path<String>) -> impl IntoResponse {
         let address_bytes = public::decode(&address).unwrap();
-        Json(client.call::<u128>(Call::Staked(address_bytes)).await)
+        Json(c.call::<u128>(Call::Staked(address_bytes)).await)
     }
     pub async fn staked_pending_min(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         address: Path<String>,
     ) -> impl IntoResponse {
         let address_bytes = public::decode(&address).unwrap();
-        Json(
-            client
-                .call::<u128>(Call::StakedPendingMin(address_bytes))
-                .await,
-        )
+        Json(c.call::<u128>(Call::StakedPendingMin(address_bytes)).await)
     }
     pub async fn staked_pending_max(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         address: Path<String>,
     ) -> impl IntoResponse {
         let address_bytes = public::decode(&address).unwrap();
-        Json(
-            client
-                .call::<u128>(Call::StakedPendingMax(address_bytes))
-                .await,
-        )
+        Json(c.call::<u128>(Call::StakedPendingMax(address_bytes)).await)
     }
-    pub async fn height(State(client): State<Client>) -> impl IntoResponse {
-        Json(client.call::<usize>(Call::Height).await)
+    pub async fn height(State(c): State<APIClient>) -> impl IntoResponse {
+        Json(c.call::<usize>(Call::Height).await)
     }
     pub async fn height_by_hash(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         hash: Path<String>,
     ) -> impl IntoResponse {
         let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-        Json(client.call::<usize>(Call::HeightByHash(hash)).await)
+        Json(c.call::<usize>(Call::HeightByHash(hash)).await)
     }
-    pub async fn block_latest(State(client): State<Client>) -> impl IntoResponse {
-        let block = client.call::<Block>(Call::BlockLatest).await;
+    pub async fn block_latest(State(c): State<APIClient>) -> impl IntoResponse {
+        let block = c.call::<Block>(Call::BlockLatest).await;
         let block_hex: BlockHex = block.try_into().unwrap();
         Json(block_hex)
     }
     pub async fn hash_by_height(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         height: Path<String>,
     ) -> impl IntoResponse {
         let height: usize = height.parse().unwrap();
-        let hash = client.call::<[u8; 32]>(Call::HashByHeight(height)).await;
+        let hash = c.call::<[u8; 32]>(Call::HashByHeight(height)).await;
         let hash_hex = hex::encode(hash);
         Json(hash_hex)
     }
     pub async fn block_by_hash(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         hash: Path<String>,
     ) -> impl IntoResponse {
         let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-        let block = client.call::<Block>(Call::BlockByHash(hash)).await;
+        let block = c.call::<Block>(Call::BlockByHash(hash)).await;
         let block_hex: BlockHex = block.try_into().unwrap();
         Json(block_hex)
     }
     pub async fn transaction_by_hash(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         hash: Path<String>,
     ) -> impl IntoResponse {
         let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-        let transaction = client
-            .call::<Transaction>(Call::TransactionByHash(hash))
-            .await;
+        let transaction = c.call::<Transaction>(Call::TransactionByHash(hash)).await;
         let transaction_hex: TransactionHex = transaction.try_into().unwrap();
         Json(transaction_hex)
     }
     pub async fn stake_by_hash(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         hash: Path<String>,
     ) -> impl IntoResponse {
         let hash: [u8; 32] = hex::decode(hash.clone()).unwrap().try_into().unwrap();
-        let stake = client.call::<Stake>(Call::StakeByHash(hash)).await;
+        let stake = c.call::<Stake>(Call::StakeByHash(hash)).await;
         let stake_hex: StakeHex = stake.try_into().unwrap();
         Json(stake_hex)
     }
-    pub async fn peers(State(client): State<Client>) -> impl IntoResponse {
-        Json(client.call::<Vec<IpAddr>>(Call::Peers).await)
+    pub async fn peers(State(c): State<APIClient>) -> impl IntoResponse {
+        Json(c.call::<Vec<IpAddr>>(Call::Peers).await)
     }
     pub async fn peer(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         Path(ip_addr): Path<String>,
     ) -> impl IntoResponse {
         let ip_addr = ip_addr.parse().unwrap();
-        Json(client.call::<bool>(Call::Peer(ip_addr)).await)
+        Json(c.call::<bool>(Call::Peer(ip_addr)).await)
     }
     pub async fn transaction(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         Json(transaction): Json<TransactionHex>,
     ) -> impl IntoResponse {
         let transaction: Transaction = transaction.try_into().unwrap();
-        Json(client.call::<bool>(Call::Transaction(transaction)).await)
+        Json(c.call::<bool>(Call::Transaction(transaction)).await)
     }
     pub async fn stake(
-        State(client): State<Client>,
+        State(c): State<APIClient>,
         Json(stake): Json<StakeHex>,
     ) -> impl IntoResponse {
         let stake: Stake = stake.try_into().unwrap();
-        Json(client.call::<bool>(Call::Stake(stake)).await)
+        Json(c.call::<bool>(Call::Stake(stake)).await)
     }
-    pub async fn address(State(client): State<Client>) -> impl IntoResponse {
-        Json(public::encode(
-            &client.call::<[u8; 20]>(Call::Address).await,
-        ))
+    pub async fn address(State(c): State<APIClient>) -> impl IntoResponse {
+        Json(public::encode(&c.call::<[u8; 20]>(Call::Address).await))
     }
-    pub async fn ticks(State(client): State<Client>) -> impl IntoResponse {
-        Json(client.call::<usize>(Call::Ticks).await)
+    pub async fn ticks(State(c): State<APIClient>) -> impl IntoResponse {
+        Json(c.call::<usize>(Call::Ticks).await)
     }
     pub async fn time() -> impl IntoResponse {
         Json(chrono::offset::Utc::now().timestamp_millis())
     }
-    pub async fn tree_size(State(client): State<Client>) -> impl IntoResponse {
-        Json(client.call::<usize>(Call::TreeSize).await)
+    pub async fn tree_size(State(c): State<APIClient>) -> impl IntoResponse {
+        Json(c.call::<usize>(Call::TreeSize).await)
     }
-    pub async fn sync(State(client): State<Client>) -> impl IntoResponse {
-        let sync = client.call::<Sync>(Call::Sync).await;
+    pub async fn sync(State(c): State<APIClient>) -> impl IntoResponse {
+        let sync = c.call::<Sync>(Call::Sync).await;
         Json(sync)
     }
-    pub async fn random_queue(State(client): State<Client>) -> impl IntoResponse {
+    pub async fn random_queue(State(c): State<APIClient>) -> impl IntoResponse {
         Json(
-            client
-                .call::<Vec<[u8; 20]>>(Call::RandomQueue)
+            c.call::<Vec<[u8; 20]>>(Call::RandomQueue)
                 .await
                 .iter()
                 .map(public::encode)
                 .collect::<Vec<_>>(),
         )
     }
-    pub async fn unstable_hashes(State(client): State<Client>) -> impl IntoResponse {
-        Json(client.call::<usize>(Call::UnstableHashes).await)
+    pub async fn unstable_hashes(State(c): State<APIClient>) -> impl IntoResponse {
+        Json(c.call::<usize>(Call::UnstableHashes).await)
     }
-    pub async fn unstable_latest_hashes(State(client): State<Client>) -> impl IntoResponse {
+    pub async fn unstable_latest_hashes(State(c): State<APIClient>) -> impl IntoResponse {
         Json(
-            client
-                .call::<Vec<[u8; 32]>>(Call::UnstableLatestHashes)
+            c.call::<Vec<[u8; 32]>>(Call::UnstableLatestHashes)
                 .await
                 .iter()
                 .map(hex::encode)
                 .collect::<Vec<_>>(),
         )
     }
-    pub async fn unstable_stakers(State(client): State<Client>) -> impl IntoResponse {
-        Json(client.call::<usize>(Call::UnstableStakers).await)
+    pub async fn unstable_stakers(State(c): State<APIClient>) -> impl IntoResponse {
+        Json(c.call::<usize>(Call::UnstableStakers).await)
     }
-    pub async fn stable_hashes(State(client): State<Client>) -> impl IntoResponse {
-        Json(client.call::<usize>(Call::StableHashes).await)
+    pub async fn stable_hashes(State(c): State<APIClient>) -> impl IntoResponse {
+        Json(c.call::<usize>(Call::StableHashes).await)
     }
-    pub async fn stable_latest_hashes(State(client): State<Client>) -> impl IntoResponse {
+    pub async fn stable_latest_hashes(State(c): State<APIClient>) -> impl IntoResponse {
         Json(
-            client
-                .call::<Vec<[u8; 32]>>(Call::StableLatestHashes)
+            c.call::<Vec<[u8; 32]>>(Call::StableLatestHashes)
                 .await
                 .iter()
                 .map(hex::encode)
                 .collect::<Vec<_>>(),
         )
     }
-    pub async fn stable_stakers(State(client): State<Client>) -> impl IntoResponse {
-        Json(client.call::<usize>(Call::StableStakers).await)
+    pub async fn stable_stakers(State(c): State<APIClient>) -> impl IntoResponse {
+        Json(c.call::<usize>(Call::StableStakers).await)
     }
-    pub async fn sync_remaining(State(client): State<Client>) -> impl IntoResponse {
-        let sync = client.call::<Sync>(Call::Sync).await;
+    pub async fn sync_remaining(State(c): State<APIClient>) -> impl IntoResponse {
+        let sync = c.call::<Sync>(Call::Sync).await;
         if sync.completed {
             return Json(0.0);
         }
         if !sync.downloading() {
             return Json(-1.0);
         }
-        let block = client.call::<Block>(Call::BlockLatest).await;
+        let block = c.call::<Block>(Call::BlockLatest).await;
         let mut diff = (Utc::now().timestamp() as u32).saturating_sub(block.timestamp) as f32;
         diff /= BLOCK_TIME as f32;
         diff /= sync.bps;

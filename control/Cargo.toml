@@ -1,15 +1,12 @@
 [package]
-name = "vanity"
+name = "control"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-address = { workspace = true }
-key = { workspace = true }
-control = { workspace = true }
-clap = { version = "4.3.2", features = ["derive"] }
+axum = "0.6.18"
+tokio = "1.29.0"
+tower-http = { version = "0.4.1", features = ["trace"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
-tracing = "0.1.37"
-tokio = { version = "1.29.0", features = ["full"] }

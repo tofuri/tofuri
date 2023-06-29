@@ -21,6 +21,7 @@ p2p = { workspace = true }
 multiaddr = { workspace = true }
 fork = { workspace = true }
 sync = { workspace = true }
+control = { workspace = true }
 rocksdb = "0.21.0"
 colored = "2.0.0"
 bincode = "1.3.3"

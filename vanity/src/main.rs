@@ -1,18 +1,12 @@
 use address;
 use address::public;
 use address::secret;
-use axum::extract::State;
-use axum::routing::post;
-use axum::Router;
-use axum::Server;
 use clap::Parser;
 use key::Key;
-use std::net::SocketAddr;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Mutex;
-use tower_http::trace::TraceLayer;
 use tracing::debug;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
@@ -20,9 +14,7 @@ use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
-use tracing_subscriber::reload::Handle;
 use tracing_subscriber::EnvFilter;
-use tracing_subscriber::Registry;
 #[derive(Parser, Debug, Clone)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
@@ -46,7 +38,7 @@ async fn main() {
         .init();
     let args = Args::parse();
     if let Ok(addr) = args.control.parse() {
-        spawn(handle.clone(), &addr);
+        control::spawn(handle.clone(), &addr);
     }
     let best = Arc::new(Mutex::new([0xff; 20]));
     let attempts = Arc::new(AtomicUsize::new(0));
@@ -81,16 +73,4 @@ fn generate(best: &Arc<Mutex<[u8; 20]>>, attempts: &AtomicUsize) {
         }
         attempts.fetch_add(1, Ordering::Relaxed);
     }
-}
-pub fn spawn(handle: Handle<EnvFilter, Registry>, addr: &SocketAddr) {
-    let builder = Server::bind(addr);
-    let router = Router::new()
-        .route("/", post(handler))
-        .layer(TraceLayer::new_for_http())
-        .with_state(handle);
-    let make_service = router.into_make_service();
-    tokio::spawn(async { builder.serve(make_service).await });
-}
-async fn handler(State(handle): State<Handle<EnvFilter, Registry>>, body: String) {
-    handle.reload(body).unwrap();
 }

@@ -37,10 +37,9 @@ async fn main() {
         .with_line_number(true)
         .with_span_events(FmtSpan::CLOSE);
     let registry = tracing_subscriber::registry().with(layer);
-    if args.without_time {
-        registry.with(fmt_layer.without_time()).init();
-    } else {
-        registry.with(fmt_layer).init();
+    match args.without_time {
+        true => registry.with(fmt_layer.without_time()).init(),
+        false => registry.with(fmt_layer).init(),
     }
     debug!("{:?}", args);
     if args.testnet {
@@ -67,10 +66,14 @@ async fn main() {
         let address = public::encode(&key.address_bytes());
         info!(address);
     }
-    let tempdir = TempDir::new("tofuri-db").unwrap();
-    let path: &str = match args.tempdb {
-        true => tempdir.path().to_str().unwrap(),
-        false => "./tofuri-db",
+    let path = match args.tempdb {
+        true => TempDir::new("tofuri-db")
+            .unwrap()
+            .path()
+            .to_str()
+            .unwrap()
+            .to_string(),
+        false => "./tofuri-db".to_string(),
     };
     let db = db::open_cf_descriptors(path);
     let mut connections_known = HashSet::new();
